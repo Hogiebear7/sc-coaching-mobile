@@ -1,12 +1,25 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Linking, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { API_BASE_URL } from "@/constants/config";
 import { Color, Radius, Spacing } from "@/constants/theme";
+import { tapFeedback } from "@/lib/haptics";
 import { useMembership } from "@/lib/queries/membership";
+
+// Deliberately opens the system browser rather than an in-app WebView, and
+// deliberately shows no prices or "Buy" button here — gym membership is a
+// real-world service, exempt from Apple/Google's in-app-purchase
+// requirement, but only as long as the app itself never presents a
+// purchase flow. Handing off to the browser for the actual checkout keeps
+// this clearly on the right side of that line.
+function openMembershipOnWeb() {
+  tapFeedback();
+  Linking.openURL(`${API_BASE_URL}/dashboard/membership`);
+}
 
 const STATUS_LABEL: Record<string, string> = {
   inactive: "Pending billing setup",
@@ -62,9 +75,9 @@ export default function MembershipScreen() {
                 </Text>
               </View>
             ) : (
-              <View style={styles.statusChip}>
+              <Pressable style={styles.statusChip} onPress={openMembershipOnWeb}>
                 <Text style={styles.statusChipText}>Get started</Text>
-              </View>
+              </Pressable>
             )}
             {data.subscriptionPausedUntil ? (
               <Text style={styles.planMeta}>Paused until {formatDate(data.subscriptionPausedUntil)}</Text>
@@ -98,12 +111,16 @@ export default function MembershipScreen() {
             </Card>
           ) : null}
 
-          <Card style={styles.noteCard}>
-            <Text style={styles.noteText}>
-              To change plans, purchase pass packs, or update billing, use the web app for now — full plan
-              management is coming to mobile soon.
-            </Text>
-          </Card>
+          <Button
+            title={data.currentPlanName ? "Manage membership on web" : "View plans on web"}
+            onPress={openMembershipOnWeb}
+            variant="secondary"
+            style={{ marginTop: Spacing.sm }}
+          />
+          <Text style={styles.noteText}>
+            Plan changes, pass packs, and billing open in your browser — full checkout is coming to the app
+            itself soon.
+          </Text>
         </ScrollView>
       )}
     </SafeAreaView>
@@ -154,6 +171,5 @@ const styles = StyleSheet.create({
     backgroundColor: Color.warningWeak,
   },
   warningText: { fontSize: 12, color: Color.warning, flex: 1 },
-  noteCard: { padding: Spacing.md },
-  noteText: { fontSize: 12, color: Color.textMuted, lineHeight: 17 },
+  noteText: { fontSize: 12, color: Color.textMuted, lineHeight: 17, marginTop: Spacing.sm, textAlign: "center" },
 });

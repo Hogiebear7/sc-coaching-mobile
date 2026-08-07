@@ -6,6 +6,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Color, Radius, Spacing } from "@/constants/theme";
+import { useStaffPrograms } from "@/lib/queries/programs";
 import { useStaffMemberDetail } from "@/lib/queries/staff";
 
 function formatDate(iso: string | null): string {
@@ -17,6 +18,8 @@ export default function StaffMemberScreen() {
   const router = useRouter();
   const { userId } = useLocalSearchParams<{ userId: string }>();
   const { data, isLoading, isError, refetch } = useStaffMemberDetail(userId);
+  const { data: programs } = useStaffPrograms(userId);
+  const activeProgram = programs?.find((p) => p.status === "active") ?? null;
 
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
@@ -98,6 +101,43 @@ export default function StaffMemberScreen() {
               <Text style={styles.rowLabel}>Last session</Text>
               <Text style={styles.rowValue}>{formatDate(data.lastSessionDate)}</Text>
             </View>
+          </Card>
+
+          <Card style={styles.card}>
+            <Text style={styles.sectionLabel}>TRAINING PROGRAM</Text>
+            {activeProgram ? (
+              <>
+                <View style={styles.rowLine}>
+                  <Text style={styles.rowLabel}>Program</Text>
+                  <Text style={styles.rowValue}>{activeProgram.name}</Text>
+                </View>
+                <View style={styles.rowLine}>
+                  <Text style={styles.rowLabel}>Days</Text>
+                  <Text style={styles.rowValue}>{activeProgram.days.length}</Text>
+                </View>
+                <View style={styles.rowLine}>
+                  <Text style={styles.rowLabel}>Next up</Text>
+                  <Text style={styles.rowValue}>{activeProgram.days[activeProgram.currentDayIndex]?.label ?? "—"}</Text>
+                </View>
+                <Button
+                  title="Edit program"
+                  variant="secondary"
+                  onPress={() =>
+                    router.push({ pathname: "/staff-program-builder", params: { userId, programId: activeProgram.id } })
+                  }
+                  style={{ marginTop: Spacing.md }}
+                />
+              </>
+            ) : (
+              <>
+                <Text style={styles.rowValue}>No program assigned yet.</Text>
+                <Button
+                  title="Assign program"
+                  onPress={() => router.push({ pathname: "/staff-program-builder", params: { userId } })}
+                  style={{ marginTop: Spacing.md }}
+                />
+              </>
+            )}
           </Card>
 
           <Card style={styles.noteCard}>

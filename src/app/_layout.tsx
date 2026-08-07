@@ -7,6 +7,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { Color } from "@/constants/theme";
 import { AuthProvider, useAuth } from "@/lib/auth-context";
+import { addNotificationTapListener, mapLinkHrefToRoute } from "@/lib/push-notifications";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -35,6 +36,15 @@ function AuthGate() {
       router.replace("/(tabs)");
     }
   }, [status, segments, router]);
+
+  // Tapping a delivered notification (app backgrounded/killed) navigates
+  // straight to the relevant screen, mirroring the web app's push linkHref.
+  useEffect(() => {
+    if (status !== "signedIn") return;
+    return addNotificationTapListener((linkHref) => {
+      router.push(mapLinkHrefToRoute(linkHref) as never);
+    });
+  }, [status, router]);
 
   if (status === "loading") {
     return (

@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 
 import { apiFetch, ApiError, registerUnauthorizedHandler } from "./api-client";
+import { registerForPushNotificationsAsync, unregisterPushToken } from "./push-notifications";
 import { clearToken, getToken, setToken as persistToken } from "./token-store";
 
 export interface AuthUser {
@@ -49,6 +50,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const me = await apiFetch<{ user: AuthUser }>("/api/mobile/auth/me");
         setUser(me.user);
         setStatus("signedIn");
+        void registerForPushNotificationsAsync();
       } catch {
         await clearToken();
         setStatus("signedOut");
@@ -65,15 +67,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await persistToken(res.token);
     setUser(res.user);
     setStatus("signedIn");
+    void registerForPushNotificationsAsync();
   }
 
   async function setSession(token: string, sessionUser: AuthUser) {
     await persistToken(token);
     setUser(sessionUser);
     setStatus("signedIn");
+    void registerForPushNotificationsAsync();
   }
 
   async function logout() {
+    await unregisterPushToken();
     await clearToken();
     setUser(null);
     setStatus("signedOut");

@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { StyleSheet, View, type ViewStyle } from "react-native";
+import { StyleSheet, View, type StyleProp, type ViewStyle } from "react-native";
 
 import { Color, Radius } from "@/constants/theme";
 
@@ -13,7 +13,7 @@ export function Card({
   accent = false,
 }: {
   children: ReactNode;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
   accent?: boolean;
 }) {
   return (

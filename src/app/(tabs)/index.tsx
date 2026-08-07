@@ -1,7 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import { useCallback } from "react";
 import {
   ActivityIndicator,
+  Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -40,6 +42,7 @@ function formatClassDate(dateISO: string): string {
 
 export default function DashboardScreen() {
   const { user, logout } = useAuth();
+  const router = useRouter();
   const { data, isLoading, isError, refetch, isRefetching } = useDashboard();
 
   const onRefresh = useCallback(() => {
@@ -232,7 +235,7 @@ export default function DashboardScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>YOUR CLUB</Text>
           <Card>
-            <View style={[styles.rowCard, styles.rowCardDivider]}>
+            <Pressable onPress={() => router.push("/membership")} style={[styles.rowCard, styles.rowCardDivider]}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.rowCardLabel}>MEMBERSHIP</Text>
                 <Text style={styles.rowCardTitle}>{data.club.planName ?? "No active plan"}</Text>
@@ -257,7 +260,7 @@ export default function DashboardScreen() {
                   {!data.club.hasSubscription ? "Get started" : data.club.statusLabel}
                 </Text>
               </View>
-            </View>
+            </Pressable>
             <View style={styles.rowCard}>
               <View style={styles.rowCardIcon}>
                 <Ionicons name="chatbubble-ellipses-outline" size={18} color={Color.gold} />

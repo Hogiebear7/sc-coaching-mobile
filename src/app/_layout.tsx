@@ -20,22 +20,35 @@ const queryClient = new QueryClient({
 // server-side session check in the dashboard layout, just done client-side
 // here since there's no server-rendering equivalent on native.
 function AuthGate() {
-  const { status } = useAuth();
+  const { status, user } = useAuth();
   const router = useRouter();
   const segments = useSegments();
+  const isStaffRole = !!user && user.role !== "member";
 
   useEffect(() => {
     if (status === "loading") return;
     SplashScreen.hideAsync();
 
     const inAuthGroup = segments[0] === "(auth)";
+    const inTabsGroup = segments[0] === "(tabs)";
+    const inStaffGroup = segments[0] === "(staff)";
 
-    if (status === "signedOut" && !inAuthGroup) {
-      router.replace("/(auth)/login");
-    } else if (status === "signedIn" && inAuthGroup) {
+    if (status === "signedOut") {
+      if (!inAuthGroup) router.replace("/(auth)/login");
+      return;
+    }
+
+    // signedIn — coaches/admins don't have a ProfileRecord (profiles are
+    // member-owned), so they get an entirely separate tab group rather than
+    // the member (tabs) screens, which all assume a profile exists.
+    if (inAuthGroup) {
+      router.replace((isStaffRole ? "/(staff)" : "/(tabs)") as never);
+    } else if (isStaffRole && inTabsGroup) {
+      router.replace("/(staff)" as never);
+    } else if (!isStaffRole && inStaffGroup) {
       router.replace("/(tabs)");
     }
-  }, [status, segments, router]);
+  }, [status, segments, router, isStaffRole]);
 
   // Tapping a delivered notification (app backgrounded/killed) navigates
   // straight to the relevant screen, mirroring the web app's push linkHref.
@@ -58,9 +71,11 @@ function AuthGate() {
     <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: Color.bg0 } }}>
       <Stack.Screen name="(auth)" />
       <Stack.Screen name="(tabs)" />
+      <Stack.Screen name="(staff)" />
       <Stack.Screen name="membership" options={{ presentation: "card" }} />
       <Stack.Screen name="messages" options={{ presentation: "card" }} />
       <Stack.Screen name="profile" options={{ presentation: "card" }} />
+      <Stack.Screen name="staff-member" options={{ presentation: "card" }} />
     </Stack>
   );
 }

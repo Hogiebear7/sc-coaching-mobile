@@ -20,7 +20,14 @@ import { TextField } from "@/components/ui/TextField";
 import { Color, Radius, Spacing } from "@/constants/theme";
 import { tapFeedback } from "@/lib/haptics";
 import { ApiError } from "@/lib/api-client";
-import { useCreateWorkout, useWorkouts, type CreateWorkoutExerciseInput, type CreateWorkoutRunInput } from "@/lib/queries/workouts";
+import {
+  SET_TYPE_OPTIONS,
+  useCreateWorkout,
+  useWorkouts,
+  type CreateWorkoutExerciseInput,
+  type CreateWorkoutRunInput,
+  type WorkoutSetType,
+} from "@/lib/queries/workouts";
 import { formatAsKg, formatAsMmSs, livePace, parseDuration, todayDateString } from "@/lib/workout-formatters";
 
 let keySeq = 0;
@@ -29,7 +36,7 @@ function nextKey(): string {
   return `${Date.now()}-${keySeq}`;
 }
 
-type SetRow = { key: string; weight: string; reps: string };
+type SetRow = { key: string; weight: string; reps: string; setType: WorkoutSetType };
 
 type ExerciseRow = {
   key: string;
@@ -42,6 +49,8 @@ type ExerciseRow = {
   rir: string;
   setRows: SetRow[];
   unitMode: "weight" | "time";
+  setType: WorkoutSetType;
+  supersetWithPrev: boolean;
 };
 
 type RunRow = {
@@ -55,7 +64,37 @@ type RunRow = {
 };
 
 function newExerciseRow(): ExerciseRow {
-  return { key: nextKey(), exerciseId: null, name: "", weight: "", reps: "", sets: "", notes: "", rir: "", setRows: [], unitMode: "weight" };
+  return {
+    key: nextKey(),
+    exerciseId: null,
+    name: "",
+    weight: "",
+    reps: "",
+    sets: "",
+    notes: "",
+    rir: "",
+    setRows: [],
+    unitMode: "weight",
+    setType: "standard",
+    supersetWithPrev: false,
+  };
+}
+
+// Small chip row shared by the per-exercise and per-set type pickers.
+function SetTypeChips({ value, onChange, compact }: { value: WorkoutSetType; onChange: (v: WorkoutSetType) => void; compact?: boolean }) {
+  return (
+    <View style={styles.setTypeRow}>
+      {SET_TYPE_OPTIONS.map((opt) => (
+        <Pressable
+          key={opt.value}
+          onPress={() => onChange(opt.value)}
+          style={[styles.setTypeChip, compact && styles.setTypeChipCompact, value === opt.value && styles.setTypeChipActive]}
+        >
+          <Text style={[styles.setTypeChipText, value === opt.value && styles.setTypeChipTextActive]}>{opt.label}</Text>
+        </Pressable>
+      ))}
+    </View>
+  );
 }
 
 function newRunRow(): RunRow {
@@ -111,18 +150,40 @@ export default function LogWorkoutScreen() {
       return;
     }
 
-    const exercises: CreateWorkoutExerciseInput[] = exerciseRows
-      .filter((r) => r.name.trim())
-      .map((r) => ({
-        exerciseId: r.exerciseId,
-        name: r.name.trim(),
-        weight: r.weight.trim() || null,
-        reps: r.reps.trim() ? parseInt(r.reps, 10) : null,
-        sets: r.sets.trim() ? parseInt(r.sets, 10) : null,
-        rir: r.rir.trim() ? parseInt(r.rir, 10) : null,
-        setDetails: r.setRows.filter((sr) => sr.weight.trim() || sr.reps.trim()).map((sr) => ({ weight: sr.weight.trim() || null, reps: sr.reps.trim() ? parseInt(sr.reps, 10) : null })),
-        notes: r.notes.trim() || null,
-      }));
+    const rowsWithContent = exerciseRows.filter((r) => r.name.trim());
+
+    // Two exercises sharing a group id were performed back-to-back as a
+    // superset. "Superset with previous" on row N links it to row N-1,
+    // minting a fresh group id for the pair (or reusing one already
+    // assigned if a third exercise chains onto the same pair).
+    const groupByIndex = new Map<number, string>();
+    let nextGroupSeq = 0;
+    rowsWithContent.forEach((r, idx) => {
+      if (r.supersetWithPrev && idx > 0) {
+        const group = groupByIndex.get(idx - 1) ?? `ss-${nextGroupSeq++}`;
+        groupByIndex.set(idx - 1, group);
+        groupByIndex.set(idx, group);
+      }
+    });
+
+    const exercises: CreateWorkoutExerciseInput[] = rowsWithContent.map((r, idx) => ({
+      exerciseId: r.exerciseId,
+      name: r.name.trim(),
+      weight: r.weight.trim() || null,
+      reps: r.reps.trim() ? parseInt(r.reps, 10) : null,
+      sets: r.sets.trim() ? parseInt(r.sets, 10) : null,
+      rir: r.rir.trim() ? parseInt(r.rir, 10) : null,
+      setDetails: r.setRows
+        .filter((sr) => sr.weight.trim() || sr.reps.trim())
+        .map((sr) => ({
+          weight: sr.weight.trim() || null,
+          reps: sr.reps.trim() ? parseInt(sr.reps, 10) : null,
+          setType: sr.setType === "standard" ? null : sr.setType,
+        })),
+      setType: r.setType === "standard" ? null : r.setType,
+      supersetGroup: groupByIndex.get(idx) ?? null,
+      notes: r.notes.trim() || null,
+    }));
 
     const runs: CreateWorkoutRunInput[] = runRows.map((r) => ({
       distance: r.distance.trim() ? (r.distanceUnit === "m" ? Math.round((parseFloat(r.distance) / 1000) * 1000) / 1000 : parseFloat(r.distance)) : null,
@@ -190,6 +251,22 @@ export default function LogWorkoutScreen() {
                 </Pressable>
               </View>
 
+              {idx > 0 ? (
+                <Pressable
+                  onPress={() => updateRow(row.key, { supersetWithPrev: !row.supersetWithPrev })}
+                  style={styles.supersetRow}
+                >
+                  <Ionicons
+                    name={row.supersetWithPrev ? "checkbox" : "square-outline"}
+                    size={16}
+                    color={row.supersetWithPrev ? Color.gold : Color.textFaint}
+                  />
+                  <Text style={[styles.supersetText, row.supersetWithPrev && styles.supersetTextActive]}>
+                    Superset with Exercise {idx}
+                  </Text>
+                </Pressable>
+              ) : null}
+
               <Text style={styles.fieldLabel}>Exercise name</Text>
               <ExerciseAutocomplete
                 exercises={data?.exerciseLibrary ?? []}
@@ -229,11 +306,23 @@ export default function LogWorkoutScreen() {
                 <NumberField label="RIR (opt.)" value={row.rir} onChangeText={(v) => updateRow(row.key, { rir: v })} placeholder="e.g. 2" />
               </View>
 
+              {row.setRows.length === 0 ? (
+                <>
+                  <Text style={[styles.fieldLabel, { marginTop: Spacing.sm }]}>Set type</Text>
+                  <SetTypeChips value={row.setType} onChange={(v) => updateRow(row.key, { setType: v })} />
+                </>
+              ) : null}
+
               {Number(row.sets) >= 2 && row.setRows.length === 0 ? (
                 <Pressable
                   onPress={() =>
                     updateRow(row.key, {
-                      setRows: Array.from({ length: Math.min(Number(row.sets), 12) }, () => ({ key: nextKey(), weight: row.weight, reps: row.reps })),
+                      setRows: Array.from({ length: Math.min(Number(row.sets), 12) }, () => ({
+                        key: nextKey(),
+                        weight: row.weight,
+                        reps: row.reps,
+                        setType: row.setType,
+                      })),
                     })
                   }
                 >
@@ -244,22 +333,29 @@ export default function LogWorkoutScreen() {
               {row.setRows.length > 0 ? (
                 <View style={styles.setRowsWrap}>
                   {row.setRows.map((set, setIdx) => (
-                    <View key={set.key} style={styles.setRow}>
-                      <Text style={styles.setLabel}>Set {setIdx + 1}</Text>
-                      <TextInput
-                        value={set.weight}
-                        onChangeText={(v) => updateRow(row.key, { setRows: row.setRows.map((sr) => (sr.key === set.key ? { ...sr, weight: v } : sr)) })}
-                        placeholder="Weight"
-                        placeholderTextColor={Color.textFaint}
-                        style={[styles.smallInput, { flex: 1 }]}
-                      />
-                      <TextInput
-                        value={set.reps}
-                        onChangeText={(v) => updateRow(row.key, { setRows: row.setRows.map((sr) => (sr.key === set.key ? { ...sr, reps: v } : sr)) })}
-                        placeholder="Reps"
-                        placeholderTextColor={Color.textFaint}
-                        keyboardType="number-pad"
-                        style={[styles.smallInput, { flex: 1 }]}
+                    <View key={set.key} style={styles.setRowBlock}>
+                      <View style={styles.setRow}>
+                        <Text style={styles.setLabel}>Set {setIdx + 1}</Text>
+                        <TextInput
+                          value={set.weight}
+                          onChangeText={(v) => updateRow(row.key, { setRows: row.setRows.map((sr) => (sr.key === set.key ? { ...sr, weight: v } : sr)) })}
+                          placeholder="Weight"
+                          placeholderTextColor={Color.textFaint}
+                          style={[styles.smallInput, { flex: 1 }]}
+                        />
+                        <TextInput
+                          value={set.reps}
+                          onChangeText={(v) => updateRow(row.key, { setRows: row.setRows.map((sr) => (sr.key === set.key ? { ...sr, reps: v } : sr)) })}
+                          placeholder="Reps"
+                          placeholderTextColor={Color.textFaint}
+                          keyboardType="number-pad"
+                          style={[styles.smallInput, { flex: 1 }]}
+                        />
+                      </View>
+                      <SetTypeChips
+                        compact
+                        value={set.setType}
+                        onChange={(v) => updateRow(row.key, { setRows: row.setRows.map((sr) => (sr.key === set.key ? { ...sr, setType: v } : sr)) })}
                       />
                     </View>
                   ))}
@@ -394,9 +490,19 @@ const styles = StyleSheet.create({
   unitChipTextActive: { color: Color.gold },
   linkText: { fontSize: 12, fontWeight: "600", color: Color.gold, marginTop: Spacing.sm },
   linkTextMuted: { fontSize: 12, color: Color.textMuted, marginTop: 4 },
-  setRowsWrap: { marginTop: Spacing.sm, borderRadius: Radius.md, borderWidth: 1, borderColor: Color.borderSubtle, padding: Spacing.sm, gap: Spacing.xs },
+  setRowsWrap: { marginTop: Spacing.sm, borderRadius: Radius.md, borderWidth: 1, borderColor: Color.borderSubtle, padding: Spacing.sm, gap: Spacing.sm },
+  setRowBlock: { gap: 6 },
   setRow: { flexDirection: "row", alignItems: "center", gap: Spacing.xs },
   setLabel: { fontSize: 11, color: Color.textMuted, width: 40 },
+  supersetRow: { flexDirection: "row", alignItems: "center", gap: Spacing.xs, marginBottom: Spacing.sm },
+  supersetText: { fontSize: 12, color: Color.textMuted },
+  supersetTextActive: { color: Color.gold, fontWeight: "600" },
+  setTypeRow: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 4 },
+  setTypeChip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.sm, paddingVertical: 6 },
+  setTypeChipCompact: { paddingHorizontal: Spacing.xs, paddingVertical: 4 },
+  setTypeChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
+  setTypeChipText: { fontSize: 11, fontWeight: "500", color: Color.textMuted },
+  setTypeChipTextActive: { color: Color.gold },
   unitSwitch: { width: 48, alignItems: "center", justifyContent: "center", borderRadius: Radius.md, borderWidth: 1, borderColor: Color.borderSubtle, backgroundColor: Color.surface2 },
   unitSwitchText: { fontSize: 12, fontWeight: "600", color: Color.textSecondary },
   paceText: { fontSize: 11, color: Color.textMuted, marginTop: Spacing.xs },

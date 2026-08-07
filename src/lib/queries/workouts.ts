@@ -2,10 +2,22 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { apiFetch } from "@/lib/api-client";
 
+// Mirrors WorkoutSetType in the main repo's lib/db.ts.
+export type WorkoutSetType = "standard" | "dropset" | "myoset" | "failure" | "partial";
+
+export const SET_TYPE_OPTIONS: { value: WorkoutSetType; label: string }[] = [
+  { value: "standard", label: "Standard" },
+  { value: "dropset", label: "Dropset" },
+  { value: "myoset", label: "Myoset" },
+  { value: "failure", label: "Failure" },
+  { value: "partial", label: "Partials" },
+];
+
 // Mirrors WorkoutExerciseEntry / WorkoutRunEntry in the main repo's lib/db.ts.
 export interface WorkoutSetDetail {
   weight: string | null;
   reps: number | null;
+  setType?: WorkoutSetType | null;
 }
 
 export interface WorkoutExerciseEntry {
@@ -17,6 +29,8 @@ export interface WorkoutExerciseEntry {
   rpe?: number | null;
   rir?: number | null;
   setDetails?: WorkoutSetDetail[] | null;
+  setType?: WorkoutSetType | null;
+  supersetGroup?: string | null;
   notes: string | null;
 }
 
@@ -78,6 +92,8 @@ export interface CreateWorkoutExerciseInput {
   sets: number | null;
   rir: number | null;
   setDetails: WorkoutSetDetail[];
+  setType: WorkoutSetType | null;
+  supersetGroup: string | null;
   notes: string | null;
 }
 

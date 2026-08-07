@@ -1,4 +1,12 @@
-import type { WorkoutExerciseEntry, WorkoutRunEntry } from "@/lib/queries/workouts";
+import type { WorkoutExerciseEntry, WorkoutRunEntry, WorkoutSetType } from "@/lib/queries/workouts";
+
+export const SET_TYPE_LABEL: Record<WorkoutSetType, string> = {
+  standard: "",
+  dropset: "dropset",
+  myoset: "myoset",
+  failure: "failure",
+  partial: "partials",
+};
 
 // Ported 1:1 from the main repo's app/(dashboard)/dashboard/workouts/
 // shared/formatters.ts and lib/workout-entries.ts — pure functions, no
@@ -83,10 +91,9 @@ export function formatExerciseLoad(ex: WorkoutExerciseEntry): string {
   if (ex.setDetails && ex.setDetails.length > 0) {
     return ex.setDetails
       .map((s) => {
-        if (s.weight && s.reps !== null) return `${s.weight}×${s.reps}`;
-        if (s.weight) return `${s.weight}`;
-        if (s.reps !== null) return `×${s.reps}`;
-        return "—";
+        const load = s.weight && s.reps !== null ? `${s.weight}×${s.reps}` : s.weight ? `${s.weight}` : s.reps !== null ? `×${s.reps}` : "—";
+        const typeLabel = s.setType ? SET_TYPE_LABEL[s.setType] : "";
+        return typeLabel ? `${load} (${typeLabel})` : load;
       })
       .join(", ");
   }
@@ -96,6 +103,7 @@ export function formatExerciseLoad(ex: WorkoutExerciseEntry): string {
   else if (ex.reps !== null) parts.push(`${ex.reps} reps`);
   if (ex.weight) parts.push(`@ ${ex.weight}`);
   if (ex.rir != null) parts.push(`RIR ${ex.rir}`);
+  if (ex.setType && SET_TYPE_LABEL[ex.setType]) parts.push(`(${SET_TYPE_LABEL[ex.setType]})`);
   return parts.join(" ");
 }
 

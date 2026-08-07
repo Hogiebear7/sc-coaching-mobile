@@ -96,3 +96,34 @@ export function useStaffMemberDetail(userId: string | undefined) {
     enabled: !!userId,
   });
 }
+
+// Mirrors StaffBusinessData in the main repo's lib/staff-business-data.ts.
+export interface StaffBusinessData {
+  revenue: {
+    thisMonthCents: number;
+    lastMonthCents: number;
+    currency: string;
+    taxRatePercent: number | null;
+  } | null;
+  membership: {
+    activeMembers: number;
+    newSignupsThisMonth: number;
+  } | null;
+  classes: {
+    classesThisMonth: number;
+    bookingsThisMonth: number;
+    attendedThisMonth: number;
+  } | null;
+}
+
+interface StaffBusinessResponse {
+  success: true;
+  data: StaffBusinessData;
+}
+
+export function useStaffBusiness() {
+  return useQuery({
+    queryKey: ["staff-business"],
+    queryFn: () => apiFetch<StaffBusinessResponse>("/api/mobile/staff/business").then((r) => r.data),
+  });
+}

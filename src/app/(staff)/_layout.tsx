@@ -12,11 +12,13 @@ import { Color } from "@/constants/theme";
 const ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
   index: "calendar-outline",
   members: "people-outline",
+  business: "stats-chart-outline",
 };
 
 const LABELS: Record<string, string> = {
   index: "Classes",
   members: "Members",
+  business: "Business",
 };
 
 export default function StaffTabsLayout() {
@@ -40,6 +42,7 @@ export default function StaffTabsLayout() {
     >
       <Tabs.Screen name="index" />
       <Tabs.Screen name="members" />
+      <Tabs.Screen name="business" />
     </Tabs>
   );
 }

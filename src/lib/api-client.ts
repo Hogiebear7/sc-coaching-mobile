@@ -63,3 +63,45 @@ export async function apiFetch<T>(
 
   return json as T;
 }
+
+// For endpoints that stream plain text (the AI coach routes) rather than
+// JSON. React Native's fetch doesn't reliably support reading a streamed
+// response body chunk-by-chunk across platforms (Hermes' polyfill support
+// is inconsistent), so this awaits the full text — no live token-by-token
+// typing effect for now, but reliable everywhere. A streaming upgrade is a
+// native-polish-phase item once this is running on real devices.
+export async function apiFetchText(path: string, options: { body?: unknown } = {}): Promise<string> {
+  const token = await getToken();
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE_URL}${path}`, {
+      method: "POST",
+      headers,
+      body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
+    });
+  } catch {
+    throw new ApiError(0, "Can't reach the server. Check your connection and try again.");
+  }
+
+  const text = await res.text();
+
+  if (!res.ok) {
+    if (res.status === 401) {
+      await clearToken();
+      onUnauthorized?.();
+    }
+    let message = `Request failed (${res.status}).`;
+    try {
+      const json = JSON.parse(text);
+      if (json && typeof json.message === "string") message = json.message;
+    } catch {
+      // Not JSON — keep the generic message.
+    }
+    throw new ApiError(res.status, message);
+  }
+
+  return text;
+}

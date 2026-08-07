@@ -21,6 +21,7 @@ import { Color, Radius, Spacing } from "@/constants/theme";
 import { tapFeedback } from "@/lib/haptics";
 import { ApiError } from "@/lib/api-client";
 import { useAdvanceProgram, useMyProgram } from "@/lib/queries/programs";
+import { useWorkoutTemplates } from "@/lib/queries/workout-templates";
 import {
   SET_TYPE_OPTIONS,
   useCreateWorkout,
@@ -120,36 +121,43 @@ function NumberField({ label, value, onChangeText, placeholder }: { label: strin
 
 export default function LogWorkoutScreen() {
   const router = useRouter();
-  const { programId, dayId, title: initialTitle } = useLocalSearchParams<{
+  const { programId, dayId, title: initialTitle, date: initialDate, templateId } = useLocalSearchParams<{
     programId?: string;
     dayId?: string;
     title?: string;
+    date?: string;
+    templateId?: string;
   }>();
   const { data } = useWorkouts();
   const { data: program } = useMyProgram();
+  const { data: templates } = useWorkoutTemplates();
   const create = useCreateWorkout();
   const advanceProgram = useAdvanceProgram();
 
   const [title, setTitle] = useState(initialTitle ?? "");
-  const [date, setDate] = useState(todayDateString());
+  const [date, setDate] = useState(initialDate ?? todayDateString());
   const [durationMins, setDurationMins] = useState("");
   const [notes, setNotes] = useState("");
   const [exerciseRows, setExerciseRows] = useState<ExerciseRow[]>([]);
   const [runRows, setRunRows] = useState<RunRow[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [seededFromProgram, setSeededFromProgram] = useState(false);
+  const [seeded, setSeeded] = useState(false);
 
-  // Arriving from the Workouts tab's Active Program card — prefill this
-  // day's prescribed exercises (name, target sets, set type) so the member
-  // only has to fill in what they actually did.
+  // Arriving from the Active Program card or a saved Library template —
+  // either way prefill exercise rows (name, target sets, set type) from a
+  // PrescribedExercise[] so the member only has to fill in what they
+  // actually did.
   useEffect(() => {
-    if (seededFromProgram || !programId || !dayId || !program) return;
-    const day = program.days.find((d) => d.id === dayId);
-    if (!day) return;
+    if (seeded) return;
+
+    const dayExercises = programId && dayId ? program?.days.find((d) => d.id === dayId)?.exercises : undefined;
+    const templateExercises = templateId ? templates?.find((t) => t.id === templateId)?.exercises : undefined;
+    const source = dayExercises ?? templateExercises;
+    if (!source) return;
 
     const seenGroups = new Set<string>();
     setExerciseRows(
-      day.exercises.map((ex) => {
+      source.map((ex) => {
         const supersetWithPrev = ex.supersetGroup ? seenGroups.has(ex.supersetGroup) : false;
         if (ex.supersetGroup) seenGroups.add(ex.supersetGroup);
         return {
@@ -168,8 +176,8 @@ export default function LogWorkoutScreen() {
         };
       })
     );
-    setSeededFromProgram(true);
-  }, [programId, dayId, program, seededFromProgram]);
+    setSeeded(true);
+  }, [programId, dayId, program, templateId, templates, seeded]);
 
   function updateRow(key: string, patch: Partial<Omit<ExerciseRow, "key">>) {
     setExerciseRows((prev) => prev.map((r) => (r.key === key ? { ...r, ...patch } : r)));

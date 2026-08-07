@@ -120,6 +120,18 @@ export function useMyProgram() {
   });
 }
 
+interface MyArchivedProgramsResponse {
+  success: true;
+  data: TrainingProgram[];
+}
+
+export function useMyArchivedPrograms() {
+  return useQuery({
+    queryKey: ["my-archived-programs"],
+    queryFn: () => apiFetch<MyArchivedProgramsResponse>("/api/mobile/programs/archive").then((r) => r.data),
+  });
+}
+
 export function useAdvanceProgram() {
   const qc = useQueryClient();
   return useMutation({

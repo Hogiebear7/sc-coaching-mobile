@@ -6,15 +6,30 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { DateStrip } from "@/components/ui/DateStrip";
+import { SessionCard } from "@/components/ui/SessionCard";
 import { TrendChart } from "@/components/ui/TrendChart";
 import { Color, Radius, Spacing } from "@/constants/theme";
 import { tapFeedback } from "@/lib/haptics";
 import { useAdvanceProgram, useMyProgram } from "@/lib/queries/programs";
 import { useWorkouts } from "@/lib/queries/workouts";
-import { formatExerciseLoad, formatRun, getExerciseTrend } from "@/lib/workout-formatters";
+import { getExerciseTrend, todayDateString } from "@/lib/workout-formatters";
 
-function formatDate(dateISO: string): string {
-  return new Date(dateISO).toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" });
+// Oldest-first window of dates ending today, for the date strip. UTC-based
+// arithmetic to match todayDateString()'s convention (used app-wide for the
+// log-workout date default) — anchoring both on the same "today" avoids the
+// strip and the log form disagreeing near a timezone boundary.
+function recentDates(days: number, anchor: string): string[] {
+  const out: string[] = [];
+  const [y, m, d] = anchor.split("-").map(Number);
+  for (let i = days - 1; i >= 0; i--) {
+    out.push(new Date(Date.UTC(y, m - 1, d - i)).toISOString().slice(0, 10));
+  }
+  return out;
+}
+
+function formatLongDate(dateISO: string): string {
+  return new Date(`${dateISO}T00:00:00`).toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" });
 }
 
 export default function WorkoutsScreen() {
@@ -23,6 +38,16 @@ export default function WorkoutsScreen() {
   const { data: program } = useMyProgram();
   const advanceProgram = useAdvanceProgram();
   const [trendExercise, setTrendExercise] = useState<string | null>(null);
+
+  const today = todayDateString();
+  const dateWindow = useMemo(() => recentDates(21, today), [today]);
+  const [selectedDate, setSelectedDate] = useState(today);
+
+  const markedDates = useMemo(() => new Set((data?.sessions ?? []).map((s) => s.date)), [data]);
+  const sessionsForSelectedDate = useMemo(
+    () => (data?.sessions ?? []).filter((s) => s.date === selectedDate),
+    [data, selectedDate]
+  );
 
   const currentDay = program?.days[program.currentDayIndex] ?? null;
 
@@ -87,6 +112,26 @@ export default function WorkoutsScreen() {
             <Ionicons name="add" size={18} color={Color.goldForeground} />
             <Text style={styles.logButtonText}>Log</Text>
           </Pressable>
+        </View>
+
+        <View style={styles.section}>
+          <DateStrip dates={dateWindow} selectedDate={selectedDate} today={today} markedDates={markedDates} onSelect={setSelectedDate} />
+          <Card style={styles.dayDetailCard}>
+            <Text style={styles.dayDetailDate}>{selectedDate === today ? "Today" : formatLongDate(selectedDate)}</Text>
+            {sessionsForSelectedDate.length > 0 ? (
+              sessionsForSelectedDate.map((s) => <SessionCard key={s.id} session={s} showDate={false} />)
+            ) : (
+              <View style={styles.dayDetailEmpty}>
+                <Text style={styles.dayDetailEmptyText}>Nothing logged this day.</Text>
+                <Button
+                  title="Log a workout"
+                  variant="secondary"
+                  onPress={() => router.push({ pathname: "/log-workout", params: { date: selectedDate } })}
+                  style={{ marginTop: Spacing.sm }}
+                />
+              </View>
+            )}
+          </Card>
         </View>
 
         {program && currentDay ? (
@@ -212,7 +257,14 @@ export default function WorkoutsScreen() {
         ) : null}
 
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>SESSION HISTORY</Text>
+          <View style={styles.sectionHeaderRow}>
+            <Text style={styles.sectionLabel}>RECENT SESSIONS</Text>
+            {data.sessions.length > 0 ? (
+              <Pressable onPress={() => router.push("/workout-history")}>
+                <Text style={styles.seeAllText}>See all</Text>
+              </Pressable>
+            ) : null}
+          </View>
           {data.sessions.length === 0 ? (
             <Card style={styles.emptyCard}>
               <Ionicons name="barbell-outline" size={22} color={Color.textFaint} />
@@ -220,30 +272,44 @@ export default function WorkoutsScreen() {
               <Button title="Log your first workout" onPress={() => router.push("/log-workout")} variant="secondary" style={{ marginTop: Spacing.sm }} />
             </Card>
           ) : (
-            data.sessions.map((s) => (
-              <Card key={s.id} style={styles.sessionCard}>
-                <View style={styles.sessionHeader}>
-                  <Text style={styles.sessionTitle}>{s.title}</Text>
-                  <Text style={styles.sessionDate}>{formatDate(s.date)}</Text>
-                </View>
-                <Text style={styles.sessionMeta}>
-                  {s.exercises.length} exercise{s.exercises.length === 1 ? "" : "s"}
-                  {s.durationMins ? ` · ${s.durationMins} min` : ""}
-                </Text>
-                {s.exercises.map((ex, i) => (
-                  <Text key={i} style={styles.sessionExercises} numberOfLines={1}>
-                    {ex.name}
-                    {formatExerciseLoad(ex) ? ` — ${formatExerciseLoad(ex)}` : ""}
-                  </Text>
-                ))}
-                {s.runs.map((run, i) => (
-                  <Text key={i} style={styles.sessionExercises} numberOfLines={1}>
-                    Run — {formatRun(run)}
-                  </Text>
-                ))}
-              </Card>
-            ))
+            data.sessions.slice(0, 5).map((s) => <SessionCard key={s.id} session={s} />)
           )}
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel}>MORE</Text>
+          <Card>
+            <Pressable onPress={() => router.push("/workout-library")} style={styles.moreRow}>
+              <View style={styles.moreRowIcon}>
+                <Ionicons name="albums-outline" size={18} color={Color.gold} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.moreRowTitle}>Workout Library</Text>
+                <Text style={styles.moreRowSub}>Your saved, reusable workouts</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={Color.textFaint} />
+            </Pressable>
+            <Pressable onPress={() => router.push("/workout-history")} style={[styles.moreRow, styles.moreRowDivider]}>
+              <View style={styles.moreRowIcon}>
+                <Ionicons name="time-outline" size={18} color={Color.gold} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.moreRowTitle}>Workout History</Text>
+                <Text style={styles.moreRowSub}>Every session you&apos;ve logged</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={Color.textFaint} />
+            </Pressable>
+            <Pressable onPress={() => router.push("/workout-archive")} style={[styles.moreRow, styles.moreRowDivider]}>
+              <View style={styles.moreRowIcon}>
+                <Ionicons name="archive-outline" size={18} color={Color.gold} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.moreRowTitle}>Archive</Text>
+                <Text style={styles.moreRowSub}>Past programs and retired templates</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={Color.textFaint} />
+            </Pressable>
+          </Card>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -306,12 +372,26 @@ const styles = StyleSheet.create({
   trendChipText: { fontSize: 11, fontWeight: "500", color: Color.textMuted },
   trendChipTextActive: { color: Color.gold },
   trendCard: { padding: Spacing.md, alignItems: "center" },
-  sessionCard: { padding: Spacing.md, marginBottom: Spacing.sm },
-  sessionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "baseline" },
-  sessionTitle: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
-  sessionDate: { fontSize: 11, color: Color.textMuted },
-  sessionMeta: { fontSize: 11, color: Color.textMuted, marginTop: 2 },
-  sessionExercises: { fontSize: 11, color: Color.textFaint, marginTop: 4 },
   emptyCard: { alignItems: "center", padding: Spacing.xl, gap: Spacing.sm },
   emptyText: { fontSize: 12, color: Color.textMuted },
+  dayDetailCard: { padding: Spacing.md, marginTop: Spacing.sm },
+  dayDetailDate: { fontSize: 13, fontWeight: "600", color: Color.textSecondary, marginBottom: Spacing.sm },
+  dayDetailEmpty: { alignItems: "center", paddingVertical: Spacing.md },
+  dayDetailEmptyText: { fontSize: 12, color: Color.textMuted },
+  sectionHeaderRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  seeAllText: { fontSize: 12, fontWeight: "600", color: Color.gold, marginBottom: Spacing.sm },
+  moreRow: { flexDirection: "row", alignItems: "center", gap: Spacing.sm, padding: Spacing.md },
+  moreRowDivider: { borderTopWidth: 1, borderTopColor: Color.borderSubtle },
+  moreRowIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: Color.goldBorder,
+    backgroundColor: Color.goldWeak,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  moreRowTitle: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
+  moreRowSub: { fontSize: 11, color: Color.textMuted, marginTop: 2 },
 });

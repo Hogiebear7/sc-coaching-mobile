@@ -1,3 +1,5 @@
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -113,6 +115,7 @@ function CoachChat({
 }
 
 export default function NutritionScreen() {
+  const router = useRouter();
   const { data, isLoading, isError, refetch, isRefetching } = useNutrition();
 
   if (isLoading) {
@@ -170,11 +173,18 @@ export default function NutritionScreen() {
 
           <View style={styles.section}>
             <Text style={styles.sectionLabel}>SPORTS DRINK CALCULATOR</Text>
-            <Card style={styles.comingSoonCard}>
-              <Text style={styles.comingSoonText}>
-                Coming soon on mobile — available now on the web app.
-              </Text>
-            </Card>
+            <Pressable onPress={() => router.push("/drink-calculator")}>
+              <Card style={styles.drinkCard}>
+                <View style={styles.drinkCardIcon}>
+                  <Ionicons name="water-outline" size={18} color={Color.gold} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.drinkCardTitle}>Build your mix</Text>
+                  <Text style={styles.drinkCardSub}>Sport, sweat rate, and conditions — tailored to you</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={Color.textFaint} />
+              </Card>
+            </Pressable>
           </View>
 
           <View style={styles.section}>
@@ -232,6 +242,19 @@ const styles = StyleSheet.create({
   },
   comingSoonCard: { padding: Spacing.md },
   comingSoonText: { fontSize: 12, color: Color.textMuted },
+  drinkCard: { flexDirection: "row", alignItems: "center", gap: Spacing.sm, padding: Spacing.md },
+  drinkCardIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: Color.goldBorder,
+    backgroundColor: Color.goldWeak,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  drinkCardTitle: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
+  drinkCardSub: { fontSize: 11, color: Color.textMuted, marginTop: 2 },
   foodGrid: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.xs },
   foodChip: {
     borderRadius: Radius.pill,

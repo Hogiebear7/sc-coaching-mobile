@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { apiFetch, apiFetchText } from "@/lib/api-client";
+import type { DrinkSettings } from "@/lib/drink-settings";
 
 // Mirrors NutritionData in the main repo's lib/nutrition-data.ts.
 export interface FoodItem {
@@ -33,6 +34,7 @@ export interface NutritionData {
   aiNutritionCoachConfigured: boolean;
   initialAiNutritionMessages: NutritionAiMessage[];
   nextSession: { title: string; date: string; category: string } | null;
+  drinkSettings: DrinkSettings | null;
 }
 
 interface NutritionResponse {
@@ -53,5 +55,19 @@ export function useSendNutritionCoachMessage() {
     mutationFn: (content: string) =>
       apiFetchText("/api/ai/nutrition-coach", { body: { content, tomorrow: "medium" } }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["nutrition"] }),
+  });
+}
+
+// Fire-and-forget cross-device sync for the drink calculator — mirrors the
+// web app's debounced /api/profile/drink-settings sync (see
+// NutritionView.tsx), minus the localStorage layer (profile sync alone is
+// sufficient on native).
+export function useSaveDrinkSettings() {
+  return useMutation({
+    mutationFn: (settings: DrinkSettings) =>
+      apiFetch<{ success: true; settings: DrinkSettings }>("/api/profile/drink-settings", {
+        method: "POST",
+        body: settings,
+      }),
   });
 }

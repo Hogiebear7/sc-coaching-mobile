@@ -77,6 +77,17 @@ export default function WorkoutsScreen() {
           </Pressable>
         </View>
 
+        <View style={styles.toolsRow}>
+          <Pressable onPress={() => router.push("/plate-calculator")} style={styles.toolCard}>
+            <Ionicons name="barbell-outline" size={18} color={Color.gold} />
+            <Text style={styles.toolCardText}>Plate Calculator</Text>
+          </Pressable>
+          <Pressable onPress={() => router.push({ pathname: "/rest-timer", params: { seconds: "90" } })} style={styles.toolCard}>
+            <Ionicons name="timer-outline" size={18} color={Color.gold} />
+            <Text style={styles.toolCardText}>Rest Timer</Text>
+          </Pressable>
+        </View>
+
         {data.personalBests.length > 0 && (
           <View style={styles.section}>
             <Text style={styles.sectionLabel}>PERSONAL BESTS</Text>
@@ -186,6 +197,20 @@ const styles = StyleSheet.create({
   pbStat: {},
   pbValue: { fontSize: 18, fontWeight: "700", color: Color.gold, fontVariant: ["tabular-nums"] },
   pbLabel: { fontSize: 10, color: Color.textMuted, marginTop: 1 },
+  toolsRow: { flexDirection: "row", gap: Spacing.sm, marginBottom: Spacing.xl },
+  toolCard: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: Spacing.xs,
+    paddingVertical: Spacing.sm,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: Color.borderSubtle,
+    backgroundColor: Color.surface1,
+  },
+  toolCardText: { fontSize: 12, fontWeight: "600", color: Color.textSecondary },
   trendPicker: { marginBottom: Spacing.sm },
   trendChip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.sm, paddingVertical: 6, marginRight: Spacing.xs },
   trendChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },

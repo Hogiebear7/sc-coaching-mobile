@@ -5,6 +5,7 @@ import { Color, Radius, Spacing } from "@/constants/theme";
 export function TextField({
   label,
   error,
+  style,
   ...inputProps
 }: TextInputProps & { label: string; error?: string | null }) {
   return (
@@ -12,7 +13,7 @@ export function TextField({
       <Text style={styles.label}>{label}</Text>
       <TextInput
         placeholderTextColor={Color.textFaint}
-        style={[styles.input, error ? styles.inputError : null]}
+        style={[styles.input, error ? styles.inputError : null, style]}
         {...inputProps}
       />
       {error ? <Text style={styles.error}>{error}</Text> : null}

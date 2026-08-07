@@ -95,13 +95,22 @@ export default function DashboardScreen() {
               <Text style={styles.eyebrow}>{formatTodayLabel().toUpperCase()}</Text>
               <Text style={styles.greeting}>Hi {data.firstName}</Text>
             </View>
-            <Ionicons
-              name="log-out-outline"
-              size={22}
-              color={Color.textMuted}
-              onPress={logout}
-              suppressHighlighting
-            />
+            <View style={styles.headerActions}>
+              <Ionicons
+                name="person-circle-outline"
+                size={24}
+                color={Color.textMuted}
+                onPress={() => router.push("/profile")}
+                suppressHighlighting
+              />
+              <Ionicons
+                name="log-out-outline"
+                size={22}
+                color={Color.textMuted}
+                onPress={logout}
+                suppressHighlighting
+              />
+            </View>
           </View>
           <Text style={styles.subGreeting}>Ready when you are.</Text>
         </View>
@@ -318,6 +327,11 @@ const styles = StyleSheet.create({
   headerRow: {
     flexDirection: "row",
     alignItems: "center",
+  },
+  headerActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.md,
   },
   eyebrow: {
     fontSize: 10,

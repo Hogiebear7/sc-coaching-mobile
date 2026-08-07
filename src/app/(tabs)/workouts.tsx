@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { TrendChart } from "@/components/ui/TrendChart";
 import { Color, Radius, Spacing } from "@/constants/theme";
+import { tapFeedback } from "@/lib/haptics";
+import { useAdvanceProgram, useMyProgram } from "@/lib/queries/programs";
 import { useWorkouts } from "@/lib/queries/workouts";
 import { formatExerciseLoad, formatRun, getExerciseTrend } from "@/lib/workout-formatters";
 
@@ -18,7 +20,17 @@ function formatDate(dateISO: string): string {
 export default function WorkoutsScreen() {
   const router = useRouter();
   const { data, isLoading, isError, refetch, isRefetching } = useWorkouts();
+  const { data: program } = useMyProgram();
+  const advanceProgram = useAdvanceProgram();
   const [trendExercise, setTrendExercise] = useState<string | null>(null);
+
+  const currentDay = program?.days[program.currentDayIndex] ?? null;
+
+  function handleMarkDayComplete() {
+    if (!program) return;
+    tapFeedback();
+    advanceProgram.mutate(program.id);
+  }
 
   // Exercises with at least 2 logged dates — the only ones a trend chart
   // can say anything about. Most-recently-logged first.
@@ -76,6 +88,70 @@ export default function WorkoutsScreen() {
             <Text style={styles.logButtonText}>Log</Text>
           </Pressable>
         </View>
+
+        {program && currentDay ? (
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>ACTIVE PROGRAM</Text>
+            <Card style={styles.programCard}>
+              <Text style={styles.programName}>{program.name}</Text>
+              <Text style={styles.programDayLabel}>{currentDay.label}</Text>
+
+              {currentDay.type === "rest" ? (
+                <>
+                  <View style={styles.restRow}>
+                    <Ionicons name="moon-outline" size={18} color={Color.textMuted} />
+                    <Text style={styles.restText}>Rest day — no exercises prescribed.</Text>
+                  </View>
+                  <Button
+                    title="Mark complete"
+                    variant="secondary"
+                    onPress={handleMarkDayComplete}
+                    loading={advanceProgram.isPending}
+                    style={{ marginTop: Spacing.md }}
+                  />
+                </>
+              ) : (
+                <>
+                  {currentDay.exercises.map((ex) => (
+                    <View key={ex.id} style={styles.programExerciseRow}>
+                      <Text style={styles.programExerciseName}>{ex.name}</Text>
+                      <Text style={styles.programExerciseTarget}>
+                        {[
+                          ex.targetSets !== null && ex.targetReps ? `${ex.targetSets} × ${ex.targetReps}` : ex.targetReps ?? (ex.targetSets !== null ? `${ex.targetSets} sets` : null),
+                          ex.targetWeight,
+                        ]
+                          .filter(Boolean)
+                          .join(" · ") || "—"}
+                      </Text>
+                      {ex.muscleTags.length > 0 ? (
+                        <View style={styles.muscleTagRow}>
+                          {ex.muscleTags.map((tag) => (
+                            <View key={tag} style={styles.muscleTagChip}>
+                              <Text style={styles.muscleTagChipText}>{tag}</Text>
+                            </View>
+                          ))}
+                        </View>
+                      ) : null}
+                    </View>
+                  ))}
+                  <Button
+                    title="Start workout"
+                    onPress={() =>
+                      router.push({
+                        pathname: "/log-workout",
+                        params: { programId: program.id, dayId: currentDay.id, title: currentDay.label },
+                      })
+                    }
+                    style={{ marginTop: Spacing.md }}
+                  />
+                  <Pressable onPress={handleMarkDayComplete} style={styles.skipRow}>
+                    <Text style={styles.skipText}>Skip to next day</Text>
+                  </Pressable>
+                </>
+              )}
+            </Card>
+          </View>
+        ) : null}
 
         <View style={styles.toolsRow}>
           <Pressable onPress={() => router.push("/plate-calculator")} style={styles.toolCard}>
@@ -197,6 +273,19 @@ const styles = StyleSheet.create({
   pbStat: {},
   pbValue: { fontSize: 18, fontWeight: "700", color: Color.gold, fontVariant: ["tabular-nums"] },
   pbLabel: { fontSize: 10, color: Color.textMuted, marginTop: 1 },
+  programCard: { padding: Spacing.md },
+  programName: { fontSize: 11, fontWeight: "600", color: Color.textMuted },
+  programDayLabel: { fontSize: 18, fontWeight: "700", color: Color.textPrimary, marginTop: 2, marginBottom: Spacing.sm },
+  restRow: { flexDirection: "row", alignItems: "center", gap: Spacing.xs, paddingVertical: Spacing.sm },
+  restText: { fontSize: 13, color: Color.textMuted },
+  programExerciseRow: { paddingVertical: Spacing.sm, borderTopWidth: 1, borderTopColor: Color.borderSubtle },
+  programExerciseName: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
+  programExerciseTarget: { fontSize: 12, color: Color.textMuted, marginTop: 2 },
+  muscleTagRow: { flexDirection: "row", flexWrap: "wrap", gap: 4, marginTop: Spacing.xs },
+  muscleTagChip: { borderRadius: Radius.pill, backgroundColor: Color.goldWeak, paddingHorizontal: Spacing.sm, paddingVertical: 3 },
+  muscleTagChipText: { fontSize: 10, fontWeight: "600", color: Color.gold },
+  skipRow: { alignItems: "center", marginTop: Spacing.sm, paddingVertical: 6 },
+  skipText: { fontSize: 12, color: Color.textFaint },
   toolsRow: { flexDirection: "row", gap: Spacing.sm, marginBottom: Spacing.xl },
   toolCard: {
     flex: 1,

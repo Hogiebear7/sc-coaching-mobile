@@ -1,18 +1,46 @@
 import { Ionicons } from "@expo/vector-icons";
-import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useRouter } from "expo-router";
+import { useMemo, useState } from "react";
+import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { Color, Spacing } from "@/constants/theme";
+import { TrendChart } from "@/components/ui/TrendChart";
+import { Color, Radius, Spacing } from "@/constants/theme";
 import { useWorkouts } from "@/lib/queries/workouts";
+import { formatExerciseLoad, formatRun, getExerciseTrend } from "@/lib/workout-formatters";
 
 function formatDate(dateISO: string): string {
   return new Date(dateISO).toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" });
 }
 
 export default function WorkoutsScreen() {
+  const router = useRouter();
   const { data, isLoading, isError, refetch, isRefetching } = useWorkouts();
+  const [trendExercise, setTrendExercise] = useState<string | null>(null);
+
+  // Exercises with at least 2 logged dates — the only ones a trend chart
+  // can say anything about. Most-recently-logged first.
+  const trendCandidates = useMemo(() => {
+    if (!data) return [];
+    const seen = new Map<string, string>(); // name -> most recent date
+    for (const s of data.sessions) {
+      for (const ex of s.exercises) {
+        const key = ex.name.trim().toLowerCase();
+        if (!key) continue;
+        const existing = seen.get(key);
+        if (!existing || s.date > existing) seen.set(key, s.date);
+      }
+    }
+    return [...seen.entries()]
+      .map(([key, date]) => ({ key, date, name: data.sessions.flatMap((s) => s.exercises).find((e) => e.name.trim().toLowerCase() === key)?.name ?? key }))
+      .filter((c) => getExerciseTrend(data.sessions, c.name).length >= 2)
+      .sort((a, b) => b.date.localeCompare(a.date));
+  }, [data]);
+
+  const activeTrendExercise = trendExercise ?? trendCandidates[0]?.name ?? null;
+  const trendPoints = data && activeTrendExercise ? getExerciseTrend(data.sessions, activeTrendExercise) : [];
 
   if (isLoading) {
     return (
@@ -41,7 +69,13 @@ export default function WorkoutsScreen() {
         contentContainerStyle={styles.scroll}
         refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => refetch()} tintColor={Color.gold} />}
       >
-        <Text style={styles.heading}>Workouts</Text>
+        <View style={styles.headerRow}>
+          <Text style={styles.heading}>Workouts</Text>
+          <Pressable onPress={() => router.push("/log-workout")} style={styles.logButton}>
+            <Ionicons name="add" size={18} color={Color.goldForeground} />
+            <Text style={styles.logButtonText}>Log</Text>
+          </Pressable>
+        </View>
 
         {data.personalBests.length > 0 && (
           <View style={styles.section}>
@@ -70,12 +104,33 @@ export default function WorkoutsScreen() {
           </View>
         )}
 
+        {trendCandidates.length > 0 && activeTrendExercise ? (
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>PROGRESSION</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.trendPicker} contentContainerStyle={{ gap: Spacing.xs }}>
+              {trendCandidates.slice(0, 10).map((c) => (
+                <Pressable
+                  key={c.key}
+                  onPress={() => setTrendExercise(c.name)}
+                  style={[styles.trendChip, activeTrendExercise === c.name && styles.trendChipActive]}
+                >
+                  <Text style={[styles.trendChipText, activeTrendExercise === c.name && styles.trendChipTextActive]}>{c.name}</Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+            <Card style={styles.trendCard}>
+              <TrendChart points={trendPoints} />
+            </Card>
+          </View>
+        ) : null}
+
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>SESSION HISTORY</Text>
           {data.sessions.length === 0 ? (
             <Card style={styles.emptyCard}>
               <Ionicons name="barbell-outline" size={22} color={Color.textFaint} />
               <Text style={styles.emptyText}>No workouts logged yet.</Text>
+              <Button title="Log your first workout" onPress={() => router.push("/log-workout")} variant="secondary" style={{ marginTop: Spacing.sm }} />
             </Card>
           ) : (
             data.sessions.map((s) => (
@@ -85,14 +140,20 @@ export default function WorkoutsScreen() {
                   <Text style={styles.sessionDate}>{formatDate(s.date)}</Text>
                 </View>
                 <Text style={styles.sessionMeta}>
-                  {s.exerciseCount} exercise{s.exerciseCount === 1 ? "" : "s"}
+                  {s.exercises.length} exercise{s.exercises.length === 1 ? "" : "s"}
                   {s.durationMins ? ` · ${s.durationMins} min` : ""}
                 </Text>
-                {s.exerciseNames.length > 0 ? (
-                  <Text style={styles.sessionExercises} numberOfLines={2}>
-                    {s.exerciseNames.join(", ")}
+                {s.exercises.map((ex, i) => (
+                  <Text key={i} style={styles.sessionExercises} numberOfLines={1}>
+                    {ex.name}
+                    {formatExerciseLoad(ex) ? ` — ${formatExerciseLoad(ex)}` : ""}
                   </Text>
-                ) : null}
+                ))}
+                {s.runs.map((run, i) => (
+                  <Text key={i} style={styles.sessionExercises} numberOfLines={1}>
+                    Run — {formatRun(run)}
+                  </Text>
+                ))}
               </Card>
             ))
           )}
@@ -107,14 +168,10 @@ const styles = StyleSheet.create({
   centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
   errorText: { color: Color.textMuted, fontSize: 14 },
   scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
-  heading: {
-    fontSize: 24,
-    fontWeight: "700",
-    fontStyle: "italic",
-    color: Color.textPrimary,
-    marginTop: Spacing.md,
-    marginBottom: Spacing.lg,
-  },
+  headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: Spacing.md, marginBottom: Spacing.lg },
+  heading: { fontSize: 24, fontWeight: "700", fontStyle: "italic", color: Color.textPrimary },
+  logButton: { flexDirection: "row", alignItems: "center", gap: 2, backgroundColor: Color.gold, borderRadius: Radius.pill, paddingHorizontal: Spacing.md, paddingVertical: 8 },
+  logButtonText: { fontSize: 12, fontWeight: "700", color: Color.goldForeground },
   section: { marginBottom: Spacing.xl },
   sectionLabel: {
     fontSize: 10,
@@ -129,6 +186,12 @@ const styles = StyleSheet.create({
   pbStat: {},
   pbValue: { fontSize: 18, fontWeight: "700", color: Color.gold, fontVariant: ["tabular-nums"] },
   pbLabel: { fontSize: 10, color: Color.textMuted, marginTop: 1 },
+  trendPicker: { marginBottom: Spacing.sm },
+  trendChip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.sm, paddingVertical: 6, marginRight: Spacing.xs },
+  trendChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
+  trendChipText: { fontSize: 11, fontWeight: "500", color: Color.textMuted },
+  trendChipTextActive: { color: Color.gold },
+  trendCard: { padding: Spacing.md, alignItems: "center" },
   sessionCard: { padding: Spacing.md, marginBottom: Spacing.sm },
   sessionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "baseline" },
   sessionTitle: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },

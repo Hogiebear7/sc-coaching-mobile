@@ -32,6 +32,16 @@ function formatLongDate(dateISO: string): string {
   return new Date(`${dateISO}T00:00:00`).toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" });
 }
 
+// MacroFactor-style Trends date-range chips — days: null means All (no filter).
+const TREND_RANGES: { key: string; days: number | null }[] = [
+  { key: "1W", days: 7 },
+  { key: "1M", days: 30 },
+  { key: "3M", days: 90 },
+  { key: "6M", days: 182 },
+  { key: "1Y", days: 365 },
+  { key: "All", days: null },
+];
+
 export default function WorkoutsScreen() {
   const router = useRouter();
   const { data, isLoading, isError, refetch, isRefetching } = useWorkouts();
@@ -78,6 +88,14 @@ export default function WorkoutsScreen() {
 
   const activeTrendExercise = trendExercise ?? trendCandidates[0]?.name ?? null;
   const trendPoints = data && activeTrendExercise ? getExerciseTrend(data.sessions, activeTrendExercise) : [];
+
+  const [trendRange, setTrendRange] = useState("All");
+  const filteredTrendPoints = useMemo(() => {
+    const range = TREND_RANGES.find((r) => r.key === trendRange);
+    if (!range || range.days === null) return trendPoints;
+    const cutoff = recentDates(range.days, today)[0];
+    return trendPoints.filter((p) => p.date >= cutoff);
+  }, [trendPoints, trendRange, today]);
 
   if (isLoading) {
     return (
@@ -250,8 +268,19 @@ export default function WorkoutsScreen() {
                 </Pressable>
               ))}
             </ScrollView>
+            <View style={styles.rangeRow}>
+              {TREND_RANGES.map((r) => (
+                <Pressable
+                  key={r.key}
+                  onPress={() => setTrendRange(r.key)}
+                  style={[styles.rangeChip, trendRange === r.key && styles.rangeChipActive]}
+                >
+                  <Text style={[styles.rangeChipText, trendRange === r.key && styles.rangeChipTextActive]}>{r.key}</Text>
+                </Pressable>
+              ))}
+            </View>
             <Card style={styles.trendCard}>
-              <TrendChart points={trendPoints} />
+              <TrendChart points={filteredTrendPoints} />
             </Card>
           </View>
         ) : null}
@@ -371,6 +400,11 @@ const styles = StyleSheet.create({
   trendChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
   trendChipText: { fontSize: 11, fontWeight: "500", color: Color.textMuted },
   trendChipTextActive: { color: Color.gold },
+  rangeRow: { flexDirection: "row", gap: 6, marginBottom: Spacing.sm },
+  rangeChip: { flex: 1, alignItems: "center", borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingVertical: 5 },
+  rangeChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
+  rangeChipText: { fontSize: 10, fontWeight: "600", color: Color.textMuted },
+  rangeChipTextActive: { color: Color.gold },
   trendCard: { padding: Spacing.md, alignItems: "center" },
   emptyCard: { alignItems: "center", padding: Spacing.xl, gap: Spacing.sm },
   emptyText: { fontSize: 12, color: Color.textMuted },

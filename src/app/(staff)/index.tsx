@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Color, Radius, Spacing } from "@/constants/theme";
 import { useAuth } from "@/lib/auth-context";
+import { successFeedback } from "@/lib/haptics";
 import { useMarkAttendance, useStaffClasses, type StaffClassSummary } from "@/lib/queries/staff";
 
 function formatClassDate(dateISO: string): string {
@@ -42,7 +43,10 @@ function RosterRow({ classId, entry }: { classId: string; entry: StaffClassSumma
 
   return (
     <Pressable
-      onPress={() => mark.mutate({ bookingId: entry.bookingId, attended: !attended })}
+      onPress={() => {
+        successFeedback();
+        mark.mutate({ bookingId: entry.bookingId, attended: !attended });
+      }}
       disabled={mark.isPending}
       style={styles.rosterRow}
     >

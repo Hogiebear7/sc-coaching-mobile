@@ -2,6 +2,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { ActivityIndicator, Pressable, StyleSheet, Text, type ViewStyle } from "react-native";
 
 import { Color, Radius, Spacing } from "@/constants/theme";
+import { tapFeedback } from "@/lib/haptics";
 
 // Ported from the web app's .btn-primary utility: gold gradient pill,
 // dark-navy text, subtle border + glow. `variant="secondary"` matches the
@@ -22,11 +23,15 @@ export function Button({
   style?: ViewStyle;
 }) {
   const isDisabled = disabled || loading;
+  const handlePress = () => {
+    tapFeedback();
+    onPress();
+  };
 
   if (variant === "secondary") {
     return (
       <Pressable
-        onPress={onPress}
+        onPress={handlePress}
         disabled={isDisabled}
         style={({ pressed }) => [
           styles.secondary,
@@ -45,7 +50,7 @@ export function Button({
   }
 
   return (
-    <Pressable onPress={onPress} disabled={isDisabled} style={[styles.wrap, style]}>
+    <Pressable onPress={handlePress} disabled={isDisabled} style={[styles.wrap, style]}>
       {({ pressed }) => (
         <LinearGradient
           colors={[Color.goldHover, Color.gold]}

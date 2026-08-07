@@ -261,7 +261,7 @@ export default function DashboardScreen() {
                 </Text>
               </View>
             </Pressable>
-            <View style={styles.rowCard}>
+            <Pressable onPress={() => router.push("/messages")} style={styles.rowCard}>
               <View style={styles.rowCardIcon}>
                 <Ionicons name="chatbubble-ellipses-outline" size={18} color={Color.gold} />
               </View>
@@ -270,7 +270,7 @@ export default function DashboardScreen() {
                 <Text style={styles.rowCardSub}>Message your coach</Text>
               </View>
               <Ionicons name="chevron-forward" size={18} color={Color.textFaint} />
-            </View>
+            </Pressable>
           </Card>
         </View>
 

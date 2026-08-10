@@ -1,12 +1,14 @@
 import { Ionicons } from "@expo/vector-icons";
-import { CameraView, useCameraPermissions, type BarcodeScanningResult } from "expo-camera";
+import { CameraView, useCameraPermissions, type BarcodeScanningResult, type CameraMountError } from "expo-camera";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { CameraPermissionDenied, CameraUnavailable } from "@/components/nutrition/CameraPermissionGate";
 import { Button } from "@/components/ui/Button";
 import { Color, Radius, Spacing } from "@/constants/theme";
+import { trackEvent } from "@/lib/analytics";
 import { tapFeedback } from "@/lib/haptics";
 import { lookupBarcode } from "@/lib/queries/food-catalog";
 
@@ -16,7 +18,12 @@ export default function BarcodeScanScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const [status, setStatus] = useState<"scanning" | "looking_up" | "error">("scanning");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [cameraUnavailable, setCameraUnavailable] = useState(false);
   const scannedRef = useRef(false);
+
+  useEffect(() => {
+    trackEvent("barcode_scan_started");
+  }, []);
 
   async function handleScanned(result: BarcodeScanningResult) {
     if (scannedRef.current) return;
@@ -27,17 +34,25 @@ export default function BarcodeScanScreen() {
     try {
       const outcome = await lookupBarcode(result.data);
       if (outcome.found) {
+        trackEvent("barcode_scan_found", { domain: outcome.food.domain });
         router.replace({
           pathname: "/log-food",
           params: { date: date ?? "", mealType: mealType ?? "", foodJson: encodeURIComponent(JSON.stringify(outcome.food)) },
         });
       } else {
+        trackEvent("barcode_scan_not_found");
         router.replace({ pathname: "/label-scan", params: { barcode: result.data, date: date ?? "", mealType: mealType ?? "" } });
       }
-    } catch {
+    } catch (e) {
+      trackEvent("barcode_scan_error", { message: e instanceof Error ? e.message : "unknown" });
       setErrorMessage("Couldn't look up that barcode. Check your connection and try again.");
       setStatus("error");
     }
+  }
+
+  function handleMountError(e: CameraMountError) {
+    trackEvent("barcode_scan_camera_unavailable", { message: e.message });
+    setCameraUnavailable(true);
   }
 
   function retry() {
@@ -66,17 +81,17 @@ export default function BarcodeScanScreen() {
           <Text style={styles.headerTitle}>Scan Barcode</Text>
           <View style={{ width: 22 }} />
         </View>
-        <View style={styles.centerFill}>
-          <Ionicons name="barcode-outline" size={40} color={Color.textFaint} />
-          <Text style={styles.permissionText}>S&C Coaching needs camera access to scan food barcodes.</Text>
-          <Button title="Allow camera access" onPress={requestPermission} style={{ marginTop: Spacing.lg }} />
-          <Pressable
-            onPress={() => router.replace({ pathname: "/custom-food", params: { date: date ?? "", mealType: mealType ?? "" } })}
-            style={styles.manualLink}
-          >
-            <Text style={styles.manualLinkText}>Enter this food manually instead</Text>
-          </Pressable>
-        </View>
+        <CameraPermissionDenied
+          canAskAgain={permission.canAskAgain}
+          requestPermission={requestPermission}
+          message="S&C Coaching needs camera access to scan food barcodes."
+        />
+        <Pressable
+          onPress={() => router.replace({ pathname: "/custom-food", params: { date: date ?? "", mealType: mealType ?? "" } })}
+          style={styles.manualLink}
+        >
+          <Text style={styles.manualLinkText}>Enter this food manually instead</Text>
+        </Pressable>
       </SafeAreaView>
     );
   }
@@ -92,12 +107,21 @@ export default function BarcodeScanScreen() {
       </View>
 
       <View style={styles.cameraWrap}>
-        <CameraView
-          style={StyleSheet.absoluteFill}
-          barcodeScannerSettings={{ barcodeTypes: ["ean13", "ean8", "upc_a", "upc_e", "code128"] }}
-          onBarcodeScanned={status === "scanning" ? handleScanned : undefined}
-        />
-        <View style={styles.frame} />
+        {cameraUnavailable ? (
+          <CameraUnavailable
+            onFallback={() => router.replace({ pathname: "/custom-food", params: { date: date ?? "", mealType: mealType ?? "" } })}
+          />
+        ) : (
+          <>
+            <CameraView
+              style={StyleSheet.absoluteFill}
+              barcodeScannerSettings={{ barcodeTypes: ["ean13", "ean8", "upc_a", "upc_e", "code128"] }}
+              onBarcodeScanned={status === "scanning" ? handleScanned : undefined}
+              onMountError={handleMountError}
+            />
+            <View style={styles.frame} />
+          </>
+        )}
 
         {status === "looking_up" ? (
           <View style={styles.overlay}>
@@ -132,7 +156,6 @@ const styles = StyleSheet.create({
   backButton: { padding: 4 },
   headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
   centerFill: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: Spacing.xl },
-  permissionText: { fontSize: 13, color: Color.textMuted, textAlign: "center", marginTop: Spacing.md, lineHeight: 19 },
   cameraWrap: { flex: 1, marginHorizontal: Spacing.lg, borderRadius: Radius.lg, overflow: "hidden", backgroundColor: Color.surface1 },
   frame: {
     position: "absolute",

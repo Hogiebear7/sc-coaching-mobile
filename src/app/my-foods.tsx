@@ -4,21 +4,8 @@ import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from "
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Color, Radius, Spacing } from "@/constants/theme";
-import {
-  getFoodSubmissionEligibility,
-  useMyCustomFoods,
-  useMySubmissions,
-  type FoodRecord,
-  type FoodSubmissionStatus,
-} from "@/lib/queries/food-catalog";
-
-const SUBMISSION_BADGE: Record<FoodSubmissionStatus, { label: string; color: keyof typeof Color }> = {
-  pending_review: { label: "In review", color: "warning" },
-  approved: { label: "Approved", color: "success" },
-  rejected: { label: "Not approved", color: "danger" },
-  submitted_to_open_food_facts: { label: "Published", color: "success" },
-  failed: { label: "Publish failed", color: "danger" },
-};
+import { getFoodSubmissionEligibility, useMyCustomFoods, useMySubmissions, type FoodRecord } from "@/lib/queries/food-catalog";
+import { SUBMISSION_STATUS_COPY } from "@/lib/submission-status";
 
 export default function MyFoodsScreen() {
   const router = useRouter();
@@ -27,7 +14,7 @@ export default function MyFoodsScreen() {
 
   function renderItem({ item }: { item: FoodRecord }) {
     const submission = submissions?.find((s) => s.customFoodId === item.id);
-    const badge = submission ? SUBMISSION_BADGE[submission.status] : null;
+    const badge = submission ? SUBMISSION_STATUS_COPY[submission.status] : null;
     const { eligibility } = getFoodSubmissionEligibility(item);
 
     return (

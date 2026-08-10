@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { CameraView, useCameraPermissions, type CameraCapturedPicture } from "expo-camera";
+import { CameraView, useCameraPermissions, type CameraCapturedPicture, type CameraMountError } from "expo-camera";
 import { manipulateAsync, SaveFormat } from "expo-image-manipulator";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
@@ -8,8 +8,10 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { CameraPermissionDenied, CameraUnavailable } from "@/components/nutrition/CameraPermissionGate";
 import { Color, Radius, Spacing } from "@/constants/theme";
 import { ApiError } from "@/lib/api-client";
+import { trackEvent } from "@/lib/analytics";
 import { getDraftLabelPhoto } from "@/lib/draft-photo-cache";
 import { tapFeedback } from "@/lib/haptics";
 import {
@@ -19,18 +21,11 @@ import {
   useMySubmissions,
   type FoodSubmissionStatus,
 } from "@/lib/queries/food-catalog";
+import { SUBMISSION_STATUS_COPY } from "@/lib/submission-status";
 
 const REQUIRED_FIELD_LABELS: Record<string, string> = {
   brandName: "Brand name",
   barcode: "Barcode",
-};
-
-const STATUS_COPY: Record<FoodSubmissionStatus, { label: string; color: keyof typeof Color; detail: string }> = {
-  pending_review: { label: "In review", color: "warning", detail: "Our team is checking this before it goes public. Usually quick." },
-  approved: { label: "Approved", color: "success", detail: "Approved — queued to publish to Open Food Facts." },
-  rejected: { label: "Not approved", color: "danger", detail: "This wasn't approved for public sharing. You can edit the food and resubmit." },
-  submitted_to_open_food_facts: { label: "Published", color: "success", detail: "This food is now public on Open Food Facts — thanks for contributing!" },
-  failed: { label: "Publish failed", color: "danger", detail: "Approved, but publishing hit a snag. You can resubmit." },
 };
 
 const BLOCKING_STATUSES: FoodSubmissionStatus[] = ["pending_review", "approved", "submitted_to_open_food_facts"];
@@ -80,11 +75,34 @@ export default function SubmitFoodScreen() {
   const [labelPhoto, setLabelPhoto] = useState<string | null>(null);
   const [captureSlot, setCaptureSlot] = useState<CaptureSlot | null>(null);
   const [capturing, setCapturing] = useState(false);
+  const [cameraUnavailable, setCameraUnavailable] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [justSubmitted, setJustSubmitted] = useState(false);
 
   const food = myFoods?.find((f) => f.id === id);
   const existingSubmission = submissions?.find((s) => s.customFoodId === id);
   const isBlocked = !!existingSubmission && BLOCKING_STATUSES.includes(existingSubmission.status);
+  const eligibility = food ? getFoodSubmissionEligibility(food) : null;
+
+  useEffect(() => {
+    if (id) trackEvent("food_submission_started", { customFoodId: id });
+  }, [id]);
+
+  const trackedEligibleRef = useRef(false);
+  useEffect(() => {
+    if (eligibility?.eligibility === "eligible_for_submission" && !trackedEligibleRef.current) {
+      trackedEligibleRef.current = true;
+      trackEvent("food_submission_eligible", { customFoodId: id });
+    }
+  }, [eligibility, id]);
+
+  const trackedRejectedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (existingSubmission?.status === "rejected" && trackedRejectedRef.current !== existingSubmission.id) {
+      trackedRejectedRef.current = existingSubmission.id;
+      trackEvent("food_submission_rejected", { customFoodId: id });
+    }
+  }, [existingSubmission, id]);
 
   // If this food was created from a label-scan capture, offer that same
   // photo here instead of asking the member to photograph the label again.
@@ -94,6 +112,11 @@ export default function SubmitFoodScreen() {
     if (draft) setLabelPhoto(draft);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
+
+  function handleMountError(e: CameraMountError) {
+    trackEvent("food_submission_camera_unavailable", { message: e.message });
+    setCameraUnavailable(true);
+  }
 
   async function handleCapture() {
     if (!cameraRef.current || capturing || !captureSlot) return;
@@ -124,11 +147,27 @@ export default function SubmitFoodScreen() {
     }
     try {
       await createSubmission.mutateAsync({ customFoodId: id, consent: true, frontPhotoUrl: frontPhoto, labelPhotoUrl: labelPhoto });
+      trackEvent("food_submission_sent", { customFoodId: id, hasFrontPhoto: !!frontPhoto, hasLabelPhoto: !!labelPhoto });
       tapFeedback();
-      router.back();
+      setJustSubmitted(true);
+      setTimeout(() => router.back(), 700);
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Could not submit this food. Please try again.");
     }
+  }
+
+  if (justSubmitted) {
+    return (
+      <SafeAreaView style={styles.safe} edges={["top"]}>
+        <View style={styles.centerFill}>
+          <View style={styles.confirmIconWrap}>
+            <Ionicons name="checkmark" size={28} color={Color.goldForeground} />
+          </View>
+          <Text style={styles.confirmTitle}>Submitted for review</Text>
+          <Text style={styles.confirmText}>We'll let you know once a staff member has taken a look.</Text>
+        </View>
+      </SafeAreaView>
+    );
   }
 
   if (captureSlot) {
@@ -142,21 +181,28 @@ export default function SubmitFoodScreen() {
           <View style={{ width: 22 }} />
         </View>
         {!permission?.granted ? (
-          <View style={styles.centerFill}>
-            <Text style={styles.permissionText}>Camera access is needed to add a photo.</Text>
-            <Button title="Allow camera access" onPress={requestPermission} style={{ marginTop: Spacing.lg }} />
-          </View>
+          <CameraPermissionDenied
+            canAskAgain={permission?.canAskAgain ?? true}
+            requestPermission={requestPermission}
+            message="Camera access is needed to add a photo."
+          />
         ) : (
           <>
             <View style={styles.cameraWrap}>
-              <CameraView ref={cameraRef} style={StyleSheet.absoluteFill} />
-              {capturing ? (
-                <View style={styles.overlay}>
-                  <ActivityIndicator color={Color.gold} size="large" />
-                </View>
-              ) : null}
+              {cameraUnavailable ? (
+                <CameraUnavailable onFallback={() => setCaptureSlot(null)} />
+              ) : (
+                <>
+                  <CameraView ref={cameraRef} style={StyleSheet.absoluteFill} onMountError={handleMountError} />
+                  {capturing ? (
+                    <View style={styles.overlay}>
+                      <ActivityIndicator color={Color.gold} size="large" />
+                    </View>
+                  ) : null}
+                </>
+              )}
             </View>
-            <Pressable onPress={handleCapture} disabled={capturing} style={styles.captureButton}>
+            <Pressable onPress={handleCapture} disabled={capturing || cameraUnavailable} style={styles.captureButton}>
               <View style={styles.captureButtonInner} />
             </Pressable>
           </>
@@ -192,46 +238,46 @@ export default function SubmitFoodScreen() {
           </Text>
 
           {existingSubmission ? (
-            <Card style={[styles.statusCard, { borderColor: Color[STATUS_COPY[existingSubmission.status].color] }]}>
-              <Text style={[styles.statusLabel, { color: Color[STATUS_COPY[existingSubmission.status].color] }]}>
-                {STATUS_COPY[existingSubmission.status].label}
+            <Card style={[styles.statusCard, { borderColor: Color[SUBMISSION_STATUS_COPY[existingSubmission.status].color] }]}>
+              <Text style={[styles.statusLabel, { color: Color[SUBMISSION_STATUS_COPY[existingSubmission.status].color] }]}>
+                {SUBMISSION_STATUS_COPY[existingSubmission.status].label}
               </Text>
-              <Text style={styles.statusDetail}>{STATUS_COPY[existingSubmission.status].detail}</Text>
+              <Text style={styles.statusDetail}>{SUBMISSION_STATUS_COPY[existingSubmission.status].detail}</Text>
+              {(existingSubmission.status === "rejected" || existingSubmission.status === "failed") && existingSubmission.reviewNote ? (
+                <View style={styles.reviewNoteBox}>
+                  <Text style={styles.reviewNoteLabel}>Note from our team</Text>
+                  <Text style={styles.reviewNoteText}>{existingSubmission.reviewNote}</Text>
+                </View>
+              ) : null}
             </Card>
           ) : null}
 
-          {!isBlocked ? (
+          {!isBlocked && eligibility ? (
             <>
               <Text style={styles.sectionLabel}>ELIGIBILITY</Text>
               <Card style={styles.eligibilityCard}>
-                {(() => {
-                  const { eligibility, missingFields } = getFoodSubmissionEligibility(food);
-                  if (eligibility === "eligible_for_submission") {
-                    return (
-                      <View style={styles.eligibilityRow}>
-                        <Ionicons name="checkmark-circle" size={16} color={Color.success} />
-                        <Text style={styles.eligibilityRowText}>This food has everything needed to submit.</Text>
+                {eligibility.eligibility === "eligible_for_submission" ? (
+                  <View style={styles.eligibilityRow}>
+                    <Ionicons name="checkmark-circle" size={16} color={Color.success} />
+                    <Text style={styles.eligibilityRowText}>This food has everything needed to submit.</Text>
+                  </View>
+                ) : (
+                  <>
+                    <Text style={styles.eligibilityBlockedText}>Add the following to this food before it can be submitted:</Text>
+                    {eligibility.missingFields.map((field) => (
+                      <View key={field} style={styles.eligibilityRow}>
+                        <Ionicons name="close-circle-outline" size={16} color={Color.danger} />
+                        <Text style={styles.eligibilityRowText}>{REQUIRED_FIELD_LABELS[field] ?? field}</Text>
                       </View>
-                    );
-                  }
-                  return (
-                    <>
-                      <Text style={styles.eligibilityBlockedText}>Add the following to this food before it can be submitted:</Text>
-                      {missingFields.map((field) => (
-                        <View key={field} style={styles.eligibilityRow}>
-                          <Ionicons name="close-circle-outline" size={16} color={Color.danger} />
-                          <Text style={styles.eligibilityRowText}>{REQUIRED_FIELD_LABELS[field] ?? field}</Text>
-                        </View>
-                      ))}
-                      <Pressable onPress={() => router.push({ pathname: "/custom-food", params: { id: food.id } })} style={styles.editLink}>
-                        <Text style={styles.editLinkText}>Edit this food</Text>
-                      </Pressable>
-                    </>
-                  );
-                })()}
+                    ))}
+                    <Pressable onPress={() => router.push({ pathname: "/custom-food", params: { id: food.id } })} style={styles.editLink}>
+                      <Text style={styles.editLinkText}>Edit this food</Text>
+                    </Pressable>
+                  </>
+                )}
               </Card>
 
-              {getFoodSubmissionEligibility(food).eligibility === "eligible_for_submission" ? (
+              {eligibility.eligibility === "eligible_for_submission" ? (
                 <>
                   <Text style={styles.sectionLabel}>PHOTOS (OPTIONAL)</Text>
                   <View style={styles.photoRow}>
@@ -266,13 +312,18 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
   centerFill: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: Spacing.xl },
   errorText: { color: Color.textMuted, fontSize: 14, textAlign: "center" },
-  permissionText: { fontSize: 13, color: Color.textMuted, textAlign: "center" },
+  confirmIconWrap: { width: 56, height: 56, borderRadius: 28, backgroundColor: Color.gold, alignItems: "center", justifyContent: "center" },
+  confirmTitle: { fontSize: 17, fontWeight: "700", color: Color.textPrimary, marginTop: Spacing.md },
+  confirmText: { fontSize: 13, color: Color.textMuted, textAlign: "center", marginTop: 6, lineHeight: 19 },
   scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
   foodName: { fontSize: 18, fontWeight: "700", color: Color.textPrimary },
   introText: { fontSize: 12, color: Color.textMuted, lineHeight: 18, marginTop: Spacing.xs, marginBottom: Spacing.md },
   statusCard: { padding: Spacing.md, borderWidth: 1, marginBottom: Spacing.md },
   statusLabel: { fontSize: 13, fontWeight: "700" },
   statusDetail: { fontSize: 12, color: Color.textMuted, marginTop: 4, lineHeight: 17 },
+  reviewNoteBox: { marginTop: Spacing.sm, paddingTop: Spacing.sm, borderTopWidth: 1, borderTopColor: Color.borderSubtle },
+  reviewNoteLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.5, color: Color.textFaint },
+  reviewNoteText: { fontSize: 12, color: Color.textSecondary, marginTop: 3, lineHeight: 17 },
   sectionLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginTop: Spacing.sm, marginBottom: Spacing.sm },
   eligibilityCard: { padding: Spacing.md, marginBottom: Spacing.md },
   eligibilityRow: { flexDirection: "row", alignItems: "center", gap: Spacing.xs, marginTop: 6 },

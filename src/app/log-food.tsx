@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/Card";
 import { Stepper } from "@/components/ui/Stepper";
 import { Color, Radius, Spacing } from "@/constants/theme";
 import { ApiError } from "@/lib/api-client";
+import { trackEvent } from "@/lib/analytics";
 import {
   gramsForServing,
   nutritionForGrams,
@@ -69,6 +70,14 @@ export default function LogFoodScreen() {
     const t = setTimeout(() => setDebouncedQuery(query), 300);
     return () => clearTimeout(t);
   }, [query]);
+  const trackedSearchRef = useRef(false);
+  useEffect(() => {
+    if (debouncedQuery.trim() && !trackedSearchRef.current) {
+      trackedSearchRef.current = true;
+      trackEvent("food_search_started");
+    }
+    if (!debouncedQuery.trim()) trackedSearchRef.current = false;
+  }, [debouncedQuery]);
   const { data: searchGroups, isFetching: isSearching } = useFoodSearch(debouncedQuery);
   const [searchOpen, setSearchOpen] = useState(false);
 
@@ -97,6 +106,7 @@ export default function LogFoodScreen() {
 
   function selectSearchResult(food: FoodRecord, source: "search" | "scan" = "search") {
     tapFeedback();
+    if (source === "search") trackEvent("food_search_result_selected", { domain: food.domain });
     setSelectedFood({ food, domain: food.domain });
     setServingLabel(food.defaultServing.label);
     setQuantity(1);

@@ -1,13 +1,14 @@
 import { Ionicons } from "@expo/vector-icons";
-import { CameraView, useCameraPermissions, type CameraCapturedPicture } from "expo-camera";
+import { CameraView, useCameraPermissions, type CameraCapturedPicture, type CameraMountError } from "expo-camera";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { manipulateAsync, SaveFormat } from "expo-image-manipulator";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { Button } from "@/components/ui/Button";
+import { CameraPermissionDenied, CameraUnavailable } from "@/components/nutrition/CameraPermissionGate";
 import { Color, Radius, Spacing } from "@/constants/theme";
+import { trackEvent } from "@/lib/analytics";
 import { tapFeedback } from "@/lib/haptics";
 import { useLabelScan } from "@/lib/queries/food-catalog";
 
@@ -20,13 +21,24 @@ export default function LabelScanScreen() {
   const cameraRef = useRef<CameraView>(null);
   const [stage, setStage] = useState<Stage>("camera");
   const [capturing, setCapturing] = useState(false);
+  const [cameraUnavailable, setCameraUnavailable] = useState(false);
   const labelScan = useLabelScan();
+
+  useEffect(() => {
+    trackEvent("label_scan_started", { hasBarcode: !!barcode });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function goToManualForm(prefillSource: string, extra?: Record<string, string>) {
     router.replace({
       pathname: "/custom-food",
       params: { barcode: barcode ?? "", date: date ?? "", mealType: mealType ?? "", prefillSource, ...extra },
     });
+  }
+
+  function handleMountError(e: CameraMountError) {
+    trackEvent("label_scan_camera_unavailable", { message: e.message });
+    setCameraUnavailable(true);
   }
 
   async function handleCapture() {
@@ -63,11 +75,12 @@ export default function LabelScanScreen() {
           servingLabel: fields.servingLabel ?? "",
           servingGrams: fields.servingGrams !== null ? String(fields.servingGrams) : "",
         };
-      } catch {
+      } catch (e) {
         // Automatic reading isn't configured yet (HTTP 501) — this is the
         // expected, honest MVP path: the photo was still captured
         // successfully, it just needs a human to transcribe it. Carry the
         // photo through either way so it isn't wasted.
+        trackEvent("label_scan_manual_fallback", { reason: e instanceof Error ? e.message : "unknown" });
       }
 
       // capturedLabelPhoto is consumed by custom-food.tsx to cache the photo
@@ -100,14 +113,14 @@ export default function LabelScanScreen() {
           <Text style={styles.headerTitle}>Scan Label</Text>
           <View style={{ width: 22 }} />
         </View>
-        <View style={styles.centerFill}>
-          <Ionicons name="camera-outline" size={40} color={Color.textFaint} />
-          <Text style={styles.permissionText}>S&C Coaching needs camera access to scan nutrition labels.</Text>
-          <Button title="Allow camera access" onPress={requestPermission} style={{ marginTop: Spacing.lg }} />
-          <Pressable onPress={() => goToManualForm("label_scan_no_permission")} style={styles.manualLink}>
-            <Text style={styles.manualLinkText}>Enter this food manually instead</Text>
-          </Pressable>
-        </View>
+        <CameraPermissionDenied
+          canAskAgain={permission.canAskAgain}
+          requestPermission={requestPermission}
+          message="S&C Coaching needs camera access to scan nutrition labels."
+        />
+        <Pressable onPress={() => goToManualForm("label_scan_no_permission")} style={styles.manualLink}>
+          <Text style={styles.manualLinkText}>Enter this food manually instead</Text>
+        </Pressable>
       </SafeAreaView>
     );
   }
@@ -146,13 +159,19 @@ export default function LabelScanScreen() {
       </Text>
 
       <View style={styles.cameraWrap}>
-        <CameraView ref={cameraRef} style={StyleSheet.absoluteFill} />
-        <View style={styles.frame} />
+        {cameraUnavailable ? (
+          <CameraUnavailable onFallback={() => goToManualForm("label_scan_camera_unavailable")} />
+        ) : (
+          <>
+            <CameraView ref={cameraRef} style={StyleSheet.absoluteFill} onMountError={handleMountError} />
+            <View style={styles.frame} />
+          </>
+        )}
       </View>
 
       <Text style={styles.hint}>Fill the frame with the nutrition facts panel, then capture</Text>
 
-      <Pressable onPress={handleCapture} disabled={capturing} style={styles.captureButton}>
+      <Pressable onPress={handleCapture} disabled={capturing || cameraUnavailable} style={styles.captureButton}>
         <View style={styles.captureButtonInner} />
       </Pressable>
 
@@ -170,7 +189,6 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
   subhead: { fontSize: 12, color: Color.textMuted, textAlign: "center", paddingHorizontal: Spacing.xl, marginBottom: Spacing.sm },
   centerFill: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: Spacing.xl },
-  permissionText: { fontSize: 13, color: Color.textMuted, textAlign: "center", marginTop: Spacing.md, lineHeight: 19 },
   confirmIconWrap: { width: 56, height: 56, borderRadius: 28, backgroundColor: Color.gold, alignItems: "center", justifyContent: "center" },
   confirmTitle: { fontSize: 17, fontWeight: "700", color: Color.textPrimary, marginTop: Spacing.md },
   confirmText: { fontSize: 13, color: Color.textMuted, textAlign: "center", marginTop: 6, lineHeight: 19 },

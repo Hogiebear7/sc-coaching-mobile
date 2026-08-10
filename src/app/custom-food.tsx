@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/TextField";
 import { Color, Radius, Spacing } from "@/constants/theme";
 import { ApiError } from "@/lib/api-client";
+import { trackEvent } from "@/lib/analytics";
 import { setDraftLabelPhoto } from "@/lib/draft-photo-cache";
 import { tapFeedback } from "@/lib/haptics";
 import {
@@ -170,6 +171,7 @@ export default function CustomFoodScreen() {
           servings,
         });
         saved = res.data;
+        trackEvent("custom_food_created", { hasBarcode: !!saved.barcode, prefillSource: params.prefillSource ?? "manual" });
       }
       tapFeedback();
 

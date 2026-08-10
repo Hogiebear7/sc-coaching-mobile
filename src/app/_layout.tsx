@@ -84,6 +84,10 @@ function AuthGate() {
       <Stack.Screen name="workout-archive" options={{ presentation: "card" }} />
       <Stack.Screen name="log-workout" options={{ presentation: "modal" }} />
       <Stack.Screen name="log-food" options={{ presentation: "modal" }} />
+      <Stack.Screen name="barcode-scan" options={{ presentation: "fullScreenModal" }} />
+      <Stack.Screen name="label-scan" options={{ presentation: "fullScreenModal" }} />
+      <Stack.Screen name="custom-food" options={{ presentation: "modal" }} />
+      <Stack.Screen name="my-foods" options={{ presentation: "card" }} />
       <Stack.Screen name="plate-calculator" options={{ presentation: "modal" }} />
       <Stack.Screen name="rest-timer" options={{ presentation: "modal" }} />
       <Stack.Screen name="drink-calculator" options={{ presentation: "card" }} />

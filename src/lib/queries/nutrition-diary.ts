@@ -79,6 +79,11 @@ export interface FoodEntryInput {
   proteinG: number;
   carbsG: number;
   fatG: number;
+  foodId?: string | null;
+  foodDomain?: "custom" | "common" | "branded" | null;
+  servingLabel?: string | null;
+  servingGrams?: number | null;
+  quantity?: number | null;
 }
 
 export function useCreateFoodEntry() {

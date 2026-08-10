@@ -1,13 +1,20 @@
 {
   "expo": {
-    "name": "sc-coaching-mobile",
+    "name": "S&C Performance Coaching",
     "slug": "sc-coaching-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "sccoachingmobile",
     "userInterfaceStyle": "automatic",
+    "ios": {
+      "bundleIdentifier": "com.sandcperformancecoaching.app",
+      "infoPlist": {
+        "CFBundleDisplayName": "S&C Performance"
+      }
+    },
     "android": {
+      "package": "com.sandcperformancecoaching.app",
       "adaptiveIcon": {
         "backgroundColor": "#0a1526",
         "foregroundImage": "./assets/images/android-icon-foreground.png",

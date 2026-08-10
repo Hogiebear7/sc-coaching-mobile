@@ -2,61 +2,72 @@
 
 Status as of this pass: `npx expo-doctor` reports **20/20 checks passed** —
 dependencies and general Expo config are healthy. `eas.json` exists with
-`development` / `preview` / `production` profiles. What's still missing is
-entirely identity/account setup that only the app owner can decide or
-authorize — nothing in this list is a code problem.
+`development` / `preview` / `production` profiles. App identity is now
+wired into `app.json`. What's left is exclusively account-bound setup only
+you can do (Expo login, Apple/Google accounts) — nothing left in this list
+is a code problem.
 
-## 1. Decisions you need to make before the first store-track build
+## Quick start — exact sequence for the first device build
 
-| # | Decision | Current state | Notes |
+Run these from `sc-coaching-mobile/`, in order. Full detail on each step is
+in §4 below.
+
+```bash
+# Confirm/resolve decision #8 first (see table below) — set this if
+# sandccoaching.com isn't yet deployed with this branch's nutrition work:
+#   EXPO_PUBLIC_API_BASE_URL=https://your-reachable-backend
+
+npx eas-cli login              # 1. your Expo account
+npx eas-cli init                # 2. links this project, writes projectId into app.json
+npx eas-cli device:create        # 3. iOS only — register your test iPhone/iPad
+
+npx eas-cli build --profile preview --platform ios      # 4a. first iOS build
+npx eas-cli build --profile preview --platform android  # 4b. first Android build
+
+# 5. Install: open the link/QR code each build command prints, on the
+#    device itself. See "Installing and running on device" in §4.
+
+# 6. Begin the nutrition/camera device test checklist in §4.
+```
+
+## 1. Decisions
+
+| # | Decision | Status | Notes |
 |---|---|---|---|
-| 1 | **iOS bundle identifier** (e.g. `com.sandccoaching.mobile`) | **Not set.** Deliberately omitted from `app.json` rather than filled with a guessed placeholder — see §2. | Reverse-DNS format, lowercase, no spaces. Cannot be changed once an App Store Connect app record is created under it — if you're unsure, register it once and keep it forever. |
-| 2 | **Android package name** (e.g. `com.sandccoaching.mobile`) | **Not set.** Same reasoning as above. | Same format rules; same irreversibility once a Play Console app record exists under it. Doesn't have to match the iOS bundle ID, but matching is the normal convention and simplifies cross-platform tooling. |
-| 3 | **App display name** | `"sc-coaching-mobile"` (the raw project slug — shown under the home-screen icon as-is) | Likely want something like `"S&C Coaching"` instead. Change `expo.name` in `app.json`. |
-| 4 | **Icons / splash** | ✅ Already real production assets (`assets/images/icon.png`, `splash-icon.png`, Android adaptive-icon layers) — not a blocker. | No action needed unless you want to redesign them. |
-| 5 | **Apple Developer account** | Needed for TestFlight. | You need an active Apple Developer Program membership ($99/yr) and its Team ID. `eas build`/`eas submit` will prompt for Apple credentials and can manage signing certificates for you the first time you run them. |
-| 6 | **Google Play Console account** | Needed for Play internal testing. | One-time $25 registration fee. `eas submit -p android` needs a service-account JSON key with the right permissions on your Play Console project — created in the Play Console UI. |
-| 7 | **Expo/EAS account + project link** | Not yet initialized. | Run `eas login`, then `eas init` from inside `sc-coaching-mobile` — it writes `extra.eas.projectId` into `app.json` automatically. Deliberately not fabricated here for the same "don't guess an identifier" reason as #1/#2. |
-| 8 | **Backend URL for device builds** | Already handled correctly for most cases — see `src/constants/config.ts`. `EXPO_PUBLIC_API_BASE_URL` overrides everything; otherwise dev builds default per-platform (`10.0.2.2:3001` Android emulator / `localhost:3001` iOS Simulator) and any **non**-dev bundle — which includes both the `preview` and `production` EAS profiles, not just `production` — defaults to `https://sandccoaching.com`. | The real open question: **is `sandccoaching.com` currently deployed with this branch's nutrition/food-catalog work?** If not yet, either deploy it first, or set `EXPO_PUBLIC_API_BASE_URL` to a reachable staging URL (or your machine's LAN IP, same Wi-Fi, for a same-network device test) before running `eas build`. |
-| 9 | **OFF live write** | Stays **disabled** (`OFF_LIVE_WRITE_ENABLED` unset/`false`, no provider configured). | Do not enable for the first internal test build — see `docs/food-catalog.md` in the gym-app repo. |
-| 10 | **OCR provider** | Stays **unconfigured** (`lib/ocr-provider.ts`'s `ocrProvider.configured` is hardcoded `false`). | No action needed — this is the correct, honest state for internal testing. Label-scan will always fall back to manual entry, which is expected and already the tested path. |
+| 1 | **iOS bundle identifier** | ✅ Set — `com.sandcperformancecoaching.app` (`app.json` → `expo.ios.bundleIdentifier`) | Reverse-DNS, cannot change once an App Store Connect record exists under it. |
+| 2 | **Android package name** | ✅ Set — `com.sandcperformancecoaching.app` (`app.json` → `expo.android.package`) | Matches the iOS identifier by convention. Cannot change once a Play Console record exists under it. |
+| 3 | **App display name** | ✅ Set — `expo.name` = `"S&C Performance Coaching"` (full name: App Store/Play listing, Android home-screen label). iOS home-screen label overridden shorter via `expo.ios.infoPlist.CFBundleDisplayName` = `"S&C Performance"` to avoid truncation on the springboard. | Android has no equivalent first-class "short label" field in Expo config — if `"S&C Performance Coaching"` truncates awkwardly on a real Android device during testing, that needs a native resource override (out of scope for this pass; note it if device testing surfaces it). |
+| 4 | **Icons / splash** | ✅ Already real production assets — not a blocker. | No action needed. |
+| 5 | **Apple Developer account** | ⏳ Your action | Active Apple Developer Program membership ($99/yr) + Team ID. `eas build`/`eas submit` prompt for this and can manage signing certificates for you the first time. |
+| 6 | **Google Play Console account** | ⏳ Your action | One-time $25 registration. `eas submit -p android` needs a service-account JSON key from the Play Console UI. |
+| 7 | **Expo/EAS account + project link** | ⏳ Your action — **not run in this pass** (no Expo credentials available in this environment; confirmed via `eas whoami` → "Not logged in") | Run `eas login` then `eas init` yourself — see §4. It writes `extra.eas.projectId` into `app.json` automatically; not fabricated here for the same reason the identifiers weren't guessed. |
+| 8 | **Backend URL for device builds** | ⚠️ Needs your confirmation | See `src/constants/config.ts`. `EXPO_PUBLIC_API_BASE_URL` overrides everything; otherwise any non-dev bundle (both `preview` and `production` EAS profiles) defaults to `https://sandccoaching.com`. **Open question: is that domain currently deployed with this branch's nutrition/food-catalog work?** If not, either deploy first or set `EXPO_PUBLIC_API_BASE_URL` to a reachable staging URL / your LAN IP before building. |
+| 9 | **OFF live write** | ✅ Stays disabled (`OFF_LIVE_WRITE_ENABLED` unset/`false`, no provider configured) | Do not enable for internal testing — see `docs/food-catalog.md` in the gym-app repo. |
+| 10 | **OCR provider** | ✅ Stays unconfigured (`ocrProvider.configured` hardcoded `false`) | Label-scan's manual-entry fallback is the expected, already-tested behavior. |
 
-## 2. Why the identifiers aren't pre-filled
-
-A wrong bundle identifier or package name that accidentally reaches a real
-build is hard to undo — once App Store Connect or Play Console has an app
-record under an identifier, migrating to a different one means starting
-over with reviews, existing installs, and (for Play) is not possible at all
-for a published app. A fake-but-valid-looking placeholder (e.g.
-`com.example.sccoachingmobile`) could silently slip through into a real
-submission if not caught. Omitting the fields entirely means `eas build`
-fails immediately with a clear "bundleIdentifier is required" error instead
-— a safe failure, not a silent wrong one.
-
-**Once you've decided**, this is exactly what changes in `app.json` — a new
-top-level `"ios"` key, and one new line inside the existing `"android"` key
-(shown here with the surrounding unchanged content so it's copy-paste-ready,
-not illustrative pseudocode):
+## 2. What changed in `app.json` this pass
 
 ```json
+"name": "S&C Performance Coaching",
 "ios": {
-  "bundleIdentifier": "com.YOUR_CHOICE.sccoachingmobile"
+  "bundleIdentifier": "com.sandcperformancecoaching.app",
+  "infoPlist": {
+    "CFBundleDisplayName": "S&C Performance"
+  }
 },
 "android": {
-  "package": "com.YOUR_CHOICE.sccoachingmobile",
-  "adaptiveIcon": {
-    "backgroundColor": "#0a1526",
-    "foregroundImage": "./assets/images/android-icon-foreground.png",
-    "backgroundImage": "./assets/images/android-icon-background.png",
-    "monochromeImage": "./assets/images/android-icon-monochrome.png"
-  },
+  "package": "com.sandcperformancecoaching.app",
+  "adaptiveIcon": { /* unchanged */ },
   "predictiveBackGestureEnabled": false
 }
 ```
 
-Build numbers/version codes don't need manual values — `eas.json`'s
-`"appVersionSource": "remote"` means EAS tracks and auto-increments them for
-you.
+`slug` (`sc-coaching-mobile`) was deliberately left unchanged — it's an
+internal/URL identifier (becomes part of the EAS project once `eas init`
+runs), not user-facing, and wasn't part of the requested identity values.
+
+Build numbers/version codes still need no manual values — `eas.json`'s
+`"appVersionSource": "remote"` means EAS tracks and auto-increments them.
 
 ## 3. Camera/media config audit (this pass)
 
@@ -81,16 +92,30 @@ you.
 
 ## 4. Internal-testing runbook
 
-### One-time setup (do once, in order)
+### One-time setup (do once, in order — none of this has been run yet)
 
-1. `npx eas-cli login` — sign in with (or create) an Expo account.
-2. From `sc-coaching-mobile/`: `npx eas-cli init` — links this project to
-   your Expo account and writes `extra.eas.projectId` into `app.json`.
-3. Fill in `ios.bundleIdentifier` and `android.package` in `app.json` per §2.
-4. Point the app's API base URL at a reachable backend (§1 item 8).
-5. iOS only: `npx eas-cli device:create` — register the specific iPhones/
-   iPads you'll test on (needed for `preview`/`development` ad-hoc installs;
-   NOT needed if you go straight to TestFlight builds).
+App identity (bundle ID, package name, display name) is already wired into
+`app.json` — nothing further to edit there before running these:
+
+```bash
+# 1. From sc-coaching-mobile/ — sign in with (or create) an Expo account.
+npx eas-cli login
+
+# 2. Links this project to your Expo account. Auto-writes
+#    extra.eas.projectId into app.json — you'll see the diff; commit it.
+npx eas-cli init
+
+# 3. iOS only — register the specific iPhones/iPads you'll test on.
+#    Needed for the preview/development ad-hoc install path below; NOT
+#    needed if you go straight to a TestFlight build instead.
+#    Follow the prompts — it opens a registration page for you to load on
+#    the device itself, or lets you enter a UDID directly.
+npx eas-cli device:create
+```
+
+Before the first build, also resolve decision #8 above (confirm or point
+`EXPO_PUBLIC_API_BASE_URL` at a backend that actually has this branch's
+nutrition work deployed).
 
 ### Build for a first device test (fastest path — no store review)
 

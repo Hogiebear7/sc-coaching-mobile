@@ -35,7 +35,9 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "S&C Coaching uses the camera to scan barcodes and nutrition labels when logging food."
+          "cameraPermission": "S&C Coaching uses the camera to scan barcodes and nutrition labels when logging food.",
+          "microphonePermission": false,
+          "recordAudioAndroid": false
         }
       ]
     ],

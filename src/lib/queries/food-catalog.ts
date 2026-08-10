@@ -177,22 +177,69 @@ export function useReportMissingFood() {
   });
 }
 
-export function useRequestOffSubmission() {
-  return useMutation({
-    mutationFn: (customFoodId: string) =>
-      apiFetch<{ success: true; data: { id: string } }>("/api/mobile/nutrition/food/off-submission/request", {
-        method: "POST",
-        body: { customFoodId },
-      }),
+// ── Open Food Facts submission workflow ─────────────────────────────────
+//
+// Publishing a custom food is opt-in and gated by eligibility (brand +
+// barcode present — name/serving/macros are already required to create a
+// custom food at all). Mirrors lib/food-submission.ts's
+// getFoodSubmissionEligibility exactly so the mobile UI never shows
+// "eligible" for a food the backend would reject.
+
+export type FoodSubmissionEligibility = "private_only" | "eligible_for_submission";
+
+export function getFoodSubmissionEligibility(food: FoodRecord): { eligibility: FoodSubmissionEligibility; missingFields: string[] } {
+  const missingFields: string[] = [];
+  if (food.domain !== "custom") {
+    return { eligibility: "private_only", missingFields: ["domain must be a custom food"] };
+  }
+  if (!food.brandName?.trim()) missingFields.push("brandName");
+  if (!food.barcode?.trim()) missingFields.push("barcode");
+  return { eligibility: missingFields.length === 0 ? "eligible_for_submission" : "private_only", missingFields };
+}
+
+export type FoodSubmissionStatus = "pending_review" | "approved" | "rejected" | "submitted_to_open_food_facts" | "failed";
+
+export interface FoodSubmissionRecord {
+  id: string;
+  userId: string;
+  customFoodId: string;
+  status: FoodSubmissionStatus;
+  consentGiven: boolean;
+  consentedAt: string | null;
+  frontPhotoUrl: string | null;
+  labelPhotoUrl: string | null;
+  reviewedByStaffId: string | null;
+  reviewedAt: string | null;
+  reviewNote: string | null;
+  offProductId: string | null;
+  submittedAt: string | null;
+  failureReason: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export function useMySubmissions() {
+  return useQuery({
+    queryKey: ["my-food-submissions"],
+    queryFn: () => apiFetch<{ success: true; data: FoodSubmissionRecord[] }>("/api/mobile/nutrition/food/submission/mine").then((r) => r.data),
   });
 }
 
-export function useConsentOffSubmission() {
+export interface CreateSubmissionInput {
+  customFoodId: string;
+  consent: true;
+  frontPhotoUrl?: string | null;
+  labelPhotoUrl?: string | null;
+}
+
+export function useCreateSubmission() {
+  const qc = useQueryClient();
   return useMutation({
-    mutationFn: (submissionId: string) =>
-      apiFetch<{ success: true; message: string }>("/api/mobile/nutrition/food/off-submission/consent", {
+    mutationFn: (input: CreateSubmissionInput) =>
+      apiFetch<{ success: true; message: string; data: FoodSubmissionRecord }>("/api/mobile/nutrition/food/submission/create", {
         method: "POST",
-        body: { submissionId },
+        body: input,
       }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["my-food-submissions"] }),
   });
 }

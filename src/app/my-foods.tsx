@@ -4,25 +4,57 @@ import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from "
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Color, Radius, Spacing } from "@/constants/theme";
-import { useMyCustomFoods, type FoodRecord } from "@/lib/queries/food-catalog";
+import {
+  getFoodSubmissionEligibility,
+  useMyCustomFoods,
+  useMySubmissions,
+  type FoodRecord,
+  type FoodSubmissionStatus,
+} from "@/lib/queries/food-catalog";
+
+const SUBMISSION_BADGE: Record<FoodSubmissionStatus, { label: string; color: keyof typeof Color }> = {
+  pending_review: { label: "In review", color: "warning" },
+  approved: { label: "Approved", color: "success" },
+  rejected: { label: "Not approved", color: "danger" },
+  submitted_to_open_food_facts: { label: "Published", color: "success" },
+  failed: { label: "Publish failed", color: "danger" },
+};
 
 export default function MyFoodsScreen() {
   const router = useRouter();
   const { data: foods, isLoading } = useMyCustomFoods();
+  const { data: submissions } = useMySubmissions();
 
   function renderItem({ item }: { item: FoodRecord }) {
+    const submission = submissions?.find((s) => s.customFoodId === item.id);
+    const badge = submission ? SUBMISSION_BADGE[submission.status] : null;
+    const { eligibility } = getFoodSubmissionEligibility(item);
+
     return (
-      <Pressable onPress={() => router.push({ pathname: "/custom-food", params: { id: item.id } })} style={styles.row}>
-        <View style={{ flex: 1 }}>
+      <View style={styles.row}>
+        <Pressable onPress={() => router.push({ pathname: "/custom-food", params: { id: item.id } })} style={{ flex: 1 }}>
           <Text style={styles.rowName} numberOfLines={1}>
             {item.brandName ? `${item.brandName} — ${item.name}` : item.name}
           </Text>
-          <Text style={styles.rowSub}>
-            {item.nutrition100g.calories} kcal / 100g{item.barcode ? ` · linked to a barcode` : ""}
-          </Text>
-        </View>
-        <Ionicons name="chevron-forward" size={18} color={Color.textFaint} />
-      </Pressable>
+          <View style={styles.rowSubRow}>
+            <Text style={styles.rowSub}>
+              {item.nutrition100g.calories} kcal / 100g{item.barcode ? " · linked to a barcode" : ""}
+            </Text>
+            {badge ? (
+              <View style={[styles.badge, { borderColor: Color[badge.color] }]}>
+                <Text style={[styles.badgeText, { color: Color[badge.color] }]}>{badge.label}</Text>
+              </View>
+            ) : null}
+          </View>
+        </Pressable>
+        <Pressable onPress={() => router.push({ pathname: "/submit-food", params: { id: item.id } })} hitSlop={8} style={styles.shareButton}>
+          <Ionicons
+            name={submission ? "cloud-upload" : "cloud-upload-outline"}
+            size={18}
+            color={submission || eligibility === "eligible_for_submission" ? Color.gold : Color.textFaint}
+          />
+        </Pressable>
+      </View>
     );
   }
 
@@ -45,10 +77,22 @@ export default function MyFoodsScreen() {
       ) : !foods || foods.length === 0 ? (
         <View style={styles.centerFill}>
           <Ionicons name="restaurant-outline" size={32} color={Color.textFaint} />
-          <Text style={styles.emptyText}>No custom foods yet. Add one, or save a food while logging.</Text>
+          <Text style={styles.emptyTitle}>No custom foods yet</Text>
+          <Text style={styles.emptyText}>Add one here, or save a food while logging — it'll show up in this list.</Text>
         </View>
       ) : (
-        <FlatList data={foods} keyExtractor={(f) => f.id} renderItem={renderItem} contentContainerStyle={styles.list} />
+        <FlatList
+          data={foods}
+          keyExtractor={(f) => f.id}
+          renderItem={renderItem}
+          contentContainerStyle={styles.list}
+          ListFooterComponent={
+            <Text style={styles.footerHint}>
+              Tap <Ionicons name="cloud-upload-outline" size={12} color={Color.textMuted} /> to share a food publicly via Open Food
+              Facts — it stays private unless you opt in.
+            </Text>
+          }
+        />
       )}
     </SafeAreaView>
   );
@@ -60,7 +104,8 @@ const styles = StyleSheet.create({
   backButton: { padding: 4 },
   headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
   centerFill: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: Spacing.xl },
-  emptyText: { fontSize: 13, color: Color.textMuted, textAlign: "center", marginTop: Spacing.md, lineHeight: 19 },
+  emptyTitle: { fontSize: 15, fontWeight: "700", color: Color.textPrimary, marginTop: Spacing.md },
+  emptyText: { fontSize: 13, color: Color.textMuted, textAlign: "center", marginTop: 6, lineHeight: 19 },
   list: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
   row: {
     flexDirection: "row",
@@ -71,5 +116,10 @@ const styles = StyleSheet.create({
     borderBottomColor: Color.borderSubtle,
   },
   rowName: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
-  rowSub: { fontSize: 11, color: Color.textMuted, marginTop: 2 },
+  rowSubRow: { flexDirection: "row", alignItems: "center", gap: Spacing.xs, marginTop: 2 },
+  rowSub: { fontSize: 11, color: Color.textMuted },
+  badge: { borderWidth: 1, borderRadius: Radius.pill, paddingHorizontal: 6, paddingVertical: 1 },
+  badgeText: { fontSize: 9, fontWeight: "700" },
+  shareButton: { padding: 6 },
+  footerHint: { fontSize: 11, color: Color.textMuted, lineHeight: 16, marginTop: Spacing.md, paddingHorizontal: 2 },
 });

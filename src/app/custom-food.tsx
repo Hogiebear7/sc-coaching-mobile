@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/TextField";
 import { Color, Radius, Spacing } from "@/constants/theme";
 import { ApiError } from "@/lib/api-client";
+import { setDraftLabelPhoto } from "@/lib/draft-photo-cache";
 import { tapFeedback } from "@/lib/haptics";
 import {
   nutritionForGrams,
@@ -18,6 +19,11 @@ import {
   type FoodNutrition100g,
   type FoodRecord,
 } from "@/lib/queries/food-catalog";
+
+const PREFILL_BANNER_COPY: Record<string, string> = {
+  label_scan_ocr: "We read what we could from the label — please double-check every field before saving.",
+  label_scan_fallback: "Photo captured. Automatic reading isn't available yet, so add the details below using the label you just photographed.",
+};
 
 // The user naturally knows nutrition "per serving" (what's printed on a
 // label), not per 100g. This form collects per-serving values and derives
@@ -61,6 +67,7 @@ export default function CustomFoodScreen() {
     date?: string;
     mealType?: string;
     prefillSource?: string;
+    capturedLabelPhoto?: string;
   }>();
   const isEditing = !!params.id;
   const { data: myFoods } = useMyCustomFoods();
@@ -166,6 +173,10 @@ export default function CustomFoodScreen() {
       }
       tapFeedback();
 
+      if (params.capturedLabelPhoto) {
+        setDraftLabelPhoto(saved.id, params.capturedLabelPhoto);
+      }
+
       if (params.date && params.mealType) {
         router.replace({ pathname: "/log-food", params: { date: params.date, mealType: params.mealType, foodJson: encodeURIComponent(JSON.stringify(saved)) } });
       } else {
@@ -216,10 +227,17 @@ export default function CustomFoodScreen() {
         </View>
 
         <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-          {params.prefillSource === "label_scan" ? (
+          {params.prefillSource && PREFILL_BANNER_COPY[params.prefillSource] ? (
             <View style={styles.hintBanner}>
               <Ionicons name="information-circle-outline" size={16} color={Color.gold} />
-              <Text style={styles.hintBannerText}>Review these values against the label before saving — automatic scanning isn't fully wired up yet, so double-check anything prefilled.</Text>
+              <Text style={styles.hintBannerText}>{PREFILL_BANNER_COPY[params.prefillSource]}</Text>
+            </View>
+          ) : null}
+
+          {params.capturedLabelPhoto ? (
+            <View style={styles.photoChip}>
+              <Ionicons name="image" size={14} color={Color.success} />
+              <Text style={styles.photoChipText}>Label photo attached — you can reuse it later if you share this food publicly.</Text>
             </View>
           ) : null}
 
@@ -238,6 +256,7 @@ export default function CustomFoodScreen() {
           </View>
 
           <Text style={styles.sectionLabel}>NUTRITION PER SERVING</Text>
+          <Text style={styles.sectionCaption}>Enter these exactly as printed on the label — we'll work out the per-100g figures automatically.</Text>
           <View style={styles.gridRow}>
             <View style={styles.numberField}>
               <Text style={styles.fieldLabel}>Calories</Text>
@@ -284,6 +303,13 @@ export default function CustomFoodScreen() {
           {error ? <Text style={styles.error}>{error}</Text> : null}
 
           <Button title={isEditing ? "Save changes" : "Save custom food"} onPress={handleSave} loading={saving} style={{ marginTop: Spacing.lg }} />
+
+          {isEditing ? (
+            <Pressable onPress={() => router.push({ pathname: "/submit-food", params: { id: params.id } })} style={styles.shareLink}>
+              <Ionicons name="cloud-upload-outline" size={14} color={Color.gold} />
+              <Text style={styles.shareLinkText}>Share this food publicly</Text>
+            </Pressable>
+          ) : null}
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -298,7 +324,10 @@ const styles = StyleSheet.create({
   scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
   hintBanner: { flexDirection: "row", gap: Spacing.xs, alignItems: "flex-start", backgroundColor: Color.goldWeak, borderRadius: Radius.md, padding: Spacing.sm, marginBottom: Spacing.md },
   hintBannerText: { flex: 1, fontSize: 11, color: Color.textSecondary, lineHeight: 15 },
+  photoChip: { flexDirection: "row", gap: Spacing.xs, alignItems: "center", marginBottom: Spacing.md },
+  photoChipText: { flex: 1, fontSize: 11, color: Color.textMuted, lineHeight: 15 },
   sectionLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginTop: Spacing.sm, marginBottom: Spacing.sm },
+  sectionCaption: { fontSize: 11, color: Color.textMuted, lineHeight: 15, marginTop: -Spacing.xs, marginBottom: Spacing.sm },
   gridRow: { flexDirection: "row", gap: Spacing.sm },
   numberField: { flex: 1, marginBottom: Spacing.md },
   fieldLabel: { fontSize: 12, fontWeight: "500", color: Color.textSecondary, marginBottom: 6 },
@@ -313,4 +342,6 @@ const styles = StyleSheet.create({
     color: Color.textPrimary,
   },
   error: { fontSize: 12, color: Color.danger, marginTop: Spacing.sm },
+  shareLink: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, marginTop: Spacing.md, paddingVertical: 6 },
+  shareLinkText: { fontSize: 12, fontWeight: "600", color: Color.gold },
 });

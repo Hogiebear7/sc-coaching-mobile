@@ -1,11 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { Stepper } from "@/components/ui/Stepper";
 import { Color, Radius, Spacing } from "@/constants/theme";
 import { ApiError } from "@/lib/api-client";
 import {
@@ -73,7 +74,8 @@ export default function LogFoodScreen() {
 
   const [selectedFood, setSelectedFood] = useState<{ food: FoodRecord; domain: FoodDomain } | null>(null);
   const [servingLabel, setServingLabel] = useState<string | null>(null);
-  const [quantity, setQuantity] = useState("1");
+  const [quantity, setQuantity] = useState(1);
+  const [foundViaScan, setFoundViaScan] = useState(false);
 
   const [name, setName] = useState("");
   const [calories, setCalories] = useState("");
@@ -81,6 +83,7 @@ export default function LogFoodScreen() {
   const [carbsG, setCarbsG] = useState("");
   const [fatG, setFatG] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [justLogged, setJustLogged] = useState(false);
 
   function applyRecent(f: NonNullable<typeof recentFoods>[number]) {
     tapFeedback();
@@ -92,25 +95,28 @@ export default function LogFoodScreen() {
     setFatG(String(f.fatG));
   }
 
-  function selectSearchResult(food: FoodRecord) {
+  function selectSearchResult(food: FoodRecord, source: "search" | "scan" = "search") {
     tapFeedback();
     setSelectedFood({ food, domain: food.domain });
     setServingLabel(food.defaultServing.label);
-    setQuantity("1");
+    setQuantity(1);
+    setFoundViaScan(source === "scan");
     setName(food.brandName ? `${food.brandName} ${food.name}` : food.name);
     setSearchOpen(false);
     setQuery("");
   }
 
   // A food handed back from barcode-scan or custom-food (create/edit) arrives
-  // as a JSON param rather than a live search result — apply it the same way.
+  // as a JSON param rather than a live search result — apply it the same way,
+  // flagged as "scan" so the serving card can confirm the match explicitly
+  // (the member didn't just tap a result they were already looking at).
   const consumedFoodJsonRef = useRef<string | null>(null);
   useEffect(() => {
     if (!foodJson || consumedFoodJsonRef.current === foodJson) return;
     consumedFoodJsonRef.current = foodJson;
     try {
       const food = JSON.parse(decodeURIComponent(foodJson)) as FoodRecord;
-      selectSearchResult(food);
+      selectSearchResult(food, "scan");
     } catch {
       // Malformed param — ignore rather than crash the screen.
     }
@@ -127,9 +133,8 @@ export default function LogFoodScreen() {
   // quantity changes — keeps the preview live as the member adjusts either.
   useEffect(() => {
     if (!selectedFood) return;
-    const qty = parseFloat(quantity);
-    if (!Number.isFinite(qty) || qty < 0) return;
-    const grams = gramsForServing(selectedFood.food, servingLabel, qty);
+    if (!Number.isFinite(quantity) || quantity < 0) return;
+    const grams = gramsForServing(selectedFood.food, servingLabel, quantity);
     const nutrition = nutritionForGrams(selectedFood.food.nutrition100g, grams);
     setCalories(String(nutrition.calories));
     setProteinG(String(nutrition.proteinG));
@@ -141,7 +146,8 @@ export default function LogFoodScreen() {
   function clearSelection() {
     setSelectedFood(null);
     setServingLabel(null);
-    setQuantity("1");
+    setQuantity(1);
+    setFoundViaScan(false);
   }
 
   async function handleSave() {
@@ -156,7 +162,7 @@ export default function LogFoodScreen() {
       return;
     }
 
-    const qty = selectedFood ? parseFloat(quantity) : null;
+    const qty = selectedFood ? quantity : null;
 
     try {
       await createEntry.mutateAsync({
@@ -174,13 +180,28 @@ export default function LogFoodScreen() {
         quantity: qty,
       });
       tapFeedback();
-      router.back();
+      setJustLogged(true);
+      setTimeout(() => router.back(), 550);
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Could not log this food. Please try again.");
     }
   }
 
   const hasResults = !!searchGroups && SEARCH_GROUPS.some((g) => searchGroups[g.key].length > 0);
+  const mealLabel = MEAL_TYPE_OPTIONS.find((o) => o.value === mealType)?.label ?? mealType;
+
+  if (justLogged) {
+    return (
+      <SafeAreaView style={styles.safe} edges={["top"]}>
+        <View style={styles.confirmFill}>
+          <View style={styles.confirmIconWrap}>
+            <Ionicons name="checkmark" size={30} color={Color.goldForeground} />
+          </View>
+          <Text style={styles.confirmTitle}>Logged to {mealLabel}</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
@@ -223,7 +244,7 @@ export default function LogFoodScreen() {
               style={styles.searchInput}
               autoCapitalize="none"
             />
-            {isSearching ? <Text style={styles.searchingText}>…</Text> : null}
+            {isSearching ? <ActivityIndicator size="small" color={Color.textFaint} /> : null}
           </View>
 
           <View style={styles.quickLinksRow}>
@@ -270,6 +291,12 @@ export default function LogFoodScreen() {
 
           {selectedFood ? (
             <Card style={styles.servingCard}>
+              {foundViaScan ? (
+                <View style={styles.foundBanner}>
+                  <Ionicons name="checkmark-circle" size={14} color={Color.success} />
+                  <Text style={styles.foundBannerText}>Found it — review the serving below</Text>
+                </View>
+              ) : null}
               <View style={styles.servingHeaderRow}>
                 <Text style={styles.servingFoodName} numberOfLines={1}>
                   {selectedFood.food.name}
@@ -290,15 +317,8 @@ export default function LogFoodScreen() {
                   </Pressable>
                 ))}
               </View>
-              <Text style={[styles.fieldLabel, { marginTop: Spacing.sm }]}>Quantity</Text>
-              <TextInput
-                value={quantity}
-                onChangeText={setQuantity}
-                keyboardType="decimal-pad"
-                placeholder="1"
-                placeholderTextColor={Color.textFaint}
-                style={[styles.input, { width: 100 }]}
-              />
+              <Stepper label="Quantity" value={quantity} onChange={setQuantity} min={0.5} max={20} step={0.5} suffix="× serving" />
+              <Text style={styles.gramsTotal}>= {Math.round(gramsForServing(selectedFood.food, servingLabel, quantity))}g total</Text>
             </Card>
           ) : recentFoods && recentFoods.length > 0 ? (
             <>
@@ -314,7 +334,8 @@ export default function LogFoodScreen() {
             </>
           ) : null}
 
-          <Text style={[styles.fieldLabel, { marginTop: Spacing.md }]}>Food name</Text>
+          <Text style={styles.sectionLabel}>{selectedFood ? "REVIEW BEFORE LOGGING" : "OR LOG MANUALLY"}</Text>
+          <Text style={styles.fieldLabel}>Food name</Text>
           <TextInput value={name} onChangeText={setName} placeholder="e.g. Chicken and rice" placeholderTextColor={Color.textFaint} style={styles.input} />
 
           <View style={styles.gridRow}>
@@ -371,7 +392,7 @@ const styles = StyleSheet.create({
     backgroundColor: Color.surface1,
   },
   searchInput: { flex: 1, color: Color.textPrimary, fontSize: 14 },
-  searchingText: { color: Color.textFaint, fontSize: 12 },
+  sectionLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginTop: Spacing.lg, marginBottom: Spacing.sm },
   quickLinksRow: { flexDirection: "row", gap: Spacing.lg, marginTop: Spacing.sm },
   quickLink: { flexDirection: "row", alignItems: "center", gap: 4 },
   quickLinkText: { fontSize: 12, fontWeight: "600", color: Color.gold },
@@ -394,8 +415,11 @@ const styles = StyleSheet.create({
   closeSearchRow: { alignItems: "center", marginTop: Spacing.xs, paddingVertical: 6 },
   closeSearchText: { fontSize: 12, color: Color.textFaint },
   servingCard: { padding: Spacing.md, marginTop: Spacing.md, backgroundColor: Color.surface2 },
+  foundBanner: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: Spacing.sm },
+  foundBannerText: { fontSize: 12, fontWeight: "600", color: Color.success },
   servingHeaderRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: Spacing.sm },
   servingFoodName: { fontSize: 14, fontWeight: "700", color: Color.textPrimary, flex: 1 },
+  gramsTotal: { fontSize: 12, color: Color.textMuted, textAlign: "right", marginTop: -Spacing.sm },
   recentChip: {
     borderRadius: Radius.md,
     borderWidth: 1,
@@ -421,4 +445,7 @@ const styles = StyleSheet.create({
   gridRow: { flexDirection: "row", gap: Spacing.sm },
   numberField: { flex: 1 },
   error: { fontSize: 12, color: Color.danger, marginTop: Spacing.sm },
+  confirmFill: { flex: 1, alignItems: "center", justifyContent: "center" },
+  confirmIconWrap: { width: 56, height: 56, borderRadius: 28, backgroundColor: Color.gold, alignItems: "center", justifyContent: "center" },
+  confirmTitle: { fontSize: 17, fontWeight: "700", color: Color.textPrimary, marginTop: Spacing.md },
 });

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
@@ -8,31 +8,50 @@ import { ReadinessRing } from "@/components/ui/ReadinessRing";
 import { Stepper } from "@/components/ui/Stepper";
 import { Color, Spacing } from "@/constants/theme";
 import { ApiError } from "@/lib/auth-context";
-import { useLogRecovery, useRecovery } from "@/lib/queries/recovery";
+import { useLogRecovery, useRecovery, type RecoveryLogSummary } from "@/lib/queries/recovery";
 
 function formatDate(dateISO: string): string {
   return new Date(dateISO).toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" });
 }
 
-function CheckInForm({ todayISO }: { todayISO: string }) {
-  const [sleepHours, setSleepHours] = useState(7);
-  const [sleepQuality, setSleepQuality] = useState(5);
-  const [soreness, setSoreness] = useState(5);
-  const [fatigue, setFatigue] = useState(3);
+// Editable check-in form — used both for today's entry and for reopening a
+// past log. The backend upserts by (userId, date), so resubmitting for a
+// date that already has a log just updates it in place.
+function CheckInForm({
+  date,
+  existingLog,
+  isToday,
+  onDone,
+}: {
+  date: string;
+  existingLog: RecoveryLogSummary | null;
+  isToday: boolean;
+  onDone?: () => void;
+}) {
+  const [sleepHours, setSleepHours] = useState(existingLog?.sleepHours ?? 7);
+  const [sleepQuality, setSleepQuality] = useState(existingLog?.sleepQuality ?? 5);
+  const [soreness, setSoreness] = useState(existingLog?.soreness ?? 5);
+  const [fatigue, setFatigue] = useState(existingLog?.fatigue ?? 3);
   const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
   const logRecovery = useLogRecovery();
 
   async function submit() {
     setError(null);
+    setSaved(false);
     try {
       const res = await logRecovery.mutateAsync({
-        date: todayISO,
+        date,
         sleepHours,
         sleepQuality,
         soreness,
         fatigue,
       });
       if (!res.success) setError(res.message);
+      else {
+        setSaved(true);
+        onDone?.();
+      }
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Something went wrong.");
     }
@@ -40,19 +59,56 @@ function CheckInForm({ todayISO }: { todayISO: string }) {
 
   return (
     <Card style={styles.formCard}>
-      <Text style={styles.formTitle}>Today&apos;s check-in</Text>
+      <View style={styles.formHeader}>
+        <Text style={styles.formTitle}>
+          {isToday ? "Today's check-in" : `Check-in for ${formatDate(date)}`}
+        </Text>
+        {!isToday && onDone ? (
+          <Pressable onPress={onDone} hitSlop={8}>
+            <Text style={styles.cancelText}>Cancel</Text>
+          </Pressable>
+        ) : null}
+      </View>
       <Stepper label="Sleep hours" value={sleepHours} onChange={setSleepHours} min={0} max={12} step={0.5} suffix="h" />
-      <Stepper label="Sleep quality (1-10)" value={sleepQuality} onChange={setSleepQuality} min={1} max={10} />
-      <Stepper label="Soreness (1-10, higher = more sore)" value={soreness} onChange={setSoreness} min={1} max={10} />
-      <Stepper label="Fatigue (1-5, higher = more tired)" value={fatigue} onChange={setFatigue} min={1} max={5} />
+      <Stepper
+        label="Sleep quality"
+        caption="1 = poor · 10 = excellent"
+        value={sleepQuality}
+        onChange={setSleepQuality}
+        min={1}
+        max={10}
+      />
+      <Stepper
+        label="Soreness"
+        caption="1 = none · 10 = very sore"
+        value={soreness}
+        onChange={setSoreness}
+        min={1}
+        max={10}
+      />
+      <Stepper
+        label="Fatigue"
+        caption="1 = fresh · 5 = exhausted"
+        value={fatigue}
+        onChange={setFatigue}
+        min={1}
+        max={5}
+      />
       {error ? <Text style={styles.error}>{error}</Text> : null}
-      <Button title="Save check-in" onPress={submit} loading={logRecovery.isPending} style={styles.submit} />
+      {saved && !error ? <Text style={styles.saved}>Saved.</Text> : null}
+      <Button
+        title={existingLog ? "Update check-in" : "Save check-in"}
+        onPress={submit}
+        loading={logRecovery.isPending}
+        style={styles.submit}
+      />
     </Card>
   );
 }
 
 export default function RecoveryScreen() {
   const { data, isLoading, isError, refetch, isRefetching } = useRecovery();
+  const [editingDate, setEditingDate] = useState<string | null>(null);
 
   if (isLoading) {
     return (
@@ -74,6 +130,9 @@ export default function RecoveryScreen() {
       </SafeAreaView>
     );
   }
+
+  const todayLog = data.logs.find((l) => l.date === data.todayISO) ?? null;
+  const editingLog = editingDate ? data.logs.find((l) => l.date === editingDate) ?? null : null;
 
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
@@ -101,9 +160,17 @@ export default function RecoveryScreen() {
               {data.rollingLoad.daysWithLoad > 0 ? data.rollingLoad.sevenDaySum : "—"}
             </Text>
           </View>
+          <Text style={styles.scoreHelp}>
+            Readiness scores today&apos;s check-in out of 100 — sleep hours, sleep quality, soreness, and fatigue
+            each contribute up to 25 points. Higher means you&apos;re better recovered to train.
+          </Text>
         </Card>
 
-        {!data.hasLoggedToday && <CheckInForm todayISO={data.todayISO} />}
+        {editingDate === null ? (
+          <CheckInForm date={data.todayISO} existingLog={todayLog} isToday />
+        ) : (
+          <CheckInForm date={editingDate} existingLog={editingLog} isToday={editingDate === data.todayISO} onDone={() => setEditingDate(null)} />
+        )}
 
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>HISTORY</Text>
@@ -113,20 +180,47 @@ export default function RecoveryScreen() {
             </Card>
           ) : (
             data.logs.slice(0, 14).map((log) => (
-              <Card key={log.id} style={styles.logCard}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.logDate}>{formatDate(log.date)}</Text>
-                  <Text style={styles.logMeta}>
-                    {log.sleepHours != null ? `${log.sleepHours}h sleep` : "—"}
-                    {log.soreness != null ? ` · soreness ${log.soreness}/10` : ""}
-                    {log.fatigue != null ? ` · fatigue ${log.fatigue}/5` : ""}
-                  </Text>
-                </View>
-                <Text style={styles.logScore}>{log.readinessScore ?? "—"}</Text>
-              </Card>
+              <Pressable
+                key={log.id}
+                onPress={() => setEditingDate(log.date === editingDate ? null : log.date)}
+              >
+                <Card style={[styles.logCard, log.date === editingDate && styles.logCardActive]}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.logDate}>{formatDate(log.date)}</Text>
+                    <Text style={styles.logMeta}>
+                      {log.sleepHours != null ? `${log.sleepHours}h sleep` : "—"}
+                      {log.soreness != null ? ` · soreness ${log.soreness}/10` : ""}
+                      {log.fatigue != null ? ` · fatigue ${log.fatigue}/5` : ""}
+                    </Text>
+                  </View>
+                  <Text style={styles.logScore}>{log.readinessScore ?? "—"}</Text>
+                </Card>
+              </Pressable>
             ))
           )}
         </View>
+
+        <Card style={styles.referenceCard}>
+          <Text style={styles.referenceTitle}>RECOVERY GUIDANCE</Text>
+          <Text style={styles.referenceHeading}>What helps recovery</Text>
+          <Text style={styles.referenceBody}>
+            7–9 hours of sleep, a consistent wake time, adequate protein intake, and light movement on
+            high-soreness days.
+          </Text>
+          <Text style={[styles.referenceHeading, { marginTop: Spacing.sm }]}>Why it matters</Text>
+          <Text style={styles.referenceBody}>
+            Training creates the stimulus, but recovery is when adaptation actually happens. Tracking your
+            patterns lets your readiness score inform whether to push hard or take it lighter.
+          </Text>
+          <Text style={[styles.referenceHeading, { marginTop: Spacing.sm }]}>Common pitfalls</Text>
+          <Text style={styles.referenceBody}>
+            Going max effort on days with 3+ soreness or fatigue, alcohol close to bedtime, and stacking
+            back-to-back high-load sessions with no easy day between them.
+          </Text>
+          <Text style={styles.disclaimer}>
+            Coaching guidance only, not medical advice. Consult a healthcare provider for any health concerns.
+          </Text>
+        </Card>
       </ScrollView>
     </SafeAreaView>
   );
@@ -160,10 +254,14 @@ const styles = StyleSheet.create({
   },
   loadLabel: { fontSize: 11, color: Color.textMuted, fontWeight: "600" },
   loadValue: { fontSize: 16, fontWeight: "700", color: Color.textPrimary, fontVariant: ["tabular-nums"] },
+  scoreHelp: { fontSize: 11, color: Color.textFaint, lineHeight: 15, marginTop: Spacing.sm },
   formCard: { padding: Spacing.md, marginBottom: Spacing.lg },
-  formTitle: { fontSize: 15, fontWeight: "600", color: Color.textPrimary, marginBottom: Spacing.md },
+  formHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: Spacing.md },
+  formTitle: { fontSize: 15, fontWeight: "600", color: Color.textPrimary },
+  cancelText: { fontSize: 12, fontWeight: "600", color: Color.textMuted },
   submit: { marginTop: Spacing.sm },
   error: { fontSize: 12, color: Color.danger, marginBottom: Spacing.sm },
+  saved: { fontSize: 12, color: Color.success, marginBottom: Spacing.sm },
   section: { marginBottom: Spacing.xl },
   sectionLabel: {
     fontSize: 10,
@@ -181,7 +279,13 @@ const styles = StyleSheet.create({
     padding: Spacing.md,
     marginBottom: Spacing.sm,
   },
+  logCardActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
   logDate: { fontSize: 13, fontWeight: "600", color: Color.textPrimary },
   logMeta: { fontSize: 11, color: Color.textMuted, marginTop: 2 },
   logScore: { fontSize: 18, fontWeight: "700", color: Color.gold, fontVariant: ["tabular-nums"] },
+  referenceCard: { padding: Spacing.md, marginBottom: Spacing.md },
+  referenceTitle: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginBottom: Spacing.sm },
+  referenceHeading: { fontSize: 12, fontWeight: "700", color: Color.textSecondary },
+  referenceBody: { fontSize: 12, color: Color.textMuted, lineHeight: 17, marginTop: 2 },
+  disclaimer: { fontSize: 10, color: Color.textFaint, lineHeight: 14, marginTop: Spacing.md, fontStyle: "italic" },
 });

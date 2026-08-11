@@ -7,6 +7,7 @@ import { Color, Radius, Spacing } from "@/constants/theme";
 // without pulling in a native slider dependency.
 export function Stepper({
   label,
+  caption,
   value,
   onChange,
   min,
@@ -15,6 +16,7 @@ export function Stepper({
   suffix,
 }: {
   label: string;
+  caption?: string;
   value: number | null;
   onChange: (value: number) => void;
   min: number;
@@ -27,6 +29,7 @@ export function Stepper({
   return (
     <View style={styles.wrap}>
       <Text style={styles.label}>{label}</Text>
+      {caption ? <Text style={styles.caption}>{caption}</Text> : null}
       <View style={styles.row}>
         <Pressable
           onPress={() => onChange(Math.max(min, +(current - step).toFixed(1)))}
@@ -53,7 +56,8 @@ export function Stepper({
 
 const styles = StyleSheet.create({
   wrap: { marginBottom: Spacing.md },
-  label: { fontSize: 13, fontWeight: "500", color: Color.textSecondary, marginBottom: 6 },
+  label: { fontSize: 13, fontWeight: "500", color: Color.textSecondary, marginBottom: 2 },
+  caption: { fontSize: 11, color: Color.textFaint, marginBottom: 6 },
   row: {
     flexDirection: "row",
     alignItems: "center",

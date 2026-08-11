@@ -39,6 +39,10 @@ export default function PlateCalculatorScreen() {
   const [unit, setUnit] = useState<"kg" | "lb">("kg");
   const [target, setTarget] = useState("100");
   const [barWeight, setBarWeight] = useState(String(BAR_PRESETS_KG[0].value));
+  // Tracked separately from barWeight so two presets sharing the same
+  // number (e.g. Safety Squat 20kg and Olympic 20kg) don't both light up —
+  // only the preset actually tapped highlights. Cleared on manual entry.
+  const [selectedBarLabel, setSelectedBarLabel] = useState<string | null>(BAR_PRESETS_KG[0].label);
 
   const barPresets = unit === "kg" ? BAR_PRESETS_KG : BAR_PRESETS_LB;
   const plates = unit === "kg" ? KG_PLATES : LB_PLATES;
@@ -47,7 +51,9 @@ export default function PlateCalculatorScreen() {
     if (next === unit) return;
     tapFeedback();
     setUnit(next);
-    setBarWeight(String((next === "kg" ? BAR_PRESETS_KG : BAR_PRESETS_LB)[0].value));
+    const firstPreset = (next === "kg" ? BAR_PRESETS_KG : BAR_PRESETS_LB)[0];
+    setBarWeight(String(firstPreset.value));
+    setSelectedBarLabel(firstPreset.label);
   }
 
   const result = useMemo(() => {
@@ -95,16 +101,20 @@ export default function PlateCalculatorScreen() {
               onPress={() => {
                 tapFeedback();
                 setBarWeight(String(p.value));
+                setSelectedBarLabel(p.label);
               }}
-              style={[styles.barChip, Number(barWeight) === p.value && styles.barChipActive]}
+              style={[styles.barChip, selectedBarLabel === p.label && styles.barChipActive]}
             >
-              <Text style={[styles.barChipText, Number(barWeight) === p.value && styles.barChipTextActive]}>{p.label}</Text>
+              <Text style={[styles.barChipText, selectedBarLabel === p.label && styles.barChipTextActive]}>{p.label}</Text>
             </Pressable>
           ))}
         </View>
         <TextInput
           value={barWeight}
-          onChangeText={setBarWeight}
+          onChangeText={(v) => {
+            setBarWeight(v);
+            setSelectedBarLabel(null);
+          }}
           keyboardType="decimal-pad"
           placeholder="Custom bar weight"
           placeholderTextColor={Color.textFaint}

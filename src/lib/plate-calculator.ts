@@ -8,11 +8,17 @@ export const BAR_PRESETS_KG = [
   { label: "Olympic 20kg", value: 20 },
   { label: "Women's 15kg", value: 15 },
   { label: "Technique 10kg", value: 10 },
+  { label: "Trap bar 25kg", value: 25 },
+  { label: "Safety squat 20kg", value: 20 },
+  { label: "EZ curl 10kg", value: 10 },
 ];
 export const BAR_PRESETS_LB = [
   { label: "Olympic 45lb", value: 45 },
   { label: "Women's 35lb", value: 35 },
   { label: "Technique 15lb", value: 15 },
+  { label: "Trap bar 55lb", value: 55 },
+  { label: "Safety squat 45lb", value: 45 },
+  { label: "EZ curl 20lb", value: 20 },
 ];
 
 export interface PlateLoadResult {

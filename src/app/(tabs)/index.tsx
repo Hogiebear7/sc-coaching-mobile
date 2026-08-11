@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { BrandMark } from "@/components/ui/BrandMark";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ReadinessRing } from "@/components/ui/ReadinessRing";
@@ -91,6 +92,7 @@ export default function DashboardScreen() {
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.headerRow}>
+            <BrandMark height={22} style={styles.headerLogo} />
             <View style={{ flex: 1 }}>
               <Text style={styles.eyebrow}>{formatTodayLabel().toUpperCase()}</Text>
               <Text style={styles.greeting}>Hi {data.firstName}</Text>
@@ -224,19 +226,21 @@ export default function DashboardScreen() {
         {/* Nutrition */}
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>NUTRITION</Text>
-          <Card style={styles.rowCard}>
-            <View style={styles.rowCardIcon}>
-              <Ionicons name="nutrition-outline" size={20} color={Color.gold} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.rowCardTitle}>Fuel today&apos;s training</Text>
-              <Text style={styles.rowCardSub}>
-                {data.nutrition.dietaryPreference
-                  ? `${data.nutrition.dietaryPreference[0].toUpperCase()}${data.nutrition.dietaryPreference.slice(1)} · log meals & hydration`
-                  : "Log meals & hydration"}
-              </Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color={Color.textFaint} />
+          <Card>
+            <Pressable onPress={() => router.push("/(tabs)/nutrition")} style={styles.rowCard}>
+              <View style={styles.rowCardIcon}>
+                <Ionicons name="nutrition-outline" size={20} color={Color.gold} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.rowCardTitle}>Fuel today&apos;s training</Text>
+                <Text style={styles.rowCardSub}>
+                  {data.nutrition.dietaryPreference
+                    ? `${data.nutrition.dietaryPreference[0].toUpperCase()}${data.nutrition.dietaryPreference.slice(1)} · log meals & hydration`
+                    : "Log meals & hydration"}
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={Color.textFaint} />
+            </Pressable>
           </Card>
         </View>
 
@@ -287,21 +291,25 @@ export default function DashboardScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>QUICK ACTIONS</Text>
           <View style={styles.quickActionsRow}>
-            <Card style={styles.quickActionCard}>
-              <Ionicons name="flash-outline" size={18} color={Color.gold} />
-              <Text style={styles.quickActionTitle}>Today&apos;s workout</Text>
-              <Text style={styles.quickActionSub} numberOfLines={1}>
-                {data.quickActions.programmeEnabled && data.quickActions.programmeTitle
-                  ? data.quickActions.programmeTitle
-                  : "Log & review sessions"}
-              </Text>
+            <Card style={{ flex: 1 }}>
+              <Pressable onPress={() => router.push("/(tabs)/workouts")} style={styles.quickActionCard}>
+                <Ionicons name="flash-outline" size={18} color={Color.gold} />
+                <Text style={styles.quickActionTitle}>Today&apos;s workout</Text>
+                <Text style={styles.quickActionSub} numberOfLines={1}>
+                  {data.quickActions.programmeEnabled && data.quickActions.programmeTitle
+                    ? data.quickActions.programmeTitle
+                    : "Log & review sessions"}
+                </Text>
+              </Pressable>
             </Card>
-            <Card style={styles.quickActionCard}>
-              <Ionicons name="person-outline" size={18} color={Color.gold} />
-              <Text style={styles.quickActionTitle}>View profile</Text>
-              <Text style={styles.quickActionSub} numberOfLines={1}>
-                {data.quickActions.primaryGoal ?? "Goals & intake"}
-              </Text>
+            <Card style={{ flex: 1 }}>
+              <Pressable onPress={() => router.push("/profile")} style={styles.quickActionCard}>
+                <Ionicons name="person-outline" size={18} color={Color.gold} />
+                <Text style={styles.quickActionTitle}>View profile</Text>
+                <Text style={styles.quickActionSub} numberOfLines={1}>
+                  {data.quickActions.primaryGoal ?? "Goals & intake"}
+                </Text>
+              </Pressable>
             </Card>
           </View>
         </View>
@@ -327,6 +335,9 @@ const styles = StyleSheet.create({
   headerRow: {
     flexDirection: "row",
     alignItems: "center",
+  },
+  headerLogo: {
+    marginRight: Spacing.sm,
   },
   headerActions: {
     flexDirection: "row",

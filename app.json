@@ -34,7 +34,7 @@
         {
           "backgroundColor": "#0a1526",
           "image": "./assets/images/splash-icon.png",
-          "imageWidth": 180
+          "imageWidth": 280
         }
       ],
       "expo-secure-store",
@@ -46,11 +46,25 @@
           "microphonePermission": false,
           "recordAudioAndroid": false
         }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "S&C Coaching uses your photo library to set a profile picture.",
+          "cameraPermission": false,
+          "microphonePermission": false
+        }
       ]
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "e86493d0-d47c-4001-a120-ca3608eb3fde"
+      }
     }
   }
 }

@@ -1,18 +1,26 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useEffect, useState } from "react";
+import { ActivityIndicator, Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { API_BASE_URL } from "@/constants/config";
 import { Color, Radius, Spacing } from "@/constants/theme";
+import { tapFeedback } from "@/lib/haptics";
 import { useStaffNutritionTarget } from "@/lib/queries/nutrition-diary";
 import { useStaffPrograms } from "@/lib/queries/programs";
-import { useStaffMemberDetail } from "@/lib/queries/staff";
+import { useSaveCoachNotes, useStaffMemberDetail } from "@/lib/queries/staff";
 
 function formatDate(iso: string | null): string {
   if (!iso) return "—";
   return new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+}
+
+function openMemberOnWeb(userId: string) {
+  tapFeedback();
+  Linking.openURL(`${API_BASE_URL}/staff/members/${userId}`);
 }
 
 export default function StaffMemberScreen() {
@@ -22,6 +30,22 @@ export default function StaffMemberScreen() {
   const { data: programs } = useStaffPrograms(userId);
   const activeProgram = programs?.find((p) => p.status === "active") ?? null;
   const { data: nutritionTarget } = useStaffNutritionTarget(userId);
+
+  const saveNotes = useSaveCoachNotes(userId);
+  const [notes, setNotes] = useState("");
+  const [notesDirty, setNotesDirty] = useState(false);
+  const [notesSaved, setNotesSaved] = useState(false);
+
+  useEffect(() => {
+    if (data && !notesDirty) setNotes(data.coachNotes ?? "");
+  }, [data, notesDirty]);
+
+  async function handleSaveNotes() {
+    await saveNotes.mutateAsync(notes);
+    setNotesDirty(false);
+    setNotesSaved(true);
+    setTimeout(() => setNotesSaved(false), 2000);
+  }
 
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
@@ -46,6 +70,18 @@ export default function StaffMemberScreen() {
         <ScrollView contentContainerStyle={styles.scroll}>
           <Text style={styles.name}>{data.fullName ?? data.email}</Text>
           <Text style={styles.email}>{data.email}</Text>
+
+          <Button
+            title="Message member"
+            variant="secondary"
+            onPress={() =>
+              router.push({
+                pathname: "/staff-message-thread",
+                params: { memberId: userId, memberName: data.fullName ?? data.email },
+              })
+            }
+            style={{ marginBottom: Spacing.md }}
+          />
 
           <Card style={styles.card}>
             <Text style={styles.sectionLabel}>MEMBERSHIP</Text>
@@ -181,11 +217,45 @@ export default function StaffMemberScreen() {
             )}
           </Card>
 
+          <Card style={styles.card}>
+            <Text style={styles.sectionLabel}>COACH NOTES</Text>
+            <Text style={styles.notesHint}>Internal only — the member never sees these.</Text>
+            <TextInput
+              value={notes}
+              onChangeText={(t) => {
+                setNotes(t);
+                setNotesDirty(true);
+                setNotesSaved(false);
+              }}
+              placeholder="Add training cues, injury history, preferences…"
+              placeholderTextColor={Color.textFaint}
+              style={styles.notesInput}
+              multiline
+            />
+            <View style={styles.notesFooter}>
+              {notesSaved ? <Text style={styles.notesSaved}>Saved</Text> : <View />}
+              <Button
+                title="Save notes"
+                variant="secondary"
+                onPress={handleSaveNotes}
+                loading={saveNotes.isPending}
+                disabled={!notesDirty || saveNotes.isPending}
+                style={styles.notesSaveButton}
+              />
+            </View>
+          </Card>
+
           <Card style={styles.noteCard}>
             <Text style={styles.noteText}>
-              Billing, coach notes, and account actions are managed from the staff web app for now — coming to
-              mobile soon.
+              Billing and account actions (plan changes, refunds, hard delete) still require the staff web app —
+              this device may not show every permission a full admin has.
             </Text>
+            <Button
+              title="Manage billing & account on web"
+              variant="secondary"
+              onPress={() => openMemberOnWeb(userId)}
+              style={{ marginTop: Spacing.sm }}
+            />
           </Card>
         </ScrollView>
       )}
@@ -220,6 +290,28 @@ const styles = StyleSheet.create({
   },
   rowLabel: { fontSize: 12, color: Color.textMuted },
   rowValue: { fontSize: 13, color: Color.textPrimary, fontWeight: "500" },
-  noteCard: { padding: Spacing.md },
+  noteCard: { padding: Spacing.md, marginBottom: Spacing.md },
   noteText: { fontSize: 12, color: Color.textMuted, lineHeight: 17 },
+  notesHint: { fontSize: 11, color: Color.textFaint, marginBottom: Spacing.sm },
+  notesInput: {
+    minHeight: 80,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: Color.borderSubtle,
+    backgroundColor: Color.surface1,
+    color: Color.textPrimary,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.sm,
+    fontSize: 13,
+    lineHeight: 18,
+    textAlignVertical: "top",
+  },
+  notesFooter: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: Spacing.sm,
+  },
+  notesSaved: { fontSize: 11, color: Color.success, fontWeight: "600" },
+  notesSaveButton: { height: 36, paddingHorizontal: Spacing.md },
 });

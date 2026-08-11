@@ -84,7 +84,11 @@ export default function WorkoutHistoryScreen() {
               <View key={label} style={styles.monthGroup}>
                 <Text style={styles.monthLabel}>{label.toUpperCase()}</Text>
                 {sessions.map((s) => (
-                  <SessionCard key={s.id} session={s} />
+                  <SessionCard
+                    key={s.id}
+                    session={s}
+                    onPress={() => router.push({ pathname: "/session-detail", params: { id: s.id } })}
+                  />
                 ))}
               </View>
             ))

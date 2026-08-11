@@ -8,6 +8,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { Color } from "@/constants/theme";
 import { AuthProvider, useAuth } from "@/lib/auth-context";
 import { addNotificationTapListener, mapLinkHrefToRoute } from "@/lib/push-notifications";
+import { WorkoutDraftProvider } from "@/lib/workout-draft";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -75,9 +76,12 @@ function AuthGate() {
       <Stack.Screen name="membership" options={{ presentation: "card" }} />
       <Stack.Screen name="messages" options={{ presentation: "card" }} />
       <Stack.Screen name="profile" options={{ presentation: "card" }} />
+      <Stack.Screen name="settings" options={{ presentation: "card" }} />
       <Stack.Screen name="staff-member" options={{ presentation: "card" }} />
+      <Stack.Screen name="staff-message-thread" options={{ presentation: "card" }} />
       <Stack.Screen name="staff-program-builder" options={{ presentation: "card" }} />
       <Stack.Screen name="staff-nutrition-target" options={{ presentation: "card" }} />
+      <Stack.Screen name="class-workout-builder" options={{ presentation: "card" }} />
       <Stack.Screen name="workout-library" options={{ presentation: "card" }} />
       <Stack.Screen name="workout-template-builder" options={{ presentation: "card" }} />
       <Stack.Screen name="workout-history" options={{ presentation: "card" }} />
@@ -91,6 +95,7 @@ function AuthGate() {
       <Stack.Screen name="submit-food" options={{ presentation: "card" }} />
       <Stack.Screen name="plate-calculator" options={{ presentation: "modal" }} />
       <Stack.Screen name="rest-timer" options={{ presentation: "modal" }} />
+      <Stack.Screen name="run-timer" options={{ presentation: "modal" }} />
       <Stack.Screen name="drink-calculator" options={{ presentation: "card" }} />
     </Stack>
   );
@@ -101,10 +106,12 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
-          <StatusBar barStyle="light-content" backgroundColor={Color.bg0} />
-          <View style={styles.root}>
-            <AuthGate />
-          </View>
+          <WorkoutDraftProvider>
+            <StatusBar barStyle="light-content" backgroundColor={Color.bg0} />
+            <View style={styles.root}>
+              <AuthGate />
+            </View>
+          </WorkoutDraftProvider>
         </AuthProvider>
       </QueryClientProvider>
     </SafeAreaProvider>

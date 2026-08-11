@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { Card } from "@/components/ui/Card";
 import { Color, Spacing } from "@/constants/theme";
@@ -11,8 +11,18 @@ function formatDate(dateISO: string): string {
 
 // Shared compact session summary — used on the Workouts tab (day detail +
 // recent list) and the full History screen so the three don't drift.
-export function SessionCard({ session, showDate = true }: { session: WorkoutSessionSummary; showDate?: boolean }) {
-  return (
+// Optional onPress makes the whole card a drill-down into session-detail;
+// omit it for read-only contexts.
+export function SessionCard({
+  session,
+  showDate = true,
+  onPress,
+}: {
+  session: WorkoutSessionSummary;
+  showDate?: boolean;
+  onPress?: () => void;
+}) {
+  const content = (
     <Card style={styles.card}>
       <View style={styles.header}>
         <Text style={styles.title}>{session.title}</Text>
@@ -35,6 +45,13 @@ export function SessionCard({ session, showDate = true }: { session: WorkoutSess
       ))}
     </Card>
   );
+
+  if (!onPress) return content;
+  return (
+    <Pressable onPress={onPress} style={({ pressed }) => pressed && styles.pressed}>
+      {content}
+    </Pressable>
+  );
 }
 
 const styles = StyleSheet.create({
@@ -44,4 +61,5 @@ const styles = StyleSheet.create({
   date: { fontSize: 11, color: Color.textMuted },
   meta: { fontSize: 11, color: Color.textMuted, marginTop: 2 },
   line: { fontSize: 11, color: Color.textFaint, marginTop: 4 },
+  pressed: { opacity: 0.7 },
 });

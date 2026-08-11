@@ -2,7 +2,7 @@ import { StyleSheet, Text, View } from "react-native";
 import Svg, { Circle, Line, Polyline, Text as SvgText } from "react-native-svg";
 
 import { Color } from "@/constants/theme";
-import type { ExerciseTrendPoint } from "@/lib/workout-formatters";
+import type { TrendPoint } from "@/lib/workout-formatters";
 
 const CHART_W = 340;
 const CHART_H = 130;
@@ -14,15 +14,13 @@ function shortDate(iso: string): string {
   return `${months[m - 1]} ${d}`;
 }
 
-// RN/SVG port of the web app's TrendChart.tsx — same layout and data
-// selection (weight if any point has one, else reps), rendered fully drawn
-// immediately rather than animating in on scroll (no IntersectionObserver
-// equivalent worth building for a single chart per screen).
-export function TrendChart({ points }: { points: ExerciseTrendPoint[] }) {
-  const useWeight = points.some((p) => p.weightNum !== null);
-  const chartPoints = useWeight ? points.filter((p) => p.weightNum !== null) : points.filter((p) => p.reps !== null);
-
-  if (chartPoints.length < 2) {
+// RN/SVG port of the web app's TrendChart.tsx — same layout, rendered fully
+// drawn immediately rather than animating in on scroll (no
+// IntersectionObserver equivalent worth building for a single chart per
+// screen). Metric-agnostic: callers pick what `value`/`label` mean per
+// point (weight, reps, volume, sets, 1RM, ...).
+export function TrendChart({ points }: { points: TrendPoint[] }) {
+  if (points.length < 2) {
     return (
       <View style={styles.emptyWrap}>
         <Text style={styles.emptyText}>Not enough data to show a trend yet.</Text>
@@ -33,25 +31,22 @@ export function TrendChart({ points }: { points: ExerciseTrendPoint[] }) {
   const innerW = CHART_W - PAD.left - PAD.right;
   const innerH = CHART_H - PAD.top - PAD.bottom;
 
-  const yVals = chartPoints.map((p) => (useWeight ? (p.weightNum as number) : (p.reps as number)));
+  const yVals = points.map((p) => p.value);
   const minY = Math.min(...yVals);
   const maxY = Math.max(...yVals);
   const yRange = maxY === minY ? 1 : maxY - minY;
 
-  const toX = (i: number) => PAD.left + (chartPoints.length === 1 ? innerW / 2 : (i / (chartPoints.length - 1)) * innerW);
+  const toX = (i: number) => PAD.left + (points.length === 1 ? innerW / 2 : (i / (points.length - 1)) * innerW);
   const toY = (val: number) => PAD.top + innerH - ((val - minY) / yRange) * innerH;
 
-  const plotted = chartPoints.map((p, i) => {
-    const yVal = useWeight ? (p.weightNum as number) : (p.reps as number);
-    return {
-      x: toX(i),
-      y: toY(yVal),
-      label: useWeight ? p.rawWeight ?? "" : String(p.reps ?? ""),
-      date: p.date,
-    };
-  });
+  const plotted = points.map((p, i) => ({
+    x: toX(i),
+    y: toY(p.value),
+    label: p.label ?? String(p.value),
+    date: p.date,
+  }));
 
-  const labelStep = Math.max(1, Math.ceil(chartPoints.length / 5));
+  const labelStep = Math.max(1, Math.ceil(points.length / 5));
 
   return (
     <Svg width="100%" viewBox={`0 0 ${CHART_W} ${CHART_H}`}>

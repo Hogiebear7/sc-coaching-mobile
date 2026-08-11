@@ -33,7 +33,10 @@ export interface ScheduleUpcomingBooking {
   date: string;
   startTime: string;
   durationMins: number;
+  attended: boolean;
 }
+
+export type SchedulePastBooking = ScheduleUpcomingBooking;
 
 export interface ScheduleData {
   classes: ScheduleClass[];
@@ -42,6 +45,7 @@ export interface ScheduleData {
   remainingSessions: number | null;
   noActiveMembership: boolean;
   upcomingBookings: ScheduleUpcomingBooking[];
+  pastBookings: SchedulePastBooking[];
   cancellationCutoffHours: number;
 }
 

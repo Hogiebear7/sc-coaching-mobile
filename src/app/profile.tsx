@@ -8,7 +8,6 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  Switch,
   Text,
   View,
 } from "react-native";
@@ -16,14 +15,15 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { DateField } from "@/components/ui/DateField";
 import { TextField } from "@/components/ui/TextField";
 import { Color, Radius, Spacing } from "@/constants/theme";
 import { ApiError, useAuth } from "@/lib/auth-context";
+import { ALLERGENS, DIETARY_PREFERENCES, INTOLERANCES } from "@/lib/dietary-options";
 import {
   useProfile,
-  useSetEmailNotifications,
-  useSetPushNotifications,
   useUpdateProfile,
+  type DietaryPreference,
   type Gender,
   type PrimaryGoal,
 } from "@/lib/queries/profile";
@@ -60,11 +60,10 @@ function formatDistanceKm(km: number): string {
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
+  const isStaffRole = !!user && user.role !== "member";
   const { data, isLoading, isError, refetch } = useProfile();
   const update = useUpdateProfile();
-  const setPush = useSetPushNotifications();
-  const setEmail = useSetEmailNotifications();
 
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
@@ -73,6 +72,10 @@ export default function ProfileScreen() {
   const [primaryGoal, setPrimaryGoal] = useState<PrimaryGoal | null>(null);
   const [sportPlayed, setSportPlayed] = useState("");
   const [additionalInfo, setAdditionalInfo] = useState("");
+  const [dietaryPreference, setDietaryPreference] = useState<DietaryPreference>("standard");
+  const [allergies, setAllergies] = useState<string[]>([]);
+  const [intolerancesOrMedical, setIntolerancesOrMedical] = useState<string[]>([]);
+  const [dietaryNotes, setDietaryNotes] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [hydrated, setHydrated] = useState(false);
@@ -86,8 +89,26 @@ export default function ProfileScreen() {
     setPrimaryGoal(data.primaryGoal);
     setSportPlayed(data.sportPlayed ?? "");
     setAdditionalInfo(data.additionalInfo ?? "");
+    setDietaryPreference(data.dietaryPreference);
+    setAllergies(data.allergies);
+    setIntolerancesOrMedical(data.intolerancesOrMedical);
+    setDietaryNotes(data.dietaryNotes ?? "");
     setHydrated(true);
   }, [data, hydrated]);
+
+  function toggleListValue(list: string[], setList: (v: string[]) => void, value: string) {
+    setList(list.includes(value) ? list.filter((v) => v !== value) : [...list, value]);
+  }
+
+  // No in-app link sends staff here (coaches don't have a ProfileRecord —
+  // see (staff)/_layout.tsx), but the route itself is reachable directly
+  // (URL, stale bookmark, deep link) with no group-level guard. Bounce
+  // rather than show a member settings form to a staff account.
+  useEffect(() => {
+    if (isStaffRole) router.replace("/(staff)");
+  }, [isStaffRole, router]);
+
+  if (isStaffRole) return null;
 
   async function handleSave() {
     setError(null);
@@ -98,7 +119,7 @@ export default function ProfileScreen() {
       return;
     }
     if (!/^\d{4}-\d{2}-\d{2}$/.test(dateOfBirth.trim())) {
-      setError("Date of birth must be in YYYY-MM-DD format.");
+      setError("Enter a valid date of birth.");
       return;
     }
     if (!gender) {
@@ -123,6 +144,10 @@ export default function ProfileScreen() {
         primaryGoal,
         sportPlayed: sportPlayed.trim() || undefined,
         additionalInfo: additionalInfo.trim() || undefined,
+        dietaryPreference,
+        allergies,
+        intolerancesOrMedical,
+        dietaryNotes: dietaryNotes.trim() || undefined,
       });
       setSaved(true);
     } catch (e) {
@@ -172,12 +197,11 @@ export default function ProfileScreen() {
             <Text style={styles.sectionLabel}>YOUR DETAILS</Text>
             <TextField label="Full name" value={fullName} onChangeText={setFullName} placeholder="Your full name" />
             <TextField label="Phone" value={phone} onChangeText={setPhone} keyboardType="phone-pad" placeholder="+353 83 123 4567" />
-            <TextField
+            <DateField
               label="Date of birth"
               value={dateOfBirth}
-              onChangeText={setDateOfBirth}
-              placeholder="YYYY-MM-DD"
-              keyboardType="numbers-and-punctuation"
+              onChange={setDateOfBirth}
+              maxDate={new Date().toISOString().slice(0, 10)}
             />
 
             <Text style={styles.label}>Gender</Text>
@@ -213,45 +237,87 @@ export default function ProfileScreen() {
               style={styles.multiline}
             />
 
+            <Text style={[styles.sectionLabel, styles.sectionLabelSpaced]}>DIETARY REQUIREMENTS</Text>
+            <Card style={styles.dietaryCard}>
+              <Text style={styles.dietaryHint}>
+                Optional — powers your nutrition suggestions. Change these any time.
+              </Text>
+
+              <Text style={styles.label}>Dietary preference</Text>
+              <View style={styles.chipRow}>
+                {DIETARY_PREFERENCES.map((opt) => (
+                  <Chip
+                    key={opt.value}
+                    label={opt.label}
+                    active={dietaryPreference === opt.value}
+                    onPress={() => setDietaryPreference(opt.value)}
+                  />
+                ))}
+              </View>
+
+              <Text style={[styles.label, styles.labelSpaced]}>Allergies</Text>
+              <View style={styles.chipRow}>
+                {ALLERGENS.map((opt) => (
+                  <Chip
+                    key={opt.value}
+                    label={opt.label}
+                    active={allergies.includes(opt.value)}
+                    onPress={() => toggleListValue(allergies, setAllergies, opt.value)}
+                  />
+                ))}
+              </View>
+
+              <Text style={[styles.label, styles.labelSpaced]}>Intolerances / medical</Text>
+              <View style={styles.chipRow}>
+                {INTOLERANCES.map((opt) => (
+                  <Chip
+                    key={opt.value}
+                    label={opt.label}
+                    active={intolerancesOrMedical.includes(opt.value)}
+                    onPress={() => toggleListValue(intolerancesOrMedical, setIntolerancesOrMedical, opt.value)}
+                  />
+                ))}
+              </View>
+
+              <TextField
+                label="Additional notes — diet or medical — optional"
+                value={dietaryNotes}
+                onChangeText={setDietaryNotes}
+                placeholder="Anything else about your diet, or any other medical issues we should know about"
+                multiline
+                style={[styles.multiline, { marginTop: Spacing.md }]}
+              />
+            </Card>
+
             {error ? <Text style={styles.error}>{error}</Text> : null}
             {saved && !error ? <Text style={styles.saved}>Saved.</Text> : null}
 
             <Button title="Save changes" onPress={handleSave} loading={update.isPending} style={{ marginTop: Spacing.sm }} />
 
-            <Text style={[styles.sectionLabel, styles.sectionLabelSpaced]}>NOTIFICATIONS</Text>
-            <Card style={styles.settingsCard}>
-              <View style={styles.settingRow}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.settingTitle}>Push notifications</Text>
-                  <Text style={styles.settingSub}>Class reminders, coach messages, and offers</Text>
-                </View>
-                <Switch
-                  value={data.pushNotificationsEnabled}
-                  onValueChange={(v) => setPush.mutate(v)}
-                  trackColor={{ false: Color.surface3, true: Color.gold }}
-                  thumbColor={Color.textPrimary}
-                />
+            <Text style={[styles.sectionLabel, styles.sectionLabelSpaced]}>MORE</Text>
+            <Pressable onPress={() => router.push("/settings")} style={styles.cycleRow}>
+              <View style={styles.cycleRowIcon}>
+                <Ionicons name="settings-outline" size={18} color={Color.gold} />
               </View>
-              <View style={[styles.settingRow, styles.settingRowDivider]}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.settingTitle}>Email notifications</Text>
-                  <Text style={styles.settingSub}>Booking confirmations and account updates</Text>
-                </View>
-                <Switch
-                  value={data.emailNotificationsEnabled}
-                  onValueChange={(v) => setEmail.mutate(v)}
-                  trackColor={{ false: Color.surface3, true: Color.gold }}
-                  thumbColor={Color.textPrimary}
-                />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.settingTitle}>Settings</Text>
+                <Text style={styles.settingSub}>Account, membership, notifications, and appearance</Text>
               </View>
-            </Card>
+              <Ionicons name="chevron-forward" size={18} color={Color.textFaint} />
+            </Pressable>
 
-            <Card style={styles.noteCard}>
-              <Text style={styles.noteText}>
-                Dietary preferences, allergies, and body-weight logging are managed from the web app for now —
-                coming to mobile soon.
-              </Text>
-            </Card>
+            {data.cycleTrackingEligible ? (
+              <Pressable onPress={() => router.push("/cycle-tracking")} style={[styles.cycleRow, { marginTop: Spacing.sm }]}>
+                <View style={styles.cycleRowIcon}>
+                  <Ionicons name="moon-outline" size={18} color={Color.gold} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.settingTitle}>Cycle Tracking</Text>
+                  <Text style={styles.settingSub}>Private cycle info, phase estimate, and coach sharing</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={Color.textFaint} />
+              </Pressable>
+            ) : null}
 
             <Button title="Log out" onPress={logout} variant="secondary" style={{ marginTop: Spacing.xl }} />
           </ScrollView>
@@ -298,11 +364,29 @@ const styles = StyleSheet.create({
   multiline: { height: 90, paddingTop: 12, textAlignVertical: "top" },
   error: { color: Color.danger, fontSize: 13, marginTop: Spacing.sm },
   saved: { color: Color.success, fontSize: 13, marginTop: Spacing.sm },
-  settingsCard: { padding: 0 },
-  settingRow: { flexDirection: "row", alignItems: "center", padding: Spacing.md, gap: Spacing.sm },
-  settingRowDivider: { borderTopWidth: 1, borderTopColor: Color.borderSubtle },
+  cycleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+    marginTop: Spacing.lg,
+    padding: Spacing.md,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: Color.borderSubtle,
+    backgroundColor: Color.surface1,
+  },
+  cycleRowIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: Color.goldBorder,
+    backgroundColor: Color.goldWeak,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   settingTitle: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
   settingSub: { fontSize: 11, color: Color.textMuted, marginTop: 2 },
-  noteCard: { padding: Spacing.md, marginTop: Spacing.lg },
-  noteText: { fontSize: 12, color: Color.textMuted, lineHeight: 17 },
+  dietaryCard: { padding: Spacing.md },
+  dietaryHint: { fontSize: 12, color: Color.textMuted, marginBottom: Spacing.md },
 });

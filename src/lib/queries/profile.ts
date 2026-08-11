@@ -13,6 +13,9 @@ export type PrimaryGoal =
   | "Improve Fitness"
   | "Improve Mobility";
 
+export type DietaryPreference = "standard" | "vegetarian" | "pescetarian" | "vegan";
+export type MeasurementUnits = "metric" | "imperial";
+
 // Mirrors ProfileData in the main repo's lib/profile-data.ts.
 export interface ProfileData {
   email: string;
@@ -24,9 +27,16 @@ export interface ProfileData {
   sportPlayed: string | null;
   additionalInfo: string | null;
   currentWeightKg: number | null;
-  dietaryPreference: "standard" | "vegetarian" | "pescetarian" | "vegan";
+  dietaryPreference: DietaryPreference;
+  allergies: string[];
+  intolerancesOrMedical: string[];
+  dietaryNotes: string | null;
   pushNotificationsEnabled: boolean;
   emailNotificationsEnabled: boolean;
+  reminderTimingsMins: number[] | null;
+  preferredUnits: MeasurementUnits;
+  avatarDataUrl: string | null;
+  cycleTrackingEligible: boolean;
   allTimeStats: { classesCompleted: number; totalWeightKg: number; totalDistanceKm: number };
 }
 
@@ -50,6 +60,10 @@ export interface ProfileUpdateInput {
   primaryGoal: PrimaryGoal;
   sportPlayed?: string;
   additionalInfo?: string;
+  dietaryPreference?: DietaryPreference;
+  allergies?: string[];
+  intolerancesOrMedical?: string[];
+  dietaryNotes?: string;
 }
 
 export function useUpdateProfile() {
@@ -85,5 +99,58 @@ export function useSetEmailNotifications() {
         body: { emailNotificationsEnabled },
       }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["profile"] }),
+  });
+}
+
+export function useSetUnits() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (preferredUnits: MeasurementUnits) =>
+      apiFetch<{ success: true }>("/api/profile/units", {
+        method: "POST",
+        body: { preferredUnits },
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["profile"] }),
+  });
+}
+
+// null/[] resets to defaults (see app/api/profile/reminders/route.ts).
+export function useSetReminderTimings() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (timings: number[] | null) =>
+      apiFetch<{ success: true; message: string }>("/api/profile/reminders", {
+        method: "POST",
+        body: { timings },
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["profile"] }),
+  });
+}
+
+// avatarDataUrl: null removes the photo. Only appearance-related fields this
+// app sends — palette/theme are deliberately not exposed on mobile (one
+// fixed navy/gold design), so those are always omitted from the body.
+export function useSetAvatar() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (avatarDataUrl: string | null) =>
+      apiFetch<{ success: true; message: string }>("/api/profile/appearance", {
+        method: "POST",
+        body: { avatarDataUrl },
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["profile"] }),
+  });
+}
+
+// Fires a reset-password email to the signed-in member's own address, same
+// action as web Settings' "Reset password" button. Public endpoint — no
+// userId needed, just the known email.
+export function useRequestPasswordReset() {
+  return useMutation({
+    mutationFn: (email: string) =>
+      apiFetch<{ success: true; message: string }>("/api/auth/forgot-password", {
+        method: "POST",
+        body: { email },
+      }),
   });
 }

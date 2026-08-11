@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { BrandMark } from "@/components/ui/BrandMark";
 import { Button } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/TextField";
 import { Color, Spacing } from "@/constants/theme";
@@ -45,6 +46,7 @@ export default function LoginScreen() {
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+          <BrandMark style={styles.logo} />
           <Text style={styles.eyebrow}>WELCOME BACK</Text>
           <Text style={styles.title}>Sign in</Text>
           <Text style={styles.subtitle}>
@@ -73,6 +75,10 @@ export default function LoginScreen() {
             {error ? <Text style={styles.error}>{error}</Text> : null}
 
             <Button title="Sign in" onPress={handleSubmit} loading={loading} style={styles.submit} />
+
+            <Link href="/(auth)/forgot-password" style={styles.forgotLink}>
+              Forgot password?
+            </Link>
           </View>
 
           <View style={styles.footer}>
@@ -95,6 +101,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: Spacing.xl,
     paddingVertical: Spacing.xxl,
+  },
+  logo: {
+    marginBottom: Spacing.lg,
   },
   eyebrow: {
     fontSize: 11,
@@ -120,6 +129,13 @@ const styles = StyleSheet.create({
   },
   submit: {
     marginTop: Spacing.sm,
+  },
+  forgotLink: {
+    color: Color.textMuted,
+    fontSize: 13,
+    fontWeight: "600",
+    textAlign: "center",
+    marginTop: Spacing.lg,
   },
   error: {
     color: Color.danger,

@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
@@ -7,6 +7,13 @@ import { Card } from "@/components/ui/Card";
 import { Color, Spacing } from "@/constants/theme";
 import { useAuth } from "@/lib/auth-context";
 import { useStaffBusiness } from "@/lib/queries/staff";
+
+function confirmLogout(logout: () => void) {
+  Alert.alert("Log out?", "You'll need to sign in again to access classes and members.", [
+    { text: "Cancel", style: "cancel" },
+    { text: "Log out", style: "destructive", onPress: logout },
+  ]);
+}
 
 function formatMoney(cents: number, currency: string): string {
   return new Intl.NumberFormat(undefined, { style: "currency", currency, maximumFractionDigits: 0 }).format(
@@ -28,7 +35,9 @@ export default function StaffBusinessScreen() {
     <SafeAreaView style={styles.safe} edges={["top"]}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Business</Text>
-        <Ionicons name="log-out-outline" size={22} color={Color.textMuted} onPress={logout} suppressHighlighting />
+        <Pressable onPress={() => confirmLogout(logout)} hitSlop={12}>
+          <Ionicons name="log-out-outline" size={22} color={Color.textMuted} />
+        </Pressable>
       </View>
 
       {isLoading ? (

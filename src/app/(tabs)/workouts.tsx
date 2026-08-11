@@ -13,7 +13,15 @@ import { Color, Radius, Spacing } from "@/constants/theme";
 import { tapFeedback } from "@/lib/haptics";
 import { useAdvanceProgram, useMyProgram } from "@/lib/queries/programs";
 import { useWorkouts } from "@/lib/queries/workouts";
-import { getExerciseTrend, todayDateString } from "@/lib/workout-formatters";
+import {
+  TREND_RANGES,
+  computeWeeklyStats,
+  exerciseTrendToPoints,
+  filterPointsByRange,
+  getExerciseTrend,
+  getRecentRecords,
+  todayDateString,
+} from "@/lib/workout-formatters";
 
 // Oldest-first window of dates ending today, for the date strip. UTC-based
 // arithmetic to match todayDateString()'s convention (used app-wide for the
@@ -32,15 +40,9 @@ function formatLongDate(dateISO: string): string {
   return new Date(`${dateISO}T00:00:00`).toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" });
 }
 
-// MacroFactor-style Trends date-range chips — days: null means All (no filter).
-const TREND_RANGES: { key: string; days: number | null }[] = [
-  { key: "1W", days: 7 },
-  { key: "1M", days: 30 },
-  { key: "3M", days: 90 },
-  { key: "6M", days: 182 },
-  { key: "1Y", days: 365 },
-  { key: "All", days: null },
-];
+function formatShortDate(dateISO: string): string {
+  return new Date(`${dateISO}T00:00:00`).toLocaleDateString(undefined, { day: "numeric", month: "short" });
+}
 
 export default function WorkoutsScreen() {
   const router = useRouter();
@@ -91,11 +93,12 @@ export default function WorkoutsScreen() {
 
   const [trendRange, setTrendRange] = useState("All");
   const filteredTrendPoints = useMemo(() => {
-    const range = TREND_RANGES.find((r) => r.key === trendRange);
-    if (!range || range.days === null) return trendPoints;
-    const cutoff = recentDates(range.days, today)[0];
-    return trendPoints.filter((p) => p.date >= cutoff);
+    const { points } = exerciseTrendToPoints(trendPoints);
+    return filterPointsByRange(points, trendRange, today);
   }, [trendPoints, trendRange, today]);
+
+  const weeklyStats = useMemo(() => (data ? computeWeeklyStats(data.sessions, today) : null), [data, today]);
+  const recentRecords = useMemo(() => (data ? getRecentRecords(data.sessions, 30, today).slice(0, 6) : []), [data, today]);
 
   if (isLoading) {
     return (
@@ -137,7 +140,14 @@ export default function WorkoutsScreen() {
           <Card style={styles.dayDetailCard}>
             <Text style={styles.dayDetailDate}>{selectedDate === today ? "Today" : formatLongDate(selectedDate)}</Text>
             {sessionsForSelectedDate.length > 0 ? (
-              sessionsForSelectedDate.map((s) => <SessionCard key={s.id} session={s} showDate={false} />)
+              sessionsForSelectedDate.map((s) => (
+                <SessionCard
+                  key={s.id}
+                  session={s}
+                  showDate={false}
+                  onPress={() => router.push({ pathname: "/session-detail", params: { id: s.id } })}
+                />
+              ))
             ) : (
               <View style={styles.dayDetailEmpty}>
                 <Text style={styles.dayDetailEmptyText}>Nothing logged this day.</Text>
@@ -227,29 +237,81 @@ export default function WorkoutsScreen() {
           </Pressable>
         </View>
 
+        {weeklyStats ? (
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>THIS WEEK</Text>
+            <View style={styles.weekStatsRow}>
+              <View style={styles.weekStat}>
+                <Text style={styles.weekStatValue}>{weeklyStats.workoutCount}</Text>
+                <Text style={styles.weekStatLabel}>workouts</Text>
+              </View>
+              <View style={styles.weekStat}>
+                <Text style={styles.weekStatValue}>{weeklyStats.totalSets}</Text>
+                <Text style={styles.weekStatLabel}>sets</Text>
+              </View>
+              <View style={styles.weekStat}>
+                <Text style={styles.weekStatValue}>{weeklyStats.totalVolume > 0 ? weeklyStats.totalVolume.toLocaleString() : "0"}</Text>
+                <Text style={styles.weekStatLabel}>kg volume</Text>
+              </View>
+            </View>
+          </View>
+        ) : null}
+
+        {recentRecords.length > 0 ? (
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>RECENT RECORDS</Text>
+            <Card style={styles.recordsList}>
+              {recentRecords.map((r, idx) => (
+                <Pressable
+                  key={`${r.exerciseName}-${r.type}-${r.date}`}
+                  onPress={() => router.push({ pathname: "/exercise-detail", params: { name: r.exerciseName } })}
+                  style={[styles.recordRow, idx > 0 && styles.recordRowDivider]}
+                >
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.recordExercise}>{r.exerciseName}</Text>
+                    <Text style={styles.recordLabel}>{r.label}</Text>
+                  </View>
+                  <View style={styles.recordValueWrap}>
+                    <Text style={styles.recordValue}>{r.value}</Text>
+                    <Text style={styles.recordDate}>{formatShortDate(r.date)}</Text>
+                  </View>
+                </Pressable>
+              ))}
+            </Card>
+          </View>
+        ) : null}
+
         {data.personalBests.length > 0 && (
           <View style={styles.section}>
             <Text style={styles.sectionLabel}>PERSONAL BESTS</Text>
             {data.personalBests.map((pb) => (
-              <Card key={pb.exerciseName} style={styles.pbCard}>
-                <Text style={styles.pbTitle}>{pb.exerciseName}</Text>
-                <View style={styles.pbRow}>
-                  {pb.heaviestWeight ? (
-                    <View style={styles.pbStat}>
-                      <Text style={styles.pbValue}>{pb.heaviestWeight.weightStr}</Text>
-                      <Text style={styles.pbLabel}>
-                        heaviest{pb.heaviestWeight.reps ? ` · ${pb.heaviestWeight.reps} reps` : ""}
-                      </Text>
-                    </View>
-                  ) : null}
-                  {pb.highestReps ? (
-                    <View style={styles.pbStat}>
-                      <Text style={styles.pbValue}>{pb.highestReps.reps}</Text>
-                      <Text style={styles.pbLabel}>best reps</Text>
-                    </View>
-                  ) : null}
-                </View>
-              </Card>
+              <Pressable
+                key={pb.exerciseName}
+                onPress={() => router.push({ pathname: "/exercise-detail", params: { name: pb.exerciseName } })}
+              >
+                <Card style={styles.pbCard}>
+                  <View style={styles.pbHeaderRow}>
+                    <Text style={styles.pbTitle}>{pb.exerciseName}</Text>
+                    <Ionicons name="chevron-forward" size={16} color={Color.textFaint} />
+                  </View>
+                  <View style={styles.pbRow}>
+                    {pb.heaviestWeight ? (
+                      <View style={styles.pbStat}>
+                        <Text style={styles.pbValue}>{pb.heaviestWeight.weightStr}</Text>
+                        <Text style={styles.pbLabel}>
+                          heaviest{pb.heaviestWeight.reps ? ` · ${pb.heaviestWeight.reps} reps` : ""}
+                        </Text>
+                      </View>
+                    ) : null}
+                    {pb.highestReps ? (
+                      <View style={styles.pbStat}>
+                        <Text style={styles.pbValue}>{pb.highestReps.reps}</Text>
+                        <Text style={styles.pbLabel}>best reps</Text>
+                      </View>
+                    ) : null}
+                  </View>
+                </Card>
+              </Pressable>
             ))}
           </View>
         )}
@@ -282,6 +344,13 @@ export default function WorkoutsScreen() {
             <Card style={styles.trendCard}>
               <TrendChart points={filteredTrendPoints} />
             </Card>
+            <Pressable
+              onPress={() => router.push({ pathname: "/exercise-detail", params: { name: activeTrendExercise } })}
+              style={styles.viewHistoryRow}
+            >
+              <Text style={styles.viewHistoryText}>View {activeTrendExercise} history</Text>
+              <Ionicons name="chevron-forward" size={14} color={Color.gold} />
+            </Pressable>
           </View>
         ) : null}
 
@@ -301,14 +370,32 @@ export default function WorkoutsScreen() {
               <Button title="Log your first workout" onPress={() => router.push("/log-workout")} variant="secondary" style={{ marginTop: Spacing.sm }} />
             </Card>
           ) : (
-            data.sessions.slice(0, 5).map((s) => <SessionCard key={s.id} session={s} />)
+            data.sessions
+              .slice(0, 5)
+              .map((s) => (
+                <SessionCard
+                  key={s.id}
+                  session={s}
+                  onPress={() => router.push({ pathname: "/session-detail", params: { id: s.id } })}
+                />
+              ))
           )}
         </View>
 
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>MORE</Text>
           <Card>
-            <Pressable onPress={() => router.push("/workout-library")} style={styles.moreRow}>
+            <Pressable onPress={() => router.push("/workout-trends")} style={styles.moreRow}>
+              <View style={styles.moreRowIcon}>
+                <Ionicons name="trending-up-outline" size={18} color={Color.gold} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.moreRowTitle}>Training Trends</Text>
+                <Text style={styles.moreRowSub}>Sets and volume over time</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={Color.textFaint} />
+            </Pressable>
+            <Pressable onPress={() => router.push("/workout-library")} style={[styles.moreRow, styles.moreRowDivider]}>
               <View style={styles.moreRowIcon}>
                 <Ionicons name="albums-outline" size={18} color={Color.gold} />
               </View>
@@ -362,8 +449,29 @@ const styles = StyleSheet.create({
     color: Color.textMuted,
     marginBottom: Spacing.sm,
   },
+  weekStatsRow: { flexDirection: "row", gap: Spacing.sm },
+  weekStat: {
+    flex: 1,
+    alignItems: "center",
+    paddingVertical: Spacing.md,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: Color.borderSubtle,
+    backgroundColor: Color.surface1,
+  },
+  weekStatValue: { fontSize: 20, fontWeight: "700", color: Color.gold, fontVariant: ["tabular-nums"] },
+  weekStatLabel: { fontSize: 10, color: Color.textMuted, marginTop: 2 },
+  recordsList: { padding: 0, overflow: "hidden" },
+  recordRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", padding: Spacing.md, gap: Spacing.sm },
+  recordRowDivider: { borderTopWidth: 1, borderTopColor: Color.borderSubtle },
+  recordExercise: { fontSize: 13, fontWeight: "600", color: Color.textPrimary },
+  recordLabel: { fontSize: 11, color: Color.textMuted, marginTop: 1 },
+  recordValueWrap: { alignItems: "flex-end" },
+  recordValue: { fontSize: 14, fontWeight: "700", color: Color.gold, fontVariant: ["tabular-nums"] },
+  recordDate: { fontSize: 10, color: Color.textFaint, marginTop: 1 },
   pbCard: { padding: Spacing.md, marginBottom: Spacing.sm },
-  pbTitle: { fontSize: 13, fontWeight: "600", color: Color.textPrimary, marginBottom: Spacing.xs },
+  pbHeaderRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: Spacing.xs },
+  pbTitle: { fontSize: 13, fontWeight: "600", color: Color.textPrimary },
   pbRow: { flexDirection: "row", gap: Spacing.lg },
   pbStat: {},
   pbValue: { fontSize: 18, fontWeight: "700", color: Color.gold, fontVariant: ["tabular-nums"] },
@@ -406,6 +514,8 @@ const styles = StyleSheet.create({
   rangeChipText: { fontSize: 10, fontWeight: "600", color: Color.textMuted },
   rangeChipTextActive: { color: Color.gold },
   trendCard: { padding: Spacing.md, alignItems: "center" },
+  viewHistoryRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 4, marginTop: Spacing.sm, paddingVertical: 6 },
+  viewHistoryText: { fontSize: 12, fontWeight: "600", color: Color.gold },
   emptyCard: { alignItems: "center", padding: Spacing.xl, gap: Spacing.sm },
   emptyText: { fontSize: 12, color: Color.textMuted },
   dayDetailCard: { padding: Spacing.md, marginTop: Spacing.sm },

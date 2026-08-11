@@ -37,6 +37,93 @@ export function useStaffClasses() {
   });
 }
 
+// Mirrors WorkoutExerciseEntry in the main repo's lib/db.ts (subset of
+// fields relevant to class-workout recording).
+export interface ClassWorkoutExerciseEntry {
+  exerciseId: string | null;
+  name: string;
+  weight: string | null;
+  reps: number | null;
+  sets: number | null;
+  rpe?: number | null;
+  notes: string | null;
+}
+
+export interface ClassWorkoutRecord {
+  classId: string;
+  notes: string | null;
+  exercises: ClassWorkoutExerciseEntry[];
+  updatedByStaffId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ClassWorkoutCheckedInMember {
+  userId: string;
+  name: string;
+  existingExercises: ClassWorkoutExerciseEntry[] | null;
+  existingNotes: string | null;
+}
+
+export interface ClassWorkoutLibraryExercise {
+  id: string;
+  name: string;
+  section: string;
+}
+
+export interface ClassWorkoutData {
+  classId: string;
+  classTitle: string;
+  classDate: string;
+  startTime: string;
+  existingWorkout: ClassWorkoutRecord | null;
+  checkedIn: ClassWorkoutCheckedInMember[];
+  libraryExercises: ClassWorkoutLibraryExercise[];
+}
+
+interface ClassWorkoutResponse {
+  success: true;
+  data: ClassWorkoutData;
+}
+
+export function useClassWorkout(classId: string | undefined) {
+  return useQuery({
+    queryKey: ["class-workout", classId],
+    queryFn: () =>
+      apiFetch<ClassWorkoutResponse>(`/api/mobile/staff/classes/${classId}/workout`).then((r) => r.data),
+    enabled: !!classId,
+  });
+}
+
+export interface SaveClassWorkoutResult {
+  userId: string;
+  notes: string;
+  exercises: { name: string; weight: string; reps: number | null; sets: number | null; rpe: number | null }[];
+}
+
+export interface SaveClassWorkoutInput {
+  classId: string;
+  notes: string;
+  exercises: { exerciseId: string | null; name: string; weight: string; reps: number | null; sets: number | null }[];
+  results: SaveClassWorkoutResult[];
+}
+
+// Reuses the existing web save route (classes.manage, already Bearer-compatible).
+export function useSaveClassWorkout() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ classId, ...body }: SaveClassWorkoutInput) =>
+      apiFetch<{ success: true; message: string }>(`/api/staff/classes/${classId}/workout`, {
+        method: "POST",
+        body,
+      }),
+    onSuccess: (_data, variables) => {
+      qc.invalidateQueries({ queryKey: ["class-workout", variables.classId] });
+      qc.invalidateQueries({ queryKey: ["staff-classes"] });
+    },
+  });
+}
+
 export function useMarkAttendance() {
   const qc = useQueryClient();
   return useMutation({
@@ -70,6 +157,7 @@ export interface StaffMemberDetail extends StaffMemberSummary {
   totalSessionsLogged: number;
   totalBookings: number;
   lastSessionDate: string | null;
+  coachNotes: string | null;
 }
 
 interface StaffMembersResponse {
@@ -94,6 +182,104 @@ export function useStaffMemberDetail(userId: string | undefined) {
     queryKey: ["staff-member", userId],
     queryFn: () => apiFetch<StaffMemberDetailResponse>(`/api/mobile/staff/members/${userId}`).then((r) => r.data),
     enabled: !!userId,
+  });
+}
+
+// Uses the existing /api/staff/members/notes route (members.edit, coach-tier).
+export function useSaveCoachNotes(userId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (notes: string) =>
+      apiFetch<{ success: true }>("/api/staff/members/notes", {
+        method: "POST",
+        body: { userId, notes },
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["staff-member", userId] }),
+  });
+}
+
+// Mirrors MessageRecord / MessageThreadSummary in the main repo's lib/db.ts.
+export interface MessageRecord {
+  id: string;
+  memberId: string;
+  senderId: string;
+  senderRole: "member" | "staff";
+  body: string;
+  readAt: string | null;
+  createdAt: string;
+}
+
+export interface StaffMessageThreadSummary {
+  memberId: string;
+  memberEmail: string;
+  memberName: string | null;
+  memberArchived: boolean;
+  lastMessageBody: string;
+  lastMessageFromStaff: boolean;
+  lastMessageAt: string;
+  unreadFromMemberCount: number;
+}
+
+interface StaffMessageThreadsResponse {
+  success: true;
+  data: StaffMessageThreadSummary[];
+}
+
+export function useStaffMessageThreads() {
+  return useQuery({
+    queryKey: ["staff-message-threads"],
+    queryFn: () => apiFetch<StaffMessageThreadsResponse>("/api/mobile/staff/messages").then((r) => r.data),
+  });
+}
+
+export interface StaffMessageThread {
+  memberId: string;
+  memberEmail: string;
+  memberName: string | null;
+  messages: MessageRecord[];
+}
+
+interface StaffMessageThreadResponse {
+  success: true;
+  data: StaffMessageThread;
+}
+
+export function useStaffMessageThread(memberId: string | undefined) {
+  const qc = useQueryClient();
+  return useQuery({
+    queryKey: ["staff-message-thread", memberId],
+    queryFn: async () => {
+      const res = await apiFetch<StaffMessageThreadResponse>(`/api/mobile/staff/messages/${memberId}`);
+      // Reading a thread marks it read server-side, so refresh the inbox's unread badges.
+      qc.invalidateQueries({ queryKey: ["staff-message-threads"] });
+      return res.data;
+    },
+    enabled: !!memberId,
+  });
+}
+
+export function useSendStaffMessage(memberId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: string) =>
+      apiFetch<{ success: true }>("/api/messages/send", {
+        method: "POST",
+        body: { memberId, body },
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["staff-message-thread", memberId] });
+      qc.invalidateQueries({ queryKey: ["staff-message-threads"] });
+    },
+  });
+}
+
+export function useDraftAiReply() {
+  return useMutation({
+    mutationFn: (memberId: string) =>
+      apiFetch<{ success: true; configured: boolean; draft: string | null }>("/api/ai/draft-reply", {
+        method: "POST",
+        body: { memberId },
+      }),
   });
 }
 

@@ -1,7 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -11,6 +13,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { BrandMark } from "@/components/ui/BrandMark";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Color, Radius, Spacing } from "@/constants/theme";
@@ -64,6 +67,7 @@ function RosterRow({ classId, entry }: { classId: string; entry: StaffClassSumma
 }
 
 function ClassCard({ classItem }: { classItem: StaffClassSummary }) {
+  const router = useRouter();
   const [expanded, setExpanded] = useState(false);
   const full = classItem.bookedCount >= classItem.capacity;
 
@@ -98,10 +102,34 @@ function ClassCard({ classItem }: { classItem: StaffClassSummary }) {
               <RosterRow key={entry.bookingId} classId={classItem.id} entry={entry} />
             ))
           )}
+          <Pressable
+            onPress={() =>
+              router.push({
+                pathname: "/class-workout-builder",
+                params: {
+                  classId: classItem.id,
+                  classTitle: classItem.title,
+                  classDate: classItem.date,
+                  startTime: classItem.startTime,
+                },
+              })
+            }
+            style={styles.workoutButton}
+          >
+            <Ionicons name="barbell-outline" size={14} color={Color.gold} />
+            <Text style={styles.workoutButtonText}>Workout</Text>
+          </Pressable>
         </View>
       ) : null}
     </Card>
   );
+}
+
+function confirmLogout(logout: () => void) {
+  Alert.alert("Log out?", "You'll need to sign in again to access classes and members.", [
+    { text: "Cancel", style: "cancel" },
+    { text: "Log out", style: "destructive", onPress: logout },
+  ]);
 }
 
 export default function StaffOperationsScreen() {
@@ -120,8 +148,13 @@ export default function StaffOperationsScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Classes</Text>
-        <Ionicons name="log-out-outline" size={22} color={Color.textMuted} onPress={logout} suppressHighlighting />
+        <View style={styles.headerLeft}>
+          <BrandMark height={22} style={styles.headerLogo} />
+          <Text style={styles.headerTitle}>Classes</Text>
+        </View>
+        <Pressable onPress={() => confirmLogout(logout)} hitSlop={12}>
+          <Ionicons name="log-out-outline" size={22} color={Color.textMuted} />
+        </Pressable>
       </View>
 
       {isLoading ? (
@@ -167,6 +200,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.md,
   },
+  headerLeft: { flexDirection: "row", alignItems: "center" },
+  headerLogo: { marginRight: Spacing.sm },
   headerTitle: { fontSize: 20, fontWeight: "700", fontStyle: "italic", color: Color.textPrimary },
   centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
   errorText: { color: Color.textMuted, fontSize: 14, textAlign: "center" },
@@ -198,4 +233,17 @@ const styles = StyleSheet.create({
   rosterRow: { flexDirection: "row", alignItems: "center", gap: Spacing.sm, paddingVertical: Spacing.xs },
   rosterName: { fontSize: 13, color: Color.textPrimary },
   rosterEmail: { fontSize: 11, color: Color.textMuted },
+  workoutButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    alignSelf: "flex-start",
+    marginTop: Spacing.sm,
+    borderRadius: Radius.pill,
+    borderWidth: 1,
+    borderColor: Color.goldBorder,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 6,
+  },
+  workoutButtonText: { fontSize: 12, fontWeight: "600", color: Color.gold },
 });

@@ -221,12 +221,20 @@ export default function LogFoodScreen() {
             <Ionicons name="chevron-back" size={22} color={Color.textPrimary} />
           </Pressable>
           <Text style={styles.headerTitle}>Log Food</Text>
-          <Pressable
-            onPress={() => router.push({ pathname: "/barcode-scan", params: { date, mealType } })}
-            hitSlop={12}
-          >
-            <Ionicons name="barcode-outline" size={22} color={Color.gold} />
-          </Pressable>
+          <View style={styles.headerActions}>
+            <Pressable
+              onPress={() => router.push({ pathname: "/label-scan", params: { date, mealType } })}
+              hitSlop={12}
+            >
+              <Ionicons name="camera-outline" size={22} color={Color.gold} />
+            </Pressable>
+            <Pressable
+              onPress={() => router.push({ pathname: "/barcode-scan", params: { date, mealType } })}
+              hitSlop={12}
+            >
+              <Ionicons name="barcode-outline" size={22} color={Color.gold} />
+            </Pressable>
+          </View>
         </View>
 
         <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
@@ -381,6 +389,7 @@ export default function LogFoodScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: Color.bg0 },
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md },
+  headerActions: { flexDirection: "row", alignItems: "center", gap: Spacing.md },
   backButton: { padding: 4 },
   headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
   scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },

@@ -72,6 +72,10 @@ export default function ProfileScreen() {
   const [primaryGoal, setPrimaryGoal] = useState<PrimaryGoal | null>(null);
   const [sportPlayed, setSportPlayed] = useState("");
   const [additionalInfo, setAdditionalInfo] = useState("");
+  const [emergencyContactName, setEmergencyContactName] = useState("");
+  const [emergencyContactPhone, setEmergencyContactPhone] = useState("");
+  const [emergencyContact2Name, setEmergencyContact2Name] = useState("");
+  const [emergencyContact2Phone, setEmergencyContact2Phone] = useState("");
   const [dietaryPreference, setDietaryPreference] = useState<DietaryPreference>("standard");
   const [allergies, setAllergies] = useState<string[]>([]);
   const [intolerancesOrMedical, setIntolerancesOrMedical] = useState<string[]>([]);
@@ -89,6 +93,10 @@ export default function ProfileScreen() {
     setPrimaryGoal(data.primaryGoal);
     setSportPlayed(data.sportPlayed ?? "");
     setAdditionalInfo(data.additionalInfo ?? "");
+    setEmergencyContactName(data.emergencyContactName ?? "");
+    setEmergencyContactPhone(data.emergencyContactPhone ?? "");
+    setEmergencyContact2Name(data.emergencyContact2Name ?? "");
+    setEmergencyContact2Phone(data.emergencyContact2Phone ?? "");
     setDietaryPreference(data.dietaryPreference);
     setAllergies(data.allergies);
     setIntolerancesOrMedical(data.intolerancesOrMedical);
@@ -147,6 +155,10 @@ export default function ProfileScreen() {
         primaryGoal,
         sportPlayed: sportPlayed.trim() || undefined,
         additionalInfo: additionalInfo.trim() || undefined,
+        emergencyContactName: emergencyContactName.trim() || undefined,
+        emergencyContactPhone: emergencyContactPhone.trim() || undefined,
+        emergencyContact2Name: emergencyContact2Name.trim() || undefined,
+        emergencyContact2Phone: emergencyContact2Phone.trim() || undefined,
         dietaryPreference,
         allergies,
         intolerancesOrMedical,
@@ -239,6 +251,36 @@ export default function ProfileScreen() {
               multiline
               style={styles.multiline}
             />
+
+            <Text style={[styles.sectionLabel, styles.sectionLabelSpaced]}>IN CASE OF EMERGENCY</Text>
+            <TextField
+              label="Emergency contact name"
+              value={emergencyContactName}
+              onChangeText={setEmergencyContactName}
+              placeholder="e.g. Jane Smith"
+            />
+            <TextField
+              label="Emergency contact phone"
+              value={emergencyContactPhone}
+              onChangeText={setEmergencyContactPhone}
+              keyboardType="phone-pad"
+              placeholder="+353 83 123 4567"
+            />
+            <TextField
+              label="Second emergency contact name — optional"
+              value={emergencyContact2Name}
+              onChangeText={setEmergencyContact2Name}
+              placeholder="e.g. John Smith"
+            />
+            {emergencyContact2Name.trim() ? (
+              <TextField
+                label="Second emergency contact phone"
+                value={emergencyContact2Phone}
+                onChangeText={setEmergencyContact2Phone}
+                keyboardType="phone-pad"
+                placeholder="+353 83 123 4567"
+              />
+            ) : null}
 
             <Text style={[styles.sectionLabel, styles.sectionLabelSpaced]}>DIETARY REQUIREMENTS</Text>
             <Card style={styles.dietaryCard}>

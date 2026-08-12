@@ -26,6 +26,10 @@ export interface ProfileData {
   primaryGoal: PrimaryGoal;
   sportPlayed: string | null;
   additionalInfo: string | null;
+  emergencyContactName: string | null;
+  emergencyContactPhone: string | null;
+  emergencyContact2Name: string | null;
+  emergencyContact2Phone: string | null;
   currentWeightKg: number | null;
   dietaryPreference: DietaryPreference;
   allergies: string[];
@@ -60,6 +64,10 @@ export interface ProfileUpdateInput {
   primaryGoal: PrimaryGoal;
   sportPlayed?: string;
   additionalInfo?: string;
+  emergencyContactName?: string;
+  emergencyContactPhone?: string;
+  emergencyContact2Name?: string;
+  emergencyContact2Phone?: string;
   dietaryPreference?: DietaryPreference;
   allergies?: string[];
   intolerancesOrMedical?: string[];

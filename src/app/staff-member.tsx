@@ -116,6 +116,24 @@ export default function StaffMemberScreen() {
           </Card>
 
           <Card style={styles.card}>
+            <Text style={styles.sectionLabel}>EMERGENCY CONTACT</Text>
+            {!data.emergencyContactName && !data.emergencyContactPhone ? (
+              <Text style={styles.rowValue}>Not provided yet.</Text>
+            ) : (
+              <View style={styles.rowLine}>
+                <Text style={styles.rowLabel}>{data.emergencyContactName ?? "—"}</Text>
+                <Text style={styles.rowValue}>{data.emergencyContactPhone ?? "—"}</Text>
+              </View>
+            )}
+            {data.emergencyContact2Name || data.emergencyContact2Phone ? (
+              <View style={styles.rowLine}>
+                <Text style={styles.rowLabel}>{data.emergencyContact2Name ?? "—"}</Text>
+                <Text style={styles.rowValue}>{data.emergencyContact2Phone ?? "—"}</Text>
+              </View>
+            ) : null}
+          </Card>
+
+          <Card style={styles.card}>
             <Text style={styles.sectionLabel}>TRAINING</Text>
             <View style={styles.rowLine}>
               <Text style={styles.rowLabel}>Primary goal</Text>

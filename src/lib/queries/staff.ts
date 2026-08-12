@@ -167,6 +167,10 @@ export interface StaffMemberDetail extends StaffMemberSummary {
   dateOfBirth: string | null;
   primaryGoal: string;
   sportPlayed: string | null;
+  emergencyContactName: string | null;
+  emergencyContactPhone: string | null;
+  emergencyContact2Name: string | null;
+  emergencyContact2Phone: string | null;
   currentPeriodEnd: string | null;
   totalSessionsLogged: number;
   totalBookings: number;

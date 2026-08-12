@@ -22,18 +22,23 @@ export default function RunTimerScreen() {
   const [accumulatedSecs, setAccumulatedSecs] = useState(0);
   const [startedAtMs, setStartedAtMs] = useState<number | null>(null);
   const [splits, setSplits] = useState<string[]>([]);
-  const [, setTick] = useState(0);
-
-  useEffect(() => {
-    if (!startedAtMs) return;
-    const id = setInterval(() => setTick((t) => t + 1), 1000);
-    return () => clearInterval(id);
-  }, [startedAtMs]);
 
   function elapsedSecs(): number {
     if (!startedAtMs) return accumulatedSecs;
     return accumulatedSecs + Math.floor((Date.now() - startedAtMs) / 1000);
   }
+
+  // The displayed clock is driven by this state, refreshed every second
+  // while running — reading elapsedSecs() directly in JSX doesn't reliably
+  // repaint, since its Date.now() read isn't a dependency React can see.
+  const [liveElapsedSecs, setLiveElapsedSecs] = useState(0);
+  useEffect(() => {
+    setLiveElapsedSecs(elapsedSecs());
+    if (!startedAtMs) return;
+    const id = setInterval(() => setLiveElapsedSecs(elapsedSecs()), 1000);
+    return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [startedAtMs, accumulatedSecs]);
 
   function handleStartPause() {
     tapFeedback();
@@ -84,7 +89,7 @@ export default function RunTimerScreen() {
       </View>
 
       <View style={styles.body}>
-        <Text style={styles.clock}>{formatDuration(elapsedSecs())}</Text>
+        <Text style={styles.clock}>{formatDuration(liveElapsedSecs)}</Text>
 
         <View style={styles.controlsRow}>
           <Pressable onPress={handleReset} style={styles.secondaryControl}>

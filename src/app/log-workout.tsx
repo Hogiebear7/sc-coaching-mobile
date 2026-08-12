@@ -255,16 +255,18 @@ export default function LogWorkoutScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hydrated, draft.date]);
 
-  // Re-render every second while the timer runs so the displayed clock
-  // ticks — the underlying value is always recomputed from timestamps via
-  // elapsedSecsNow(), so this is purely a repaint trigger, not the source
-  // of truth (see lib/workout-draft.tsx).
-  const [, setTick] = useState(0);
+  // The displayed clock is driven by this state, refreshed every second
+  // while the timer runs — reading elapsedSecsNow() directly in JSX doesn't
+  // reliably repaint, since its only dependency the render sees is the tick
+  // counter, not the Date.now() call inside it.
+  const [liveElapsedSecs, setLiveElapsedSecs] = useState(0);
   useEffect(() => {
+    setLiveElapsedSecs(elapsedSecsNow());
     if (!draft.startedAtMs) return;
-    const id = setInterval(() => setTick((t) => t + 1), 1000);
+    const id = setInterval(() => setLiveElapsedSecs(elapsedSecsNow()), 1000);
     return () => clearInterval(id);
-  }, [draft.startedAtMs]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draft.startedAtMs, draft.accumulatedSecs]);
 
   // Arriving from the Active Program card or a saved Library template —
   // either way prefill exercise rows (name, target sets, set type) from a
@@ -309,13 +311,33 @@ export default function LogWorkoutScreen() {
     update({ exerciseRows: exerciseRows.map((r) => (r.key === key ? { ...r, ...patch } : r)) });
   }
   function removeRow(key: string) {
-    update({ exerciseRows: exerciseRows.filter((r) => r.key !== key) });
+    Alert.alert("Remove this exercise?", "Any sets you've logged for it will be deleted.", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Remove",
+        style: "destructive",
+        onPress: () => {
+          tapFeedback();
+          update({ exerciseRows: exerciseRows.filter((r) => r.key !== key) });
+        },
+      },
+    ]);
   }
   function updateRunRow(key: string, patch: Partial<Omit<RunRow, "key">>) {
     update({ runRows: runRows.map((r) => (r.key === key ? { ...r, ...patch } : r)) });
   }
   function removeRunRow(key: string) {
-    update({ runRows: runRows.filter((r) => r.key !== key) });
+    Alert.alert("Remove this run?", "Any details you've logged for it will be deleted.", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Remove",
+        style: "destructive",
+        onPress: () => {
+          tapFeedback();
+          update({ runRows: runRows.filter((r) => r.key !== key) });
+        },
+      },
+    ]);
   }
 
   function updateSetRow(rowKey: string, setKey: string, patch: Partial<Omit<SetRow, "key">>) {
@@ -538,7 +560,7 @@ export default function LogWorkoutScreen() {
             <View style={styles.timerCard}>
               <View>
                 <Text style={styles.timerLabel}>WORKOUT TIME</Text>
-                <Text style={styles.timerClock}>{formatDuration(elapsedSecsNow())}</Text>
+                <Text style={styles.timerClock}>{formatDuration(liveElapsedSecs)}</Text>
               </View>
               <View style={{ flexDirection: "row", gap: Spacing.sm }}>
                 {timerStarted ? (

@@ -48,6 +48,26 @@ export function weightedThreeDayLoad(
   return Math.round(value * 100) / 100;
 }
 
+// ─── 7-day training-load banding (mirrors lib/workout-helper.ts) ──────
+// Load = duration × RPE summed over 7 days. ~2400 is roughly five hard
+// hour-long sessions in a week — treat that as an accumulated-load flag.
+
+export type LoadBand = "none" | "light" | "moderate" | "high";
+
+export function classifyLoad(sevenDayLoad: number, daysWithLoad: number): LoadBand {
+  if (daysWithLoad === 0) return "none";
+  if (sevenDayLoad >= 2400) return "high";
+  if (sevenDayLoad >= 1000) return "moderate";
+  return "light";
+}
+
+export const LOAD_BAND_LABEL: Record<LoadBand, string> = {
+  none: "No data",
+  light: "Light",
+  moderate: "Moderate",
+  high: "High",
+};
+
 // ─── Fuel day bands & macro targets ───────────────────────────────────
 
 export type FuelDay = "reduced" | "standard" | "full" | "match";

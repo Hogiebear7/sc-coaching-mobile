@@ -32,6 +32,7 @@ import {
   type MealType,
 } from "@/lib/queries/nutrition-diary";
 import { useNutrition, useSendNutritionCoachMessage, type FoodItem, type NutritionAiMessage } from "@/lib/queries/nutrition";
+import { classifyLoad, LOAD_BAND_LABEL } from "@/lib/nutrition-calc";
 import { todayDateString } from "@/lib/workout-formatters";
 
 function shiftDate(dateISO: string, days: number): string {
@@ -77,6 +78,23 @@ function FoodChip({ item }: { item: FoodItem }) {
   return (
     <View style={styles.foodChip}>
       <Text style={styles.foodChipText}>{item.name}</Text>
+    </View>
+  );
+}
+
+function EmphasisRow({ icon, tone, title, text }: { icon: keyof typeof Ionicons.glyphMap; tone: "neutral" | "gold" | "success"; title: string; text: string }) {
+  const toneColor = tone === "gold" ? Color.gold : tone === "success" ? Color.success : Color.textSecondary;
+  const toneBorder = tone === "gold" ? Color.goldBorder : tone === "success" ? Color.success : Color.borderSubtle;
+  const toneBg = tone === "gold" ? Color.goldWeak : tone === "success" ? Color.successWeak : Color.surface2;
+  return (
+    <View style={styles.emphasisRow}>
+      <View style={[styles.emphasisIconWrap, { borderColor: toneBorder, backgroundColor: toneBg }]}>
+        <Ionicons name={icon} size={16} color={toneColor} />
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={styles.emphasisTitle}>{title}</Text>
+        <Text style={styles.emphasisText}>{text}</Text>
+      </View>
     </View>
   );
 }
@@ -205,6 +223,25 @@ export default function NutritionScreen() {
   }
 
   const allFoods = [...data.foodRecommendations.protein, ...data.foodRecommendations.carb, ...data.foodRecommendations.snack];
+
+  // Readiness-aware hydration line (Recovery data → messaging) — mirrors
+  // the web Nutrition tab's "Today's emphasis" copy verbatim.
+  const hydrationLine =
+    data.readinessScore === null
+      ? "No recovery log today — log it in the Recovery tab so fuelling and hydration guidance can react to how you're actually recovering."
+      : data.readinessScore < 50
+        ? `Readiness is ${data.readinessScore} — prioritise fluids and add electrolytes with meals today; low readiness often tracks with poor hydration and sleep.`
+        : data.readinessScore < 75
+          ? `Readiness is ${data.readinessScore} — steady fluids through the day; front-load them earlier rather than catching up tonight.`
+          : `Readiness is ${data.readinessScore} — recovery looks good; normal fluid rhythm with meals and training covers today.`;
+
+  const weekBand = classifyLoad(data.sevenDayLoad, data.daysWithLoad);
+  const trainingLine =
+    weekBand === "high"
+      ? `Your 7-day load is ${LOAD_BAND_LABEL[weekBand].toLowerCase()} — protect carbs around sessions and don't train fasted this week.`
+      : data.lastSessionTitle
+        ? `Last logged session: ${data.lastSessionTitle}${data.lastSessionDate ? ` (${data.lastSessionDate})` : ""}. Time most of today's carbs before and after training windows.`
+        : "No workouts logged yet — once sessions are in the Workouts tab, fuelling emphasis follows your real training.";
 
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
@@ -381,6 +418,22 @@ export default function NutritionScreen() {
           </View>
 
           <View style={styles.section}>
+            <Text style={styles.sectionLabel}>TODAY&apos;S EMPHASIS</Text>
+            <Card style={styles.emphasisCard}>
+              <EmphasisRow icon="water-outline" tone="neutral" title="Hydration" text={hydrationLine} />
+              <View style={styles.emphasisDivider} />
+              <EmphasisRow icon="flash-outline" tone="gold" title="Training fuel" text={trainingLine} />
+              <View style={styles.emphasisDivider} />
+              <EmphasisRow
+                icon="heart-outline"
+                tone="success"
+                title="Micros & recovery"
+                text="Spread protein across 3–4 meals, get colour on every plate for micronutrients, and keep the last big meal 2–3 hours before sleep. Repair happens between sessions, not during them."
+              />
+            </Card>
+          </View>
+
+          <View style={styles.section}>
             <CoachChat configured={data.aiNutritionCoachConfigured} initialMessages={data.initialAiNutritionMessages} />
           </View>
         </ScrollView>
@@ -509,4 +562,17 @@ const styles = StyleSheet.create({
   },
   sendButton: { backgroundColor: Color.gold, borderRadius: Radius.md, paddingHorizontal: Spacing.md, paddingVertical: 12 },
   sendButtonText: { fontSize: 12, fontWeight: "700", color: Color.goldForeground },
+  emphasisCard: { padding: 0 },
+  emphasisRow: { flexDirection: "row", gap: Spacing.sm, padding: Spacing.md },
+  emphasisDivider: { height: 1, backgroundColor: Color.borderSubtle, marginHorizontal: Spacing.md },
+  emphasisIconWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  emphasisTitle: { fontSize: 14, fontWeight: "700", color: Color.textPrimary },
+  emphasisText: { fontSize: 12, color: Color.textMuted, marginTop: 4, lineHeight: 17 },
 });

@@ -22,8 +22,8 @@ export interface NutritionData {
   bodyWeightKg: number | null;
   goalBias: "maintain" | "lose" | "gain";
   primaryGoal: string;
-  yesterdayExertion: "low" | "medium" | "high";
-  todayExertion: "low" | "medium" | "high";
+  yesterdayExertion: "low" | "medium" | "high" | "match";
+  todayExertion: "low" | "medium" | "high" | "match";
   readinessScore: number | null;
   sevenDayLoad: number;
   daysWithLoad: number;

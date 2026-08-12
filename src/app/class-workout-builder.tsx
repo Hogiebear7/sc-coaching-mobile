@@ -32,6 +32,140 @@ function nextKey(): string {
   return `cw-${Date.now()}-${keySeq}`;
 }
 
+type WorkoutFormat = "standard" | "circuit" | "amrap" | "emom" | "tabata" | "chipper";
+
+const FORMAT_OPTIONS: { value: WorkoutFormat; label: string }[] = [
+  { value: "standard", label: "Standard" },
+  { value: "chipper", label: "Chipper" },
+  { value: "circuit", label: "Circuit" },
+  { value: "amrap", label: "AMRAP" },
+  { value: "emom", label: "EMOM" },
+  { value: "tabata", label: "Tabata" },
+];
+
+type CircuitStation = { key: string; name: string; mode: "reps" | "time"; reps: string; seconds: string };
+
+// The class-workout builder has no live-timer executor — the coach is
+// running the session in person — so format config is folded into the
+// existing free-text `notes` field members already see, rather than adding
+// a new backend field just for this screen.
+function buildFormatSummary(
+  format: WorkoutFormat,
+  circuitStations: CircuitStation[],
+  circuitRest: { station: string; round: string },
+  circuitRounds: string,
+  movements: string[],
+  amrapMins: string,
+  emomIntervalSecs: string,
+  emomTotalMins: string,
+  tabataWork: string,
+  tabataRest: string,
+  tabataRounds: string
+): string {
+  if (format === "chipper") return "Format: Chipper (for time)";
+  if (format === "circuit") {
+    const stationList = circuitStations
+      .filter((s) => s.name.trim())
+      .map((s) => (s.mode === "reps" && s.reps.trim() ? `${s.name} (${s.reps} reps)` : s.mode === "time" && s.seconds.trim() ? `${s.name} (${s.seconds}s)` : s.name))
+      .join(", ");
+    return `Format: Circuit — ${circuitRounds || "?"} rounds · Stations: ${stationList || "—"} · Rest ${circuitRest.station || "0"}s/station, ${circuitRest.round || "0"}s/round`;
+  }
+  if (format === "amrap") {
+    return `Format: AMRAP — ${amrapMins || "?"} min · Movements: ${movements.join(", ") || "—"}`;
+  }
+  if (format === "emom") {
+    return `Format: EMOM — ${emomIntervalSecs || "60"}s intervals × ${emomTotalMins || "?"} min · Movements: ${movements.join(", ") || "—"}`;
+  }
+  if (format === "tabata") {
+    return `Format: Tabata — ${tabataWork || "20"}s work / ${tabataRest || "10"}s rest × ${tabataRounds || "8"} rounds · Movements: ${movements.join(", ") || "—"}`;
+  }
+  return "";
+}
+
+function newCircuitStation(): CircuitStation {
+  return { key: nextKey(), name: "", mode: "reps", reps: "", seconds: "" };
+}
+
+function MovementsEditor({ movements, onChange }: { movements: string[]; onChange: (m: string[]) => void }) {
+  const [draftText, setDraftText] = useState("");
+  function add() {
+    const v = draftText.trim();
+    if (!v) return;
+    onChange([...movements, v]);
+    setDraftText("");
+  }
+  return (
+    <View style={{ marginTop: Spacing.sm }}>
+      <Text style={styles.rowLabel}>Movements</Text>
+      <View style={{ flexDirection: "row", gap: Spacing.xs }}>
+        <TextInput
+          value={draftText}
+          onChangeText={setDraftText}
+          placeholder="e.g. 10 Burpees"
+          placeholderTextColor={Color.textFaint}
+          style={[inputStyleBase, { flex: 1 }]}
+          onSubmitEditing={add}
+          returnKeyType="done"
+        />
+        <Pressable onPress={add} style={styles.formatAddButton}>
+          <Ionicons name="add" size={18} color={Color.goldForeground} />
+        </Pressable>
+      </View>
+      {movements.length > 0 ? (
+        <View style={styles.movementsList}>
+          {movements.map((m, i) => (
+            <View key={`${m}-${i}`} style={styles.movementChip}>
+              <Text style={styles.movementChipText}>{m}</Text>
+              <Pressable onPress={() => onChange(movements.filter((_, idx) => idx !== i))} hitSlop={6}>
+                <Ionicons name="close" size={13} color={Color.textFaint} />
+              </Pressable>
+            </View>
+          ))}
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
+function StationsEditor({ stations, onChange }: { stations: CircuitStation[]; onChange: (s: CircuitStation[]) => void }) {
+  function updateStation(key: string, patch: Partial<CircuitStation>) {
+    onChange(stations.map((s) => (s.key === key ? { ...s, ...patch } : s)));
+  }
+  return (
+    <View>
+      <Text style={styles.rowLabel}>Stations</Text>
+      {stations.map((s, i) => (
+        <View key={s.key} style={styles.stationRow}>
+          <TextInput
+            value={s.name}
+            onChangeText={(v) => updateStation(s.key, { name: v })}
+            placeholder={`Station ${i + 1} name`}
+            placeholderTextColor={Color.textFaint}
+            style={[inputStyleBase, { flex: 1 }]}
+          />
+          <Pressable onPress={() => updateStation(s.key, { mode: s.mode === "reps" ? "time" : "reps" })} style={styles.formatModeChip}>
+            <Text style={styles.formatModeText}>{s.mode === "reps" ? "Reps" : "Time"}</Text>
+          </Pressable>
+          <TextInput
+            value={s.mode === "reps" ? s.reps : s.seconds}
+            onChangeText={(v) => updateStation(s.key, s.mode === "reps" ? { reps: v } : { seconds: v })}
+            keyboardType="number-pad"
+            placeholder={s.mode === "reps" ? "reps" : "secs"}
+            placeholderTextColor={Color.textFaint}
+            style={[inputStyleBase, { width: 56, paddingHorizontal: 4 }]}
+          />
+          <Pressable onPress={() => onChange(stations.filter((row) => row.key !== s.key))} hitSlop={6}>
+            <Ionicons name="close" size={16} color={Color.textFaint} />
+          </Pressable>
+        </View>
+      ))}
+      <Pressable onPress={() => onChange([...stations, newCircuitStation()])} style={styles.addChip}>
+        <Text style={styles.addChipText}>+ Station</Text>
+      </Pressable>
+    </View>
+  );
+}
+
 type TemplateRow = {
   key: string;
   exerciseId: string | null;
@@ -110,6 +244,20 @@ export default function ClassWorkoutBuilderScreen() {
 
   const [template, setTemplate] = useState<TemplateRow[]>([newTemplateRow()]);
   const [workoutNotes, setWorkoutNotes] = useState("");
+  const [format, setFormat] = useState<WorkoutFormat>("standard");
+  const [circuitStations, setCircuitStations] = useState<CircuitStation[]>([]);
+  const [circuitRestStation, setCircuitRestStation] = useState("15");
+  const [circuitRestRound, setCircuitRestRound] = useState("60");
+  const [circuitRounds, setCircuitRounds] = useState("3");
+  const [amrapMins, setAmrapMins] = useState("12");
+  const [amrapMovements, setAmrapMovements] = useState<string[]>([]);
+  const [emomIntervalSecs, setEmomIntervalSecs] = useState("60");
+  const [emomTotalMins, setEmomTotalMins] = useState("10");
+  const [emomMovements, setEmomMovements] = useState<string[]>([]);
+  const [tabataWork, setTabataWork] = useState("20");
+  const [tabataRest, setTabataRest] = useState("10");
+  const [tabataRounds, setTabataRounds] = useState("8");
+  const [tabataMovements, setTabataMovements] = useState<string[]>([]);
   const [memberRows, setMemberRows] = useState<Record<string, MemberRow[]>>({});
   const [memberNotes, setMemberNotes] = useState<Record<string, string>>({});
   const [openMember, setOpenMember] = useState<string | null>(null);
@@ -160,9 +308,27 @@ export default function ClassWorkoutBuilderScreen() {
         })),
       }));
 
+      const formatSummary =
+        format !== "standard"
+          ? buildFormatSummary(
+              format,
+              circuitStations,
+              { station: circuitRestStation, round: circuitRestRound },
+              circuitRounds,
+              format === "amrap" ? amrapMovements : format === "emom" ? emomMovements : format === "tabata" ? tabataMovements : [],
+              amrapMins,
+              emomIntervalSecs,
+              emomTotalMins,
+              tabataWork,
+              tabataRest,
+              tabataRounds
+            )
+          : "";
+      const combinedNotes = [formatSummary, workoutNotes.trim()].filter(Boolean).join("\n\n");
+
       const res = await saveWorkout.mutateAsync({
         classId,
-        notes: workoutNotes,
+        notes: combinedNotes,
         exercises: template.map((r) => ({
           exerciseId: r.exerciseId,
           name: r.name,
@@ -289,6 +455,90 @@ export default function ClassWorkoutBuilderScreen() {
               multiline
               style={[inputStyleBase, styles.notesInput]}
             />
+
+            <Text style={[styles.rowLabel, { marginTop: Spacing.md }]}>Format</Text>
+            <View style={styles.formatRow}>
+              {FORMAT_OPTIONS.map((opt) => (
+                <Pressable
+                  key={opt.value}
+                  onPress={() => {
+                    tapFeedback();
+                    setFormat(opt.value);
+                  }}
+                  style={[styles.formatChip, format === opt.value && styles.formatChipActive]}
+                >
+                  <Text style={[styles.formatChipText, format === opt.value && styles.formatChipTextActive]}>{opt.label}</Text>
+                </Pressable>
+              ))}
+            </View>
+
+            {format === "chipper" ? (
+              <Text style={styles.sectionHint}>List the movements above as exercises, done once for time.</Text>
+            ) : null}
+
+            {format === "circuit" ? (
+              <View style={styles.formatConfig}>
+                <StationsEditor stations={circuitStations} onChange={setCircuitStations} />
+                <View style={styles.gridRow}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.rowLabel}>Rest / station (s)</Text>
+                    <TextInput value={circuitRestStation} onChangeText={setCircuitRestStation} keyboardType="number-pad" style={inputStyleBase} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.rowLabel}>Rest / round (s)</Text>
+                    <TextInput value={circuitRestRound} onChangeText={setCircuitRestRound} keyboardType="number-pad" style={inputStyleBase} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.rowLabel}>Rounds</Text>
+                    <TextInput value={circuitRounds} onChangeText={setCircuitRounds} keyboardType="number-pad" style={inputStyleBase} />
+                  </View>
+                </View>
+              </View>
+            ) : null}
+
+            {format === "amrap" ? (
+              <View style={styles.formatConfig}>
+                <Text style={styles.rowLabel}>Time cap (mins)</Text>
+                <TextInput value={amrapMins} onChangeText={setAmrapMins} keyboardType="number-pad" style={inputStyleBase} />
+                <MovementsEditor movements={amrapMovements} onChange={setAmrapMovements} />
+              </View>
+            ) : null}
+
+            {format === "emom" ? (
+              <View style={styles.formatConfig}>
+                <View style={styles.gridRow}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.rowLabel}>Interval (secs)</Text>
+                    <TextInput value={emomIntervalSecs} onChangeText={setEmomIntervalSecs} keyboardType="number-pad" style={inputStyleBase} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.rowLabel}>Total (mins)</Text>
+                    <TextInput value={emomTotalMins} onChangeText={setEmomTotalMins} keyboardType="number-pad" style={inputStyleBase} />
+                  </View>
+                </View>
+                <MovementsEditor movements={emomMovements} onChange={setEmomMovements} />
+              </View>
+            ) : null}
+
+            {format === "tabata" ? (
+              <View style={styles.formatConfig}>
+                <View style={styles.gridRow}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.rowLabel}>Work (secs)</Text>
+                    <TextInput value={tabataWork} onChangeText={setTabataWork} keyboardType="number-pad" style={inputStyleBase} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.rowLabel}>Rest (secs)</Text>
+                    <TextInput value={tabataRest} onChangeText={setTabataRest} keyboardType="number-pad" style={inputStyleBase} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.rowLabel}>Rounds</Text>
+                    <TextInput value={tabataRounds} onChangeText={setTabataRounds} keyboardType="number-pad" style={inputStyleBase} />
+                  </View>
+                </View>
+                <MovementsEditor movements={tabataMovements} onChange={setTabataMovements} />
+              </View>
+            ) : null}
           </Card>
 
           <Card style={styles.sectionCard}>
@@ -452,4 +702,34 @@ const styles = StyleSheet.create({
   memberStatus: { fontSize: 11, color: Color.textMuted },
   memberBody: { marginTop: Spacing.sm, paddingTop: Spacing.sm, borderTopWidth: 1, borderTopColor: Color.borderSubtle },
   rowLabel: { fontSize: 12, fontWeight: "600", color: Color.textPrimary, marginBottom: 6 },
+  formatRow: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.xs, marginTop: Spacing.xs },
+  formatChip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.sm, paddingVertical: 8 },
+  formatChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
+  formatChipText: { fontSize: 12, fontWeight: "600", color: Color.textMuted },
+  formatChipTextActive: { color: Color.gold },
+  formatConfig: { marginTop: Spacing.sm },
+  formatAddButton: {
+    width: 40,
+    height: 40,
+    borderRadius: Radius.md,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: Color.gold,
+  },
+  formatModeChip: { paddingHorizontal: Spacing.sm, paddingVertical: 8, borderRadius: Radius.md, borderWidth: 1, borderColor: Color.borderSubtle },
+  formatModeText: { fontSize: 10, fontWeight: "700", color: Color.textMuted },
+  stationRow: { flexDirection: "row", alignItems: "center", gap: Spacing.xs, marginBottom: Spacing.xs },
+  movementsList: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: Spacing.sm },
+  movementChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    borderRadius: Radius.pill,
+    borderWidth: 1,
+    borderColor: Color.borderSubtle,
+    backgroundColor: Color.surface1,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 6,
+  },
+  movementChipText: { fontSize: 11, color: Color.textSecondary, fontWeight: "500" },
 });

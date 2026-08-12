@@ -42,16 +42,32 @@ export default function StaffMembersScreen() {
   const router = useRouter();
   const { data, isLoading, isError, refetch, isRefetching } = useStaffMembers();
   const [query, setQuery] = useState("");
+  const [sort, setSort] = useState<"az" | "plan">("az");
 
   const filtered = useMemo(() => {
     if (!data) return [];
     const active = data.filter((m) => !m.archivedAt);
     const q = query.trim().toLowerCase();
-    if (!q) return active;
-    return active.filter(
-      (m) => m.fullName?.toLowerCase().includes(q) || m.email.toLowerCase().includes(q)
-    );
-  }, [data, query]);
+    const matched = q
+      ? active.filter((m) => m.fullName?.toLowerCase().includes(q) || m.email.toLowerCase().includes(q))
+      : active;
+
+    const sorted = [...matched];
+    if (sort === "az") {
+      sorted.sort((a, b) => (a.fullName ?? a.email).localeCompare(b.fullName ?? b.email));
+    } else {
+      // Plan holders first (grouped by plan name alphabetically), no-plan members last.
+      sorted.sort((a, b) => {
+        if (!a.currentPlanName && b.currentPlanName) return 1;
+        if (a.currentPlanName && !b.currentPlanName) return -1;
+        if (a.currentPlanName && b.currentPlanName && a.currentPlanName !== b.currentPlanName) {
+          return a.currentPlanName.localeCompare(b.currentPlanName);
+        }
+        return (a.fullName ?? a.email).localeCompare(b.fullName ?? b.email);
+      });
+    }
+    return sorted;
+  }, [data, query, sort]);
 
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
@@ -69,6 +85,16 @@ export default function StaffMembersScreen() {
           style={styles.searchInput}
           autoCapitalize="none"
         />
+      </View>
+
+      <View style={styles.sortRow}>
+        <Text style={styles.sortLabel}>Sort</Text>
+        <Pressable onPress={() => setSort("az")} style={[styles.sortChip, sort === "az" && styles.sortChipActive]}>
+          <Text style={[styles.sortChipText, sort === "az" && styles.sortChipTextActive]}>A–Z</Text>
+        </Pressable>
+        <Pressable onPress={() => setSort("plan")} style={[styles.sortChip, sort === "plan" && styles.sortChipActive]}>
+          <Text style={[styles.sortChipText, sort === "plan" && styles.sortChipTextActive]}>By membership</Text>
+        </Pressable>
       </View>
 
       {isLoading ? (
@@ -120,6 +146,18 @@ const styles = StyleSheet.create({
     backgroundColor: Color.surface1,
   },
   searchInput: { flex: 1, color: Color.textPrimary, fontSize: 14 },
+  sortRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.xs,
+    marginHorizontal: Spacing.lg,
+    marginBottom: Spacing.md,
+  },
+  sortLabel: { fontSize: 11, color: Color.textFaint, marginRight: 2 },
+  sortChip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.sm, paddingVertical: 6 },
+  sortChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
+  sortChipText: { fontSize: 11, fontWeight: "600", color: Color.textMuted },
+  sortChipTextActive: { color: Color.gold },
   centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
   errorText: { color: Color.textMuted, fontSize: 14, textAlign: "center", marginTop: Spacing.md },
   scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },

@@ -149,6 +149,20 @@ export interface StaffMemberSummary {
   currentStatus: string | null;
 }
 
+export interface StaffMemberBookingSummary {
+  bookingId: string;
+  title: string;
+  date: string;
+  startTime: string;
+  durationMins: number;
+}
+
+export interface StaffMemberPersonalBest {
+  label: string;
+  heaviestWeight: { weightStr: string; reps: number | null; date: string } | null;
+  highestReps: { reps: number; date: string } | null;
+}
+
 export interface StaffMemberDetail extends StaffMemberSummary {
   dateOfBirth: string | null;
   primaryGoal: string;
@@ -158,6 +172,10 @@ export interface StaffMemberDetail extends StaffMemberSummary {
   totalBookings: number;
   lastSessionDate: string | null;
   coachNotes: string | null;
+  latestReadinessScore: number | null;
+  personalBests: StaffMemberPersonalBest[];
+  upcomingBookings: StaffMemberBookingSummary[];
+  pastBookings: StaffMemberBookingSummary[];
 }
 
 interface StaffMembersResponse {

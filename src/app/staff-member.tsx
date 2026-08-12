@@ -139,7 +139,67 @@ export default function StaffMemberScreen() {
               <Text style={styles.rowLabel}>Last session</Text>
               <Text style={styles.rowValue}>{formatDate(data.lastSessionDate)}</Text>
             </View>
+            <View style={styles.rowLine}>
+              <Text style={styles.rowLabel}>Latest readiness</Text>
+              <Text style={styles.rowValue}>
+                {data.latestReadinessScore !== null ? `${data.latestReadinessScore}/100` : "No check-in yet"}
+              </Text>
+            </View>
           </Card>
+
+          <Card style={styles.card}>
+            <Text style={styles.sectionLabel}>PERSONAL BESTS</Text>
+            <View style={styles.pbGrid}>
+              {data.personalBests.map((pb) => (
+                <View key={pb.label} style={styles.pbCell}>
+                  <Text style={styles.pbLabel}>{pb.label}</Text>
+                  {!pb.heaviestWeight && !pb.highestReps ? (
+                    <Text style={styles.pbEmpty}>No data yet.</Text>
+                  ) : (
+                    <>
+                      {pb.heaviestWeight ? (
+                        <Text style={styles.pbValue}>
+                          {pb.heaviestWeight.weightStr}
+                          {pb.heaviestWeight.reps !== null ? ` × ${pb.heaviestWeight.reps}` : ""}
+                        </Text>
+                      ) : null}
+                      {pb.highestReps ? <Text style={styles.pbValue}>{pb.highestReps.reps} reps</Text> : null}
+                    </>
+                  )}
+                </View>
+              ))}
+            </View>
+          </Card>
+
+          <Card style={styles.card}>
+            <Text style={styles.sectionLabel}>UPCOMING BOOKINGS</Text>
+            {data.upcomingBookings.length === 0 ? (
+              <Text style={styles.rowValue}>No upcoming bookings.</Text>
+            ) : (
+              data.upcomingBookings.map((b) => (
+                <View key={b.bookingId} style={styles.bookingRow}>
+                  <Text style={styles.bookingTitle}>{b.title}</Text>
+                  <Text style={styles.bookingMeta}>
+                    {formatDate(b.date)} · {b.startTime}
+                  </Text>
+                </View>
+              ))
+            )}
+          </Card>
+
+          {data.pastBookings.length > 0 ? (
+            <Card style={styles.card}>
+              <Text style={styles.sectionLabel}>PAST BOOKINGS</Text>
+              {data.pastBookings.map((b) => (
+                <View key={b.bookingId} style={styles.bookingRow}>
+                  <Text style={styles.bookingTitle}>{b.title}</Text>
+                  <Text style={styles.bookingMeta}>
+                    {formatDate(b.date)} · {b.startTime}
+                  </Text>
+                </View>
+              ))}
+            </Card>
+          ) : null}
 
           <Card style={styles.card}>
             <Text style={styles.sectionLabel}>TRAINING PROGRAM</Text>
@@ -314,4 +374,23 @@ const styles = StyleSheet.create({
   },
   notesSaved: { fontSize: 11, color: Color.success, fontWeight: "600" },
   notesSaveButton: { height: 36, paddingHorizontal: Spacing.md },
+  pbGrid: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.sm },
+  pbCell: {
+    width: "47%",
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: Color.borderSubtle,
+    backgroundColor: Color.surface1,
+    padding: Spacing.sm,
+  },
+  pbLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.4, color: Color.textFaint, marginBottom: 4 },
+  pbValue: { fontSize: 13, fontWeight: "600", color: Color.textPrimary },
+  pbEmpty: { fontSize: 12, color: Color.textFaint },
+  bookingRow: {
+    paddingVertical: 8,
+    borderTopWidth: 1,
+    borderTopColor: Color.borderSubtle,
+  },
+  bookingTitle: { fontSize: 13, fontWeight: "600", color: Color.textPrimary },
+  bookingMeta: { fontSize: 11, color: Color.textMuted, marginTop: 2 },
 });

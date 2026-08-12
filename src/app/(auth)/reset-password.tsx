@@ -132,7 +132,7 @@ export default function ResetPasswordScreen() {
                 label="New password"
                 value={password}
                 onChangeText={setPassword}
-                secureTextEntry
+                secureToggle
                 autoComplete="password-new"
                 placeholder="At least 8 characters"
               />
@@ -141,7 +141,7 @@ export default function ResetPasswordScreen() {
                 label="Confirm new password"
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
-                secureTextEntry
+                secureToggle
                 autoComplete="password-new"
                 placeholder="Re-enter your new password"
               />

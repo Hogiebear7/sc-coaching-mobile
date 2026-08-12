@@ -30,7 +30,16 @@ export default function SessionDetailScreen() {
           <Ionicons name="chevron-back" size={22} color={Color.textPrimary} />
         </Pressable>
         <Text style={styles.headerTitle}>Session Detail</Text>
-        <View style={{ width: 22 }} />
+        {session && !session.classId ? (
+          <Pressable
+            onPress={() => router.push({ pathname: "/edit-workout", params: { id: session.id } })}
+            hitSlop={12}
+          >
+            <Text style={styles.editLink}>Edit</Text>
+          </Pressable>
+        ) : (
+          <View style={{ width: 22 }} />
+        )}
       </View>
 
       {isLoading ? (
@@ -124,6 +133,7 @@ const styles = StyleSheet.create({
   },
   backButton: { padding: 4 },
   headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
+  editLink: { fontSize: 14, fontWeight: "600", color: Color.gold },
   centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
   emptyText: { fontSize: 14, color: Color.textMuted },
   scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },

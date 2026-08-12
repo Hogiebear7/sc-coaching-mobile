@@ -52,6 +52,9 @@ export interface WorkoutSessionSummary {
   notes: string | null;
   exercises: WorkoutExerciseEntry[];
   runs: WorkoutRunEntry[];
+  /** Set when synced from a class — those aren't editable from the general
+      edit flow, only self-logged sessions are. */
+  classId: string | null;
 }
 
 export interface PersonalBest {
@@ -119,6 +122,24 @@ export function useCreateWorkout() {
   return useMutation({
     mutationFn: (input: CreateWorkoutInput) =>
       apiFetch<{ success: true; message: string }>("/api/workouts/create", {
+        method: "POST",
+        body: input,
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["workouts"] }),
+  });
+}
+
+export interface EditWorkoutInput extends CreateWorkoutInput {
+  id: string;
+}
+
+// Self-logged sessions only — class-synced ones use their own same-day
+// correction path, not this endpoint (see app/api/workouts/edit/route.ts).
+export function useEditWorkout() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: EditWorkoutInput) =>
+      apiFetch<{ success: true; message: string }>("/api/workouts/edit", {
         method: "POST",
         body: input,
       }),

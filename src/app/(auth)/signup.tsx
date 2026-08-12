@@ -403,7 +403,7 @@ export default function SignupScreen() {
                   label="Password"
                   value={values.password}
                   onChangeText={(v) => update("password", v)}
-                  secureTextEntry
+                  secureToggle
                   placeholder="Create a password"
                   error={errors.password}
                 />
@@ -413,7 +413,7 @@ export default function SignupScreen() {
                   label="Confirm password"
                   value={values.confirmPassword}
                   onChangeText={(v) => update("confirmPassword", v)}
-                  secureTextEntry
+                  secureToggle
                   placeholder="Re-enter your password"
                   error={errors.confirmPassword}
                   style={{ marginTop: Spacing.md }}

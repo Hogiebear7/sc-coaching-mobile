@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useState } from "react";
-import { Modal, Pressable, StyleSheet, Text, View, type ViewStyle } from "react-native";
+import { useMemo, useState } from "react";
+import { Modal, Pressable, ScrollView, StyleSheet, Text, View, type ViewStyle } from "react-native";
 
 import { Color, Radius, Spacing } from "@/constants/theme";
 
@@ -74,16 +74,34 @@ export function DateField({
   style?: ViewStyle;
 }) {
   const [open, setOpen] = useState(false);
+  const [mode, setMode] = useState<"days" | "years">("days");
   const now = new Date();
   const todayParts = { y: now.getFullYear(), m: now.getMonth() + 1, d: now.getDate() };
   const [viewY, setViewY] = useState(() => isoToParts(value)?.y ?? isoToParts(maxDate)?.y ?? todayParts.y);
   const [viewM, setViewM] = useState(() => isoToParts(value)?.m ?? isoToParts(maxDate)?.m ?? todayParts.m);
 
+  // Generous fallback bounds so a birth date decades back (or a member
+  // tracking cycles years back) is a scroll away, not hundreds of taps —
+  // narrowed to whatever min/maxDate the caller actually passed.
+  const topYear = isoToParts(maxDate)?.y ?? todayParts.y;
+  const bottomYear = isoToParts(minDate)?.y ?? todayParts.y - 120;
+  const yearOptions = useMemo(() => {
+    const years: number[] = [];
+    for (let y = topYear; y >= bottomYear; y--) years.push(y);
+    return years;
+  }, [topYear, bottomYear]);
+
   function openPicker() {
     const parts = isoToParts(value) ?? isoToParts(maxDate) ?? todayParts;
     setViewY(parts.y);
     setViewM(parts.m);
+    setMode("days");
     setOpen(true);
+  }
+
+  function selectYear(y: number) {
+    setViewY(y);
+    setMode("days");
   }
 
   function changeMonth(delta: number) {
@@ -137,51 +155,99 @@ export function DateField({
         <Pressable style={styles.backdrop} onPress={() => setOpen(false)}>
           <Pressable style={styles.card} onPress={(e) => e.stopPropagation()}>
             <View style={styles.calHeader}>
-              <Pressable onPress={() => changeMonth(-1)} hitSlop={12} style={styles.calNavButton}>
-                <Ionicons name="chevron-back" size={18} color={Color.textPrimary} />
+              <Pressable
+                onPress={() => changeMonth(-1)}
+                hitSlop={12}
+                style={styles.calNavButton}
+                disabled={mode === "years"}
+              >
+                <Ionicons
+                  name="chevron-back"
+                  size={18}
+                  color={mode === "years" ? Color.textFaint : Color.textPrimary}
+                />
               </Pressable>
-              <Text style={styles.calTitle}>
-                {MONTH_LABELS[viewM - 1]} {viewY}
-              </Text>
-              <Pressable onPress={() => changeMonth(1)} hitSlop={12} style={styles.calNavButton}>
-                <Ionicons name="chevron-forward" size={18} color={Color.textPrimary} />
-              </Pressable>
-            </View>
-
-            <View style={styles.weekRow}>
-              {WEEKDAY_LABELS.map((w) => (
-                <Text key={w} style={styles.weekLabel}>
-                  {w}
+              <Pressable
+                onPress={() => setMode(mode === "years" ? "days" : "years")}
+                style={styles.calTitleButton}
+                hitSlop={8}
+              >
+                <Text style={styles.calTitle}>
+                  {mode === "years" ? "Select year" : `${MONTH_LABELS[viewM - 1]} ${viewY}`}
                 </Text>
-              ))}
+                <Ionicons
+                  name={mode === "years" ? "chevron-up" : "chevron-down"}
+                  size={14}
+                  color={Color.textSecondary}
+                />
+              </Pressable>
+              <Pressable
+                onPress={() => changeMonth(1)}
+                hitSlop={12}
+                style={styles.calNavButton}
+                disabled={mode === "years"}
+              >
+                <Ionicons
+                  name="chevron-forward"
+                  size={18}
+                  color={mode === "years" ? Color.textFaint : Color.textPrimary}
+                />
+              </Pressable>
             </View>
 
-            <View style={styles.grid}>
-              {cells.map((d, i) => {
-                if (d === null) return <View key={i} style={styles.cell} />;
-                const disabled = isDisabled(d);
-                const isSelected = !!selected && selected.y === viewY && selected.m === viewM && selected.d === d;
-                const isToday = todayParts.y === viewY && todayParts.m === viewM && todayParts.d === d;
-                return (
-                  <Pressable
-                    key={i}
-                    disabled={disabled}
-                    onPress={() => handleSelect(d)}
-                    style={[styles.cell, isSelected && styles.cellSelected, isToday && !isSelected && styles.cellToday]}
-                  >
-                    <Text
-                      style={[
-                        styles.cellText,
-                        disabled && styles.cellTextDisabled,
-                        isSelected && styles.cellTextSelected,
-                      ]}
+            {mode === "years" ? (
+              <ScrollView style={styles.yearScroll} contentContainerStyle={styles.yearGrid}>
+                {yearOptions.map((y) => {
+                  const isSelected = y === viewY;
+                  return (
+                    <Pressable
+                      key={y}
+                      onPress={() => selectYear(y)}
+                      style={[styles.yearCell, isSelected && styles.cellSelected]}
                     >
-                      {d}
+                      <Text style={[styles.yearCellText, isSelected && styles.cellTextSelected]}>{y}</Text>
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+            ) : (
+              <>
+                <View style={styles.weekRow}>
+                  {WEEKDAY_LABELS.map((w) => (
+                    <Text key={w} style={styles.weekLabel}>
+                      {w}
                     </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
+                  ))}
+                </View>
+
+                <View style={styles.grid}>
+                  {cells.map((d, i) => {
+                    if (d === null) return <View key={i} style={styles.cell} />;
+                    const disabled = isDisabled(d);
+                    const isSelected = !!selected && selected.y === viewY && selected.m === viewM && selected.d === d;
+                    const isToday = todayParts.y === viewY && todayParts.m === viewM && todayParts.d === d;
+                    return (
+                      <Pressable
+                        key={i}
+                        disabled={disabled}
+                        onPress={() => handleSelect(d)}
+                        style={[styles.cell, isSelected && styles.cellSelected, isToday && !isSelected && styles.cellToday]}
+                      >
+                        <Text
+                          style={[
+                            styles.cellText,
+                            disabled && styles.cellTextDisabled,
+                            isSelected && styles.cellTextSelected,
+                          ]}
+                        >
+                          {d}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </>
+            )}
 
             <Pressable onPress={() => setOpen(false)} style={styles.closeButton}>
               <Text style={styles.closeButtonText}>Close</Text>
@@ -236,7 +302,18 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: Color.surface2,
   },
+  calTitleButton: { flexDirection: "row", alignItems: "center", gap: 4 },
   calTitle: { fontSize: 15, fontWeight: "700", color: Color.textPrimary },
+  yearScroll: { maxHeight: 260 },
+  yearGrid: { flexDirection: "row", flexWrap: "wrap", paddingVertical: Spacing.xs },
+  yearCell: {
+    width: "33.33%",
+    paddingVertical: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: Radius.pill,
+  },
+  yearCellText: { fontSize: 14, color: Color.textSecondary },
   weekRow: { flexDirection: "row", marginBottom: Spacing.xs },
   weekLabel: { flex: 1, textAlign: "center", fontSize: 11, fontWeight: "600", color: Color.textFaint },
   grid: { flexDirection: "row", flexWrap: "wrap" },

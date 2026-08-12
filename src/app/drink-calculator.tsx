@@ -58,6 +58,22 @@ function sodiumBadgeStyle(badge: "below" | "optimal" | "high") {
   return { border: Color.borderSubtle, bg: Color.surface2, text: Color.textMuted, dot: Color.textFaint };
 }
 
+// This badge reads the TOTAL sodium in the mixed bottle against a practical
+// 300–900 mg target band, derived from the sweat rate + conditions settings
+// above — not a warning about something being wrong with the recipe. The
+// explainer exists because "below recommended range" reads alarming and
+// members have asked whether they should add extra salt themselves (they
+// shouldn't — adjusting sweat rate/conditions is the right lever).
+function sodiumExplainer(badge: "below" | "optimal" | "high"): string {
+  if (badge === "optimal") {
+    return "Sodium sits in the target range for your sweat rate and conditions — no changes needed.";
+  }
+  if (badge === "high") {
+    return "Your sweat rate and conditions call for a stronger mix — expected on hot, high-sweat days. If it tastes too salty, add plain water alongside the bottle rather than diluting the mix itself.";
+  }
+  return "This just means today's settings (lower sweat rate or cooler conditions) call for a lighter mix. It's not a sign to add extra salt yourself — if it doesn't match how you're training, adjust Sweat rate or Conditions above.";
+}
+
 // Mirrors INGREDIENT_BENEFITS in the main repo's NutritionView.tsx — same
 // copy, ported verbatim rather than paraphrased.
 const INGREDIENT_BENEFITS: {
@@ -383,6 +399,7 @@ export default function DrinkCalculatorScreen() {
               {drink.sodiumBadge === "optimal" ? "Optimal hydration range" : drink.sodiumBadge === "high" ? "High-sodium profile" : "Below recommended range"}
             </Text>
           </View>
+          <Text style={styles.sodiumExplainerText}>{sodiumExplainer(drink.sodiumBadge)}</Text>
 
           <Text style={[styles.sectionLabel, { marginTop: Spacing.lg }]}>DRINKING PLAN</Text>
           <Text style={styles.hintText}>
@@ -509,6 +526,7 @@ const styles = StyleSheet.create({
   sodiumBadge: { flexDirection: "row", alignItems: "center", gap: 6, alignSelf: "flex-start", borderRadius: Radius.pill, borderWidth: 1, paddingHorizontal: Spacing.sm, paddingVertical: 6, marginTop: Spacing.md },
   sodiumDot: { width: 6, height: 6, borderRadius: 3 },
   sodiumBadgeText: { fontSize: 11, fontWeight: "600" },
+  sodiumExplainerText: { fontSize: 11, color: Color.textMuted, marginTop: Spacing.xs, lineHeight: 16 },
   phasesGrid: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.xs, marginTop: Spacing.sm },
   phaseCell: { flexGrow: 1, flexBasis: "30%", padding: Spacing.sm, alignItems: "center" },
   phaseLabel: { fontSize: 9, fontWeight: "700", color: Color.textMuted, textTransform: "uppercase" },

@@ -43,8 +43,33 @@ import {
   parseDuration,
   todayDateString,
 } from "@/lib/workout-formatters";
-import { useWorkoutDraft, type ExerciseRow, type RunRow, type SetRow } from "@/lib/workout-draft";
+import {
+  useWorkoutDraft,
+  type CircuitStation,
+  type ExerciseRow,
+  type RunRow,
+  type SetRow,
+  type WorkoutFormat,
+} from "@/lib/workout-draft";
 import type { WorkoutSummaryData } from "@/app/workout-summary";
+
+const FORMAT_OPTIONS: { value: WorkoutFormat; label: string }[] = [
+  { value: "standard", label: "Standard" },
+  { value: "chipper", label: "Chipper" },
+  { value: "circuit", label: "Circuit" },
+  { value: "amrap", label: "AMRAP" },
+  { value: "emom", label: "EMOM" },
+  { value: "tabata", label: "Tabata" },
+];
+
+const FORMAT_LABELS: Record<WorkoutFormat, string> = {
+  standard: "Standard",
+  chipper: "Chipper (for time)",
+  circuit: "Circuit",
+  amrap: "AMRAP",
+  emom: "EMOM",
+  tabata: "Tabata",
+};
 
 let keySeq = 0;
 function nextKey(): string {
@@ -108,6 +133,95 @@ function NumberField({ label, value, onChangeText, placeholder }: { label: strin
         placeholderTextColor={Color.textFaint}
         style={styles.smallInput}
       />
+    </View>
+  );
+}
+
+function newCircuitStation(): CircuitStation {
+  return { key: nextKey(), name: "", mode: "reps", reps: "", seconds: "" };
+}
+
+// Free-text movement list shared by AMRAP/EMOM/Tabata config — a movement is
+// just a short label like "10 Burpees", not a full weight/reps/sets row.
+function MovementsEditor({ movements, onChange }: { movements: string[]; onChange: (m: string[]) => void }) {
+  const [draftText, setDraftText] = useState("");
+  function add() {
+    const v = draftText.trim();
+    if (!v) return;
+    onChange([...movements, v]);
+    setDraftText("");
+  }
+  return (
+    <View style={{ marginTop: Spacing.sm }}>
+      <Text style={styles.fieldLabel}>Movements</Text>
+      <View style={styles.movementsInputRow}>
+        <TextInput
+          value={draftText}
+          onChangeText={setDraftText}
+          placeholder="e.g. 10 Burpees"
+          placeholderTextColor={Color.textFaint}
+          style={styles.movementsInput}
+          onSubmitEditing={add}
+          returnKeyType="done"
+        />
+        <Pressable onPress={add} style={styles.movementsAddButton}>
+          <Ionicons name="add" size={18} color={Color.goldForeground} />
+        </Pressable>
+      </View>
+      {movements.length > 0 ? (
+        <View style={styles.movementsList}>
+          {movements.map((m, i) => (
+            <View key={`${m}-${i}`} style={styles.movementChip}>
+              <Text style={styles.movementChipText}>{m}</Text>
+              <Pressable onPress={() => onChange(movements.filter((_, idx) => idx !== i))} hitSlop={6}>
+                <Ionicons name="close" size={13} color={Color.textFaint} />
+              </Pressable>
+            </View>
+          ))}
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
+function StationsEditor({ stations, onChange }: { stations: CircuitStation[]; onChange: (s: CircuitStation[]) => void }) {
+  function updateStation(key: string, patch: Partial<CircuitStation>) {
+    onChange(stations.map((s) => (s.key === key ? { ...s, ...patch } : s)));
+  }
+  return (
+    <View>
+      <Text style={styles.fieldLabel}>Stations</Text>
+      {stations.map((s, i) => (
+        <View key={s.key} style={styles.stationRow}>
+          <TextInput
+            value={s.name}
+            onChangeText={(v) => updateStation(s.key, { name: v })}
+            placeholder={`Station ${i + 1} name`}
+            placeholderTextColor={Color.textFaint}
+            style={styles.stationNameInput}
+          />
+          <Pressable
+            onPress={() => updateStation(s.key, { mode: s.mode === "reps" ? "time" : "reps" })}
+            style={styles.stationModeChip}
+          >
+            <Text style={styles.stationModeText}>{s.mode === "reps" ? "Reps" : "Time"}</Text>
+          </Pressable>
+          <TextInput
+            value={s.mode === "reps" ? s.reps : s.seconds}
+            onChangeText={(v) => updateStation(s.key, s.mode === "reps" ? { reps: v } : { seconds: v })}
+            keyboardType="number-pad"
+            placeholder={s.mode === "reps" ? "reps" : "secs"}
+            placeholderTextColor={Color.textFaint}
+            style={styles.stationValueInput}
+          />
+          <Pressable onPress={() => onChange(stations.filter((row) => row.key !== s.key))} hitSlop={6}>
+            <Ionicons name="close" size={16} color={Color.textFaint} />
+          </Pressable>
+        </View>
+      ))}
+      <Pressable onPress={() => onChange([...stations, newCircuitStation()])} style={styles.addChip}>
+        <Text style={styles.addChipText}>+ Station</Text>
+      </Pressable>
     </View>
   );
 }
@@ -317,6 +431,14 @@ export default function LogWorkoutScreen() {
     const finalDurationMins = isLive ? (liveElapsed > 0 ? String(Math.round(liveElapsed / 60)) : "") : durationMins.trim();
     const durationLabel = isLive ? formatDuration(liveElapsed) : finalDurationMins ? `${finalDurationMins} min` : "—";
 
+    const formatSummary =
+      draft.format !== "standard" && draft.formatResultNote
+        ? `${FORMAT_LABELS[draft.format]}: ${draft.formatResultNote}`
+        : draft.format !== "standard" && draft.format !== "chipper"
+          ? `${FORMAT_LABELS[draft.format]} (not run via the live timer)`
+          : "";
+    const combinedNotes = [notes.trim(), formatSummary].filter(Boolean).join("\n");
+
     // Snapshot the summary before the create call — it reads from the
     // form's local state and the personalBests already in memory, so the
     // just-submitted session's highlights compare against the PRE-session
@@ -377,7 +499,7 @@ export default function LogWorkoutScreen() {
     };
 
     try {
-      await create.mutateAsync({ title: title.trim(), date: date.trim(), durationMins: finalDurationMins, notes: notes.trim(), exercises, runs });
+      await create.mutateAsync({ title: title.trim(), date: date.trim(), durationMins: finalDurationMins, notes: combinedNotes, exercises, runs });
       if (programId) await advanceProgram.mutateAsync(programId);
       successFeedback();
       discard();
@@ -457,6 +579,178 @@ export default function LogWorkoutScreen() {
             multiline
             style={styles.multiline}
           />
+
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionLabel}>WORKOUT FORMAT</Text>
+          </View>
+          <View style={styles.formatRow}>
+            {FORMAT_OPTIONS.map((opt) => (
+              <Pressable
+                key={opt.value}
+                onPress={() => {
+                  tapFeedback();
+                  update({ format: opt.value, formatResultNote: "" });
+                }}
+                style={[styles.formatChip, draft.format === opt.value && styles.formatChipActive]}
+              >
+                <Text style={[styles.formatChipText, draft.format === opt.value && styles.formatChipTextActive]}>
+                  {opt.label}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+
+          {draft.format === "chipper" ? (
+            <Text style={styles.formatHint}>
+              List your movements below as exercises and complete them once, for time — the workout clock above is
+              your score.
+            </Text>
+          ) : null}
+
+          {draft.format === "circuit" ? (
+            <Card style={styles.entryCard}>
+              <StationsEditor
+                stations={draft.circuitConfig.stations}
+                onChange={(stations) => update({ circuitConfig: { ...draft.circuitConfig, stations } })}
+              />
+              <View style={styles.formatFieldsRow}>
+                <NumberField
+                  label="Rest / station (s)"
+                  value={draft.circuitConfig.restBetweenStationsSecs}
+                  onChangeText={(v) => update({ circuitConfig: { ...draft.circuitConfig, restBetweenStationsSecs: v } })}
+                />
+                <NumberField
+                  label="Rest / round (s)"
+                  value={draft.circuitConfig.restBetweenSetsSecs}
+                  onChangeText={(v) => update({ circuitConfig: { ...draft.circuitConfig, restBetweenSetsSecs: v } })}
+                />
+              </View>
+              <View style={styles.capModeRow}>
+                <Pressable
+                  onPress={() => update({ circuitConfig: { ...draft.circuitConfig, capMode: "sets" } })}
+                  style={[styles.unitChip, draft.circuitConfig.capMode === "sets" && styles.unitChipActive]}
+                >
+                  <Text style={[styles.unitChipText, draft.circuitConfig.capMode === "sets" && styles.unitChipTextActive]}>
+                    Rounds
+                  </Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => update({ circuitConfig: { ...draft.circuitConfig, capMode: "time" } })}
+                  style={[styles.unitChip, draft.circuitConfig.capMode === "time" && styles.unitChipActive]}
+                >
+                  <Text style={[styles.unitChipText, draft.circuitConfig.capMode === "time" && styles.unitChipTextActive]}>
+                    Time cap
+                  </Text>
+                </Pressable>
+              </View>
+              {draft.circuitConfig.capMode === "sets" ? (
+                <NumberField
+                  label="Total rounds"
+                  value={draft.circuitConfig.totalSets}
+                  onChangeText={(v) => update({ circuitConfig: { ...draft.circuitConfig, totalSets: v } })}
+                />
+              ) : (
+                <NumberField
+                  label="Time cap (mins)"
+                  value={draft.circuitConfig.timeCapMins}
+                  onChangeText={(v) => update({ circuitConfig: { ...draft.circuitConfig, timeCapMins: v } })}
+                />
+              )}
+              <Button
+                title="Start circuit timer"
+                variant="secondary"
+                onPress={() => router.push({ pathname: "/format-timer" })}
+                disabled={draft.circuitConfig.stations.filter((s) => s.name.trim()).length === 0}
+                style={{ marginTop: Spacing.md }}
+              />
+              {draft.formatResultNote ? <Text style={styles.formatResultText}>{draft.formatResultNote}</Text> : null}
+            </Card>
+          ) : null}
+
+          {draft.format === "amrap" ? (
+            <Card style={styles.entryCard}>
+              <NumberField
+                label="Time cap (mins)"
+                value={draft.amrapConfig.timeCapMins}
+                onChangeText={(v) => update({ amrapConfig: { ...draft.amrapConfig, timeCapMins: v } })}
+              />
+              <MovementsEditor
+                movements={draft.amrapConfig.movements}
+                onChange={(movements) => update({ amrapConfig: { ...draft.amrapConfig, movements } })}
+              />
+              <Button
+                title="Start AMRAP timer"
+                variant="secondary"
+                onPress={() => router.push({ pathname: "/format-timer" })}
+                disabled={draft.amrapConfig.movements.length === 0}
+                style={{ marginTop: Spacing.md }}
+              />
+              {draft.formatResultNote ? <Text style={styles.formatResultText}>{draft.formatResultNote}</Text> : null}
+            </Card>
+          ) : null}
+
+          {draft.format === "emom" ? (
+            <Card style={styles.entryCard}>
+              <View style={styles.formatFieldsRow}>
+                <NumberField
+                  label="Interval (secs)"
+                  value={draft.emomConfig.intervalSecs}
+                  onChangeText={(v) => update({ emomConfig: { ...draft.emomConfig, intervalSecs: v } })}
+                />
+                <NumberField
+                  label="Total (mins)"
+                  value={draft.emomConfig.totalMins}
+                  onChangeText={(v) => update({ emomConfig: { ...draft.emomConfig, totalMins: v } })}
+                />
+              </View>
+              <MovementsEditor
+                movements={draft.emomConfig.movements}
+                onChange={(movements) => update({ emomConfig: { ...draft.emomConfig, movements } })}
+              />
+              <Button
+                title="Start EMOM timer"
+                variant="secondary"
+                onPress={() => router.push({ pathname: "/format-timer" })}
+                disabled={draft.emomConfig.movements.length === 0}
+                style={{ marginTop: Spacing.md }}
+              />
+              {draft.formatResultNote ? <Text style={styles.formatResultText}>{draft.formatResultNote}</Text> : null}
+            </Card>
+          ) : null}
+
+          {draft.format === "tabata" ? (
+            <Card style={styles.entryCard}>
+              <View style={styles.formatFieldsRow}>
+                <NumberField
+                  label="Work (secs)"
+                  value={draft.tabataConfig.workSecs}
+                  onChangeText={(v) => update({ tabataConfig: { ...draft.tabataConfig, workSecs: v } })}
+                />
+                <NumberField
+                  label="Rest (secs)"
+                  value={draft.tabataConfig.restSecs}
+                  onChangeText={(v) => update({ tabataConfig: { ...draft.tabataConfig, restSecs: v } })}
+                />
+                <NumberField
+                  label="Rounds"
+                  value={draft.tabataConfig.rounds}
+                  onChangeText={(v) => update({ tabataConfig: { ...draft.tabataConfig, rounds: v } })}
+                />
+              </View>
+              <MovementsEditor
+                movements={draft.tabataConfig.movements}
+                onChange={(movements) => update({ tabataConfig: { ...draft.tabataConfig, movements } })}
+              />
+              <Button
+                title="Start Tabata timer"
+                variant="secondary"
+                onPress={() => router.push({ pathname: "/format-timer" })}
+                disabled={draft.tabataConfig.movements.length === 0}
+                style={{ marginTop: Spacing.md }}
+              />
+              {draft.formatResultNote ? <Text style={styles.formatResultText}>{draft.formatResultNote}</Text> : null}
+            </Card>
+          ) : null}
 
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionLabel}>SESSION ENTRIES</Text>
@@ -860,4 +1154,80 @@ const styles = StyleSheet.create({
   paceText: { fontSize: 11, color: Color.textMuted, marginTop: Spacing.xs },
   splitsText: { fontSize: 11, color: Color.textSecondary, marginTop: Spacing.xs },
   error: { fontSize: 12, color: Color.danger, marginTop: Spacing.md },
+  formatRow: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.xs },
+  formatChip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.sm, paddingVertical: 8 },
+  formatChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
+  formatChipText: { fontSize: 12, fontWeight: "600", color: Color.textMuted },
+  formatChipTextActive: { color: Color.gold },
+  formatHint: { fontSize: 12, color: Color.textMuted, marginTop: Spacing.sm, lineHeight: 17 },
+  formatFieldsRow: { flexDirection: "row", gap: Spacing.sm, marginTop: Spacing.sm },
+  formatResultText: {
+    fontSize: 12,
+    color: Color.gold,
+    fontWeight: "600",
+    marginTop: Spacing.md,
+    padding: Spacing.sm,
+    borderRadius: Radius.md,
+    backgroundColor: Color.goldWeak,
+  },
+  capModeRow: { flexDirection: "row", gap: Spacing.xs, marginTop: Spacing.sm, marginBottom: Spacing.xs },
+  stationRow: { flexDirection: "row", alignItems: "center", gap: Spacing.xs, marginBottom: Spacing.xs },
+  stationNameInput: {
+    flex: 1,
+    height: 38,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: Color.borderSubtle,
+    backgroundColor: Color.surface1,
+    paddingHorizontal: Spacing.sm,
+    fontSize: 13,
+    color: Color.textPrimary,
+  },
+  stationModeChip: { paddingHorizontal: Spacing.sm, paddingVertical: 8, borderRadius: Radius.md, borderWidth: 1, borderColor: Color.borderSubtle },
+  stationModeText: { fontSize: 10, fontWeight: "700", color: Color.textMuted },
+  stationValueInput: {
+    width: 56,
+    height: 38,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: Color.borderSubtle,
+    backgroundColor: Color.surface1,
+    paddingHorizontal: Spacing.xs,
+    fontSize: 13,
+    color: Color.textPrimary,
+    textAlign: "center",
+  },
+  movementsInputRow: { flexDirection: "row", gap: Spacing.xs },
+  movementsInput: {
+    flex: 1,
+    height: 40,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: Color.borderSubtle,
+    backgroundColor: Color.surface1,
+    paddingHorizontal: Spacing.sm,
+    fontSize: 13,
+    color: Color.textPrimary,
+  },
+  movementsAddButton: {
+    width: 40,
+    height: 40,
+    borderRadius: Radius.md,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: Color.gold,
+  },
+  movementsList: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: Spacing.sm },
+  movementChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    borderRadius: Radius.pill,
+    borderWidth: 1,
+    borderColor: Color.borderSubtle,
+    backgroundColor: Color.surface1,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 6,
+  },
+  movementChipText: { fontSize: 11, color: Color.textSecondary, fontWeight: "500" },
 });

@@ -42,6 +42,62 @@ export type RunRow = {
   splits: string[];
 };
 
+export type WorkoutFormat = "standard" | "circuit" | "amrap" | "emom" | "tabata" | "chipper";
+
+export type CircuitStation = { key: string; name: string; mode: "reps" | "time"; reps: string; seconds: string };
+
+export interface CircuitConfig {
+  stations: CircuitStation[];
+  restBetweenStationsSecs: string;
+  restBetweenSetsSecs: string;
+  capMode: "sets" | "time";
+  totalSets: string;
+  timeCapMins: string;
+}
+
+export interface AmrapConfig {
+  timeCapMins: string;
+  movements: string[];
+  roundsCompleted: string;
+  extraReps: string;
+}
+
+export interface EmomConfig {
+  intervalSecs: string;
+  totalMins: string;
+  movements: string[];
+}
+
+export interface TabataConfig {
+  workSecs: string;
+  restSecs: string;
+  rounds: string;
+  movements: string[];
+}
+
+function emptyCircuitConfig(): CircuitConfig {
+  return {
+    stations: [],
+    restBetweenStationsSecs: "15",
+    restBetweenSetsSecs: "60",
+    capMode: "sets",
+    totalSets: "3",
+    timeCapMins: "20",
+  };
+}
+
+function emptyAmrapConfig(): AmrapConfig {
+  return { timeCapMins: "12", movements: [], roundsCompleted: "", extraReps: "" };
+}
+
+function emptyEmomConfig(): EmomConfig {
+  return { intervalSecs: "60", totalMins: "10", movements: [] };
+}
+
+function emptyTabataConfig(): TabataConfig {
+  return { workSecs: "20", restSecs: "10", rounds: "8", movements: [] };
+}
+
 export interface WorkoutDraft {
   title: string;
   date: string;
@@ -56,6 +112,12 @@ export interface WorkoutDraft {
   // a setInterval counter would stall the moment the JS thread suspends.
   accumulatedSecs: number;
   startedAtMs: number | null;
+  format: WorkoutFormat;
+  circuitConfig: CircuitConfig;
+  amrapConfig: AmrapConfig;
+  emomConfig: EmomConfig;
+  tabataConfig: TabataConfig;
+  formatResultNote: string;
 }
 
 function emptyDraft(): WorkoutDraft {
@@ -70,6 +132,12 @@ function emptyDraft(): WorkoutDraft {
     isLive: false,
     accumulatedSecs: 0,
     startedAtMs: null,
+    format: "standard",
+    circuitConfig: emptyCircuitConfig(),
+    amrapConfig: emptyAmrapConfig(),
+    emomConfig: emptyEmomConfig(),
+    tabataConfig: emptyTabataConfig(),
+    formatResultNote: "",
   };
 }
 

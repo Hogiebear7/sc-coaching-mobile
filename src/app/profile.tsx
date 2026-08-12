@@ -60,7 +60,7 @@ function formatDistanceKm(km: number): string {
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { user, logout } = useAuth();
+  const { user, logout, viewMode, setViewMode } = useAuth();
   const isStaffRole = !!user && user.role !== "member";
   const { data, isLoading, isError, refetch } = useProfile();
   const update = useUpdateProfile();
@@ -100,15 +100,18 @@ export default function ProfileScreen() {
     setList(list.includes(value) ? list.filter((v) => v !== value) : [...list, value]);
   }
 
-  // No in-app link sends staff here (coaches don't have a ProfileRecord —
-  // see (staff)/_layout.tsx), but the route itself is reachable directly
-  // (URL, stale bookmark, deep link) with no group-level guard. Bounce
-  // rather than show a member settings form to a staff account.
+  // A coach can deliberately switch into the member tab group (viewMode
+  // "member", provisioned a ProfileRecord first — see (staff)/index.tsx),
+  // in which case this screen should render normally. Otherwise the route
+  // is still reachable directly (URL, stale bookmark, deep link) with no
+  // group-level guard, so bounce rather than show a member settings form
+  // to a staff account that hasn't opted in.
+  const blockedStaffRole = isStaffRole && viewMode === "coach";
   useEffect(() => {
-    if (isStaffRole) router.replace("/(staff)");
-  }, [isStaffRole, router]);
+    if (blockedStaffRole) router.replace("/(staff)");
+  }, [blockedStaffRole, router]);
 
-  if (isStaffRole) return null;
+  if (blockedStaffRole) return null;
 
   async function handleSave() {
     setError(null);
@@ -319,7 +322,15 @@ export default function ProfileScreen() {
               </Pressable>
             ) : null}
 
-            <Button title="Log out" onPress={logout} variant="secondary" style={{ marginTop: Spacing.xl }} />
+            {isStaffRole ? (
+              <Button
+                title="Switch to coach view"
+                onPress={() => setViewMode("coach")}
+                variant="secondary"
+                style={{ marginTop: Spacing.xl }}
+              />
+            ) : null}
+            <Button title="Log out" onPress={logout} variant="secondary" style={{ marginTop: isStaffRole ? Spacing.sm : Spacing.xl }} />
           </ScrollView>
         )}
       </KeyboardAvoidingView>

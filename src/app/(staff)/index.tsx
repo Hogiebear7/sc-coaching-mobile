@@ -18,7 +18,8 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Color, Radius, Spacing } from "@/constants/theme";
 import { useAuth } from "@/lib/auth-context";
-import { successFeedback } from "@/lib/haptics";
+import { successFeedback, tapFeedback } from "@/lib/haptics";
+import { useProvisionMemberProfile } from "@/lib/queries/profile";
 import { useMarkAttendance, useStaffClasses, type StaffClassSummary } from "@/lib/queries/staff";
 
 function formatClassDate(dateISO: string): string {
@@ -256,9 +257,16 @@ function confirmLogout(logout: () => void) {
 }
 
 export default function StaffOperationsScreen() {
-  const { logout } = useAuth();
+  const { logout, setViewMode } = useAuth();
+  const provisionMemberProfile = useProvisionMemberProfile();
   const { data, isLoading, isError, refetch, isRefetching } = useStaffClasses();
   const [view, setView] = useState<"list" | "calendar">("list");
+
+  async function handleSwitchToMemberView() {
+    tapFeedback();
+    await provisionMemberProfile.mutateAsync();
+    setViewMode("member");
+  }
   // Only the first (soonest) date group starts open — otherwise checking
   // tomorrow's roster means scrolling past every class in the next two
   // weeks first. Collapsed groups still show a class count so nothing's
@@ -298,9 +306,18 @@ export default function StaffOperationsScreen() {
           <BrandMark height={22} style={styles.headerLogo} />
           <Text style={styles.headerTitle}>Classes</Text>
         </View>
-        <Pressable onPress={() => confirmLogout(logout)} hitSlop={12}>
-          <Ionicons name="log-out-outline" size={22} color={Color.textMuted} />
-        </Pressable>
+        <View style={styles.headerActions}>
+          <Pressable onPress={handleSwitchToMemberView} hitSlop={12} disabled={provisionMemberProfile.isPending}>
+            {provisionMemberProfile.isPending ? (
+              <ActivityIndicator size="small" color={Color.textMuted} />
+            ) : (
+              <Ionicons name="swap-horizontal-outline" size={22} color={Color.textMuted} />
+            )}
+          </Pressable>
+          <Pressable onPress={() => confirmLogout(logout)} hitSlop={12}>
+            <Ionicons name="log-out-outline" size={22} color={Color.textMuted} />
+          </Pressable>
+        </View>
       </View>
 
       <View style={styles.viewToggle}>
@@ -375,6 +392,7 @@ const styles = StyleSheet.create({
   },
   headerLeft: { flexDirection: "row", alignItems: "center" },
   headerLogo: { marginRight: Spacing.sm },
+  headerActions: { flexDirection: "row", alignItems: "center", gap: Spacing.md },
   headerTitle: { fontSize: 20, fontWeight: "700", fontStyle: "italic", color: Color.textPrimary },
   centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
   errorText: { color: Color.textMuted, fontSize: 14, textAlign: "center" },

@@ -78,6 +78,17 @@ export function useUpdateProfile() {
   });
 }
 
+// Backfills a minimal member ProfileRecord for a staff/coach account —
+// idempotent, safe to call every time the coach switches into member view.
+export function useProvisionMemberProfile() {
+  return useMutation({
+    mutationFn: () =>
+      apiFetch<{ success: true; alreadyExisted: boolean }>("/api/mobile/coach/provision-member-profile", {
+        method: "POST",
+      }),
+  });
+}
+
 export function useSetPushNotifications() {
   const qc = useQueryClient();
   return useMutation({

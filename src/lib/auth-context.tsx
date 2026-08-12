@@ -16,9 +16,17 @@ interface LoginResponse {
   user: AuthUser;
 }
 
+// A staff/coach account has no ProfileRecord by default (see
+// provision-member-profile route) — "viewMode" lets them opt into the
+// member (tabs) screens once one exists. Resets to "coach" on every fresh
+// launch, so it's in-memory only, not persisted.
+export type ViewMode = "coach" | "member";
+
 interface AuthContextValue {
   status: "loading" | "signedOut" | "signedIn";
   user: AuthUser | null;
+  viewMode: ViewMode;
+  setViewMode: (mode: ViewMode) => void;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   // Set directly after signup, which returns the same shape as login.
@@ -30,6 +38,7 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<AuthContextValue["status"]>("loading");
   const [user, setUser] = useState<AuthUser | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>("coach");
 
   useEffect(() => {
     registerUnauthorizedHandler(() => {
@@ -82,10 +91,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await clearToken();
     setUser(null);
     setStatus("signedOut");
+    setViewMode("coach");
   }
 
   return (
-    <AuthContext.Provider value={{ status, user, login, logout, setSession }}>
+    <AuthContext.Provider value={{ status, user, viewMode, setViewMode, login, logout, setSession }}>
       {children}
     </AuthContext.Provider>
   );

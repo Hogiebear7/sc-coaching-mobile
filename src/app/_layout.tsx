@@ -21,10 +21,15 @@ const queryClient = new QueryClient({
 // server-side session check in the dashboard layout, just done client-side
 // here since there's no server-rendering equivalent on native.
 function AuthGate() {
-  const { status, user } = useAuth();
+  const { status, user, viewMode } = useAuth();
   const router = useRouter();
   const segments = useSegments();
   const isStaffRole = !!user && user.role !== "member";
+  // A staff/coach account can opt into the member tab group once they have
+  // a ProfileRecord (see provision-member-profile) — viewMode tracks that
+  // choice. Plain members have no staff group to switch to, so it's a no-op
+  // for them.
+  const wantsStaffGroup = isStaffRole && viewMode === "coach";
 
   useEffect(() => {
     if (status === "loading") return;
@@ -39,17 +44,14 @@ function AuthGate() {
       return;
     }
 
-    // signedIn — coaches/admins don't have a ProfileRecord (profiles are
-    // member-owned), so they get an entirely separate tab group rather than
-    // the member (tabs) screens, which all assume a profile exists.
     if (inAuthGroup) {
-      router.replace((isStaffRole ? "/(staff)" : "/(tabs)") as never);
-    } else if (isStaffRole && inTabsGroup) {
+      router.replace((wantsStaffGroup ? "/(staff)" : "/(tabs)") as never);
+    } else if (wantsStaffGroup && inTabsGroup) {
       router.replace("/(staff)" as never);
-    } else if (!isStaffRole && inStaffGroup) {
+    } else if (!wantsStaffGroup && inStaffGroup) {
       router.replace("/(tabs)");
     }
-  }, [status, segments, router, isStaffRole]);
+  }, [status, segments, router, wantsStaffGroup]);
 
   // Tapping a delivered notification (app backgrounded/killed) navigates
   // straight to the relevant screen, mirroring the web app's push linkHref.

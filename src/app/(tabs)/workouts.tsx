@@ -187,7 +187,14 @@ export default function WorkoutsScreen() {
                 <>
                   {currentDay.exercises.map((ex) => (
                     <View key={ex.id} style={styles.programExerciseRow}>
-                      <Text style={styles.programExerciseName}>{ex.name}</Text>
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                        {ex.supersetGroup ? (
+                          <View style={styles.supersetBadge}>
+                            <Text style={styles.supersetBadgeText}>{ex.supersetGroup}</Text>
+                          </View>
+                        ) : null}
+                        <Text style={styles.programExerciseName}>{ex.name}</Text>
+                      </View>
                       <Text style={styles.programExerciseTarget}>
                         {[
                           ex.targetSets !== null && ex.targetReps ? `${ex.targetSets} × ${ex.targetReps}` : ex.targetReps ?? (ex.targetSets !== null ? `${ex.targetSets} sets` : null),
@@ -484,6 +491,8 @@ const styles = StyleSheet.create({
   programExerciseRow: { paddingVertical: Spacing.sm, borderTopWidth: 1, borderTopColor: Color.borderSubtle },
   programExerciseName: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
   programExerciseTarget: { fontSize: 12, color: Color.textMuted, marginTop: 2 },
+  supersetBadge: { borderRadius: 999, backgroundColor: Color.gold + "26", paddingHorizontal: 6, paddingVertical: 1 },
+  supersetBadgeText: { fontSize: 10, fontWeight: "700", color: Color.gold },
   muscleTagRow: { flexDirection: "row", flexWrap: "wrap", gap: 4, marginTop: Spacing.xs },
   muscleTagChip: { borderRadius: Radius.pill, backgroundColor: Color.goldWeak, paddingHorizontal: Spacing.sm, paddingVertical: 3 },
   muscleTagChipText: { fontSize: 10, fontWeight: "600", color: Color.gold },

@@ -7,6 +7,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ExerciseAutocomplete } from "@/components/ui/ExerciseAutocomplete";
+import { SupersetChips } from "@/components/ui/SupersetChips";
 import { TextField } from "@/components/ui/TextField";
 import { Color, Radius, Spacing } from "@/constants/theme";
 import { ApiError } from "@/lib/api-client";
@@ -36,7 +37,7 @@ type ExerciseRow = {
   targetWeight: string;
   setType: WorkoutSetType;
   notes: string;
-  supersetWithPrev: boolean;
+  supersetGroup: string | null;
 };
 
 function newExerciseRow(): ExerciseRow {
@@ -50,7 +51,7 @@ function newExerciseRow(): ExerciseRow {
     targetWeight: "",
     setType: "standard",
     notes: "",
-    supersetWithPrev: false,
+    supersetGroup: null,
   };
 }
 
@@ -65,24 +66,14 @@ function templateToRows(exercises: PrescribedExercise[]): ExerciseRow[] {
     targetWeight: ex.targetWeight ?? "",
     setType: ex.setType ?? "standard",
     notes: ex.notes ?? "",
-    supersetWithPrev: false,
+    supersetGroup: ex.supersetGroup,
   }));
 }
 
 function rowsToExercises(rows: ExerciseRow[]): PrescribedExercise[] {
   const withContent = rows.filter((r) => r.name.trim());
 
-  const groupByIndex = new Map<number, string>();
-  let nextGroupSeq = 0;
-  withContent.forEach((r, idx) => {
-    if (r.supersetWithPrev && idx > 0) {
-      const group = groupByIndex.get(idx - 1) ?? `ss-${nextGroupSeq++}`;
-      groupByIndex.set(idx - 1, group);
-      groupByIndex.set(idx, group);
-    }
-  });
-
-  return withContent.map((r, idx) => ({
+  return withContent.map((r) => ({
     id: nextKey(),
     exerciseId: r.exerciseId,
     name: r.name.trim(),
@@ -92,7 +83,7 @@ function rowsToExercises(rows: ExerciseRow[]): PrescribedExercise[] {
     targetWeight: r.targetWeight.trim() || null,
     setType: r.setType === "standard" ? null : r.setType,
     sets: null,
-    supersetGroup: groupByIndex.get(idx) ?? null,
+    supersetGroup: r.supersetGroup,
     notes: r.notes.trim() || null,
   }));
 }
@@ -242,14 +233,14 @@ export default function WorkoutTemplateBuilderScreen() {
                 </Pressable>
               </View>
 
-              {idx > 0 ? (
-                <Pressable onPress={() => updateExercise(ex.key, { supersetWithPrev: !ex.supersetWithPrev })} style={styles.supersetRow}>
-                  <Ionicons name={ex.supersetWithPrev ? "checkbox" : "square-outline"} size={16} color={ex.supersetWithPrev ? Color.gold : Color.textFaint} />
-                  <Text style={[styles.supersetText, ex.supersetWithPrev && styles.supersetTextActive]}>Superset with Exercise {idx}</Text>
-                </Pressable>
-              ) : null}
+              <Text style={styles.fieldLabel}>Superset (opt.)</Text>
+              <SupersetChips
+                value={ex.supersetGroup}
+                allGroups={exercises.map((e) => e.supersetGroup)}
+                onChange={(v) => updateExercise(ex.key, { supersetGroup: v })}
+              />
 
-              <Text style={styles.fieldLabel}>Exercise name</Text>
+              <Text style={[styles.fieldLabel, { marginTop: Spacing.sm }]}>Exercise name</Text>
               <ExerciseAutocomplete
                 exercises={workoutsData?.exerciseLibrary ?? []}
                 value={ex.name}
@@ -360,9 +351,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: Color.textPrimary,
   },
-  supersetRow: { flexDirection: "row", alignItems: "center", gap: Spacing.xs, marginBottom: Spacing.sm },
-  supersetText: { fontSize: 12, color: Color.textMuted },
-  supersetTextActive: { color: Color.gold, fontWeight: "600" },
   setTypeRow: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
   setTypeChip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.sm, paddingVertical: 6 },
   setTypeChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },

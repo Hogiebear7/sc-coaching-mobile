@@ -18,6 +18,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ExerciseAutocomplete } from "@/components/ui/ExerciseAutocomplete";
+import { SupersetChips } from "@/components/ui/SupersetChips";
 import { TextField } from "@/components/ui/TextField";
 import { Color, Radius, Spacing } from "@/constants/theme";
 import { ApiError } from "@/lib/api-client";
@@ -49,7 +50,7 @@ type ExerciseRow = {
   targetWeight: string;
   setType: WorkoutSetType;
   notes: string;
-  supersetWithPrev: boolean;
+  supersetGroup: string | null;
 };
 
 type DayRow = {
@@ -70,7 +71,7 @@ function newExerciseRow(): ExerciseRow {
     targetWeight: "",
     setType: "standard",
     notes: "",
-    supersetWithPrev: false,
+    supersetGroup: null,
   };
 }
 
@@ -100,7 +101,7 @@ function programToRows(program: TrainingProgram): DayRow[] {
       targetWeight: ex.targetWeight ?? "",
       setType: ex.setType ?? "standard",
       notes: ex.notes ?? "",
-      supersetWithPrev: false,
+      supersetGroup: ex.supersetGroup,
     })),
   }));
 }
@@ -109,16 +110,6 @@ function rowsToDays(rows: DayRow[]): ProgramDay[] {
   return rows.map((day) => {
     const exercisesWithContent = day.exercises.filter((e) => e.name.trim());
 
-    const groupByIndex = new Map<number, string>();
-    let nextGroupSeq = 0;
-    exercisesWithContent.forEach((e, idx) => {
-      if (e.supersetWithPrev && idx > 0) {
-        const group = groupByIndex.get(idx - 1) ?? `ss-${nextGroupSeq++}`;
-        groupByIndex.set(idx - 1, group);
-        groupByIndex.set(idx, group);
-      }
-    });
-
     return {
       id: nextKey(),
       label: day.label.trim() || "Day",
@@ -126,7 +117,7 @@ function rowsToDays(rows: DayRow[]): ProgramDay[] {
       exercises:
         day.type === "rest"
           ? []
-          : exercisesWithContent.map((e, idx) => ({
+          : exercisesWithContent.map((e) => ({
               id: nextKey(),
               exerciseId: e.exerciseId,
               name: e.name.trim(),
@@ -139,7 +130,7 @@ function rowsToDays(rows: DayRow[]): ProgramDay[] {
               targetWeight: e.targetWeight.trim() || null,
               setType: e.setType === "standard" ? null : e.setType,
               sets: null,
-              supersetGroup: groupByIndex.get(idx) ?? null,
+              supersetGroup: e.supersetGroup,
               notes: e.notes.trim() || null,
             })),
     };
@@ -340,25 +331,14 @@ export default function StaffProgramBuilderScreen() {
                         </Pressable>
                       </View>
 
-                      {exIdx > 0 ? (
-                        <Pressable
-                          onPress={() =>
-                            updateExercise(day.key, ex.key, { supersetWithPrev: !ex.supersetWithPrev })
-                          }
-                          style={styles.supersetRow}
-                        >
-                          <Ionicons
-                            name={ex.supersetWithPrev ? "checkbox" : "square-outline"}
-                            size={16}
-                            color={ex.supersetWithPrev ? Color.gold : Color.textFaint}
-                          />
-                          <Text style={[styles.supersetText, ex.supersetWithPrev && styles.supersetTextActive]}>
-                            Superset with Exercise {exIdx}
-                          </Text>
-                        </Pressable>
-                      ) : null}
+                      <Text style={styles.fieldLabel}>Superset (opt.)</Text>
+                      <SupersetChips
+                        value={ex.supersetGroup}
+                        allGroups={day.exercises.map((e) => e.supersetGroup)}
+                        onChange={(v) => updateExercise(day.key, ex.key, { supersetGroup: v })}
+                      />
 
-                      <Text style={styles.fieldLabel}>Exercise name</Text>
+                      <Text style={[styles.fieldLabel, { marginTop: Spacing.sm }]}>Exercise name</Text>
                       <ExerciseAutocomplete
                         exercises={workoutsData?.exerciseLibrary ?? []}
                         value={ex.name}
@@ -498,9 +478,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: Color.textPrimary,
   },
-  supersetRow: { flexDirection: "row", alignItems: "center", gap: Spacing.xs, marginBottom: Spacing.sm },
-  supersetText: { fontSize: 12, color: Color.textMuted },
-  supersetTextActive: { color: Color.gold, fontWeight: "600" },
   setTypeRow: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
   setTypeChip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.sm, paddingVertical: 6 },
   setTypeChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },

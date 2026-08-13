@@ -1,8 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
-import { Animated, Easing } from "react-native";
+import { Animated, Dimensions, Easing } from "react-native";
 
 import { Color } from "@/constants/theme";
+
+const SCREEN_WIDTH = Dimensions.get("window").width;
 
 // A page-turn-style transition between the 5 tabs, built on expo-router's
 // built-in bottom-tabs scene interpolator hook (the same mechanism behind
@@ -14,35 +16,54 @@ import { Color } from "@/constants/theme";
 // rotates and slides in the direction matching real tab order — moving
 // right through the tabs reads as pages turning forward, and back again
 // in reverse.
+//
+// Tuned to read as an actual page flip rather than a tilt: rotation
+// sweeps almost all the way to edge-on (88°) before the scene disappears,
+// it travels a full half-screen so the page visibly swings toward its
+// edge instead of just wobbling in place, and a shadow peaks mid-turn
+// (the page "lifting" and catching light) then fades back to flat at
+// rest — the cue that actually reads as paper turning, not a spin.
 function pageTurnStyleInterpolator({ current }: { current: { progress: Animated.Value } }) {
+  const progress = current.progress;
   return {
     sceneStyle: {
-      opacity: current.progress.interpolate({
-        inputRange: [-1, 0, 1],
-        outputRange: [0, 1, 0],
+      opacity: progress.interpolate({
+        inputRange: [-1, -0.3, 0, 0.3, 1],
+        outputRange: [0, 1, 1, 1, 0],
       }),
       transform: [
-        { perspective: 800 },
+        { perspective: 1000 },
         {
-          rotateY: current.progress.interpolate({
+          rotateY: progress.interpolate({
             inputRange: [-1, 0, 1],
-            outputRange: ["-70deg", "0deg", "70deg"],
+            outputRange: ["-88deg", "0deg", "88deg"],
           }),
         },
         {
-          translateX: current.progress.interpolate({
+          translateX: progress.interpolate({
             inputRange: [-1, 0, 1],
-            outputRange: [-60, 0, 60],
+            outputRange: [-SCREEN_WIDTH * 0.5, 0, SCREEN_WIDTH * 0.5],
           }),
         },
       ],
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 0 },
+      shadowRadius: 16,
+      shadowOpacity: progress.interpolate({
+        inputRange: [-1, -0.6, -0.25, 0, 0.25, 0.6, 1],
+        outputRange: [0, 0.45, 0.25, 0, 0.25, 0.45, 0],
+      }),
+      elevation: progress.interpolate({
+        inputRange: [-1, -0.6, 0, 0.6, 1],
+        outputRange: [0, 14, 0, 14, 0],
+      }),
     },
   };
 }
 
 const pageTurnTransitionSpec = {
   animation: "timing" as const,
-  config: { duration: 220, easing: Easing.inOut(Easing.ease) },
+  config: { duration: 300, easing: Easing.inOut(Easing.ease) },
 };
 
 // Same 5 tabs, same order, as the web app's BottomNavBar

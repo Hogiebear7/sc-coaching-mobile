@@ -1,12 +1,17 @@
-import { StyleSheet, Text, View } from "react-native";
+import { useEffect, useRef } from "react";
+import { Animated, StyleSheet, Text, View } from "react-native";
 import Svg, { Circle } from "react-native-svg";
 
 import { Color } from "@/constants/theme";
+
+const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 // Ported 1:1 from the web app's ReadinessRing (components/ui/ReadinessRing.tsx)
 // — same bands (success >=60, data 40-59, warning <40), same stroke/radius
 // math. react-native-svg doesn't support CSS drop-shadow filters, so the
 // glow is approximated with a second, wider, low-opacity stroke underneath.
+// Unlike the (static) web version, the ring fills in from empty over ~1.2s
+// on mount rather than snapping straight to its resting position.
 export function ReadinessRing({ score, size = 76 }: { score: number | null; size?: number }) {
   const stroke = 6;
   // The glow stroke is wider than the base ring (stroke + 5), so it extends
@@ -20,6 +25,16 @@ export function ReadinessRing({ score, size = 76 }: { score: number | null; size
   const color =
     score === null ? "#7a7f8c" : score >= 60 ? Color.success : score >= 40 ? Color.accentData : Color.warning;
 
+  const fill = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    fill.setValue(0);
+    Animated.timing(fill, { toValue: pct, duration: 1200, useNativeDriver: false }).start();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [score]);
+
+  const dashoffset = fill.interpolate({ inputRange: [0, 1], outputRange: [c, 0] });
+
   return (
     <View style={{ width: size, height: size }}>
       <Svg
@@ -30,7 +45,7 @@ export function ReadinessRing({ score, size = 76 }: { score: number | null; size
         <Circle cx={svgSize / 2} cy={svgSize / 2} r={r} fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth={stroke} />
         {score !== null && (
           <>
-            <Circle
+            <AnimatedCircle
               cx={svgSize / 2}
               cy={svgSize / 2}
               r={r}
@@ -40,9 +55,9 @@ export function ReadinessRing({ score, size = 76 }: { score: number | null; size
               strokeWidth={stroke + 5}
               strokeLinecap="round"
               strokeDasharray={`${c}, ${c}`}
-              strokeDashoffset={c * (1 - pct)}
+              strokeDashoffset={dashoffset}
             />
-            <Circle
+            <AnimatedCircle
               cx={svgSize / 2}
               cy={svgSize / 2}
               r={r}
@@ -51,7 +66,7 @@ export function ReadinessRing({ score, size = 76 }: { score: number | null; size
               strokeWidth={stroke}
               strokeLinecap="round"
               strokeDasharray={`${c}, ${c}`}
-              strokeDashoffset={c * (1 - pct)}
+              strokeDashoffset={dashoffset}
             />
           </>
         )}

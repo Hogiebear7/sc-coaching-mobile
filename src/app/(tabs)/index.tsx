@@ -16,6 +16,7 @@ import { BrandMark } from "@/components/ui/BrandMark";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ReadinessRing } from "@/components/ui/ReadinessRing";
+import { ReadinessSparkline } from "@/components/ui/ReadinessSparkline";
 import { StatCard } from "@/components/ui/StatCard";
 import { Color, Spacing } from "@/constants/theme";
 import { useAuth } from "@/lib/auth-context";
@@ -205,6 +206,13 @@ export default function DashboardScreen() {
                 ) : null}
               </View>
             </View>
+
+            {readiness.hasTrend ? (
+              <View style={styles.trendRow}>
+                <ReadinessSparkline series={readiness.trend} />
+                <Text style={styles.trendLabel}>Readiness · 14d trend</Text>
+              </View>
+            ) : null}
           </Card>
 
           <View style={styles.kpiRow}>
@@ -452,6 +460,20 @@ const styles = StyleSheet.create({
   },
   readinessTextWrap: {
     flex: 1,
+  },
+  trendRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: Spacing.md,
+    paddingTop: Spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: Color.borderSubtle,
+  },
+  trendLabel: {
+    fontSize: 10,
+    fontWeight: "500",
+    color: Color.textFaint,
   },
   readinessStatusRow: {
     flexDirection: "row",

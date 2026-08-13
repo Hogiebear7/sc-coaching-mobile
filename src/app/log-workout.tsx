@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { DateField } from "@/components/ui/DateField";
 import { ExerciseAutocomplete } from "@/components/ui/ExerciseAutocomplete";
+import { SupersetChips } from "@/components/ui/SupersetChips";
 import { TextField } from "@/components/ui/TextField";
 import { Color, Radius, Spacing } from "@/constants/theme";
 import { successFeedback, tapFeedback } from "@/lib/haptics";
@@ -99,50 +100,6 @@ function newExerciseRow(): ExerciseRow {
     supersetGroup: null,
     perSide: false,
   };
-}
-
-// Computes the next unused "ST<n>" label given the groups already assigned
-// in this session, so "+ New" always offers the next free slot.
-function nextSupersetLabel(rows: ExerciseRow[]): string {
-  let max = 0;
-  for (const row of rows) {
-    const match = row.supersetGroup?.match(/^ST(\d+)$/);
-    if (match) max = Math.max(max, parseInt(match[1], 10));
-  }
-  return `ST${max + 1}`;
-}
-
-// Chip row for assigning an exercise to a superset group shared with other
-// rows in this session — tapping "+ New" mints the next free "ST<n>" label.
-function SupersetChips({
-  value,
-  allRows,
-  onChange,
-}: {
-  value: string | null;
-  allRows: ExerciseRow[];
-  onChange: (v: string | null) => void;
-}) {
-  const existingGroups = Array.from(new Set(allRows.map((r) => r.supersetGroup).filter((g): g is string => !!g)));
-  return (
-    <View style={styles.setTypeRow}>
-      <Pressable onPress={() => onChange(null)} style={[styles.setTypeChip, value === null && styles.setTypeChipActive]}>
-        <Text style={[styles.setTypeChipText, value === null && styles.setTypeChipTextActive]}>None</Text>
-      </Pressable>
-      {existingGroups.map((group) => (
-        <Pressable
-          key={group}
-          onPress={() => onChange(group)}
-          style={[styles.setTypeChip, value === group && styles.setTypeChipActive]}
-        >
-          <Text style={[styles.setTypeChipText, value === group && styles.setTypeChipTextActive]}>{group}</Text>
-        </Pressable>
-      ))}
-      <Pressable onPress={() => onChange(nextSupersetLabel(allRows))} style={styles.setTypeChip}>
-        <Text style={styles.setTypeChipText}>+ New</Text>
-      </Pressable>
-    </View>
-  );
 }
 
 // Chip row for the exercise's default set type, applied to newly added sets.
@@ -390,6 +347,25 @@ export default function LogWorkoutScreen() {
       ),
     });
   }
+  // Editing set 1's weight/reps also fills any later set that's still blank —
+  // most sets are the same or similar, and this saves retyping each one.
+  // Sets the member has already typed something into are left alone.
+  function updateFirstSetField(rowKey: string, setKey: string, field: "weight" | "reps", value: string) {
+    update({
+      exerciseRows: exerciseRows.map((r) => {
+        if (r.key !== rowKey) return r;
+        const isFirstSet = r.setRows[0]?.key === setKey;
+        return {
+          ...r,
+          setRows: r.setRows.map((sr, idx) => {
+            if (sr.key === setKey) return { ...sr, [field]: value };
+            if (isFirstSet && idx > 0 && !sr[field].trim()) return { ...sr, [field]: value };
+            return sr;
+          }),
+        };
+      }),
+    });
+  }
   function addSetRow(rowKey: string) {
     tapFeedback();
     update({
@@ -450,8 +426,8 @@ export default function LogWorkoutScreen() {
       return {
         exerciseId: r.exerciseId,
         name: r.name.trim(),
-        weight: first?.weight.trim() || null,
-        reps: first?.reps.trim() ? parseInt(first.reps, 10) : null,
+        weight: first?.weight?.trim() || null,
+        reps: first?.reps?.trim() ? parseInt(first.reps, 10) : null,
         sets: filled.length || null,
         rir: r.rir.trim() ? parseInt(r.rir, 10) : null,
         setDetails: filled.map((sr) => ({
@@ -478,9 +454,13 @@ export default function LogWorkoutScreen() {
       };
     });
 
+    // Prefer the live-tracked time whenever the timer was actually used;
+    // otherwise fall back to whatever was typed into the manual duration
+    // field (shown either for a past date, or when today's timer was never
+    // started because the workout was already fully done before logging it).
     const liveElapsed = elapsedSecsNow();
-    const finalDurationMins = isLive ? (liveElapsed > 0 ? String(Math.round(liveElapsed / 60)) : "") : durationMins.trim();
-    const durationLabel = isLive ? formatDuration(liveElapsed) : finalDurationMins ? `${finalDurationMins} min` : "—";
+    const finalDurationMins = liveElapsed > 0 ? String(Math.round(liveElapsed / 60)) : durationMins.trim();
+    const durationLabel = liveElapsed > 0 ? formatDuration(liveElapsed) : finalDurationMins ? `${finalDurationMins} min` : "—";
 
     const formatSummary =
       draft.format !== "standard" && draft.formatResultNote
@@ -588,7 +568,7 @@ export default function LogWorkoutScreen() {
           {isLive ? (
             <View style={styles.timerCard}>
               <View>
-                <Text style={styles.timerLabel}>WORKOUT TIME</Text>
+                <Text style={styles.timerLabel}>LIVE WORKOUT TIME</Text>
                 <Text style={styles.timerClock}>{formatDuration(liveElapsedSecs)}</Text>
               </View>
               <View style={{ flexDirection: "row", gap: Spacing.sm }}>
@@ -619,9 +599,17 @@ export default function LogWorkoutScreen() {
                 </Pressable>
               </View>
             </View>
-          ) : (
-            <TextField label="Duration (minutes) — optional" value={durationMins} onChangeText={(v) => update({ durationMins: v })} keyboardType="number-pad" placeholder="e.g. 60" />
-          )}
+          ) : null}
+
+          {!isLive || !timerStarted ? (
+            <TextField
+              label={isLive ? "Already completed? Enter total time (minutes)" : "Duration (minutes) — optional"}
+              value={durationMins}
+              onChangeText={(v) => update({ durationMins: v })}
+              keyboardType="number-pad"
+              placeholder="e.g. 60"
+            />
+          ) : null}
           <TextField
             label="Notes — optional"
             value={notes}
@@ -855,7 +843,7 @@ export default function LogWorkoutScreen() {
               <Text style={styles.fieldLabel}>Superset (opt.)</Text>
               <SupersetChips
                 value={row.supersetGroup}
-                allRows={exerciseRows}
+                allGroups={exerciseRows.map((r) => r.supersetGroup)}
                 onChange={(v) => updateRow(row.key, { supersetGroup: v })}
               />
 
@@ -921,7 +909,7 @@ export default function LogWorkoutScreen() {
                         weightInputRefs.current[set.key] = el;
                       }}
                       value={set.weight}
-                      onChangeText={(v) => updateSetRow(row.key, set.key, { weight: v })}
+                      onChangeText={(v) => updateFirstSetField(row.key, set.key, "weight", v)}
                       onBlur={() => {
                         const formatted = row.unitMode === "time" ? formatAsMmSs(set.weight) : formatAsKg(set.weight);
                         if (formatted !== set.weight) updateSetRow(row.key, set.key, { weight: formatted });
@@ -932,7 +920,7 @@ export default function LogWorkoutScreen() {
                     />
                     <TextInput
                       value={set.reps}
-                      onChangeText={(v) => updateSetRow(row.key, set.key, { reps: v })}
+                      onChangeText={(v) => updateFirstSetField(row.key, set.key, "reps", v)}
                       keyboardType="number-pad"
                       placeholder={lastSet?.reps != null ? String(lastSet.reps) : "8"}
                       placeholderTextColor={Color.textFaint}

@@ -12,7 +12,7 @@ import { TrendChart } from "@/components/ui/TrendChart";
 import { Color, Radius, Spacing } from "@/constants/theme";
 import { tapFeedback } from "@/lib/haptics";
 import { useAdvanceProgram, useMyProgram } from "@/lib/queries/programs";
-import { useWorkouts } from "@/lib/queries/workouts";
+import { type PersonalBest, useWorkouts } from "@/lib/queries/workouts";
 import {
   TREND_RANGES,
   computeWeeklyStats,
@@ -100,6 +100,14 @@ export default function WorkoutsScreen() {
   const weeklyStats = useMemo(() => (data ? computeWeeklyStats(data.sessions, today) : null), [data, today]);
   const allRecentRecords = useMemo(() => (data ? getRecentRecords(data.sessions, 30, today) : []), [data, today]);
   const recentRecords = useMemo(() => allRecentRecords.slice(0, 3), [allRecentRecords]);
+
+  const pinnedBests = useMemo(() => {
+    if (!data) return [];
+    const byName = new Map(data.personalBests.map((pb) => [pb.exerciseName.toLowerCase(), pb]));
+    return data.pinnedExercises
+      .map((name) => byName.get(name.toLowerCase()))
+      .filter((pb): pb is PersonalBest => pb != null);
+  }, [data]);
 
   if (isLoading) {
     return (
@@ -298,36 +306,53 @@ export default function WorkoutsScreen() {
 
         {data.personalBests.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionLabel}>PERSONAL BESTS</Text>
-            {data.personalBests.map((pb) => (
-              <Pressable
-                key={pb.exerciseName}
-                onPress={() => router.push({ pathname: "/exercise-detail", params: { name: pb.exerciseName } })}
-              >
-                <Card style={styles.pbCard}>
-                  <View style={styles.pbHeaderRow}>
-                    <Text style={styles.pbTitle}>{pb.exerciseName}</Text>
-                    <Ionicons name="chevron-forward" size={16} color={Color.textFaint} />
-                  </View>
-                  <View style={styles.pbRow}>
-                    {pb.heaviestWeight ? (
-                      <View style={styles.pbStat}>
-                        <Text style={styles.pbValue}>{pb.heaviestWeight.weightStr}</Text>
-                        <Text style={styles.pbLabel}>
-                          heaviest{pb.heaviestWeight.reps ? ` · ${pb.heaviestWeight.reps} reps` : ""}
-                        </Text>
-                      </View>
-                    ) : null}
-                    {pb.highestReps ? (
-                      <View style={styles.pbStat}>
-                        <Text style={styles.pbValue}>{pb.highestReps.reps}</Text>
-                        <Text style={styles.pbLabel}>best reps</Text>
-                      </View>
-                    ) : null}
-                  </View>
-                </Card>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionLabel}>PERSONAL BESTS</Text>
+              <Pressable onPress={() => router.push("/personal-bests-edit")}>
+                <Text style={styles.seeMoreLink}>{pinnedBests.length > 0 ? "Edit" : "Choose"}</Text>
               </Pressable>
-            ))}
+            </View>
+            {pinnedBests.length > 0 ? (
+              pinnedBests.map((pb) => (
+                <Pressable
+                  key={pb.exerciseName}
+                  onPress={() => router.push({ pathname: "/exercise-detail", params: { name: pb.exerciseName } })}
+                >
+                  <Card style={styles.pbCard}>
+                    <View style={styles.pbHeaderRow}>
+                      <Text style={styles.pbTitle}>{pb.exerciseName}</Text>
+                      <Ionicons name="chevron-forward" size={16} color={Color.textFaint} />
+                    </View>
+                    <View style={styles.pbRow}>
+                      {pb.heaviestWeight ? (
+                        <View style={styles.pbStat}>
+                          <Text style={styles.pbValue}>{pb.heaviestWeight.weightStr}</Text>
+                          <Text style={styles.pbLabel}>
+                            heaviest{pb.heaviestWeight.reps ? ` · ${pb.heaviestWeight.reps} reps` : ""}
+                          </Text>
+                        </View>
+                      ) : null}
+                      {pb.highestReps ? (
+                        <View style={styles.pbStat}>
+                          <Text style={styles.pbValue}>{pb.highestReps.reps}</Text>
+                          <Text style={styles.pbLabel}>best reps</Text>
+                        </View>
+                      ) : null}
+                    </View>
+                  </Card>
+                </Pressable>
+              ))
+            ) : (
+              <Card style={styles.pbEmptyCard}>
+                <Text style={styles.pbEmptyText}>Pick up to 5 lifts to feature here.</Text>
+                <Button
+                  title="Choose your personal bests"
+                  variant="secondary"
+                  onPress={() => router.push("/personal-bests-edit")}
+                  style={{ marginTop: Spacing.sm }}
+                />
+              </Card>
+            )}
           </View>
         )}
 
@@ -487,6 +512,8 @@ const styles = StyleSheet.create({
   recordValue: { fontSize: 14, fontWeight: "700", color: Color.gold, fontVariant: ["tabular-nums"] },
   recordDate: { fontSize: 10, color: Color.textFaint, marginTop: 1 },
   pbCard: { padding: Spacing.md, marginBottom: Spacing.sm },
+  pbEmptyCard: { alignItems: "center", padding: Spacing.lg, gap: Spacing.xs },
+  pbEmptyText: { fontSize: 12, color: Color.textMuted, textAlign: "center" },
   pbHeaderRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: Spacing.xs },
   pbTitle: { fontSize: 13, fontWeight: "600", color: Color.textPrimary },
   pbRow: { flexDirection: "row", gap: Spacing.lg },

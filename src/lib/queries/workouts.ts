@@ -74,6 +74,7 @@ export interface WorkoutsData {
   sessions: WorkoutSessionSummary[];
   personalBests: PersonalBest[];
   exerciseLibrary: ExerciseLibraryEntry[];
+  pinnedExercises: string[];
 }
 
 interface WorkoutsResponse {
@@ -144,6 +145,21 @@ export function useEditWorkout() {
       apiFetch<{ success: true; message: string }>("/api/workouts/edit", {
         method: "POST",
         body: input,
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["workouts"] }),
+  });
+}
+
+// Up to 5 exercise names the member curates for their Personal Bests card
+// (see app/api/profile/pinned-exercises/route.ts, which normalizes/caps
+// server-side regardless of what's sent here).
+export function useUpdatePinnedExercises() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (pinnedExercises: string[]) =>
+      apiFetch<{ success: true; pinnedExercises: string[] }>("/api/profile/pinned-exercises", {
+        method: "POST",
+        body: { pinnedExercises },
       }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["workouts"] }),
   });

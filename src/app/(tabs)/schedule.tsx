@@ -312,7 +312,7 @@ function ScheduleCalendarTab({ classesByDate }: { classesByDate: Record<string, 
 
 export default function ScheduleScreen() {
   const { data, isLoading, isError, refetch, isRefetching } = useSchedule();
-  const [tab, setTab] = useState<Tab>("browse");
+  const [tab, setTab] = useState<Tab>("calendar");
 
   if (isLoading) {
     return (

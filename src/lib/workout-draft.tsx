@@ -79,6 +79,30 @@ export interface TabataConfig {
   movements: string[];
 }
 
+export type ChipperMovementMode = "reps" | "time";
+
+export type ChipperMovement = {
+  key: string;
+  name: string;
+  mode: ChipperMovementMode;
+  targetReps: string;
+  /** Target duration in whole seconds, entered as mm:ss in the UI. */
+  targetSeconds: string;
+  doneReps: number;
+  /** Seconds banked so far — from manual entry AND from any completed
+      live-timer segments (a running segment's elapsed time is folded in
+      here the moment it's paused, so this is always the source of truth). */
+  doneSeconds: number;
+  /** Timestamp the live countdown last resumed from, or null when paused/
+      never started. Timestamp-based for the same reason the session timer
+      is — stays correct across backgrounding. */
+  timerStartedAtMs: number | null;
+};
+
+export interface ChipperConfig {
+  movements: ChipperMovement[];
+}
+
 function emptyCircuitConfig(): CircuitConfig {
   return {
     stations: [],
@@ -102,6 +126,10 @@ function emptyTabataConfig(): TabataConfig {
   return { workSecs: "20", restSecs: "10", rounds: "8", movements: [] };
 }
 
+function emptyChipperConfig(): ChipperConfig {
+  return { movements: [] };
+}
+
 export interface WorkoutDraft {
   title: string;
   date: string;
@@ -121,6 +149,7 @@ export interface WorkoutDraft {
   amrapConfig: AmrapConfig;
   emomConfig: EmomConfig;
   tabataConfig: TabataConfig;
+  chipperConfig: ChipperConfig;
   formatResultNote: string;
 }
 
@@ -141,6 +170,7 @@ function emptyDraft(): WorkoutDraft {
     amrapConfig: emptyAmrapConfig(),
     emomConfig: emptyEmomConfig(),
     tabataConfig: emptyTabataConfig(),
+    chipperConfig: emptyChipperConfig(),
     formatResultNote: "",
   };
 }

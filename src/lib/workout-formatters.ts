@@ -88,19 +88,27 @@ export function formatRun(run: WorkoutRunEntry): string {
 // Compact display for an exercise entry: per-set detail when present,
 // otherwise the shared sets×reps @ weight form.
 export function formatExerciseLoad(ex: WorkoutExerciseEntry): string {
+  const perSideSuffix = ex.perSide ? "/side" : "";
   if (ex.setDetails && ex.setDetails.length > 0) {
     return ex.setDetails
       .map((s) => {
-        const load = s.weight && s.reps !== null ? `${s.weight}×${s.reps}` : s.weight ? `${s.weight}` : s.reps !== null ? `×${s.reps}` : "—";
+        const load =
+          s.weight && s.reps !== null
+            ? `${s.weight}×${s.reps}${perSideSuffix}`
+            : s.weight
+              ? `${s.weight}`
+              : s.reps !== null
+                ? `×${s.reps}${perSideSuffix}`
+                : "—";
         const typeLabel = s.setType ? SET_TYPE_LABEL[s.setType] : "";
         return typeLabel ? `${load} (${typeLabel})` : load;
       })
       .join(", ");
   }
   const parts: string[] = [];
-  if (ex.sets !== null && ex.reps !== null) parts.push(`${ex.sets}×${ex.reps}`);
+  if (ex.sets !== null && ex.reps !== null) parts.push(`${ex.sets}×${ex.reps}${perSideSuffix}`);
   else if (ex.sets !== null) parts.push(`${ex.sets} sets`);
-  else if (ex.reps !== null) parts.push(`${ex.reps} reps`);
+  else if (ex.reps !== null) parts.push(`${ex.reps} reps${perSideSuffix}`);
   if (ex.weight) parts.push(`@ ${ex.weight}`);
   if (ex.rir != null) parts.push(`RIR ${ex.rir}`);
   if (ex.setType && SET_TYPE_LABEL[ex.setType]) parts.push(`(${SET_TYPE_LABEL[ex.setType]})`);

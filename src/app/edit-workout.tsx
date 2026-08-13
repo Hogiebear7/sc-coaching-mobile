@@ -37,11 +37,13 @@ type EditExerciseRow = {
   rir: string;
   notes: string;
   // Carried through unchanged from the original entry — this screen edits
-  // the shared weight/reps/sets/notes fields, not per-set breakdowns, superset
-  // pairing, or a default set type, so those pass straight through on save.
+  // the shared weight/reps/sets/notes fields plus superset grouping and
+  // per-side, not per-set breakdowns or a default set type, so those pass
+  // straight through on save.
   setDetails: CreateWorkoutExerciseInput["setDetails"];
   setType: WorkoutSetType | null;
   supersetGroup: string | null;
+  perSide: boolean;
 };
 
 type EditRunRow = {
@@ -66,7 +68,48 @@ function newExerciseRow(): EditExerciseRow {
     setDetails: [],
     setType: null,
     supersetGroup: null,
+    perSide: false,
   };
+}
+
+// Computes the next unused "ST<n>" label given the groups already assigned
+// in this session, so "+ New" always offers the next free slot.
+function nextSupersetLabel(rows: EditExerciseRow[]): string {
+  let max = 0;
+  for (const row of rows) {
+    const match = row.supersetGroup?.match(/^ST(\d+)$/);
+    if (match) max = Math.max(max, parseInt(match[1], 10));
+  }
+  return `ST${max + 1}`;
+}
+
+// Chip row for assigning an exercise to a superset group shared with other
+// rows in this session.
+function SupersetChips({
+  value,
+  allRows,
+  onChange,
+}: {
+  value: string | null;
+  allRows: EditExerciseRow[];
+  onChange: (v: string | null) => void;
+}) {
+  const existingGroups = Array.from(new Set(allRows.map((r) => r.supersetGroup).filter((g): g is string => !!g)));
+  return (
+    <View style={styles.chipRow}>
+      <Pressable onPress={() => onChange(null)} style={[styles.chip, value === null && styles.chipActive]}>
+        <Text style={[styles.chipText, value === null && styles.chipTextActive]}>None</Text>
+      </Pressable>
+      {existingGroups.map((group) => (
+        <Pressable key={group} onPress={() => onChange(group)} style={[styles.chip, value === group && styles.chipActive]}>
+          <Text style={[styles.chipText, value === group && styles.chipTextActive]}>{group}</Text>
+        </Pressable>
+      ))}
+      <Pressable onPress={() => onChange(nextSupersetLabel(allRows))} style={styles.chip}>
+        <Text style={styles.chipText}>+ New</Text>
+      </Pressable>
+    </View>
+  );
 }
 
 function newRunRow(): EditRunRow {
@@ -114,6 +157,7 @@ export default function EditWorkoutScreen() {
         setDetails: ex.setDetails ?? [],
         setType: ex.setType ?? null,
         supersetGroup: ex.supersetGroup ?? null,
+        perSide: ex.perSide ?? false,
       }))
     );
     setRunRows(
@@ -189,6 +233,7 @@ export default function EditWorkoutScreen() {
         setDetails: row.setDetails ?? [],
         setType: row.setType,
         supersetGroup: row.supersetGroup,
+        perSide: row.perSide,
         notes: row.notes.trim() || null,
       }));
 
@@ -289,6 +334,13 @@ export default function EditWorkoutScreen() {
                   </Pressable>
                 </View>
 
+                <Text style={styles.fieldLabel}>Superset (opt.)</Text>
+                <SupersetChips
+                  value={row.supersetGroup}
+                  allRows={exerciseRows}
+                  onChange={(v) => updateRow(row.key, { supersetGroup: v })}
+                />
+
                 <Text style={styles.fieldLabel}>Exercise name</Text>
                 <ExerciseAutocomplete
                   exercises={data?.exerciseLibrary ?? []}
@@ -335,6 +387,17 @@ export default function EditWorkoutScreen() {
                     style={styles.gridInput}
                   />
                 </View>
+
+                <Pressable onPress={() => updateRow(row.key, { perSide: !row.perSide })} style={styles.perSideRow}>
+                  <Ionicons
+                    name={row.perSide ? "checkbox" : "square-outline"}
+                    size={16}
+                    color={row.perSide ? Color.gold : Color.textFaint}
+                  />
+                  <Text style={[styles.perSideText, row.perSide && styles.perSideTextActive]}>
+                    Reps are per arm/leg (unilateral)
+                  </Text>
+                </Pressable>
 
                 <TextField
                   label="Notes (optional)"
@@ -442,6 +505,20 @@ const styles = StyleSheet.create({
   fieldLabel: { fontSize: 13, fontWeight: "500", color: Color.textSecondary, marginBottom: 6 },
   gridRow: { flexDirection: "row", gap: Spacing.sm },
   gridInput: { flex: 1 },
+  chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: Spacing.sm },
+  chip: {
+    borderRadius: Radius.pill,
+    borderWidth: 1,
+    borderColor: Color.borderSubtle,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 4,
+  },
+  chipActive: { backgroundColor: Color.gold + "26", borderColor: Color.gold },
+  chipText: { fontSize: 11, fontWeight: "600", color: Color.textSecondary },
+  chipTextActive: { color: Color.gold },
+  perSideRow: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: Spacing.sm },
+  perSideText: { fontSize: 12, fontWeight: "500", color: Color.textMuted },
+  perSideTextActive: { color: Color.textPrimary },
   error: { fontSize: 13, color: Color.danger, marginTop: Spacing.sm },
   actionsRow: { flexDirection: "row", gap: Spacing.sm, marginTop: Spacing.lg },
 });

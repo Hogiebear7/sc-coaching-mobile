@@ -96,8 +96,53 @@ function newExerciseRow(): ExerciseRow {
     setRows: [newSetRow(), newSetRow(), newSetRow()],
     unitMode: "weight",
     defaultSetType: "standard",
-    supersetWithPrev: false,
+    supersetGroup: null,
+    perSide: false,
   };
+}
+
+// Computes the next unused "ST<n>" label given the groups already assigned
+// in this session, so "+ New" always offers the next free slot.
+function nextSupersetLabel(rows: ExerciseRow[]): string {
+  let max = 0;
+  for (const row of rows) {
+    const match = row.supersetGroup?.match(/^ST(\d+)$/);
+    if (match) max = Math.max(max, parseInt(match[1], 10));
+  }
+  return `ST${max + 1}`;
+}
+
+// Chip row for assigning an exercise to a superset group shared with other
+// rows in this session — tapping "+ New" mints the next free "ST<n>" label.
+function SupersetChips({
+  value,
+  allRows,
+  onChange,
+}: {
+  value: string | null;
+  allRows: ExerciseRow[];
+  onChange: (v: string | null) => void;
+}) {
+  const existingGroups = Array.from(new Set(allRows.map((r) => r.supersetGroup).filter((g): g is string => !!g)));
+  return (
+    <View style={styles.setTypeRow}>
+      <Pressable onPress={() => onChange(null)} style={[styles.setTypeChip, value === null && styles.setTypeChipActive]}>
+        <Text style={[styles.setTypeChipText, value === null && styles.setTypeChipTextActive]}>None</Text>
+      </Pressable>
+      {existingGroups.map((group) => (
+        <Pressable
+          key={group}
+          onPress={() => onChange(group)}
+          style={[styles.setTypeChip, value === group && styles.setTypeChipActive]}
+        >
+          <Text style={[styles.setTypeChipText, value === group && styles.setTypeChipTextActive]}>{group}</Text>
+        </Pressable>
+      ))}
+      <Pressable onPress={() => onChange(nextSupersetLabel(allRows))} style={styles.setTypeChip}>
+        <Text style={styles.setTypeChipText}>+ New</Text>
+      </Pressable>
+    </View>
+  );
 }
 
 // Chip row for the exercise's default set type, applied to newly added sets.
@@ -280,10 +325,7 @@ export default function LogWorkoutScreen() {
     const source = dayExercises ?? templateExercises;
     if (!source) return;
 
-    const seenGroups = new Set<string>();
     const rows: ExerciseRow[] = source.map((ex) => {
-      const supersetWithPrev = ex.supersetGroup ? seenGroups.has(ex.supersetGroup) : false;
-      if (ex.supersetGroup) seenGroups.add(ex.supersetGroup);
       const defaultSetType = ex.setType ?? "standard";
       const setRows =
         ex.sets && ex.sets.length > 0
@@ -298,7 +340,8 @@ export default function LogWorkoutScreen() {
         setRows,
         unitMode: "weight",
         defaultSetType,
-        supersetWithPrev,
+        supersetGroup: ex.supersetGroup ?? null,
+        perSide: false,
       };
     });
     update({ exerciseRows: rows, seeded: true });
@@ -399,21 +442,6 @@ export default function LogWorkoutScreen() {
     }
 
     const rowsWithContent = exerciseRows.filter((r) => r.name.trim());
-
-    // Two exercises sharing a group id were performed back-to-back as a
-    // superset. "Superset with previous" on row N links it to row N-1,
-    // minting a fresh group id for the pair (or reusing one already
-    // assigned if a third exercise chains onto the same pair).
-    const groupByIndex = new Map<number, string>();
-    let nextGroupSeq = 0;
-    rowsWithContent.forEach((r, idx) => {
-      if (r.supersetWithPrev && idx > 0) {
-        const group = groupByIndex.get(idx - 1) ?? `ss-${nextGroupSeq++}`;
-        groupByIndex.set(idx - 1, group);
-        groupByIndex.set(idx, group);
-      }
-    });
-
     const filledSetsByRow = rowsWithContent.map((r) => r.setRows.filter((sr) => sr.weight.trim() || sr.reps.trim()));
 
     const exercises: CreateWorkoutExerciseInput[] = rowsWithContent.map((r, idx) => {
@@ -432,7 +460,8 @@ export default function LogWorkoutScreen() {
           setType: sr.setType === "standard" ? null : sr.setType,
         })),
         setType: first && first.setType !== "standard" ? first.setType : null,
-        supersetGroup: groupByIndex.get(idx) ?? null,
+        supersetGroup: r.supersetGroup,
+        perSide: r.perSide,
         notes: r.notes.trim() || null,
       };
     });
@@ -823,21 +852,12 @@ export default function LogWorkoutScreen() {
                 </View>
               </View>
 
-              {idx > 0 ? (
-                <Pressable
-                  onPress={() => updateRow(row.key, { supersetWithPrev: !row.supersetWithPrev })}
-                  style={styles.supersetRow}
-                >
-                  <Ionicons
-                    name={row.supersetWithPrev ? "checkbox" : "square-outline"}
-                    size={16}
-                    color={row.supersetWithPrev ? Color.gold : Color.textFaint}
-                  />
-                  <Text style={[styles.supersetText, row.supersetWithPrev && styles.supersetTextActive]}>
-                    Superset with Exercise {idx}
-                  </Text>
-                </Pressable>
-              ) : null}
+              <Text style={styles.fieldLabel}>Superset (opt.)</Text>
+              <SupersetChips
+                value={row.supersetGroup}
+                allRows={exerciseRows}
+                onChange={(v) => updateRow(row.key, { supersetGroup: v })}
+              />
 
               <Text style={styles.fieldLabel}>Exercise name</Text>
               <ExerciseAutocomplete
@@ -942,6 +962,20 @@ export default function LogWorkoutScreen() {
               <SetTypeChips value={row.defaultSetType} onChange={(v) => updateRow(row.key, { defaultSetType: v })} />
 
               <NumberField label="RIR (opt.)" value={row.rir} onChangeText={(v) => updateRow(row.key, { rir: v })} placeholder="e.g. 2" />
+
+              <Pressable
+                onPress={() => updateRow(row.key, { perSide: !row.perSide })}
+                style={styles.supersetRow}
+              >
+                <Ionicons
+                  name={row.perSide ? "checkbox" : "square-outline"}
+                  size={16}
+                  color={row.perSide ? Color.gold : Color.textFaint}
+                />
+                <Text style={[styles.supersetText, row.perSide && styles.supersetTextActive]}>
+                  Reps are per arm/leg (unilateral)
+                </Text>
+              </Pressable>
 
               <Text style={[styles.fieldLabel, { marginTop: Spacing.sm }]}>Notes (optional)</Text>
               <TextInput

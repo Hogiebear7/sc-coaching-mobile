@@ -28,7 +28,11 @@ export type ExerciseRow = {
   setRows: SetRow[];
   unitMode: "weight" | "time";
   defaultSetType: WorkoutSetType;
-  supersetWithPrev: boolean;
+  /** "ST1", "ST2", etc. — exercises sharing a label were performed
+      back-to-back as a superset. null = not part of one. */
+  supersetGroup: string | null;
+  /** Reps/weight performed per side (unilateral exercise). */
+  perSide: boolean;
 };
 
 export type RunRow = {

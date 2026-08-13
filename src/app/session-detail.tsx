@@ -80,7 +80,14 @@ export default function SessionDetailScreen() {
                       style={[styles.row, idx > 0 && styles.rowDivider]}
                     >
                       <View style={{ flex: 1 }}>
-                        <Text style={styles.rowTitle}>{ex.name}</Text>
+                        <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                          {ex.supersetGroup ? (
+                            <View style={styles.supersetBadge}>
+                              <Text style={styles.supersetBadgeText}>{ex.supersetGroup}</Text>
+                            </View>
+                          ) : null}
+                          <Text style={styles.rowTitle}>{ex.name}</Text>
+                        </View>
                         <Text style={styles.rowSummary}>{formatExerciseLoad(ex) || "—"}</Text>
                       </View>
                       <View style={styles.rowMeta}>
@@ -146,6 +153,8 @@ const styles = StyleSheet.create({
   row: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", padding: Spacing.md, gap: Spacing.sm },
   rowDivider: { borderTopWidth: 1, borderTopColor: Color.borderSubtle },
   rowTitle: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
+  supersetBadge: { borderRadius: 999, backgroundColor: Color.gold + "26", paddingHorizontal: 6, paddingVertical: 1 },
+  supersetBadgeText: { fontSize: 10, fontWeight: "700", color: Color.gold },
   rowSummary: { fontSize: 12, color: Color.textMuted, marginTop: 2 },
   rowMeta: { flexDirection: "row", alignItems: "center", gap: 4 },
   rowMetaText: { fontSize: 11, color: Color.textFaint },

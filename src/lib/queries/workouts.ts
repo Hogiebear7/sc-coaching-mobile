@@ -31,6 +31,7 @@ export interface WorkoutExerciseEntry {
   setDetails?: WorkoutSetDetail[] | null;
   setType?: WorkoutSetType | null;
   supersetGroup?: string | null;
+  perSide?: boolean | null;
   notes: string | null;
 }
 
@@ -97,6 +98,7 @@ export interface CreateWorkoutExerciseInput {
   setDetails: WorkoutSetDetail[];
   setType: WorkoutSetType | null;
   supersetGroup: string | null;
+  perSide: boolean;
   notes: string | null;
 }
 

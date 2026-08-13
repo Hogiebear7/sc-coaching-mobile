@@ -179,7 +179,7 @@ export default function RecoveryScreen() {
               <Text style={styles.emptyText}>No check-ins logged yet.</Text>
             </Card>
           ) : (
-            data.logs.slice(0, 14).map((log) => (
+            data.logs.slice(0, 5).map((log) => (
               <Pressable
                 key={log.id}
                 onPress={() => setEditingDate(log.date === editingDate ? null : log.date)}

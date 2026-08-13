@@ -559,3 +559,32 @@ export function getRecentRecords(sessions: WorkoutSessionSummary[], sinceDaysAgo
   }
   return records.sort((a, b) => b.date.localeCompare(a.date));
 }
+
+export interface RecentRecordWeek {
+  weekStartISO: string;
+  label: string;
+  records: RecentRecord[];
+}
+
+// Buckets records into Monday-start weeks so a long history reads as a
+// scannable set of sections instead of one endless flat list.
+export function groupRecordsByWeek(records: RecentRecord[]): RecentRecordWeek[] {
+  const byWeek = new Map<string, RecentRecord[]>();
+  for (const r of records) {
+    const [y, m, d] = r.date.split("-").map(Number);
+    const date = new Date(Date.UTC(y, m - 1, d));
+    const weekday = (date.getUTCDay() + 6) % 7; // 0 = Monday
+    date.setUTCDate(date.getUTCDate() - weekday);
+    const weekStartISO = date.toISOString().slice(0, 10);
+    const list = byWeek.get(weekStartISO) ?? [];
+    list.push(r);
+    byWeek.set(weekStartISO, list);
+  }
+  return Array.from(byWeek.entries())
+    .sort((a, b) => b[0].localeCompare(a[0]))
+    .map(([weekStartISO, weekRecords]) => ({
+      weekStartISO,
+      label: `Week of ${new Date(`${weekStartISO}T00:00:00`).toLocaleDateString(undefined, { day: "numeric", month: "short" })}`,
+      records: weekRecords,
+    }));
+}

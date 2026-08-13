@@ -98,7 +98,8 @@ export default function WorkoutsScreen() {
   }, [trendPoints, trendRange, today]);
 
   const weeklyStats = useMemo(() => (data ? computeWeeklyStats(data.sessions, today) : null), [data, today]);
-  const recentRecords = useMemo(() => (data ? getRecentRecords(data.sessions, 30, today).slice(0, 6) : []), [data, today]);
+  const allRecentRecords = useMemo(() => (data ? getRecentRecords(data.sessions, 30, today) : []), [data, today]);
+  const recentRecords = useMemo(() => allRecentRecords.slice(0, 3), [allRecentRecords]);
 
   if (isLoading) {
     return (
@@ -266,7 +267,14 @@ export default function WorkoutsScreen() {
 
         {recentRecords.length > 0 ? (
           <View style={styles.section}>
-            <Text style={styles.sectionLabel}>RECENT RECORDS</Text>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionLabel}>RECENT RECORDS</Text>
+              {allRecentRecords.length > 3 ? (
+                <Pressable onPress={() => router.push({ pathname: "/workout-records" })}>
+                  <Text style={styles.seeMoreLink}>See more</Text>
+                </Pressable>
+              ) : null}
+            </View>
             <Card style={styles.recordsList}>
               {recentRecords.map((r, idx) => (
                 <Pressable
@@ -456,6 +464,8 @@ const styles = StyleSheet.create({
     color: Color.textMuted,
     marginBottom: Spacing.sm,
   },
+  sectionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  seeMoreLink: { fontSize: 12, fontWeight: "600", color: Color.gold, marginBottom: Spacing.sm },
   weekStatsRow: { flexDirection: "row", gap: Spacing.sm },
   weekStat: {
     flex: 1,

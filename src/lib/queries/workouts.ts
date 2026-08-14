@@ -53,8 +53,8 @@ export interface WorkoutSessionSummary {
   notes: string | null;
   exercises: WorkoutExerciseEntry[];
   runs: WorkoutRunEntry[];
-  /** Set when synced from a class — those aren't editable from the general
-      edit flow, only self-logged sessions are. */
+  /** Set when synced from a class — edited via useUpdateClassWorkout
+      (exercises/notes only), not the general self-logged edit flow. */
   classId: string | null;
 }
 
@@ -136,8 +136,8 @@ export interface EditWorkoutInput extends CreateWorkoutInput {
   id: string;
 }
 
-// Self-logged sessions only — class-synced ones use their own same-day
-// correction path, not this endpoint (see app/api/workouts/edit/route.ts).
+// Self-logged sessions only — class-synced ones use their own correction
+// path, not this endpoint (see app/api/workouts/edit/route.ts).
 export function useEditWorkout() {
   const qc = useQueryClient();
   return useMutation({
@@ -145,6 +145,41 @@ export function useEditWorkout() {
       apiFetch<{ success: true; message: string }>("/api/workouts/edit", {
         method: "POST",
         body: input,
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["workouts"] }),
+  });
+}
+
+export interface UpdateClassWorkoutInput {
+  sessionId: string;
+  exercises: CreateWorkoutExerciseInput[];
+  notes: string;
+}
+
+// Class-synced sessions only — corrects exercises/notes on a workout that
+// was auto-added from a booked class (see app/api/workouts/update/route.ts).
+// No date/title/duration here; those come from the class itself.
+export function useUpdateClassWorkout() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: UpdateClassWorkoutInput) =>
+      apiFetch<{ success: true; message: string }>("/api/workouts/update", {
+        method: "POST",
+        body: input,
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["workouts"] }),
+  });
+}
+
+// Works for either a self-logged or class-synced session — the member owns
+// the record either way (see app/api/workouts/delete/route.ts).
+export function useDeleteWorkoutSession() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      apiFetch<{ success: true; message: string }>("/api/workouts/delete", {
+        method: "POST",
+        body: { id },
       }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["workouts"] }),
   });

@@ -1,12 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useMemo, useState } from "react";
-import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { DateField } from "@/components/ui/DateField";
 import { ExerciseAutocomplete } from "@/components/ui/ExerciseAutocomplete";
 import { SupersetChips } from "@/components/ui/SupersetChips";
 import { TextField } from "@/components/ui/TextField";
@@ -14,18 +13,17 @@ import { Color, Radius, Spacing } from "@/constants/theme";
 import { tapFeedback } from "@/lib/haptics";
 import { ApiError } from "@/lib/api-client";
 import {
-  useEditWorkout,
+  useUpdateClassWorkout,
   useWorkouts,
   type CreateWorkoutExerciseInput,
-  type CreateWorkoutRunInput,
   type WorkoutSetType,
 } from "@/lib/queries/workouts";
-import { formatAsKg, formatDuration, parseDuration, todayDateString } from "@/lib/workout-formatters";
+import { formatAsKg } from "@/lib/workout-formatters";
 
 let keySeq = 0;
 function nextKey(): string {
   keySeq += 1;
-  return `edit-${Date.now()}-${keySeq}`;
+  return `edit-class-${Date.now()}-${keySeq}`;
 }
 
 type EditExerciseRow = {
@@ -37,23 +35,10 @@ type EditExerciseRow = {
   sets: string;
   rir: string;
   notes: string;
-  // Carried through unchanged from the original entry — this screen edits
-  // the shared weight/reps/sets/notes fields plus superset grouping and
-  // per-side, not per-set breakdowns or a default set type, so those pass
-  // straight through on save.
   setDetails: CreateWorkoutExerciseInput["setDetails"];
   setType: WorkoutSetType | null;
   supersetGroup: string | null;
   perSide: boolean;
-};
-
-type EditRunRow = {
-  key: string;
-  distance: string;
-  duration: string;
-  reps: string;
-  sets: string;
-  notes: string;
 };
 
 function newExerciseRow(): EditExerciseRow {
@@ -73,37 +58,25 @@ function newExerciseRow(): EditExerciseRow {
   };
 }
 
-function newRunRow(): EditRunRow {
-  return { key: nextKey(), distance: "", duration: "", reps: "", sets: "", notes: "" };
-}
-
-// A focused editor for a previously logged, self-logged session — any date,
-// not just today. Deliberately simpler than log-workout.tsx: no live timer,
-// no workout-format/circuit builders, no draft persistence, since none of
-// that applies to correcting a workout that's already finished. Per-set
-// breakdowns, superset grouping, and default set type aren't editable here
-// either; they're preserved as-is on save (see EditExerciseRow above).
-export default function EditWorkoutScreen() {
+// Correcting a class-synced workout: only exercises + notes are editable —
+// the title/date/duration come from the class itself, and there's no run
+// tracking here (see /api/workouts/update's contract). Coaches often don't
+// get around to filling in everyone's weights, so this has no time limit —
+// members can fix their own numbers whenever they notice.
+export default function EditClassWorkoutScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id?: string }>();
   const { data, isLoading } = useWorkouts();
-  const editWorkout = useEditWorkout();
+  const updateClassWorkout = useUpdateClassWorkout();
 
   const session = useMemo(() => data?.sessions.find((s) => s.id === id), [data, id]);
 
-  const [title, setTitle] = useState("");
-  const [date, setDate] = useState("");
-  const [durationMins, setDurationMins] = useState("");
   const [notes, setNotes] = useState("");
   const [exerciseRows, setExerciseRows] = useState<EditExerciseRow[]>([]);
-  const [runRows, setRunRows] = useState<EditRunRow[]>([]);
   const [hydrated, setHydrated] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   if (session && !hydrated) {
-    setTitle(session.title);
-    setDate(session.date);
-    setDurationMins(session.durationMins != null ? String(session.durationMins) : "");
     setNotes(session.notes ?? "");
     setExerciseRows(
       session.exercises.map((ex) => ({
@@ -119,16 +92,6 @@ export default function EditWorkoutScreen() {
         setType: ex.setType ?? null,
         supersetGroup: ex.supersetGroup ?? null,
         perSide: ex.perSide ?? false,
-      }))
-    );
-    setRunRows(
-      session.runs.map((r) => ({
-        key: nextKey(),
-        distance: r.distance != null ? String(r.distance) : "",
-        duration: r.durationSecs != null ? formatDuration(r.durationSecs) : "",
-        reps: r.reps != null ? String(r.reps) : "",
-        sets: r.sets != null ? String(r.sets) : "",
-        notes: r.notes ?? "",
       }))
     );
     setHydrated(true);
@@ -152,34 +115,8 @@ export default function EditWorkoutScreen() {
     ]);
   }
 
-  function updateRunRow(key: string, patch: Partial<Omit<EditRunRow, "key">>) {
-    setRunRows((prev) => prev.map((r) => (r.key === key ? { ...r, ...patch } : r)));
-  }
-
-  function removeRunRow(key: string) {
-    Alert.alert("Remove this run?", "Any details you've entered for it will be deleted.", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Remove",
-        style: "destructive",
-        onPress: () => {
-          tapFeedback();
-          setRunRows((prev) => prev.filter((r) => r.key !== key));
-        },
-      },
-    ]);
-  }
-
   async function handleSave() {
     if (!session) return;
-    if (!title.trim()) {
-      setError("Title is required.");
-      return;
-    }
-    if (!date.trim()) {
-      setError("Date is required.");
-      return;
-    }
     setError(null);
 
     const exercises: CreateWorkoutExerciseInput[] = exerciseRows
@@ -198,24 +135,13 @@ export default function EditWorkoutScreen() {
         notes: row.notes.trim() || null,
       }));
 
-    const runs: CreateWorkoutRunInput[] = runRows.map((row) => ({
-      distance: row.distance.trim() ? parseFloat(row.distance) : null,
-      durationSecs: parseDuration(row.duration),
-      reps: row.reps.trim() ? parseInt(row.reps, 10) : null,
-      sets: row.sets.trim() ? parseInt(row.sets, 10) : null,
-      notes: row.notes.trim() || null,
-    }));
+    if (exercises.length === 0) {
+      setError("Add at least one exercise.");
+      return;
+    }
 
     try {
-      await editWorkout.mutateAsync({
-        id: session.id,
-        title: title.trim(),
-        date: date.trim(),
-        durationMins: durationMins.trim(),
-        notes: notes.trim(),
-        exercises,
-        runs,
-      });
+      await updateClassWorkout.mutateAsync({ sessionId: session.id, exercises, notes: notes.trim() });
       tapFeedback();
       router.back();
     } catch (e) {
@@ -230,7 +156,7 @@ export default function EditWorkoutScreen() {
           <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backButton}>
             <Ionicons name="chevron-back" size={22} color={Color.textPrimary} />
           </Pressable>
-          <Text style={styles.headerTitle}>Edit Workout</Text>
+          <Text style={styles.headerTitle}>Correct Class Workout</Text>
           <View style={{ width: 22 }} />
         </View>
 
@@ -243,47 +169,24 @@ export default function EditWorkoutScreen() {
             <Text style={styles.emptyText}>Couldn&apos;t find that session.</Text>
             <Button title="Back" variant="secondary" onPress={() => router.back()} style={{ marginTop: Spacing.md }} />
           </View>
-        ) : session.classId ? (
-          <View style={styles.centerFill}>
-            <Text style={styles.emptyText}>
-              Class workouts are corrected from Session Detail&apos;s Edit link, not here.
-            </Text>
-            <Button title="Back" variant="secondary" onPress={() => router.back()} style={{ marginTop: Spacing.md }} />
-          </View>
         ) : (
           <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-            <TextField label="Title" value={title} onChangeText={setTitle} placeholder="e.g. Lower Body Strength" />
-            <DateField label="Date" value={date} onChange={setDate} maxDate={todayDateString()} />
-            <TextField
-              label="Duration (minutes) — optional"
-              value={durationMins}
-              onChangeText={setDurationMins}
-              keyboardType="number-pad"
-              placeholder="e.g. 60"
-            />
-            <TextField
-              label="Notes — optional"
-              value={notes}
-              onChangeText={setNotes}
-              placeholder="What did you do, how did it feel"
-              multiline
-              style={styles.multiline}
-            />
+            <Text style={styles.subhead}>
+              {session.title} — {new Date(`${session.date}T00:00:00`).toLocaleDateString(undefined, { day: "numeric", month: "short" })}
+            </Text>
+            <Text style={styles.hint}>
+              Fix your own weights, reps, or sets if your coach hasn&apos;t gotten to it yet.
+            </Text>
 
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionLabel}>SESSION ENTRIES</Text>
-              <View style={{ flexDirection: "row", gap: Spacing.sm }}>
-                <Pressable onPress={() => setExerciseRows((prev) => [...prev, newExerciseRow()])} style={styles.addChip}>
-                  <Text style={styles.addChipText}>+ Exercise</Text>
-                </Pressable>
-                <Pressable onPress={() => setRunRows((prev) => [...prev, newRunRow()])} style={styles.addChip}>
-                  <Text style={styles.addChipText}>+ Run</Text>
-                </Pressable>
-              </View>
+              <Text style={styles.sectionLabel}>EXERCISES</Text>
+              <Pressable onPress={() => setExerciseRows((prev) => [...prev, newExerciseRow()])} style={styles.addChip}>
+                <Text style={styles.addChipText}>+ Exercise</Text>
+              </Pressable>
             </View>
 
-            {exerciseRows.length === 0 && runRows.length === 0 ? (
-              <Text style={styles.emptyHint}>No entries yet. Use the buttons above to add exercises or a run.</Text>
+            {exerciseRows.length === 0 ? (
+              <Text style={styles.emptyHint}>No exercises yet. Use the button above to add one.</Text>
             ) : null}
 
             {exerciseRows.map((row, idx) => (
@@ -369,57 +272,14 @@ export default function EditWorkoutScreen() {
               </Card>
             ))}
 
-            {runRows.map((row, idx) => (
-              <Card key={row.key} style={styles.entryCard}>
-                <View style={styles.entryHeader}>
-                  <Text style={styles.entryLabel}>Run {idx + 1}</Text>
-                  <Pressable onPress={() => removeRunRow(row.key)}>
-                    <Text style={styles.removeText}>Remove</Text>
-                  </Pressable>
-                </View>
-
-                <View style={styles.gridRow}>
-                  <TextField
-                    label="Distance (km, opt.)"
-                    value={row.distance}
-                    onChangeText={(v) => updateRunRow(row.key, { distance: v })}
-                    keyboardType="decimal-pad"
-                    placeholder="e.g. 5.2"
-                    style={styles.gridInput}
-                  />
-                  <TextField
-                    label="Time (mm:ss, opt.)"
-                    value={row.duration}
-                    onChangeText={(v) => updateRunRow(row.key, { duration: v })}
-                    placeholder="e.g. 30:00"
-                    style={styles.gridInput}
-                  />
-                </View>
-                <View style={styles.gridRow}>
-                  <TextField
-                    label="Reps (opt.)"
-                    value={row.reps}
-                    onChangeText={(v) => updateRunRow(row.key, { reps: v })}
-                    keyboardType="number-pad"
-                    style={styles.gridInput}
-                  />
-                  <TextField
-                    label="Sets (opt.)"
-                    value={row.sets}
-                    onChangeText={(v) => updateRunRow(row.key, { sets: v })}
-                    keyboardType="number-pad"
-                    style={styles.gridInput}
-                  />
-                </View>
-
-                <TextField
-                  label="Notes (optional)"
-                  value={row.notes}
-                  onChangeText={(v) => updateRunRow(row.key, { notes: v })}
-                  placeholder="e.g. Easy pace, felt good"
-                />
-              </Card>
-            ))}
+            <TextField
+              label="Session notes (optional)"
+              value={notes}
+              onChangeText={setNotes}
+              placeholder="How did the class feel overall?"
+              multiline
+              style={styles.multiline}
+            />
 
             {error ? <Text style={styles.error}>{error}</Text> : null}
 
@@ -428,7 +288,7 @@ export default function EditWorkoutScreen() {
               <Button
                 title="Save changes"
                 onPress={handleSave}
-                loading={editWorkout.isPending}
+                loading={updateClassWorkout.isPending}
                 style={{ flex: 1 }}
               />
             </View>
@@ -453,7 +313,9 @@ const styles = StyleSheet.create({
   centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
   emptyText: { fontSize: 14, color: Color.textMuted, textAlign: "center" },
   scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
-  multiline: { minHeight: 80, textAlignVertical: "top", paddingTop: Spacing.sm },
+  subhead: { fontSize: 14, fontWeight: "700", color: Color.textPrimary, marginTop: Spacing.sm },
+  hint: { fontSize: 12, color: Color.textMuted, marginTop: 4, lineHeight: 17 },
+  multiline: { minHeight: 80, textAlignVertical: "top", paddingTop: Spacing.sm, marginTop: Spacing.md },
   sectionHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: Spacing.lg, marginBottom: Spacing.sm },
   sectionLabel: { fontSize: 11, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted },
   addChip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.md, paddingVertical: 6 },

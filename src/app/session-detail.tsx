@@ -1,14 +1,15 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useMemo } from "react";
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { StatCard } from "@/components/ui/StatCard";
 import { Color, Spacing } from "@/constants/theme";
-import { useWorkouts } from "@/lib/queries/workouts";
+import { tapFeedback } from "@/lib/haptics";
+import { useDeleteWorkoutSession, useWorkouts } from "@/lib/queries/workouts";
 import { computeExerciseSetTotals, computeSessionTotals, formatExerciseLoad, formatRun } from "@/lib/workout-formatters";
 
 function formatLongDate(dateISO: string): string {
@@ -19,9 +20,26 @@ export default function SessionDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id?: string }>();
   const { data, isLoading } = useWorkouts();
+  const deleteSession = useDeleteWorkoutSession();
 
   const session = useMemo(() => data?.sessions.find((s) => s.id === id), [data, id]);
   const totals = useMemo(() => (session ? computeSessionTotals(session.exercises) : null), [session]);
+
+  function handleDelete() {
+    if (!session) return;
+    Alert.alert("Delete this workout?", "This can't be undone.", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: async () => {
+          tapFeedback();
+          await deleteSession.mutateAsync(session.id);
+          router.back();
+        },
+      },
+    ]);
+  }
 
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
@@ -30,13 +48,24 @@ export default function SessionDetailScreen() {
           <Ionicons name="chevron-back" size={22} color={Color.textPrimary} />
         </Pressable>
         <Text style={styles.headerTitle}>Session Detail</Text>
-        {session && !session.classId ? (
-          <Pressable
-            onPress={() => router.push({ pathname: "/edit-workout", params: { id: session.id } })}
-            hitSlop={12}
-          >
-            <Text style={styles.editLink}>Edit</Text>
-          </Pressable>
+        {session ? (
+          <View style={styles.headerActions}>
+            <Pressable
+              onPress={() =>
+                router.push(
+                  session.classId
+                    ? { pathname: "/edit-class-workout", params: { id: session.id } }
+                    : { pathname: "/edit-workout", params: { id: session.id } }
+                )
+              }
+              hitSlop={12}
+            >
+              <Text style={styles.editLink}>Edit</Text>
+            </Pressable>
+            <Pressable onPress={handleDelete} hitSlop={12}>
+              <Ionicons name="trash-outline" size={18} color={Color.danger} />
+            </Pressable>
+          </View>
         ) : (
           <View style={{ width: 22 }} />
         )}
@@ -140,6 +169,7 @@ const styles = StyleSheet.create({
   },
   backButton: { padding: 4 },
   headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
+  headerActions: { flexDirection: "row", alignItems: "center", gap: Spacing.md },
   editLink: { fontSize: 14, fontWeight: "600", color: Color.gold },
   centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
   emptyText: { fontSize: 14, color: Color.textMuted },

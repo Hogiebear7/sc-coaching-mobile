@@ -43,6 +43,7 @@ export default function LabelScanScreen() {
   const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null);
   const [logging, setLogging] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [scanError, setScanError] = useState<string | null>(null);
   const photoScan = usePhotoFoodScan();
   const createEntry = useCreateFoodEntry();
 
@@ -69,20 +70,34 @@ export default function LabelScanScreen() {
   async function handleCapture() {
     if (!cameraRef.current || stage !== "camera") return;
     tapFeedback();
+    setScanError(null);
     setStage("scanning");
+
+    // Capture/encode failures mean we never got a usable photo at all —
+    // nothing to retry the AI call with, so this still falls straight to
+    // manual entry (same as before AI vision existed).
+    let imageBase64: string;
     try {
       const photo: CameraCapturedPicture | undefined = await cameraRef.current.takePictureAsync({ quality: 0.5 });
       if (!photo) throw new Error("No photo captured");
-
       const resized = await manipulateAsync(photo.uri, [{ resize: { width: 1000 } }], { compress: 0.5, format: SaveFormat.JPEG, base64: true });
       if (!resized.base64) throw new Error("Could not encode photo");
+      imageBase64 = `data:image/jpeg;base64,${resized.base64}`;
+    } catch {
+      trackEvent("label_scan_manual_fallback", { reason: "capture_failed" });
+      goToManualForm("label_scan_capture_failed");
+      return;
+    }
 
-      const imageBase64 = `data:image/jpeg;base64,${resized.base64}`;
-      setCapturedPhoto(imageBase64);
+    setCapturedPhoto(imageBase64);
 
+    try {
       const res = await photoScan.mutateAsync(imageBase64);
 
       if (res.items.length === 0) {
+        // The AI call itself succeeded — it genuinely found nothing
+        // food/label-related in the photo. This is the only case that
+        // should read as "nothing recognized".
         trackEvent("label_scan_manual_fallback", { reason: "nothing_identified" });
         goToManualForm("food_photo_scan_empty", { capturedLabelPhoto: imageBase64 });
         return;
@@ -92,11 +107,15 @@ export default function LabelScanScreen() {
       setItems(res.items.map((item, i) => ({ ...item, id: `item-${i}`, included: true })));
       setStage("reviewing");
     } catch (e) {
-      // Not configured, rate-limited, network error, or capture failure —
-      // the photo (if we got one) still isn't wasted, same honest fallback
-      // as before AI vision existed.
+      // A real failure — not configured, rate-limited, network error, or a
+      // server error — is NOT the same thing as "nothing recognized". Show
+      // it and let the member retry with the same photo conditions rather
+      // than silently redirecting to manual entry, which reads identically
+      // to a genuine miss and hides what actually went wrong.
+      const message = e instanceof ApiError ? e.message : "Couldn't reach the server. Check your connection and try again.";
       trackEvent("label_scan_manual_fallback", { reason: e instanceof Error ? e.message : "unknown" });
-      goToManualForm(capturedPhoto ? "label_scan_fallback" : "label_scan_capture_failed", capturedPhoto ? { capturedLabelPhoto: capturedPhoto } : undefined);
+      setScanError(message);
+      setStage("camera");
     }
   }
 
@@ -353,6 +372,8 @@ export default function LabelScanScreen() {
 
       <Text style={styles.hint}>Fill the frame with the food or label, then capture</Text>
 
+      {scanError ? <Text style={styles.scanErrorText}>{scanError} Tap the button to try again.</Text> : null}
+
       <Pressable onPress={handleCapture} disabled={cameraUnavailable} style={styles.captureButton}>
         <View style={styles.captureButtonInner} />
       </Pressable>
@@ -386,6 +407,7 @@ const styles = StyleSheet.create({
     borderRadius: Radius.md,
   },
   hint: { textAlign: "center", fontSize: 12, color: Color.textMuted, marginTop: Spacing.md },
+  scanErrorText: { textAlign: "center", fontSize: 12, color: Color.danger, marginTop: Spacing.sm, paddingHorizontal: Spacing.xl },
   captureButton: {
     alignSelf: "center",
     width: 68,

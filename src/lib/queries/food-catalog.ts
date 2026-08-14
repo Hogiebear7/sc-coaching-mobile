@@ -141,27 +141,25 @@ export function useDeleteCustomFood() {
   });
 }
 
-// ── Label scan (OCR contract) ────────────────────────────────────────────
+// ── Photo food scan (AI vision) ──────────────────────────────────────────
+// Mirrors IdentifiedFoodItem in the main repo's lib/ai.ts. One photo can
+// return several items (a plate of food), a single item read from a
+// nutrition label, or none at all if nothing was identifiable.
 
-export interface OcrExtractedNutritionFields {
-  name: string | null;
-  brandName: string | null;
-  calories: number | null;
-  proteinG: number | null;
-  carbsG: number | null;
-  fatG: number | null;
-  fiberG: number | null;
-  sugarG: number | null;
-  sodiumMg: number | null;
-  saturatedFatG: number | null;
-  servingLabel: string | null;
-  servingGrams: number | null;
+export interface IdentifiedFoodItem {
+  name: string;
+  servingDescription: string;
+  calories: number;
+  proteinG: number;
+  carbsG: number;
+  fatG: number;
+  source: "label" | "estimate";
 }
 
-export function useLabelScan() {
+export function usePhotoFoodScan() {
   return useMutation({
     mutationFn: (imageBase64: string) =>
-      apiFetch<{ success: true; data: { fields: OcrExtractedNutritionFields; rawText: string } }>("/api/mobile/nutrition/food/label-scan", {
+      apiFetch<{ success: true; configured: true; items: IdentifiedFoodItem[] }>("/api/mobile/nutrition/food/label-scan", {
         method: "POST",
         body: { imageBase64 },
       }),

@@ -3,10 +3,10 @@
 // in this app yet, so this establishes the pattern rather than following an
 // existing one — deliberately mirroring the same "real interface, honest
 // unconfigured default, single swap point" shape already used for
-// lib/ocr-provider.ts and lib/open-food-facts-client.ts's write provider on
-// the backend. Swapping in a real vendor later means implementing
-// AnalyticsProvider and replacing the `analyticsProvider` export below —
-// every call site (trackEvent) stays the same.
+// lib/open-food-facts-client.ts's write provider on the backend. Swapping in
+// a real vendor later means implementing AnalyticsProvider and replacing the
+// `analyticsProvider` export below — every call site (trackEvent) stays the
+// same.
 
 export type FoodAnalyticsEvent =
   | "food_search_started"
@@ -17,6 +17,7 @@ export type FoodAnalyticsEvent =
   | "barcode_scan_error"
   | "barcode_scan_camera_unavailable"
   | "label_scan_started"
+  | "label_scan_items_identified"
   | "label_scan_manual_fallback"
   | "label_scan_camera_unavailable"
   | "custom_food_created"

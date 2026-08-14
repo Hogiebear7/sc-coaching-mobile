@@ -24,6 +24,8 @@ import {
 const PREFILL_BANNER_COPY: Record<string, string> = {
   label_scan_ocr: "We read what we could from the label — please double-check every field before saving.",
   label_scan_fallback: "Photo captured. Automatic reading isn't available yet, so add the details below using the label you just photographed.",
+  food_photo_scan: "Filled in from the photo — double-check everything before saving this as a reusable food.",
+  food_photo_scan_empty: "Couldn't identify anything in that photo. Add the details below using the label you just photographed.",
 };
 
 // The user naturally knows nutrition "per serving" (what's printed on a

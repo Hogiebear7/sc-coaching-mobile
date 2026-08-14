@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { apiFetch } from "@/lib/api-client";
+import type { WeeklyTrainingSession } from "@/lib/queries/weekly-training";
 
 // Mirrors StaffClassSummary in the main repo's lib/staff-classes-data.ts.
 export interface StaffClassRosterEntry {
@@ -180,6 +181,7 @@ export interface StaffMemberDetail extends StaffMemberSummary {
   personalBests: StaffMemberPersonalBest[];
   upcomingBookings: StaffMemberBookingSummary[];
   pastBookings: StaffMemberBookingSummary[];
+  weeklyTrainingSchedule: { sessions: WeeklyTrainingSession[]; updatedAt: string } | null;
 }
 
 interface StaffMembersResponse {

@@ -12,11 +12,17 @@ import { tapFeedback } from "@/lib/haptics";
 import { useStaffNutritionTarget } from "@/lib/queries/nutrition-diary";
 import { useStaffPrograms } from "@/lib/queries/programs";
 import { useSaveCoachNotes, useStaffMemberDetail } from "@/lib/queries/staff";
+import type { TrainingDayOfWeek } from "@/lib/queries/weekly-training";
 
 function formatDate(iso: string | null): string {
   if (!iso) return "—";
   return new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
 }
+
+const WEEKDAY_ORDER: TrainingDayOfWeek[] = [1, 2, 3, 4, 5, 6, 0];
+const WEEKDAY_LABEL: Record<TrainingDayOfWeek, string> = {
+  0: "Sunday", 1: "Monday", 2: "Tuesday", 3: "Wednesday", 4: "Thursday", 5: "Friday", 6: "Saturday",
+};
 
 function openMemberOnWeb(userId: string) {
   tapFeedback();
@@ -187,6 +193,28 @@ export default function StaffMemberScreen() {
                 </View>
               ))}
             </View>
+          </Card>
+
+          <Card style={styles.card}>
+            <Text style={styles.sectionLabel}>WEEKLY TRAINING PATTERN</Text>
+            {!data.weeklyTrainingSchedule || data.weeklyTrainingSchedule.sessions.length === 0 ? (
+              <Text style={styles.rowValue}>Not set up yet.</Text>
+            ) : (
+              WEEKDAY_ORDER.map((day) => {
+                const sessions = data.weeklyTrainingSchedule!.sessions.filter((s) => s.dayOfWeek === day);
+                if (sessions.length === 0) return null;
+                return (
+                  <View key={day} style={styles.rowLine}>
+                    <Text style={styles.rowLabel}>{WEEKDAY_LABEL[day]}</Text>
+                    <Text style={styles.rowValue}>
+                      {sessions
+                        .map((s) => [s.label, s.timeOfDay, s.intensity].filter(Boolean).join(" · "))
+                        .join(", ")}
+                    </Text>
+                  </View>
+                );
+              })
+            )}
           </Card>
 
           <Card style={styles.card}>

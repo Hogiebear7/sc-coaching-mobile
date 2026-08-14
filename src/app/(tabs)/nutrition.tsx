@@ -394,8 +394,8 @@ export default function NutritionScreen() {
 
           <View style={styles.section}>
             <Text style={styles.sectionLabel}>MORE</Text>
-            <Pressable onPress={() => router.push("/drink-calculator")}>
-              <Card style={styles.drinkCard}>
+            <Card>
+              <Pressable onPress={() => router.push("/drink-calculator")} style={styles.moreRow}>
                 <View style={styles.drinkCardIcon}>
                   <Ionicons name="water-outline" size={18} color={Color.gold} />
                 </View>
@@ -404,8 +404,18 @@ export default function NutritionScreen() {
                   <Text style={styles.drinkCardSub}>Sport, sweat rate, and conditions — tailored to you</Text>
                 </View>
                 <Ionicons name="chevron-forward" size={18} color={Color.textFaint} />
-              </Card>
-            </Pressable>
+              </Pressable>
+              <Pressable onPress={() => router.push("/weekly-training")} style={[styles.moreRow, styles.moreRowDivider]}>
+                <View style={styles.drinkCardIcon}>
+                  <Ionicons name="calendar-outline" size={18} color={Color.gold} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.drinkCardTitle}>Weekly Training</Text>
+                  <Text style={styles.drinkCardSub}>Your typical week — gym, sport, anything else</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={Color.textFaint} />
+              </Pressable>
+            </Card>
           </View>
 
           <View style={styles.section}>
@@ -513,7 +523,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Color.textPrimary,
   },
-  drinkCard: { flexDirection: "row", alignItems: "center", gap: Spacing.sm, padding: Spacing.md },
+  moreRow: { flexDirection: "row", alignItems: "center", gap: Spacing.sm, padding: Spacing.md },
+  moreRowDivider: { borderTopWidth: 1, borderTopColor: Color.borderSubtle },
   drinkCardIcon: {
     width: 36,
     height: 36,

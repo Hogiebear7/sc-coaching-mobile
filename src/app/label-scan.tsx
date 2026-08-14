@@ -78,9 +78,14 @@ export default function LabelScanScreen() {
     // manual entry (same as before AI vision existed).
     let imageBase64: string;
     try {
-      const photo: CameraCapturedPicture | undefined = await cameraRef.current.takePictureAsync({ quality: 0.5 });
+      // Two lossy JPEG encodes compound: a low capture quality plus a low
+      // re-compress can leave labels unreadable and plates indistinct to the
+      // model, which correctly (per its own instructions) reports nothing
+      // identifiable rather than guessing. Stay well under the server's 3MB
+      // cap while keeping enough detail for both cases.
+      const photo: CameraCapturedPicture | undefined = await cameraRef.current.takePictureAsync({ quality: 0.9 });
       if (!photo) throw new Error("No photo captured");
-      const resized = await manipulateAsync(photo.uri, [{ resize: { width: 1000 } }], { compress: 0.5, format: SaveFormat.JPEG, base64: true });
+      const resized = await manipulateAsync(photo.uri, [{ resize: { width: 1280 } }], { compress: 0.85, format: SaveFormat.JPEG, base64: true });
       if (!resized.base64) throw new Error("Could not encode photo");
       imageBase64 = `data:image/jpeg;base64,${resized.base64}`;
     } catch {

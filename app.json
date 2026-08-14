@@ -51,7 +51,6 @@
         "expo-image-picker",
         {
           "photosPermission": "S&C Coaching uses your photo library to set a profile picture.",
-          "cameraPermission": false,
           "microphonePermission": false
         }
       ]

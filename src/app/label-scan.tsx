@@ -73,9 +73,11 @@ export default function LabelScanScreen() {
     setScanError(null);
     setStage("scanning");
 
-    // Capture/encode failures mean we never got a usable photo at all —
-    // nothing to retry the AI call with, so this still falls straight to
-    // manual entry (same as before AI vision existed).
+    // A capture/encode failure here used to be swallowed silently and
+    // bounced straight to manual entry — indistinguishable from "AI found
+    // nothing" and impossible to diagnose remotely. Surface it like the AI
+    // call's own failures below, and let the member retry instead of
+    // assuming it's unrecoverable.
     let imageBase64: string;
     try {
       // Two lossy JPEG encodes compound: a low capture quality plus a low
@@ -88,9 +90,11 @@ export default function LabelScanScreen() {
       const resized = await manipulateAsync(photo.uri, [{ resize: { width: 1280 } }], { compress: 0.85, format: SaveFormat.JPEG, base64: true });
       if (!resized.base64) throw new Error("Could not encode photo");
       imageBase64 = `data:image/jpeg;base64,${resized.base64}`;
-    } catch {
-      trackEvent("label_scan_manual_fallback", { reason: "capture_failed" });
-      goToManualForm("label_scan_capture_failed");
+    } catch (e) {
+      const reason = e instanceof Error ? e.message : String(e);
+      trackEvent("label_scan_manual_fallback", { reason: `capture_failed: ${reason}` });
+      setScanError(`Couldn't process that photo (${reason}).`);
+      setStage("camera");
       return;
     }
 

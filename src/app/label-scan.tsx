@@ -39,6 +39,12 @@ export default function LabelScanScreen() {
   const cameraRef = useRef<CameraView>(null);
   const [stage, setStage] = useState<Stage>("camera");
   const [cameraUnavailable, setCameraUnavailable] = useState(false);
+  // CameraView unmounts every time we leave the "camera" stage (scanning/
+  // reviewing render entirely different trees), so it remounts fresh on
+  // every retry. Capturing before CameraX has finished binding its capture
+  // session throws a generic native "Failed to capture image" error — this
+  // tracks readiness so the button can't be tapped into that race.
+  const [cameraReady, setCameraReady] = useState(false);
   const [items, setItems] = useState<ReviewItem[]>([]);
   const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null);
   const [logging, setLogging] = useState(false);
@@ -68,7 +74,7 @@ export default function LabelScanScreen() {
   }
 
   async function handleCapture() {
-    if (!cameraRef.current || stage !== "camera") return;
+    if (!cameraRef.current || stage !== "camera" || !cameraReady) return;
     tapFeedback();
     setScanError(null);
     setStage("scanning");
@@ -94,6 +100,7 @@ export default function LabelScanScreen() {
       const reason = e instanceof Error ? e.message : String(e);
       trackEvent("label_scan_manual_fallback", { reason: `capture_failed: ${reason}` });
       setScanError(`Couldn't process that photo (${reason}).`);
+      setCameraReady(false);
       setStage("camera");
       return;
     }
@@ -124,6 +131,7 @@ export default function LabelScanScreen() {
       const message = e instanceof ApiError ? e.message : "Couldn't reach the server. Check your connection and try again.";
       trackEvent("label_scan_manual_fallback", { reason: e instanceof Error ? e.message : "unknown" });
       setScanError(message);
+      setCameraReady(false);
       setStage("camera");
     }
   }
@@ -237,7 +245,7 @@ export default function LabelScanScreen() {
     return (
       <SafeAreaView style={styles.safe} edges={["top"]}>
         <View style={styles.header}>
-          <Pressable onPress={() => setStage("camera")} hitSlop={12} style={styles.backButton}>
+          <Pressable onPress={() => { setCameraReady(false); setStage("camera"); }} hitSlop={12} style={styles.backButton}>
             <Ionicons name="chevron-back" size={22} color={Color.textPrimary} />
           </Pressable>
           <Text style={styles.headerTitle}>Review & Log</Text>
@@ -341,7 +349,7 @@ export default function LabelScanScreen() {
             disabled={items.filter((i) => i.included).length === 0}
             style={{ marginTop: Spacing.lg }}
           />
-          <Pressable onPress={() => setStage("camera")} style={styles.manualLink}>
+          <Pressable onPress={() => { setCameraReady(false); setStage("camera"); }} style={styles.manualLink}>
             <Text style={styles.manualLinkText}>Retake photo</Text>
           </Pressable>
           <Pressable onPress={() => goToManualForm("label_scan_skipped")} style={styles.manualLink}>
@@ -373,18 +381,25 @@ export default function LabelScanScreen() {
           <CameraUnavailable onFallback={() => goToManualForm("label_scan_camera_unavailable")} />
         ) : (
           <>
-            <CameraView ref={cameraRef} style={StyleSheet.absoluteFill} onMountError={handleMountError} />
+            <CameraView
+              ref={cameraRef}
+              style={StyleSheet.absoluteFill}
+              onMountError={handleMountError}
+              onCameraReady={() => setCameraReady(true)}
+            />
             <View style={styles.frame} />
           </>
         )}
       </View>
 
-      <Text style={styles.hint}>Fill the frame with the food or label, then capture</Text>
+      <Text style={styles.hint}>
+        {cameraUnavailable || cameraReady ? "Fill the frame with the food or label, then capture" : "Preparing camera…"}
+      </Text>
 
       {scanError ? <Text style={styles.scanErrorText}>{scanError} Tap the button to try again.</Text> : null}
 
-      <Pressable onPress={handleCapture} disabled={cameraUnavailable} style={styles.captureButton}>
-        <View style={styles.captureButtonInner} />
+      <Pressable onPress={handleCapture} disabled={cameraUnavailable || !cameraReady} style={[styles.captureButton, !cameraReady && styles.captureButtonDisabled]}>
+        {cameraReady ? <View style={styles.captureButtonInner} /> : <ActivityIndicator color={Color.gold} size="small" />}
       </Pressable>
 
       <Pressable onPress={() => goToManualForm("label_scan_skipped")} style={styles.manualLink}>
@@ -429,6 +444,7 @@ const styles = StyleSheet.create({
     marginTop: Spacing.md,
   },
   captureButtonInner: { width: 54, height: 54, borderRadius: 27, backgroundColor: Color.gold },
+  captureButtonDisabled: { opacity: 0.5 },
   manualLink: { alignItems: "center", paddingVertical: Spacing.lg },
   manualLinkText: { fontSize: 13, color: Color.gold, fontWeight: "600" },
   scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },

@@ -10,7 +10,7 @@ import { TextField } from "@/components/ui/TextField";
 import { Color, Radius, Spacing } from "@/constants/theme";
 import { ApiError } from "@/lib/api-client";
 import { tapFeedback } from "@/lib/haptics";
-import { useStaffNutritionTarget, useUpdateStaffNutritionTarget } from "@/lib/queries/nutrition-diary";
+import { useStaffNutritionTarget, useUpdateStaffNutritionTarget, type NutritionTargetMode } from "@/lib/queries/nutrition-diary";
 
 // Quick presets so a coach isn't doing macro math on their phone — grams
 // derived from a simple 4/4/9 kcal-per-gram split at common ratios.
@@ -20,12 +20,19 @@ const PRESETS: { label: string; calories: number; proteinG: number; carbsG: numb
   { label: "Muscle gain", calories: 2700, proteinG: 170, carbsG: 320, fatG: 80 },
 ];
 
+const MODE_OPTIONS: { value: NutritionTargetMode; label: string; hint: string }[] = [
+  { value: "auto", label: "Auto", hint: "The app calculates this member's target from their weight, training load, and logged food — no setup needed. This is the default for everyone." },
+  { value: "manual", label: "Manual", hint: "Set your own fixed numbers below — the member sees exactly this every day." },
+  { value: "disabled", label: "Off", hint: "No target is shown to the member at all. Logging still works." },
+];
+
 export default function StaffNutritionTargetScreen() {
   const router = useRouter();
   const { userId } = useLocalSearchParams<{ userId: string }>();
   const { data: existing, isLoading } = useStaffNutritionTarget(userId);
   const update = useUpdateStaffNutritionTarget();
 
+  const [mode, setMode] = useState<NutritionTargetMode>("auto");
   const [calories, setCalories] = useState("");
   const [proteinG, setProteinG] = useState("");
   const [carbsG, setCarbsG] = useState("");
@@ -37,10 +44,11 @@ export default function StaffNutritionTargetScreen() {
   useEffect(() => {
     if (hydrated || isLoading) return;
     if (existing) {
-      setCalories(String(existing.calories));
-      setProteinG(String(existing.proteinG));
-      setCarbsG(String(existing.carbsG));
-      setFatG(String(existing.fatG));
+      setMode(existing.mode);
+      if (existing.calories !== null) setCalories(String(existing.calories));
+      if (existing.proteinG !== null) setProteinG(String(existing.proteinG));
+      if (existing.carbsG !== null) setCarbsG(String(existing.carbsG));
+      if (existing.fatG !== null) setFatG(String(existing.fatG));
       setNotes(existing.notes ?? "");
     }
     setHydrated(true);
@@ -56,6 +64,18 @@ export default function StaffNutritionTargetScreen() {
 
   async function handleSave() {
     setError(null);
+
+    if (mode !== "manual") {
+      try {
+        await update.mutateAsync({ userId, mode, notes: notes.trim() || undefined });
+        tapFeedback();
+        router.back();
+      } catch (e) {
+        setError(e instanceof ApiError ? e.message : "Could not save this target. Please try again.");
+      }
+      return;
+    }
+
     const cals = parseInt(calories, 10);
     const protein = parseInt(proteinG, 10);
     const carbs = parseInt(carbsG, 10);
@@ -66,7 +86,7 @@ export default function StaffNutritionTargetScreen() {
     }
 
     try {
-      await update.mutateAsync({ userId, calories: cals, proteinG: protein, carbsG: carbs, fatG: fat, notes: notes.trim() || undefined });
+      await update.mutateAsync({ userId, mode, calories: cals, proteinG: protein, carbsG: carbs, fatG: fat, notes: notes.trim() || undefined });
       tapFeedback();
       router.back();
     } catch (e) {
@@ -96,43 +116,62 @@ export default function StaffNutritionTargetScreen() {
         </View>
 
         <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-          <Text style={styles.sectionLabel}>QUICK PRESETS</Text>
-          <View style={styles.presetRow}>
-            {PRESETS.map((p) => (
-              <Pressable key={p.label} onPress={() => applyPreset(p)} style={styles.presetChip}>
-                <Text style={styles.presetChipText}>{p.label}</Text>
+          <Text style={styles.sectionLabel}>TARGET MODE</Text>
+          <View style={styles.modeRow}>
+            {MODE_OPTIONS.map((opt) => (
+              <Pressable
+                key={opt.value}
+                onPress={() => {
+                  tapFeedback();
+                  setMode(opt.value);
+                }}
+                style={[styles.modeChip, mode === opt.value && styles.modeChipActive]}
+              >
+                <Text style={[styles.modeChipText, mode === opt.value && styles.modeChipTextActive]}>{opt.label}</Text>
               </Pressable>
             ))}
           </View>
+          <Card style={styles.hintCard}>
+            <Text style={styles.hintText}>{MODE_OPTIONS.find((o) => o.value === mode)?.hint}</Text>
+          </Card>
 
-          <View style={styles.gridRow}>
-            <View style={styles.numberField}>
-              <Text style={styles.fieldLabel}>Calories (kcal)</Text>
-              <TextInput value={calories} onChangeText={setCalories} keyboardType="number-pad" placeholder="e.g. 2200" placeholderTextColor={Color.textFaint} style={styles.input} />
-            </View>
-            <View style={styles.numberField}>
-              <Text style={styles.fieldLabel}>Protein (g)</Text>
-              <TextInput value={proteinG} onChangeText={setProteinG} keyboardType="number-pad" placeholder="e.g. 150" placeholderTextColor={Color.textFaint} style={styles.input} />
-            </View>
-          </View>
-          <View style={styles.gridRow}>
-            <View style={styles.numberField}>
-              <Text style={styles.fieldLabel}>Carbs (g)</Text>
-              <TextInput value={carbsG} onChangeText={setCarbsG} keyboardType="number-pad" placeholder="e.g. 220" placeholderTextColor={Color.textFaint} style={styles.input} />
-            </View>
-            <View style={styles.numberField}>
-              <Text style={styles.fieldLabel}>Fat (g)</Text>
-              <TextInput value={fatG} onChangeText={setFatG} keyboardType="number-pad" placeholder="e.g. 70" placeholderTextColor={Color.textFaint} style={styles.input} />
-            </View>
-          </View>
+          {mode === "manual" && (
+            <>
+              <Text style={[styles.sectionLabel, { marginTop: Spacing.lg }]}>QUICK PRESETS</Text>
+              <View style={styles.presetRow}>
+                {PRESETS.map((p) => (
+                  <Pressable key={p.label} onPress={() => applyPreset(p)} style={styles.presetChip}>
+                    <Text style={styles.presetChipText}>{p.label}</Text>
+                  </Pressable>
+                ))}
+              </View>
+
+              <View style={styles.gridRow}>
+                <View style={styles.numberField}>
+                  <Text style={styles.fieldLabel}>Calories (kcal)</Text>
+                  <TextInput value={calories} onChangeText={setCalories} keyboardType="number-pad" placeholder="e.g. 2200" placeholderTextColor={Color.textFaint} style={styles.input} />
+                </View>
+                <View style={styles.numberField}>
+                  <Text style={styles.fieldLabel}>Protein (g)</Text>
+                  <TextInput value={proteinG} onChangeText={setProteinG} keyboardType="number-pad" placeholder="e.g. 150" placeholderTextColor={Color.textFaint} style={styles.input} />
+                </View>
+              </View>
+              <View style={styles.gridRow}>
+                <View style={styles.numberField}>
+                  <Text style={styles.fieldLabel}>Carbs (g)</Text>
+                  <TextInput value={carbsG} onChangeText={setCarbsG} keyboardType="number-pad" placeholder="e.g. 220" placeholderTextColor={Color.textFaint} style={styles.input} />
+                </View>
+                <View style={styles.numberField}>
+                  <Text style={styles.fieldLabel}>Fat (g)</Text>
+                  <TextInput value={fatG} onChangeText={setFatG} keyboardType="number-pad" placeholder="e.g. 70" placeholderTextColor={Color.textFaint} style={styles.input} />
+                </View>
+              </View>
+            </>
+          )}
 
           <TextField label="Notes (optional)" value={notes} onChangeText={setNotes} placeholder="e.g. Reassess in 2 weeks" multiline style={styles.multiline} />
 
           {error ? <Text style={styles.error}>{error}</Text> : null}
-
-          <Card style={styles.hintCard}>
-            <Text style={styles.hintText}>The member sees this as their daily target on the Nutrition tab, tracked against what they log.</Text>
-          </Card>
 
           <Button title="Save target" onPress={handleSave} loading={update.isPending} style={{ marginTop: Spacing.lg }} />
         </ScrollView>
@@ -148,6 +187,11 @@ const styles = StyleSheet.create({
   backButton: { padding: 4 },
   headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
   scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
+  modeRow: { flexDirection: "row", gap: Spacing.xs, marginBottom: Spacing.sm },
+  modeChip: { flex: 1, borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingVertical: 8, alignItems: "center" },
+  modeChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
+  modeChipText: { fontSize: 12, fontWeight: "600", color: Color.textMuted },
+  modeChipTextActive: { color: Color.gold },
   sectionLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginBottom: Spacing.sm },
   presetRow: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.xs, marginBottom: Spacing.lg },
   presetChip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.sm, paddingVertical: 6 },

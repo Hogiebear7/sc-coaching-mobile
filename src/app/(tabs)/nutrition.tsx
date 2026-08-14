@@ -270,34 +270,47 @@ export default function NutritionScreen() {
             </Pressable>
           </View>
 
-          <Card style={styles.targetCard}>
-            {target ? (
-              <>
-                <View style={styles.calorieRow}>
-                  <Text style={styles.calorieValue}>{diary?.totals.calories ?? 0}</Text>
-                  <Text style={styles.calorieTarget}> / {target.calories} kcal</Text>
-                </View>
-                <Text style={styles.calorieRemaining}>
-                  {target.calories - (diary?.totals.calories ?? 0) >= 0
-                    ? `${target.calories - (diary?.totals.calories ?? 0)} kcal remaining`
-                    : `${(diary?.totals.calories ?? 0) - target.calories} kcal over`}
-                </Text>
-                <View style={styles.macroBlock}>
-                  <MacroBar label="Protein" consumed={diary?.totals.proteinG ?? 0} target={target.proteinG} />
-                  <MacroBar label="Carbs" consumed={diary?.totals.carbsG ?? 0} target={target.carbsG} />
-                  <MacroBar label="Fat" consumed={diary?.totals.fatG ?? 0} target={target.fatG} />
-                </View>
-              </>
-            ) : (
-              <>
-                <View style={styles.calorieRow}>
-                  <Text style={styles.calorieValue}>{diary?.totals.calories ?? 0}</Text>
-                  <Text style={styles.calorieTarget}> kcal logged</Text>
-                </View>
-                <Text style={styles.noTargetText}>Your coach hasn&apos;t set a target yet — logging still works.</Text>
-              </>
-            )}
-          </Card>
+          <Pressable onPress={() => router.push("/nutrition-targets")}>
+            <Card style={styles.targetCard}>
+              {target && target.mode !== "disabled" && target.calories !== null ? (
+                <>
+                  <View style={styles.targetHeaderRow}>
+                    {target.fuelDayLabel ? <Text style={styles.fuelDayLabel}>{target.fuelDayLabel}</Text> : <View />}
+                    <View style={styles.viewWeekRow}>
+                      <Text style={styles.viewWeekText}>Day · Week</Text>
+                      <Ionicons name="chevron-forward" size={14} color={Color.textFaint} />
+                    </View>
+                  </View>
+                  <View style={styles.calorieRow}>
+                    <Text style={styles.calorieValue}>{diary?.totals.calories ?? 0}</Text>
+                    <Text style={styles.calorieTarget}> / {target.calories} kcal</Text>
+                  </View>
+                  <Text style={styles.calorieRemaining}>
+                    {target.calories - (diary?.totals.calories ?? 0) >= 0
+                      ? `${target.calories - (diary?.totals.calories ?? 0)} kcal remaining`
+                      : `${(diary?.totals.calories ?? 0) - target.calories} kcal over`}
+                  </Text>
+                  <View style={styles.macroBlock}>
+                    <MacroBar label="Protein" consumed={diary?.totals.proteinG ?? 0} target={target.proteinG} />
+                    <MacroBar label="Carbs" consumed={diary?.totals.carbsG ?? 0} target={target.carbsG} />
+                    <MacroBar label="Fat" consumed={diary?.totals.fatG ?? 0} target={target.fatG} />
+                  </View>
+                </>
+              ) : (
+                <>
+                  <View style={styles.calorieRow}>
+                    <Text style={styles.calorieValue}>{diary?.totals.calories ?? 0}</Text>
+                    <Text style={styles.calorieTarget}> kcal logged</Text>
+                  </View>
+                  <Text style={styles.noTargetText}>
+                    {target?.mode === "disabled"
+                      ? "Your coach has turned off daily targets for now — logging still works."
+                      : "Setting up your target — add your weight in Profile so we can calculate it."}
+                  </Text>
+                </>
+              )}
+            </Card>
+          </Pressable>
 
           {recentFoods && recentFoods.length > 0 ? (
             <View style={styles.section}>
@@ -473,6 +486,10 @@ const styles = StyleSheet.create({
   dateArrow: { padding: 4 },
   dateLabel: { fontSize: 14, fontWeight: "600", color: Color.textPrimary, minWidth: 100, textAlign: "center" },
   targetCard: { padding: Spacing.md, marginBottom: Spacing.lg },
+  targetHeaderRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: Spacing.xs },
+  fuelDayLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.5, textTransform: "uppercase", color: Color.gold },
+  viewWeekRow: { flexDirection: "row", alignItems: "center", gap: 2 },
+  viewWeekText: { fontSize: 11, fontWeight: "600", color: Color.textFaint },
   calorieRow: { flexDirection: "row", alignItems: "baseline" },
   calorieValue: { fontSize: 28, fontWeight: "700", color: Color.gold, fontVariant: ["tabular-nums"] },
   calorieTarget: { fontSize: 14, color: Color.textMuted },

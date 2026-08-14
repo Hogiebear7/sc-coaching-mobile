@@ -12,17 +12,48 @@ export const MEAL_TYPE_OPTIONS: { value: MealType; label: string }[] = [
   { value: "snack", label: "Snack" },
 ];
 
+// Mode a coach has set for a member's target — "auto" (the default for
+// everyone) computes fresh from weight/training data; "manual" is the
+// coach's own numbers; "disabled" shows nothing. Mirrors
+// NutritionTargetMode in the main repo's lib/db.ts.
+export type NutritionTargetMode = "auto" | "manual" | "disabled";
+
+// The raw staff-set record — what the staff editor reads/writes.
 export interface NutritionTarget {
   id: string;
   userId: string;
-  calories: number;
-  proteinG: number;
-  carbsG: number;
-  fatG: number;
+  mode: NutritionTargetMode;
+  calories: number | null;
+  proteinG: number | null;
+  carbsG: number | null;
+  fatG: number | null;
   setByStaffId: string;
   notes: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+// What the member (and the Day/Week screens) actually see — the resolved
+// effective target for one date, mirrors ResolvedNutritionTarget in the
+// main repo's lib/nutrition-target-data.ts. calories/macros are null only
+// when mode is "disabled" or there's no weight on file yet to compute from.
+export interface ResolvedNutritionTarget {
+  date: string;
+  mode: NutritionTargetMode;
+  calories: number | null;
+  proteinG: number | null;
+  carbsG: number | null;
+  fatG: number | null;
+  fuelDay: string | null;
+  fuelDayLabel: string | null;
+  source: "adaptive" | "estimated" | "manual" | null;
+  notes: string | null;
+  bodyWeightKg: number | null;
+}
+
+export interface ResolvedNutritionWeek {
+  weekStart: string;
+  days: ResolvedNutritionTarget[];
 }
 
 export interface FoodEntry {
@@ -47,10 +78,24 @@ export interface DailyTotals {
 
 // ── Member-facing ────────────────────────────────────────────────────────
 
-export function useMyNutritionTarget() {
+export function useMyNutritionTarget(date?: string) {
   return useQuery({
-    queryKey: ["my-nutrition-target"],
-    queryFn: () => apiFetch<{ success: true; data: NutritionTarget | null }>("/api/mobile/nutrition/target").then((r) => r.data),
+    queryKey: ["my-nutrition-target", date ?? "today"],
+    queryFn: () =>
+      apiFetch<{ success: true; data: ResolvedNutritionTarget | null }>(
+        `/api/mobile/nutrition/target${date ? `?date=${encodeURIComponent(date)}` : ""}`
+      ).then((r) => r.data),
+  });
+}
+
+// The Mon-Sun week containing `date` (defaults to the week containing today).
+export function useWeeklyNutritionTargets(date?: string) {
+  return useQuery({
+    queryKey: ["weekly-nutrition-targets", date ?? "this-week"],
+    queryFn: () =>
+      apiFetch<{ success: true; data: ResolvedNutritionWeek | null }>(
+        `/api/mobile/nutrition/targets/week${date ? `?date=${encodeURIComponent(date)}` : ""}`
+      ).then((r) => r.data),
   });
 }
 
@@ -122,10 +167,12 @@ export function useStaffNutritionTarget(userId: string | undefined) {
 
 export interface NutritionTargetInput {
   userId: string;
-  calories: number;
-  proteinG: number;
-  carbsG: number;
-  fatG: number;
+  mode: NutritionTargetMode;
+  // Required when mode is "manual"; ignored (sent or not) otherwise.
+  calories?: number;
+  proteinG?: number;
+  carbsG?: number;
+  fatG?: number;
   notes?: string;
 }
 

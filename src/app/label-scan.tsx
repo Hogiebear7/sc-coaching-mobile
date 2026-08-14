@@ -1,12 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
-import { CameraView, useCameraPermissions, type CameraCapturedPicture, type CameraMountError } from "expo-camera";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { manipulateAsync, SaveFormat } from "expo-image-manipulator";
-import { useRef, useState, useEffect } from "react";
+import { launchCameraAsync, useCameraPermissions } from "expo-image-picker";
+import { useState, useEffect } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { CameraPermissionDenied, CameraUnavailable } from "@/components/nutrition/CameraPermissionGate";
+import { CameraPermissionDenied } from "@/components/nutrition/CameraPermissionGate";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Color, Radius, Spacing } from "@/constants/theme";
@@ -36,15 +36,14 @@ export default function LabelScanScreen() {
   const router = useRouter();
   const { barcode, date, mealType } = useLocalSearchParams<{ barcode?: string; date?: string; mealType?: string }>();
   const [permission, requestPermission] = useCameraPermissions();
-  const cameraRef = useRef<CameraView>(null);
   const [stage, setStage] = useState<Stage>("camera");
-  const [cameraUnavailable, setCameraUnavailable] = useState(false);
-  // CameraView unmounts every time we leave the "camera" stage (scanning/
-  // reviewing render entirely different trees), so it remounts fresh on
-  // every retry. Capturing before CameraX has finished binding its capture
-  // session throws a generic native "Failed to capture image" error — this
-  // tracks readiness so the button can't be tapped into that race.
-  const [cameraReady, setCameraReady] = useState(false);
+  // Launches the system camera app rather than embedding a live preview —
+  // an embedded expo-camera CameraView was hitting a real native "Failed to
+  // capture image" race on-device (its CameraX session isn't always bound
+  // by the time a capture is requested, and it remounts on every retry).
+  // Handing capture off entirely to the OS's own camera activity sidesteps
+  // that whole class of failure, same as most mainstream food-logging apps.
+  const [launching, setLaunching] = useState(false);
   const [items, setItems] = useState<ReviewItem[]>([]);
   const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null);
   const [logging, setLogging] = useState(false);
@@ -68,18 +67,36 @@ export default function LabelScanScreen() {
     });
   }
 
-  function handleMountError(e: CameraMountError) {
-    trackEvent("label_scan_camera_unavailable", { message: e.message });
-    setCameraUnavailable(true);
-  }
-
   async function handleCapture() {
-    if (!cameraRef.current || stage !== "camera" || !cameraReady) return;
+    if (stage !== "camera" || launching) return;
     tapFeedback();
     setScanError(null);
+    setLaunching(true);
+
+    // The system camera activity owns the whole capture UI (framing,
+    // retake, confirm) — we only get control back once the member has
+    // confirmed a photo or backed out.
+    let photoUri: string;
+    try {
+      const result = await launchCameraAsync({ quality: 0.9, mediaTypes: ["images"], exif: false });
+      if (result.canceled || !result.assets?.[0]) {
+        // Backed out of the system camera — not a failure, stay put.
+        setLaunching(false);
+        return;
+      }
+      photoUri = result.assets[0].uri;
+    } catch (e) {
+      const reason = e instanceof Error ? e.message : String(e);
+      trackEvent("label_scan_manual_fallback", { reason: `camera_launch_failed: ${reason}` });
+      setScanError(`Couldn't open the camera (${reason}).`);
+      setLaunching(false);
+      return;
+    }
+
+    setLaunching(false);
     setStage("scanning");
 
-    // A capture/encode failure here used to be swallowed silently and
+    // A resize/encode failure here used to be swallowed silently and
     // bounced straight to manual entry — indistinguishable from "AI found
     // nothing" and impossible to diagnose remotely. Surface it like the AI
     // call's own failures below, and let the member retry instead of
@@ -91,16 +108,13 @@ export default function LabelScanScreen() {
       // model, which correctly (per its own instructions) reports nothing
       // identifiable rather than guessing. Stay well under the server's 3MB
       // cap while keeping enough detail for both cases.
-      const photo: CameraCapturedPicture | undefined = await cameraRef.current.takePictureAsync({ quality: 0.9 });
-      if (!photo) throw new Error("No photo captured");
-      const resized = await manipulateAsync(photo.uri, [{ resize: { width: 1280 } }], { compress: 0.85, format: SaveFormat.JPEG, base64: true });
+      const resized = await manipulateAsync(photoUri, [{ resize: { width: 1280 } }], { compress: 0.85, format: SaveFormat.JPEG, base64: true });
       if (!resized.base64) throw new Error("Could not encode photo");
       imageBase64 = `data:image/jpeg;base64,${resized.base64}`;
     } catch (e) {
       const reason = e instanceof Error ? e.message : String(e);
-      trackEvent("label_scan_manual_fallback", { reason: `capture_failed: ${reason}` });
+      trackEvent("label_scan_manual_fallback", { reason: `resize_failed: ${reason}` });
       setScanError(`Couldn't process that photo (${reason}).`);
-      setCameraReady(false);
       setStage("camera");
       return;
     }
@@ -131,7 +145,6 @@ export default function LabelScanScreen() {
       const message = e instanceof ApiError ? e.message : "Couldn't reach the server. Check your connection and try again.";
       trackEvent("label_scan_manual_fallback", { reason: e instanceof Error ? e.message : "unknown" });
       setScanError(message);
-      setCameraReady(false);
       setStage("camera");
     }
   }
@@ -245,7 +258,7 @@ export default function LabelScanScreen() {
     return (
       <SafeAreaView style={styles.safe} edges={["top"]}>
         <View style={styles.header}>
-          <Pressable onPress={() => { setCameraReady(false); setStage("camera"); }} hitSlop={12} style={styles.backButton}>
+          <Pressable onPress={() => setStage("camera")} hitSlop={12} style={styles.backButton}>
             <Ionicons name="chevron-back" size={22} color={Color.textPrimary} />
           </Pressable>
           <Text style={styles.headerTitle}>Review & Log</Text>
@@ -349,7 +362,7 @@ export default function LabelScanScreen() {
             disabled={items.filter((i) => i.included).length === 0}
             style={{ marginTop: Spacing.lg }}
           />
-          <Pressable onPress={() => { setCameraReady(false); setStage("camera"); }} style={styles.manualLink}>
+          <Pressable onPress={() => setStage("camera")} style={styles.manualLink}>
             <Text style={styles.manualLinkText}>Retake photo</Text>
           </Pressable>
           <Pressable onPress={() => goToManualForm("label_scan_skipped")} style={styles.manualLink}>
@@ -370,37 +383,21 @@ export default function LabelScanScreen() {
         <View style={{ width: 22 }} />
       </View>
 
-      <Text style={styles.subhead}>
-        {barcode
-          ? "Couldn't find that barcode — photograph the food or its nutrition label and we'll identify it."
-          : "Photograph your food, a meal, or a nutrition label — we'll identify it and estimate the nutrition."}
-      </Text>
+      <View style={styles.centerFill}>
+        <View style={styles.confirmIconWrap}>
+          <Ionicons name="camera" size={26} color={Color.goldForeground} />
+        </View>
+        <Text style={styles.confirmTitle}>{barcode ? "Couldn't find that barcode" : "Photograph your food"}</Text>
+        <Text style={styles.confirmText}>
+          {barcode
+            ? "Photograph the food or its nutrition label and we'll identify it."
+            : "A single item, a full plate, or a nutrition label — we'll identify it and estimate the nutrition."}
+        </Text>
 
-      <View style={styles.cameraWrap}>
-        {cameraUnavailable ? (
-          <CameraUnavailable onFallback={() => goToManualForm("label_scan_camera_unavailable")} />
-        ) : (
-          <>
-            <CameraView
-              ref={cameraRef}
-              style={StyleSheet.absoluteFill}
-              onMountError={handleMountError}
-              onCameraReady={() => setCameraReady(true)}
-            />
-            <View style={styles.frame} />
-          </>
-        )}
+        {scanError ? <Text style={styles.scanErrorText}>{scanError} Tap the button to try again.</Text> : null}
+
+        <Button title="Take Photo" onPress={handleCapture} loading={launching} style={{ marginTop: Spacing.lg, alignSelf: "stretch" }} />
       </View>
-
-      <Text style={styles.hint}>
-        {cameraUnavailable || cameraReady ? "Fill the frame with the food or label, then capture" : "Preparing camera…"}
-      </Text>
-
-      {scanError ? <Text style={styles.scanErrorText}>{scanError} Tap the button to try again.</Text> : null}
-
-      <Pressable onPress={handleCapture} disabled={cameraUnavailable || !cameraReady} style={[styles.captureButton, !cameraReady && styles.captureButtonDisabled]}>
-        {cameraReady ? <View style={styles.captureButtonInner} /> : <ActivityIndicator color={Color.gold} size="small" />}
-      </Pressable>
 
       <Pressable onPress={() => goToManualForm("label_scan_skipped")} style={styles.manualLink}>
         <Text style={styles.manualLinkText}>Enter this food manually instead</Text>
@@ -419,32 +416,7 @@ const styles = StyleSheet.create({
   confirmIconWrap: { width: 56, height: 56, borderRadius: 28, backgroundColor: Color.gold, alignItems: "center", justifyContent: "center" },
   confirmTitle: { fontSize: 17, fontWeight: "700", color: Color.textPrimary, marginTop: Spacing.md },
   confirmText: { fontSize: 13, color: Color.textMuted, textAlign: "center", marginTop: 6, lineHeight: 19 },
-  cameraWrap: { flex: 1, marginHorizontal: Spacing.lg, borderRadius: Radius.lg, overflow: "hidden", backgroundColor: Color.surface1 },
-  frame: {
-    position: "absolute",
-    top: "15%",
-    left: "8%",
-    right: "8%",
-    bottom: "15%",
-    borderWidth: 2,
-    borderColor: Color.gold,
-    borderRadius: Radius.md,
-  },
-  hint: { textAlign: "center", fontSize: 12, color: Color.textMuted, marginTop: Spacing.md },
   scanErrorText: { textAlign: "center", fontSize: 12, color: Color.danger, marginTop: Spacing.sm, paddingHorizontal: Spacing.xl },
-  captureButton: {
-    alignSelf: "center",
-    width: 68,
-    height: 68,
-    borderRadius: 34,
-    borderWidth: 3,
-    borderColor: Color.gold,
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: Spacing.md,
-  },
-  captureButtonInner: { width: 54, height: 54, borderRadius: 27, backgroundColor: Color.gold },
-  captureButtonDisabled: { opacity: 0.5 },
   manualLink: { alignItems: "center", paddingVertical: Spacing.lg },
   manualLinkText: { fontSize: 13, color: Color.gold, fontWeight: "600" },
   scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },

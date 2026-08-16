@@ -21,7 +21,10 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.CAMERA"
+      ]
     },
     "web": {
       "output": "static",
@@ -62,8 +65,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "e86493d0-d47c-4001-a120-ca3608eb3fde"
+        "projectId": "68ac9de2-4e2c-4ff0-ba80-0604118869c0"
       }
-    }
+    },
+    "owner": "higiebear77"
   }
 }

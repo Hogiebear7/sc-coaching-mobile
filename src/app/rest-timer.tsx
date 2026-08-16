@@ -43,12 +43,16 @@ async function cancelNotification(id: string | null) {
 
 export default function RestTimerScreen() {
   const router = useRouter();
-  const { seconds: initialSecondsParam } = useLocalSearchParams<{ seconds?: string }>();
+  const { seconds: initialSecondsParam, autostart } = useLocalSearchParams<{ seconds?: string; autostart?: string }>();
   const initialDuration = Number(initialSecondsParam) > 0 ? Number(initialSecondsParam) : 90;
 
   const [duration, setDuration] = useState(initialDuration);
   const [remaining, setRemaining] = useState(initialDuration);
-  const [running, setRunning] = useState(false);
+  // Landing here straight from marking a set complete — start counting down
+  // immediately rather than waiting for a play tap, so the countdown is
+  // already running the moment someone puts their phone away. The manual
+  // timer-icon entry point still opens paused, unchanged.
+  const [running, setRunning] = useState(autostart === "1");
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const notificationIdRef = useRef<string | null>(null);
 
@@ -57,6 +61,16 @@ export default function RestTimerScreen() {
       if (intervalRef.current) clearInterval(intervalRef.current);
       void cancelNotification(notificationIdRef.current);
     };
+  }, []);
+
+  // The backstop notification for that auto-started countdown above —
+  // scheduled once on arrival rather than waiting for a play tap.
+  useEffect(() => {
+    if (autostart !== "1") return;
+    scheduleRestDoneNotification(initialDuration).then((id) => {
+      notificationIdRef.current = id;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {

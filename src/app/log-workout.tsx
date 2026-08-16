@@ -599,8 +599,10 @@ export default function LogWorkoutScreen() {
       // The screen stays mounted underneath (this is a stack push, not a
       // replace), so the focus() above still lands once the member comes
       // back — they land straight on the next set with the rest already
-      // counted down.
-      router.push({ pathname: "/rest-timer", params: { seconds: String(restTimerSeconds) } });
+      // counted down. autostart: the countdown (and its backstop
+      // notification) needs to be running immediately, not waiting on a
+      // play tap, since the whole point is not needing to look at the phone.
+      router.push({ pathname: "/rest-timer", params: { seconds: String(restTimerSeconds), autostart: "1" } });
     }
     updateSetRow(rowKey, setKey, { completed: !wasCompleted });
   }

@@ -39,6 +39,7 @@ export interface ProfileData {
   emailNotificationsEnabled: boolean;
   reminderTimingsMins: number[] | null;
   preferredUnits: MeasurementUnits;
+  restTimerSeconds: number;
   avatarDataUrl: string | null;
   cycleTrackingEligible: boolean;
   allTimeStats: { classesCompleted: number; totalWeightKg: number; totalDistanceKm: number };
@@ -128,6 +129,18 @@ export function useSetUnits() {
       apiFetch<{ success: true }>("/api/profile/units", {
         method: "POST",
         body: { preferredUnits },
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["profile"] }),
+  });
+}
+
+export function useSetRestTimerSeconds() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (restTimerSeconds: number) =>
+      apiFetch<{ success: true }>("/api/profile/rest-timer", {
+        method: "POST",
+        body: { restTimerSeconds },
       }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["profile"] }),
   });

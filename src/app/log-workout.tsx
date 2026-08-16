@@ -24,6 +24,7 @@ import { Color, Radius, Spacing } from "@/constants/theme";
 import { successFeedback, tapFeedback } from "@/lib/haptics";
 import { ApiError } from "@/lib/api-client";
 import { useAdvanceProgram, useMyProgram } from "@/lib/queries/programs";
+import { useProfile } from "@/lib/queries/profile";
 import { useWorkoutTemplates } from "@/lib/queries/workout-templates";
 import {
   SET_TYPE_OPTIONS,
@@ -440,6 +441,8 @@ export default function LogWorkoutScreen() {
     templateId?: string;
   }>();
   const { data } = useWorkouts();
+  const { data: profile } = useProfile();
+  const restTimerSeconds = profile?.restTimerSeconds ?? 90;
   const { data: program } = useMyProgram();
   const { data: templates } = useWorkoutTemplates();
   const create = useCreateWorkout();
@@ -593,6 +596,11 @@ export default function LogWorkoutScreen() {
       if (next) {
         setTimeout(() => weightInputRefs.current[next.key]?.focus(), 50);
       }
+      // The screen stays mounted underneath (this is a stack push, not a
+      // replace), so the focus() above still lands once the member comes
+      // back — they land straight on the next set with the rest already
+      // counted down.
+      router.push({ pathname: "/rest-timer", params: { seconds: String(restTimerSeconds) } });
     }
     updateSetRow(rowKey, setKey, { completed: !wasCompleted });
   }
@@ -1053,7 +1061,7 @@ export default function LogWorkoutScreen() {
                     <Ionicons name="barbell-outline" size={16} color={Color.textMuted} />
                   </Pressable>
                   <Pressable
-                    onPress={() => router.push({ pathname: "/rest-timer", params: { seconds: "90" } })}
+                    onPress={() => router.push({ pathname: "/rest-timer", params: { seconds: String(restTimerSeconds) } })}
                     hitSlop={8}
                   >
                     <Ionicons name="timer-outline" size={16} color={Color.textMuted} />

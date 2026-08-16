@@ -18,6 +18,7 @@ import {
   useSetEmailNotifications,
   useSetPushNotifications,
   useSetReminderTimings,
+  useSetRestTimerSeconds,
   useSetUnits,
   type MeasurementUnits,
 } from "@/lib/queries/profile";
@@ -28,6 +29,10 @@ const REMINDER_PRESETS = [
   { label: "3 hours before", mins: 180 },
   { label: "1 hour before", mins: 60 },
 ];
+
+// Mirrors rest-timer.tsx's own PRESETS — the manual timer and this default
+// should offer the same set of choices.
+const REST_TIMER_PRESETS = [30, 60, 90, 120, 180, 300];
 
 function SectionLabel({ children }: { children: string }) {
   return <Text style={styles.sectionLabel}>{children}</Text>;
@@ -67,6 +72,7 @@ export default function SettingsScreen() {
   const setPush = useSetPushNotifications();
   const setEmail = useSetEmailNotifications();
   const setUnits = useSetUnits();
+  const setRestTimer = useSetRestTimerSeconds();
   const setAvatar = useSetAvatar();
   const setReminders = useSetReminderTimings();
   const requestReset = useRequestPasswordReset();
@@ -260,6 +266,31 @@ export default function SettingsScreen() {
                     </Text>
                   </Pressable>
                 ))}
+              </View>
+            </View>
+            <View style={styles.divider} />
+            <View style={[styles.row, { alignItems: "flex-start" }]}>
+              <View style={styles.rowIcon}>
+                <Ionicons name="timer-outline" size={16} color={Color.gold} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.rowTitle}>Rest timer</Text>
+                <Text style={[styles.rowSub, { marginBottom: Spacing.sm }]}>
+                  Starts automatically when you complete a set
+                </Text>
+                <View style={styles.chipRow}>
+                  {REST_TIMER_PRESETS.map((secs) => (
+                    <Pressable
+                      key={secs}
+                      onPress={() => setRestTimer.mutate(secs)}
+                      style={[styles.chip, data.restTimerSeconds === secs && styles.chipActive]}
+                    >
+                      <Text style={[styles.chipText, data.restTimerSeconds === secs && styles.chipTextActive]}>
+                        {secs < 60 ? `${secs}s` : `${secs / 60}m`}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
               </View>
             </View>
           </Card>

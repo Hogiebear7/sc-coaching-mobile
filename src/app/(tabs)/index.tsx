@@ -21,6 +21,7 @@ import { StatCard } from "@/components/ui/StatCard";
 import { Color, Spacing } from "@/constants/theme";
 import { useAuth } from "@/lib/auth-context";
 import { useDashboard } from "@/lib/queries/dashboard";
+import { useNotifications } from "@/lib/queries/notifications";
 
 function formatTodayLabel(): string {
   return new Date().toLocaleDateString(undefined, {
@@ -46,6 +47,8 @@ export default function DashboardScreen() {
   const { user, logout } = useAuth();
   const router = useRouter();
   const { data, isLoading, isError, refetch, isRefetching } = useDashboard();
+  const { data: notifications } = useNotifications();
+  const unreadCount = notifications?.filter((n) => n.readAt === null).length ?? 0;
 
   const onRefresh = useCallback(() => {
     refetch();
@@ -99,6 +102,18 @@ export default function DashboardScreen() {
               <Text style={styles.greeting}>Hi {data.firstName}</Text>
             </View>
             <View style={styles.headerActions}>
+              <Pressable
+                onPress={() => router.push("/notifications")}
+                hitSlop={8}
+                style={styles.bellWrap}
+              >
+                <Ionicons name="notifications-outline" size={22} color={Color.textMuted} />
+                {unreadCount > 0 ? (
+                  <View style={styles.bellBadge}>
+                    <Text style={styles.bellBadgeText}>{unreadCount > 9 ? "9+" : unreadCount}</Text>
+                  </View>
+                ) : null}
+              </Pressable>
               <Ionicons
                 name="person-circle-outline"
                 size={24}
@@ -351,6 +366,26 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: Spacing.md,
+  },
+  bellWrap: {
+    position: "relative",
+  },
+  bellBadge: {
+    position: "absolute",
+    top: -4,
+    right: -6,
+    minWidth: 15,
+    height: 15,
+    borderRadius: 8,
+    backgroundColor: Color.gold,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 3,
+  },
+  bellBadgeText: {
+    fontSize: 9,
+    fontWeight: "700",
+    color: Color.goldForeground,
   },
   eyebrow: {
     fontSize: 10,

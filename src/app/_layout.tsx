@@ -77,6 +77,7 @@ function AuthGate() {
       <Stack.Screen name="(staff)" />
       <Stack.Screen name="membership" options={{ presentation: "card" }} />
       <Stack.Screen name="messages" options={{ presentation: "card" }} />
+      <Stack.Screen name="notifications" options={{ presentation: "card" }} />
       <Stack.Screen name="profile" options={{ presentation: "card" }} />
       <Stack.Screen name="settings" options={{ presentation: "card" }} />
       <Stack.Screen name="staff-member" options={{ presentation: "card" }} />

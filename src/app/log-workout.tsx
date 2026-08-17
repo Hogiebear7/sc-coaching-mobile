@@ -3,6 +3,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
   Alert,
+  Keyboard,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -674,11 +675,19 @@ export default function LogWorkoutScreen() {
       exerciseRows: exerciseRows.map((r) => {
         if (r.key !== rowKey) return r;
         const isFirstSet = r.setRows[0]?.key === setKey;
+        // Set 1's value *before* this keystroke — any other set still
+        // exactly matching it (empty, or auto-filled from an earlier
+        // keystroke) is still "following" set 1 and keeps syncing. A set
+        // the member has edited directly no longer matches, so it stops
+        // following from that point on — that's what makes this a live
+        // "keep typing and it fills the rest" default rather than a one-shot
+        // copy that only ever captures the first character typed.
+        const previousFirstValue = r.setRows[0]?.[field] ?? "";
         return {
           ...r,
           setRows: r.setRows.map((sr, idx) => {
             if (sr.key === setKey) return { ...sr, [field]: value };
-            if (isFirstSet && idx > 0 && !sr[field].trim()) return { ...sr, [field]: value };
+            if (isFirstSet && idx > 0 && sr[field] === previousFirstValue) return { ...sr, [field]: value };
             return sr;
           }),
         };
@@ -747,6 +756,11 @@ export default function LogWorkoutScreen() {
       setError("Title and date are required.");
       return;
     }
+    // A modal mounting while a text field is still focused (and the
+    // keyboard + KeyboardAvoidingView are mid-adjustment) is a known rough
+    // edge on Android — dismiss first so the modal opens onto a settled
+    // screen.
+    Keyboard.dismiss();
     setFeelModalOpen(true);
   }
 
@@ -757,123 +771,128 @@ export default function LogWorkoutScreen() {
       return;
     }
 
-    const rowsWithContent = exerciseRows.filter((r) => r.name.trim());
-    const filledSetsByRow = rowsWithContent.map((r) => r.setRows.filter((sr) => sr.weight.trim() || sr.reps.trim()));
+    // Everything below (including the summary/payload building, not just
+    // the network call) is inside this try — an uncaught exception in a
+    // release build has no red-box to fall back on, it just kills the app,
+    // so anything that can throw here needs to end up as a visible error
+    // message instead.
+    try {
+      const rowsWithContent = exerciseRows.filter((r) => r.name.trim());
+      const filledSetsByRow = rowsWithContent.map((r) => r.setRows.filter((sr) => sr.weight.trim() || sr.reps.trim()));
 
-    const exercises: CreateWorkoutExerciseInput[] = rowsWithContent.map((r, idx) => {
-      const filled = filledSetsByRow[idx];
-      const first = filled[0];
-      return {
-        exerciseId: r.exerciseId,
-        name: r.name.trim(),
-        weight: first?.weight?.trim() || null,
-        reps: first?.reps?.trim() ? parseInt(first.reps, 10) : null,
-        sets: filled.length || null,
-        rir: r.rir.trim() ? parseInt(r.rir, 10) : null,
-        setDetails: filled.map((sr) => ({
-          weight: sr.weight.trim() || null,
-          reps: sr.reps.trim() ? parseInt(sr.reps, 10) : null,
-          setType: sr.setType === "standard" ? null : sr.setType,
-        })),
-        setType: first && first.setType !== "standard" ? first.setType : null,
-        supersetGroup: r.supersetGroup,
-        perSide: r.perSide,
-        notes: r.notes.trim() || null,
-      };
-    });
-
-    const runs: CreateWorkoutRunInput[] = runRows.map((r) => {
-      const splitsNote = r.splits.length > 0 ? `Splits: ${r.splits.join(", ")}` : "";
-      const combinedNotes = [r.notes.trim(), splitsNote].filter(Boolean).join(" — ");
-      return {
-        distance: r.distance.trim() ? (r.distanceUnit === "m" ? Math.round((parseFloat(r.distance) / 1000) * 1000) / 1000 : parseFloat(r.distance)) : null,
-        durationSecs: parseDuration(r.duration),
-        reps: r.reps.trim() ? parseInt(r.reps, 10) : null,
-        sets: r.sets.trim() ? parseInt(r.sets, 10) : null,
-        notes: combinedNotes || null,
-      };
-    });
-
-    // Prefer the live-tracked time whenever the timer was actually used;
-    // otherwise fall back to whatever was typed into the manual duration
-    // field (shown either for a past date, or when today's timer was never
-    // started because the workout was already fully done before logging it).
-    const liveElapsed = elapsedSecsNow();
-    const finalDurationMins = liveElapsed > 0 ? String(Math.round(liveElapsed / 60)) : durationMins.trim();
-    const durationLabel = liveElapsed > 0 ? formatDuration(liveElapsed) : finalDurationMins ? `${finalDurationMins} min` : "—";
-
-    const chipperSummary =
-      draft.format === "chipper" && draft.chipperConfig.movements.length > 0
-        ? `Chipper: ${draft.chipperConfig.movements
-            .filter((m) => m.name.trim())
-            .map((m) => {
-              const target = m.mode === "reps" ? parseInt(m.targetReps, 10) || 0 : parseDuration(m.targetSeconds) ?? 0;
-              const done = m.mode === "reps" ? m.doneReps : m.doneSeconds;
-              const doneLabel = m.mode === "reps" ? String(done) : formatDuration(done);
-              const targetLabel = m.mode === "reps" ? String(target) : formatDuration(target);
-              return `${m.name.trim()} ${doneLabel}/${targetLabel}`;
-            })
-            .join(", ")}`
-        : "";
-
-    const formatSummary =
-      draft.format === "chipper"
-        ? chipperSummary
-        : draft.format !== "standard" && draft.formatResultNote
-          ? `${FORMAT_LABELS[draft.format]}: ${draft.formatResultNote}`
-          : draft.format !== "standard"
-            ? `${FORMAT_LABELS[draft.format]} (not run via the live timer)`
-            : "";
-    const combinedNotes = [notes.trim(), formatSummary].filter(Boolean).join("\n");
-
-    // Snapshot the summary before the create call — it reads from the
-    // form's local state and the personalBests already in memory, so the
-    // just-submitted session's highlights compare against the PRE-session
-    // record (exactly what "did I just set a PB" should mean).
-    const totalVolume = filledSetsByRow.reduce(
-      (sum, sets) =>
-        sum +
-        sets.reduce((s, sr) => {
-          const w = sr.weight ? parseFloat(sr.weight) : NaN;
-          const reps = sr.reps ? parseInt(sr.reps, 10) : NaN;
-          return Number.isFinite(w) && Number.isFinite(reps) ? s + w * reps : s;
-        }, 0),
-      0
-    );
-    const totalSets = filledSetsByRow.reduce((sum, sets) => sum + sets.length, 0);
-    const completedSets = filledSetsByRow.reduce((sum, sets) => sum + sets.filter((sr) => sr.completed).length, 0);
-    const completedExercises = rowsWithContent.filter(
-      (r) => r.setRows.length > 0 && r.setRows.every((sr) => sr.completed)
-    ).length;
-    const exerciseSummaries = rowsWithContent.map((r, idx) => {
-      const filled = filledSetsByRow[idx];
-      const heaviest = filled.reduce((max, sr) => {
-        const w = sr.weight ? parseFloat(sr.weight) : NaN;
-        return Number.isFinite(w) && w > max ? w : max;
-      }, 0);
-      const pb = data?.personalBests.find((p) => p.exerciseName.toLowerCase() === r.name.trim().toLowerCase());
-      const isPb = heaviest > 0 && (!pb?.heaviestWeight || heaviest > pb.heaviestWeight.value);
-      return {
-        name: r.name.trim(),
-        setsLogged: filled.length,
-        setsCompleted: filled.filter((sr) => sr.completed).length,
-        summary: formatExerciseLoad({
-          exerciseId: null,
+      const exercises: CreateWorkoutExerciseInput[] = rowsWithContent.map((r, idx) => {
+        const filled = filledSetsByRow[idx];
+        const first = filled[0];
+        return {
+          exerciseId: r.exerciseId,
           name: r.name.trim(),
-          weight: null,
-          reps: null,
-          sets: null,
-          notes: null,
+          weight: first?.weight?.trim() || null,
+          reps: first?.reps?.trim() ? parseInt(first.reps, 10) : null,
+          sets: filled.length || null,
+          rir: r.rir.trim() ? parseInt(r.rir, 10) : null,
           setDetails: filled.map((sr) => ({
             weight: sr.weight.trim() || null,
             reps: sr.reps.trim() ? parseInt(sr.reps, 10) : null,
             setType: sr.setType === "standard" ? null : sr.setType,
           })),
-        }),
-        isPb,
-      };
-    });
-    try {
+          setType: first && first.setType !== "standard" ? first.setType : null,
+          supersetGroup: r.supersetGroup,
+          perSide: r.perSide,
+          notes: r.notes.trim() || null,
+        };
+      });
+
+      const runs: CreateWorkoutRunInput[] = runRows.map((r) => {
+        const splitsNote = r.splits.length > 0 ? `Splits: ${r.splits.join(", ")}` : "";
+        const combinedNotes = [r.notes.trim(), splitsNote].filter(Boolean).join(" — ");
+        return {
+          distance: r.distance.trim() ? (r.distanceUnit === "m" ? Math.round((parseFloat(r.distance) / 1000) * 1000) / 1000 : parseFloat(r.distance)) : null,
+          durationSecs: parseDuration(r.duration),
+          reps: r.reps.trim() ? parseInt(r.reps, 10) : null,
+          sets: r.sets.trim() ? parseInt(r.sets, 10) : null,
+          notes: combinedNotes || null,
+        };
+      });
+
+      // Prefer the live-tracked time whenever the timer was actually used;
+      // otherwise fall back to whatever was typed into the manual duration
+      // field (shown either for a past date, or when today's timer was never
+      // started because the workout was already fully done before logging it).
+      const liveElapsed = elapsedSecsNow();
+      const finalDurationMins = liveElapsed > 0 ? String(Math.round(liveElapsed / 60)) : durationMins.trim();
+      const durationLabel = liveElapsed > 0 ? formatDuration(liveElapsed) : finalDurationMins ? `${finalDurationMins} min` : "—";
+
+      const chipperSummary =
+        draft.format === "chipper" && draft.chipperConfig.movements.length > 0
+          ? `Chipper: ${draft.chipperConfig.movements
+              .filter((m) => m.name.trim())
+              .map((m) => {
+                const target = m.mode === "reps" ? parseInt(m.targetReps, 10) || 0 : parseDuration(m.targetSeconds) ?? 0;
+                const done = m.mode === "reps" ? m.doneReps : m.doneSeconds;
+                const doneLabel = m.mode === "reps" ? String(done) : formatDuration(done);
+                const targetLabel = m.mode === "reps" ? String(target) : formatDuration(target);
+                return `${m.name.trim()} ${doneLabel}/${targetLabel}`;
+              })
+              .join(", ")}`
+          : "";
+
+      const formatSummary =
+        draft.format === "chipper"
+          ? chipperSummary
+          : draft.format !== "standard" && draft.formatResultNote
+            ? `${FORMAT_LABELS[draft.format]}: ${draft.formatResultNote}`
+            : draft.format !== "standard"
+              ? `${FORMAT_LABELS[draft.format]} (not run via the live timer)`
+              : "";
+      const combinedNotes = [notes.trim(), formatSummary].filter(Boolean).join("\n");
+
+      // Snapshot the summary before the create call — it reads from the
+      // form's local state and the personalBests already in memory, so the
+      // just-submitted session's highlights compare against the PRE-session
+      // record (exactly what "did I just set a PB" should mean).
+      const totalVolume = filledSetsByRow.reduce(
+        (sum, sets) =>
+          sum +
+          sets.reduce((s, sr) => {
+            const w = sr.weight ? parseFloat(sr.weight) : NaN;
+            const reps = sr.reps ? parseInt(sr.reps, 10) : NaN;
+            return Number.isFinite(w) && Number.isFinite(reps) ? s + w * reps : s;
+          }, 0),
+        0
+      );
+      const totalSets = filledSetsByRow.reduce((sum, sets) => sum + sets.length, 0);
+      const completedSets = filledSetsByRow.reduce((sum, sets) => sum + sets.filter((sr) => sr.completed).length, 0);
+      const completedExercises = rowsWithContent.filter(
+        (r) => r.setRows.length > 0 && r.setRows.every((sr) => sr.completed)
+      ).length;
+      const exerciseSummaries = rowsWithContent.map((r, idx) => {
+        const filled = filledSetsByRow[idx];
+        const heaviest = filled.reduce((max, sr) => {
+          const w = sr.weight ? parseFloat(sr.weight) : NaN;
+          return Number.isFinite(w) && w > max ? w : max;
+        }, 0);
+        const pb = data?.personalBests.find((p) => p.exerciseName.toLowerCase() === r.name.trim().toLowerCase());
+        const isPb = heaviest > 0 && (!pb?.heaviestWeight || heaviest > pb.heaviestWeight.value);
+        return {
+          name: r.name.trim(),
+          setsLogged: filled.length,
+          setsCompleted: filled.filter((sr) => sr.completed).length,
+          summary: formatExerciseLoad({
+            exerciseId: null,
+            name: r.name.trim(),
+            weight: null,
+            reps: null,
+            sets: null,
+            notes: null,
+            setDetails: filled.map((sr) => ({
+              weight: sr.weight.trim() || null,
+              reps: sr.reps.trim() ? parseInt(sr.reps, 10) : null,
+              setType: sr.setType === "standard" ? null : sr.setType,
+            })),
+          }),
+          isPb,
+        };
+      });
       const result = await create.mutateAsync({
         title: title.trim(),
         date: date.trim(),

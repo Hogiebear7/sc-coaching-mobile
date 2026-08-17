@@ -1,12 +1,16 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { isBatteryOptimizationRelevant, openBatteryOptimizationSettings } from "@/lib/battery-optimization";
 import { Color, Radius, Spacing } from "@/constants/theme";
 import { successFeedback, tapFeedback } from "@/lib/haptics";
 import { useRestTimer } from "@/lib/rest-timer";
+
+const BATTERY_PROMPT_DISMISSED_KEY = "rest-timer-battery-prompt-dismissed-v1";
 
 const PRESETS = [30, 60, 90, 120, 180, 300];
 
@@ -27,6 +31,25 @@ export default function RestTimerScreen() {
   // "remaining" state to de-sync from that source of truth.
   const [, forceTick] = useState(0);
   const firedDoneFeedback = useRef(false);
+  const [showBatteryPrompt, setShowBatteryPrompt] = useState(false);
+
+  useEffect(() => {
+    if (!isBatteryOptimizationRelevant()) return;
+    AsyncStorage.getItem(BATTERY_PROMPT_DISMISSED_KEY).then((dismissed) => {
+      if (!dismissed) setShowBatteryPrompt(true);
+    });
+  }, []);
+
+  function dismissBatteryPrompt() {
+    setShowBatteryPrompt(false);
+    AsyncStorage.setItem(BATTERY_PROMPT_DISMISSED_KEY, "1").catch(() => {});
+  }
+
+  function handleOpenBatterySettings() {
+    tapFeedback();
+    void openBatteryOptimizationSettings();
+    dismissBatteryPrompt();
+  }
 
   // The auto-start entry point (marking a set complete) already calls
   // timer.start() itself before navigating here — this only covers a
@@ -96,6 +119,27 @@ export default function RestTimerScreen() {
       </View>
 
       <View style={styles.body}>
+        {showBatteryPrompt ? (
+          <View style={styles.batteryBanner}>
+            <Ionicons name="battery-charging-outline" size={18} color={Color.gold} />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.batteryBannerTitle}>Make rest alerts reliable</Text>
+              <Text style={styles.batteryBannerBody}>
+                Android can delay or drop this alert in the background unless battery restrictions are off for this
+                app.
+              </Text>
+              <View style={styles.batteryBannerActions}>
+                <Pressable onPress={handleOpenBatterySettings}>
+                  <Text style={styles.batteryBannerLink}>Open settings</Text>
+                </Pressable>
+                <Pressable onPress={dismissBatteryPrompt}>
+                  <Text style={styles.batteryBannerDismiss}>Not now</Text>
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        ) : null}
+
         <View style={styles.ringWrap}>
           <View style={[styles.ringTrack]} />
           <View style={[styles.ringFill, { height: `${pct * 100}%` }]} />
@@ -153,6 +197,22 @@ const styles = StyleSheet.create({
   backButton: { padding: 4 },
   headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
   body: { flex: 1, alignItems: "center", paddingTop: Spacing.xl, paddingHorizontal: Spacing.lg },
+  batteryBanner: {
+    flexDirection: "row",
+    gap: Spacing.sm,
+    width: "100%",
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: Color.goldBorder,
+    backgroundColor: Color.goldWeak,
+    padding: Spacing.md,
+    marginBottom: Spacing.lg,
+  },
+  batteryBannerTitle: { fontSize: 13, fontWeight: "700", color: Color.textPrimary },
+  batteryBannerBody: { fontSize: 12, color: Color.textMuted, marginTop: 2, lineHeight: 16 },
+  batteryBannerActions: { flexDirection: "row", gap: Spacing.lg, marginTop: Spacing.sm },
+  batteryBannerLink: { fontSize: 12, fontWeight: "700", color: Color.gold },
+  batteryBannerDismiss: { fontSize: 12, fontWeight: "600", color: Color.textFaint },
   ringWrap: {
     width: 220,
     height: 220,

@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Color, Radius, Spacing } from "@/constants/theme";
 import { ApiError } from "@/lib/api-client";
+import { isBatteryOptimizationRelevant, openBatteryOptimizationSettings } from "@/lib/battery-optimization";
 import {
   useProfile,
   useRequestPasswordReset,
@@ -322,6 +323,21 @@ export default function SettingsScreen() {
                 thumbColor={Color.textPrimary}
               />
             </View>
+            {isBatteryOptimizationRelevant() ? (
+              <>
+                <View style={styles.divider} />
+                <Pressable style={styles.row} onPress={() => openBatteryOptimizationSettings()}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.rowTitle}>Notification reliability</Text>
+                    <Text style={styles.rowSub}>
+                      Allow this app to run without battery restrictions — otherwise Android can delay or drop rest
+                      timer and other alerts while it&apos;s in the background.
+                    </Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={18} color={Color.textFaint} />
+                </Pressable>
+              </>
+            ) : null}
           </Card>
 
           <Card style={[styles.settingsCard, { marginTop: Spacing.sm, padding: Spacing.md }]}>

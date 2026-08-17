@@ -48,7 +48,9 @@ export type RunRow = {
 
 export type WorkoutFormat = "standard" | "circuit" | "amrap" | "emom" | "tabata" | "chipper";
 
-export type CircuitStation = { key: string; name: string; mode: "reps" | "time"; reps: string; seconds: string };
+// Optional per-station rep target shown alongside the time — "3 rounds of
+// 40s work" can still care about hitting e.g. 15 reps in that window.
+export type CircuitStation = { key: string; name: string; mode: "reps" | "time"; reps: string; seconds: string; repTarget: string };
 
 export interface CircuitConfig {
   stations: CircuitStation[];
@@ -59,17 +61,33 @@ export interface CircuitConfig {
   timeCapMins: string;
 }
 
+export type AmrapSubMode = "reps" | "rounds";
+
+// "reps" mode: completedReps is the member's own count entered on the
+// workout card once time's up — targetReps is unused. "rounds" mode:
+// targetReps is the rep count that completes one round of this movement;
+// completedReps accumulates live as they tap through their work, and the
+// round count is derived (the minimum full-round completion across
+// movements), not entered directly.
+export type AmrapMovement = { key: string; name: string; targetReps: string; completedReps: number };
+
 export interface AmrapConfig {
   timeCapMins: string;
-  movements: string[];
+  subMode: AmrapSubMode;
+  movements: AmrapMovement[];
+  // Legacy single-counter fields — still the source of truth for the result
+  // summary text in "reps" mode where there's no natural per-movement round
+  // count to derive from.
   roundsCompleted: string;
   extraReps: string;
 }
 
+export type EmomMovement = { key: string; name: string; repsOrTime: string };
+
 export interface EmomConfig {
   intervalSecs: string;
   totalMins: string;
-  movements: string[];
+  movements: EmomMovement[];
 }
 
 export interface TabataConfig {
@@ -115,11 +133,43 @@ function emptyCircuitConfig(): CircuitConfig {
 }
 
 function emptyAmrapConfig(): AmrapConfig {
-  return { timeCapMins: "12", movements: [], roundsCompleted: "", extraReps: "" };
+  return { timeCapMins: "12", subMode: "reps", movements: [], roundsCompleted: "", extraReps: "" };
 }
 
 function emptyEmomConfig(): EmomConfig {
   return { intervalSecs: "60", totalMins: "10", movements: [] };
+}
+
+// Live state for the phase-based formats' "workout card" screen
+// (circuit/EMOM/tabata share one engine; AMRAP and chipper track their own
+// progress differently and don't use this). Timestamp-based — phaseStartedAtMs
+// plus phaseElapsedAtPauseSecs, not a running counter — for the same reason
+// every other live timer in this app is: a setInterval can't survive the
+// screen unmounting or the app backgrounding, wall-clock math doesn't care.
+// Lives in the draft (not a separate context) so it persists and resumes
+// exactly like the rest of the session does.
+export interface FormatSessionState {
+  /** Has the member left the review ("workout card") screen and hit Start? */
+  started: boolean;
+  phaseIndex: number;
+  phaseStartedAtMs: number | null;
+  phaseElapsedAtPauseSecs: number;
+  /** Whole-session elapsed, independent of any one phase — accumulates
+   *  across phase transitions the same way phaseElapsedAtPauseSecs does
+   *  within one phase. */
+  totalElapsedAtPauseSecs: number;
+  totalStartedAtMs: number | null;
+}
+
+function emptyFormatSession(): FormatSessionState {
+  return {
+    started: false,
+    phaseIndex: 0,
+    phaseStartedAtMs: null,
+    phaseElapsedAtPauseSecs: 0,
+    totalElapsedAtPauseSecs: 0,
+    totalStartedAtMs: null,
+  };
 }
 
 function emptyTabataConfig(): TabataConfig {
@@ -151,6 +201,7 @@ export interface WorkoutDraft {
   tabataConfig: TabataConfig;
   chipperConfig: ChipperConfig;
   formatResultNote: string;
+  formatSession: FormatSessionState;
 }
 
 function emptyDraft(): WorkoutDraft {
@@ -172,6 +223,7 @@ function emptyDraft(): WorkoutDraft {
     tabataConfig: emptyTabataConfig(),
     chipperConfig: emptyChipperConfig(),
     formatResultNote: "",
+    formatSession: emptyFormatSession(),
   };
 }
 

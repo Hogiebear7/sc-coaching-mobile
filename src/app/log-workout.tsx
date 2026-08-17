@@ -49,8 +49,10 @@ import {
 } from "@/lib/workout-formatters";
 import {
   useWorkoutDraft,
+  type AmrapMovement,
   type ChipperMovement,
   type CircuitStation,
+  type EmomMovement,
   type ExerciseRow,
   type RunRow,
   type SetRow,
@@ -155,8 +157,16 @@ function NumberField({ label, value, onChangeText, placeholder }: { label: strin
   );
 }
 
-function newCircuitStation(): CircuitStation {
-  return { key: nextKey(), name: "", mode: "reps", reps: "", seconds: "" };
+function newCircuitStation(defaultSeconds?: string): CircuitStation {
+  return { key: nextKey(), name: "", mode: "reps", reps: "", seconds: defaultSeconds ?? "", repTarget: "" };
+}
+
+function newEmomMovement(): EmomMovement {
+  return { key: nextKey(), name: "", repsOrTime: "" };
+}
+
+function newAmrapMovement(): AmrapMovement {
+  return { key: nextKey(), name: "", targetReps: "", completedReps: 0 };
 }
 
 function newChipperMovement(): ChipperMovement {
@@ -407,6 +417,13 @@ function StationsEditor({ stations, onChange }: { stations: CircuitStation[]; on
   function updateStation(key: string, patch: Partial<CircuitStation>) {
     onChange(stations.map((s) => (s.key === key ? { ...s, ...patch } : s)));
   }
+  function addStation() {
+    // A new station defaults its time to whatever the first station is
+    // already set to — most circuits run every station on the same clock,
+    // so this saves re-typing it each time; still freely editable after.
+    const defaultSeconds = stations[0]?.mode === "time" ? stations[0].seconds : undefined;
+    onChange([...stations, newCircuitStation(defaultSeconds)]);
+  }
   return (
     <View>
       <Text style={styles.fieldLabel}>Stations</Text>
@@ -433,13 +450,104 @@ function StationsEditor({ stations, onChange }: { stations: CircuitStation[]; on
             placeholderTextColor={Color.textFaint}
             style={styles.stationValueInput}
           />
+          {s.mode === "time" ? (
+            <TextInput
+              value={s.repTarget}
+              onChangeText={(v) => updateStation(s.key, { repTarget: v })}
+              keyboardType="number-pad"
+              placeholder="reps (opt.)"
+              placeholderTextColor={Color.textFaint}
+              style={styles.stationValueInput}
+            />
+          ) : null}
           <Pressable onPress={() => onChange(stations.filter((row) => row.key !== s.key))} hitSlop={6}>
             <Ionicons name="close" size={16} color={Color.textFaint} />
           </Pressable>
         </View>
       ))}
-      <Pressable onPress={() => onChange([...stations, newCircuitStation()])} style={styles.addChip}>
+      <Pressable onPress={addStation} style={styles.addChip}>
         <Text style={styles.addChipText}>+ Station</Text>
+      </Pressable>
+    </View>
+  );
+}
+
+function EmomMovementsEditor({ movements, onChange }: { movements: EmomMovement[]; onChange: (m: EmomMovement[]) => void }) {
+  function update(key: string, patch: Partial<EmomMovement>) {
+    onChange(movements.map((m) => (m.key === key ? { ...m, ...patch } : m)));
+  }
+  return (
+    <View style={{ marginTop: Spacing.sm }}>
+      <Text style={styles.fieldLabel}>Movements</Text>
+      {movements.map((m, i) => (
+        <View key={m.key} style={styles.stationRow}>
+          <TextInput
+            value={m.name}
+            onChangeText={(v) => update(m.key, { name: v })}
+            placeholder={`Movement ${i + 1}, e.g. OH Slams`}
+            placeholderTextColor={Color.textFaint}
+            style={[styles.stationNameInput, { flex: 2 }]}
+          />
+          <TextInput
+            value={m.repsOrTime}
+            onChangeText={(v) => update(m.key, { repsOrTime: v })}
+            placeholder="reps/time e.g. 30/30s"
+            placeholderTextColor={Color.textFaint}
+            style={styles.stationValueInput}
+          />
+          <Pressable onPress={() => onChange(movements.filter((row) => row.key !== m.key))} hitSlop={6}>
+            <Ionicons name="close" size={16} color={Color.textFaint} />
+          </Pressable>
+        </View>
+      ))}
+      <Pressable onPress={() => onChange([...movements, newEmomMovement()])} style={styles.addChip}>
+        <Text style={styles.addChipText}>+ Movement</Text>
+      </Pressable>
+    </View>
+  );
+}
+
+function AmrapMovementsEditor({
+  movements,
+  subMode,
+  onChange,
+}: {
+  movements: AmrapMovement[];
+  subMode: "reps" | "rounds";
+  onChange: (m: AmrapMovement[]) => void;
+}) {
+  function update(key: string, patch: Partial<AmrapMovement>) {
+    onChange(movements.map((m) => (m.key === key ? { ...m, ...patch } : m)));
+  }
+  return (
+    <View style={{ marginTop: Spacing.sm }}>
+      <Text style={styles.fieldLabel}>Movements</Text>
+      {movements.map((m, i) => (
+        <View key={m.key} style={styles.stationRow}>
+          <TextInput
+            value={m.name}
+            onChangeText={(v) => update(m.key, { name: v })}
+            placeholder={`Movement ${i + 1}, e.g. Burpees`}
+            placeholderTextColor={Color.textFaint}
+            style={[styles.stationNameInput, subMode === "reps" && { flex: 2 }]}
+          />
+          {subMode === "rounds" ? (
+            <TextInput
+              value={m.targetReps}
+              onChangeText={(v) => update(m.key, { targetReps: v })}
+              keyboardType="number-pad"
+              placeholder="reps / round"
+              placeholderTextColor={Color.textFaint}
+              style={styles.stationValueInput}
+            />
+          ) : null}
+          <Pressable onPress={() => onChange(movements.filter((row) => row.key !== m.key))} hitSlop={6}>
+            <Ionicons name="close" size={16} color={Color.textFaint} />
+          </Pressable>
+        </View>
+      ))}
+      <Pressable onPress={() => onChange([...movements, newAmrapMovement()])} style={styles.addChip}>
+        <Text style={styles.addChipText}>+ Movement</Text>
       </Pressable>
     </View>
   );
@@ -969,9 +1077,12 @@ export default function LogWorkoutScreen() {
                 />
               )}
               <Button
-                title="Start circuit timer"
+                title="Go to workout card"
                 variant="secondary"
-                onPress={() => router.push({ pathname: "/format-timer" })}
+                onPress={() => {
+                  update({ formatSession: { ...draft.formatSession, started: false, phaseIndex: 0, phaseStartedAtMs: null, phaseElapsedAtPauseSecs: 0, totalElapsedAtPauseSecs: 0, totalStartedAtMs: null } });
+                  router.push({ pathname: "/format-timer" });
+                }}
                 disabled={draft.circuitConfig.stations.filter((s) => s.name.trim()).length === 0}
                 style={{ marginTop: Spacing.md }}
               />
@@ -986,14 +1097,40 @@ export default function LogWorkoutScreen() {
                 value={draft.amrapConfig.timeCapMins}
                 onChangeText={(v) => update({ amrapConfig: { ...draft.amrapConfig, timeCapMins: v } })}
               />
-              <MovementsEditor
+              <View style={[styles.unitToggleRow, { marginTop: Spacing.sm }]}>
+                <Text style={styles.fieldLabel}>As many...</Text>
+                <View style={{ flexDirection: "row", gap: 4 }}>
+                  <Pressable
+                    onPress={() => update({ amrapConfig: { ...draft.amrapConfig, subMode: "reps" } })}
+                    style={[styles.unitChip, draft.amrapConfig.subMode === "reps" && styles.unitChipActive]}
+                  >
+                    <Text style={[styles.unitChipText, draft.amrapConfig.subMode === "reps" && styles.unitChipTextActive]}>Reps as possible</Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={() => update({ amrapConfig: { ...draft.amrapConfig, subMode: "rounds" } })}
+                    style={[styles.unitChip, draft.amrapConfig.subMode === "rounds" && styles.unitChipActive]}
+                  >
+                    <Text style={[styles.unitChipText, draft.amrapConfig.subMode === "rounds" && styles.unitChipTextActive]}>Rounds as possible</Text>
+                  </Pressable>
+                </View>
+              </View>
+              <Text style={styles.formatHint}>
+                {draft.amrapConfig.subMode === "rounds"
+                  ? "Set the rep count that completes one round of each movement — the workout card tracks rounds as you go."
+                  : "No per-round target — just log total reps completed for each movement on the workout card once time's up."}
+              </Text>
+              <AmrapMovementsEditor
                 movements={draft.amrapConfig.movements}
+                subMode={draft.amrapConfig.subMode}
                 onChange={(movements) => update({ amrapConfig: { ...draft.amrapConfig, movements } })}
               />
               <Button
-                title="Start AMRAP timer"
+                title="Go to workout card"
                 variant="secondary"
-                onPress={() => router.push({ pathname: "/format-timer" })}
+                onPress={() => {
+                  update({ formatSession: { ...draft.formatSession, started: false, phaseIndex: 0, phaseStartedAtMs: null, phaseElapsedAtPauseSecs: 0, totalElapsedAtPauseSecs: 0, totalStartedAtMs: null } });
+                  router.push({ pathname: "/format-timer" });
+                }}
                 disabled={draft.amrapConfig.movements.length === 0}
                 style={{ marginTop: Spacing.md }}
               />
@@ -1015,14 +1152,17 @@ export default function LogWorkoutScreen() {
                   onChangeText={(v) => update({ emomConfig: { ...draft.emomConfig, totalMins: v } })}
                 />
               </View>
-              <MovementsEditor
+              <EmomMovementsEditor
                 movements={draft.emomConfig.movements}
                 onChange={(movements) => update({ emomConfig: { ...draft.emomConfig, movements } })}
               />
               <Button
-                title="Start EMOM timer"
+                title="Go to workout card"
                 variant="secondary"
-                onPress={() => router.push({ pathname: "/format-timer" })}
+                onPress={() => {
+                  update({ formatSession: { ...draft.formatSession, started: false, phaseIndex: 0, phaseStartedAtMs: null, phaseElapsedAtPauseSecs: 0, totalElapsedAtPauseSecs: 0, totalStartedAtMs: null } });
+                  router.push({ pathname: "/format-timer" });
+                }}
                 disabled={draft.emomConfig.movements.length === 0}
                 style={{ marginTop: Spacing.md }}
               />
@@ -1054,9 +1194,12 @@ export default function LogWorkoutScreen() {
                 onChange={(movements) => update({ tabataConfig: { ...draft.tabataConfig, movements } })}
               />
               <Button
-                title="Start Tabata timer"
+                title="Go to workout card"
                 variant="secondary"
-                onPress={() => router.push({ pathname: "/format-timer" })}
+                onPress={() => {
+                  update({ formatSession: { ...draft.formatSession, started: false, phaseIndex: 0, phaseStartedAtMs: null, phaseElapsedAtPauseSecs: 0, totalElapsedAtPauseSecs: 0, totalStartedAtMs: null } });
+                  router.push({ pathname: "/format-timer" });
+                }}
                 disabled={draft.tabataConfig.movements.length === 0}
                 style={{ marginTop: Spacing.md }}
               />

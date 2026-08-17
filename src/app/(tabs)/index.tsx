@@ -297,13 +297,23 @@ export default function DashboardScreen() {
                 </Text>
               </View>
             </Pressable>
-            <Pressable onPress={() => router.push("/messages")} style={styles.rowCard}>
+            <Pressable onPress={() => router.push("/messages")} style={[styles.rowCard, styles.rowCardDivider]}>
               <View style={styles.rowCardIcon}>
                 <Ionicons name="chatbubble-ellipses-outline" size={18} color={Color.gold} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.rowCardTitle}>Coach</Text>
                 <Text style={styles.rowCardSub}>Message your coach</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={Color.textFaint} />
+            </Pressable>
+            <Pressable onPress={() => router.push("/exercise-library")} style={styles.rowCard}>
+              <View style={styles.rowCardIcon}>
+                <Ionicons name="body-outline" size={18} color={Color.gold} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.rowCardTitle}>Exercise Library</Text>
+                <Text style={styles.rowCardSub}>Browse demonstrations</Text>
               </View>
               <Ionicons name="chevron-forward" size={18} color={Color.textFaint} />
             </Pressable>

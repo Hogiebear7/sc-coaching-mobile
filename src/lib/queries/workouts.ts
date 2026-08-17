@@ -129,7 +129,7 @@ export function useCreateWorkout() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (input: CreateWorkoutInput) =>
-      apiFetch<{ success: true; message: string }>("/api/workouts/create", {
+      apiFetch<{ success: true; message: string; id: string }>("/api/workouts/create", {
         method: "POST",
         body: input,
       }),
@@ -187,6 +187,60 @@ export function useDeleteWorkoutSession() {
         body: { id },
       }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["workouts"] }),
+  });
+}
+
+// Mirrors WorkoutReviewData / SessionComparison / NutritionCompliance in the
+// main repo's lib/workout-review.ts.
+export interface WorkoutReviewComparison {
+  thisVolume: number;
+  thisDurationMins: number | null;
+  thisRpe: number | null;
+  recentAvgVolume: number | null;
+  recentAvgRpe: number | null;
+  recentAvgDurationMins: number | null;
+  comparedSessionCount: number;
+}
+
+export interface WorkoutReviewRecovery {
+  sleepHours: number | null;
+  sleepQuality: number | null;
+  soreness: number | null;
+  fatigue: number | null;
+  readinessScore: number | null;
+}
+
+export interface WorkoutReviewCyclePhase {
+  phase: string;
+  phaseLabel: string;
+  cycleDay: number | null;
+  cycleLength: number | null;
+  confidence: "standard" | "low";
+}
+
+export interface WorkoutReviewNutrition {
+  logged: boolean;
+  targetCalories: number | null;
+  targetProteinG: number | null;
+  actualCalories: number | null;
+  actualProteinG: number | null;
+}
+
+export interface WorkoutReviewData {
+  comparison: WorkoutReviewComparison;
+  recovery: WorkoutReviewRecovery | null;
+  cyclePhase: WorkoutReviewCyclePhase | null;
+  nutrition: WorkoutReviewNutrition | null;
+  reviewText: string;
+}
+
+// Generated once server-side and cached on the session record — safe to
+// leave the default staleTime, this won't change between refetches.
+export function useWorkoutReview(id: string | null) {
+  return useQuery({
+    queryKey: ["workout-review", id],
+    queryFn: () => apiFetch<{ success: true; data: WorkoutReviewData }>(`/api/mobile/workout-review/${id}`).then((r) => r.data),
+    enabled: !!id,
   });
 }
 

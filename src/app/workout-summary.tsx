@@ -13,6 +13,7 @@ import { Color, Radius, Spacing } from "@/constants/theme";
 // the personalBests it already had in memory — no server round-trip, no
 // new API. See log-workout.tsx's handleSubmit for how this is computed.
 export interface WorkoutSummaryData {
+  id: string;
   title: string;
   date: string;
   durationLabel: string;
@@ -108,7 +109,12 @@ export default function WorkoutSummaryScreen() {
           </>
         ) : null}
 
-        <Button title="Done" onPress={() => router.replace("/workouts")} style={{ marginTop: Spacing.xl }} />
+        <Button
+          title="View your session review"
+          onPress={() => router.push({ pathname: "/workout-review", params: { id: summary.id } })}
+          style={{ marginTop: Spacing.xl }}
+        />
+        <Button title="Done" variant="secondary" onPress={() => router.replace("/workouts")} style={{ marginTop: Spacing.sm }} />
         <Button
           title="View full history"
           variant="secondary"

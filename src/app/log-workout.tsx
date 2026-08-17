@@ -873,20 +873,8 @@ export default function LogWorkoutScreen() {
         isPb,
       };
     });
-    const summary: WorkoutSummaryData = {
-      title: title.trim(),
-      date: date.trim(),
-      durationLabel,
-      totalVolume: Math.round(totalVolume),
-      totalSets,
-      completedSets,
-      totalExercises: rowsWithContent.length,
-      completedExercises,
-      exercises: exerciseSummaries,
-    };
-
     try {
-      await create.mutateAsync({
+      const result = await create.mutateAsync({
         title: title.trim(),
         date: date.trim(),
         durationMins: finalDurationMins,
@@ -896,6 +884,18 @@ export default function LogWorkoutScreen() {
         sessionRpe: finalRpe,
         feelingNotes: finalFeelingNotes.trim() || undefined,
       });
+      const summary: WorkoutSummaryData = {
+        id: result.id,
+        title: title.trim(),
+        date: date.trim(),
+        durationLabel,
+        totalVolume: Math.round(totalVolume),
+        totalSets,
+        completedSets,
+        totalExercises: rowsWithContent.length,
+        completedExercises,
+        exercises: exerciseSummaries,
+      };
       if (programId) await advanceProgram.mutateAsync(programId);
       successFeedback();
       setFeelModalOpen(false);

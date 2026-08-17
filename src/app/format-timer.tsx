@@ -1,16 +1,18 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
 import { Color, Radius, Spacing } from "@/constants/theme";
 import { successFeedback, tapFeedback } from "@/lib/haptics";
-import { formatDuration } from "@/lib/workout-formatters";
+import { formatDuration, parseDuration } from "@/lib/workout-formatters";
 import {
   useWorkoutDraft,
   type AmrapConfig,
+  type ChipperConfig,
+  type ChipperMovement,
   type CircuitConfig,
   type EmomConfig,
   type FormatSessionState,
@@ -466,6 +468,227 @@ function AmrapLiveView({ config }: { config: AmrapConfig }) {
   );
 }
 
+function ChipperWorkoutCard({ config, onStart }: { config: ChipperConfig; onStart: () => void }) {
+  return (
+    <ScrollView contentContainerStyle={styles.cardBody}>
+      <Text style={styles.cardHint}>
+        Review your movements before you start — work through them in order, logging reps or time as you go.
+      </Text>
+      <View style={styles.cardList}>
+        {config.movements.map((m, i) => {
+          const target = m.mode === "reps" ? parseInt(m.targetReps, 10) || 0 : parseDuration(m.targetSeconds) ?? 0;
+          return (
+            <View key={m.key} style={[styles.cardRow, i > 0 && styles.cardRowDivider]}>
+              <Text style={styles.cardRowIndex}>{i + 1}</Text>
+              <Text style={styles.cardRowLabel}>{m.name}</Text>
+              {target > 0 ? (
+                <Text style={styles.cardRowDuration}>{m.mode === "reps" ? `${target} reps` : formatDuration(target)}</Text>
+              ) : null}
+            </View>
+          );
+        })}
+      </View>
+      <Button
+        title="Start chipper"
+        onPress={onStart}
+        disabled={config.movements.length === 0}
+        style={{ marginTop: Spacing.lg, alignSelf: "stretch" }}
+      />
+    </ScrollView>
+  );
+}
+
+// A single movement on the live chipper card — its own play/pause timer (for
+// time-mode movements) plus a manual "+ Add" entry, each logging a
+// timestamped ChipperLogEntry so pacing within the chipper isn't lost, only
+// the running total.
+function ChipperMovementLive({ movement, onChange }: { movement: ChipperMovement; onChange: (patch: Partial<ChipperMovement>) => void }) {
+  const [addValue, setAddValue] = useState("");
+  const [prepCountdown, setPrepCountdown] = useState<number | null>(null);
+  const [, forceLiveTick] = useState(0);
+
+  useEffect(() => {
+    if (!movement.timerStartedAtMs) return;
+    const id = setInterval(() => forceLiveTick((t) => t + 1), 1000);
+    return () => clearInterval(id);
+  }, [movement.timerStartedAtMs]);
+
+  // Decrement (and, on the last tick, hand off to the real timer) inside the
+  // setTimeout callback rather than the effect body itself — deferred, so it
+  // doesn't trip the "no synchronous setState in an effect" rule.
+  useEffect(() => {
+    if (prepCountdown === null) return;
+    const id = setTimeout(() => {
+      if (prepCountdown <= 1) {
+        setPrepCountdown(null);
+        onChange({ timerStartedAtMs: Date.now() });
+      } else {
+        setPrepCountdown((c) => (c === null ? null : c - 1));
+      }
+    }, 1000);
+    return () => clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prepCountdown]);
+
+  const targetSecs = parseDuration(movement.targetSeconds) ?? 0;
+  const target = movement.mode === "reps" ? parseInt(movement.targetReps, 10) || 0 : targetSecs;
+  const liveRunningSecs = movement.timerStartedAtMs ? Math.floor(computeElapsed(movement.timerStartedAtMs, 0)) : 0;
+  const done = movement.mode === "reps" ? movement.doneReps : movement.doneSeconds + liveRunningSecs;
+  const remaining = Math.max(0, target - done);
+  const isComplete = target > 0 && done >= target;
+
+  function addProgress() {
+    const v = parseInt(addValue, 10);
+    if (!Number.isFinite(v) || v <= 0) return;
+    tapFeedback();
+    const entry = { atMs: Date.now(), amount: v };
+    if (movement.mode === "reps") onChange({ doneReps: movement.doneReps + v, log: [...movement.log, entry] });
+    else onChange({ doneSeconds: movement.doneSeconds + v, log: [...movement.log, entry] });
+    setAddValue("");
+  }
+
+  function togglePlay() {
+    tapFeedback();
+    if (movement.timerStartedAtMs) {
+      // Pause — fold the elapsed running segment into the banked total,
+      // timestamped at the moment it was folded in (not when it started).
+      onChange({
+        doneSeconds: movement.doneSeconds + liveRunningSecs,
+        timerStartedAtMs: null,
+        log: liveRunningSecs > 0 ? [...movement.log, { atMs: Date.now(), amount: liveRunningSecs }] : movement.log,
+      });
+    } else if (prepCountdown !== null) {
+      setPrepCountdown(null);
+    } else {
+      setPrepCountdown(2);
+    }
+  }
+
+  return (
+    <View style={[styles.chipperMovement, isComplete && styles.chipperMovementComplete]}>
+      <Text style={styles.chipperMovementName}>{movement.name}</Text>
+
+      {target > 0 ? (
+        <View style={styles.chipperProgressRow}>
+          <Text style={styles.chipperProgressText}>
+            {movement.mode === "reps" ? (
+              <>
+                <Text style={{ color: Color.gold, fontWeight: "700" }}>{done}</Text> / {target} reps
+              </>
+            ) : (
+              <>
+                <Text style={{ color: Color.gold, fontWeight: "700" }}>{formatDuration(done)}</Text> / {formatDuration(target)}
+              </>
+            )}
+          </Text>
+          <Text style={[styles.chipperRemainingText, isComplete && styles.chipperRemainingDone]}>
+            {isComplete ? "Complete" : movement.mode === "reps" ? `${remaining} left` : `${formatDuration(remaining)} left`}
+          </Text>
+        </View>
+      ) : null}
+
+      <View style={styles.chipperInputRow}>
+        <TextInput
+          value={addValue}
+          onChangeText={setAddValue}
+          keyboardType="number-pad"
+          placeholder={movement.mode === "reps" ? "Reps just done" : "Seconds just done"}
+          placeholderTextColor={Color.textFaint}
+          style={[styles.chipperInput, { flex: 1 }]}
+          onSubmitEditing={addProgress}
+          returnKeyType="done"
+        />
+        <Pressable onPress={addProgress} style={styles.chipperAddButton}>
+          <Text style={styles.chipperAddButtonText}>+ Add</Text>
+        </Pressable>
+        {movement.mode === "time" ? (
+          <Pressable onPress={togglePlay} style={styles.chipperPlayButton}>
+            <Ionicons
+              name={movement.timerStartedAtMs ? "pause" : prepCountdown !== null ? "close" : "play"}
+              size={18}
+              color={Color.goldForeground}
+            />
+          </Pressable>
+        ) : null}
+      </View>
+      {prepCountdown !== null ? <Text style={styles.chipperPrepText}>Get ready… {prepCountdown}</Text> : null}
+    </View>
+  );
+}
+
+function ChipperLiveView({ config }: { config: ChipperConfig }) {
+  const { draft, update } = useWorkoutDraft();
+  const session = draft.formatSession;
+  const [, forceTick] = useState(0);
+  const finishedRef = useRef(false);
+
+  function setSession(patch: Partial<FormatSessionState>) {
+    update({ formatSession: { ...draft.formatSession, ...patch } });
+  }
+
+  useEffect(() => {
+    if (session.totalStartedAtMs === null) return;
+    const id = setInterval(() => forceTick((t) => t + 1), 1000);
+    return () => clearInterval(id);
+  }, [session.totalStartedAtMs]);
+
+  const running = session.totalStartedAtMs !== null;
+  const totalElapsed = computeElapsed(session.totalStartedAtMs, session.totalElapsedAtPauseSecs);
+
+  function updateMovement(key: string, patch: Partial<ChipperMovement>) {
+    update({
+      chipperConfig: {
+        movements: config.movements.map((m) => (m.key === key ? { ...m, ...patch } : m)),
+      },
+    });
+  }
+
+  function togglePause() {
+    tapFeedback();
+    if (running) {
+      setSession({ totalStartedAtMs: null, totalElapsedAtPauseSecs: totalElapsed });
+    } else {
+      setSession({ totalStartedAtMs: Date.now() });
+    }
+  }
+
+  function finish() {
+    if (finishedRef.current) return;
+    finishedRef.current = true;
+    setSession({ totalStartedAtMs: null, totalElapsedAtPauseSecs: Math.round(totalElapsed) });
+    const completeCount = config.movements.filter((m) => {
+      const target = m.mode === "reps" ? parseInt(m.targetReps, 10) || 0 : parseDuration(m.targetSeconds) ?? 0;
+      const done = m.mode === "reps" ? m.doneReps : m.doneSeconds;
+      return target > 0 && done >= target;
+    }).length;
+    update({
+      formatResultNote: `${completeCount}/${config.movements.length} movements complete in ${formatDuration(Math.floor(totalElapsed))}.`,
+    });
+    successFeedback();
+  }
+
+  return (
+    <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+      <Text style={styles.phaseKind}>CHIPPER</Text>
+      <Text style={styles.clock}>{formatDuration(Math.floor(totalElapsed))}</Text>
+
+      <View style={styles.chipperMovements}>
+        {config.movements.map((m) => (
+          <ChipperMovementLive key={m.key} movement={m} onChange={(patch) => updateMovement(m.key, patch)} />
+        ))}
+      </View>
+
+      <View style={styles.controlsRow}>
+        <Pressable onPress={togglePause} style={styles.primaryControl}>
+          <Ionicons name={running ? "pause" : "play"} size={28} color={Color.goldForeground} />
+        </Pressable>
+      </View>
+
+      <Button title="Finish & save" onPress={finish} style={{ marginTop: Spacing.lg, alignSelf: "stretch" }} />
+    </ScrollView>
+  );
+}
+
 export default function FormatTimerScreen() {
   const router = useRouter();
   const { draft, update } = useWorkoutDraft();
@@ -477,7 +700,14 @@ export default function FormatTimerScreen() {
   let title = "Format Timer";
   let body: React.ReactNode;
 
-  if (draft.format === "amrap") {
+  if (draft.format === "chipper") {
+    title = "Chipper";
+    body = draft.formatSession.started ? (
+      <ChipperLiveView config={draft.chipperConfig} />
+    ) : (
+      <ChipperWorkoutCard config={draft.chipperConfig} onStart={handleStart} />
+    );
+  } else if (draft.format === "amrap") {
     title = "AMRAP";
     body = draft.formatSession.started ? (
       <AmrapLiveView config={draft.amrapConfig} />
@@ -633,4 +863,40 @@ const styles = StyleSheet.create({
   },
   roundsValue: { fontSize: 32, fontWeight: "700", color: Color.textPrimary, fontVariant: ["tabular-nums"] },
   roundsLabel: { fontSize: 11, color: Color.textMuted },
+  chipperMovements: { width: "100%", marginTop: Spacing.lg, gap: Spacing.sm },
+  chipperMovement: {
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: Color.borderSubtle,
+    backgroundColor: Color.surface1,
+    padding: Spacing.sm,
+  },
+  chipperMovementComplete: { borderColor: Color.gold },
+  chipperMovementName: { fontSize: 14, fontWeight: "700", color: Color.textPrimary },
+  chipperProgressRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: Spacing.sm },
+  chipperProgressText: { fontSize: 13, color: Color.textSecondary },
+  chipperRemainingText: { fontSize: 12, fontWeight: "600", color: Color.textMuted },
+  chipperRemainingDone: { color: Color.gold },
+  chipperInputRow: { flexDirection: "row", gap: Spacing.xs, marginTop: Spacing.sm, alignItems: "center" },
+  chipperInput: {
+    fontSize: 13,
+    color: Color.textPrimary,
+    borderWidth: 1,
+    borderColor: Color.borderSubtle,
+    borderRadius: Radius.sm,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 8,
+    backgroundColor: Color.surface2,
+  },
+  chipperAddButton: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.gold, paddingHorizontal: Spacing.sm, paddingVertical: 9 },
+  chipperAddButtonText: { fontSize: 12, fontWeight: "700", color: Color.gold },
+  chipperPlayButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: Color.gold,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  chipperPrepText: { fontSize: 12, fontWeight: "700", color: Color.gold, marginTop: Spacing.xs },
 });

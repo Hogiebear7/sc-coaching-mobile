@@ -116,6 +116,11 @@ export interface CreateWorkoutInput {
   date: string;
   durationMins: string;
   notes: string;
+  /** Overall session RPE (1-10) from the post-workout "How did that feel?"
+      prompt — separate from any per-exercise rir/rpe already on the rows.
+      Feeds the workout review and, eventually, the AI report. */
+  sessionRpe?: number | null;
+  feelingNotes?: string;
   exercises: CreateWorkoutExerciseInput[];
   runs: CreateWorkoutRunInput[];
 }

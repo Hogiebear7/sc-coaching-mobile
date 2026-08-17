@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   Alert,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -179,6 +180,7 @@ function newChipperMovement(): ChipperMovement {
     doneReps: 0,
     doneSeconds: 0,
     timerStartedAtMs: null,
+    log: [],
   };
 }
 
@@ -225,170 +227,60 @@ function MovementsEditor({ movements, onChange }: { movements: string[]; onChang
   );
 }
 
-// A single chipper movement: a target (reps or time) the member chips away
-// at during the workout, logging progress as they go rather than just
-// naming the movement upfront like the other formats do.
+// A chipper movement's config: just its name, mode, and target — the same
+// shape as the other formats' movement lists. Actual progress (reps/time
+// done, with timestamps) is only tracked live on the workout card, not here.
 function ChipperMovementRow({
   movement,
+  index,
   onChange,
   onRemove,
 }: {
   movement: ChipperMovement;
+  index: number;
   onChange: (patch: Partial<ChipperMovement>) => void;
   onRemove: () => void;
 }) {
-  const [addValue, setAddValue] = useState("");
-  const [prepCountdown, setPrepCountdown] = useState<number | null>(null);
-  const [liveNow, setLiveNow] = useState(Date.now());
-
-  // Repaint every second while this movement's timer is running.
-  useEffect(() => {
-    if (!movement.timerStartedAtMs) return;
-    setLiveNow(Date.now());
-    const id = setInterval(() => setLiveNow(Date.now()), 1000);
-    return () => clearInterval(id);
-  }, [movement.timerStartedAtMs]);
-
-  // The 2s "get ready" delay before the countdown actually starts ticking.
-  useEffect(() => {
-    if (prepCountdown === null) return;
-    if (prepCountdown <= 0) {
-      setPrepCountdown(null);
-      onChange({ timerStartedAtMs: Date.now() });
-      return;
-    }
-    const id = setTimeout(() => setPrepCountdown((c) => (c === null ? null : c - 1)), 1000);
-    return () => clearTimeout(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [prepCountdown]);
-
-  const targetSecs = parseDuration(movement.targetSeconds) ?? 0;
-  const target = movement.mode === "reps" ? parseInt(movement.targetReps, 10) || 0 : targetSecs;
-  const liveRunningSecs = movement.timerStartedAtMs ? Math.max(0, Math.floor((liveNow - movement.timerStartedAtMs) / 1000)) : 0;
-  const done = movement.mode === "reps" ? movement.doneReps : movement.doneSeconds + liveRunningSecs;
-  const remaining = Math.max(0, target - done);
-  const isComplete = target > 0 && done >= target;
-
-  function addProgress() {
-    const v = parseInt(addValue, 10);
-    if (!Number.isFinite(v) || v <= 0) return;
-    tapFeedback();
-    if (movement.mode === "reps") onChange({ doneReps: movement.doneReps + v });
-    else onChange({ doneSeconds: movement.doneSeconds + v });
-    setAddValue("");
-  }
-
-  function togglePlay() {
-    tapFeedback();
-    if (movement.timerStartedAtMs) {
-      // Pause — fold the elapsed running segment into the banked total.
-      onChange({ doneSeconds: movement.doneSeconds + liveRunningSecs, timerStartedAtMs: null });
-    } else if (prepCountdown !== null) {
-      setPrepCountdown(null);
-    } else {
-      setPrepCountdown(2);
-    }
-  }
-
   return (
-    <View style={[styles.chipperMovement, isComplete && styles.chipperMovementComplete]}>
-      <View style={styles.entryHeader}>
+    <View style={styles.stationRow}>
+      <TextInput
+        value={movement.name}
+        onChangeText={(v) => onChange({ name: v })}
+        placeholder={`Movement ${index + 1}, e.g. Squats`}
+        placeholderTextColor={Color.textFaint}
+        style={[styles.stationNameInput, { flex: 2 }]}
+      />
+      <Pressable
+        onPress={() => onChange({ mode: movement.mode === "reps" ? "time" : "reps" })}
+        style={styles.stationModeChip}
+      >
+        <Text style={styles.stationModeText}>{movement.mode === "reps" ? "Reps" : "Time"}</Text>
+      </Pressable>
+      {movement.mode === "reps" ? (
         <TextInput
-          value={movement.name}
-          onChangeText={(v) => onChange({ name: v })}
-          placeholder="e.g. Squats"
-          placeholderTextColor={Color.textFaint}
-          style={[styles.smallInput, { flex: 1 }]}
-        />
-        <Pressable onPress={onRemove} hitSlop={8} style={{ marginLeft: Spacing.sm }}>
-          <Text style={styles.removeText}>Remove</Text>
-        </Pressable>
-      </View>
-
-      <View style={[styles.unitToggleRow, { marginTop: Spacing.sm }]}>
-        <View style={{ flexDirection: "row", gap: 4 }}>
-          <Pressable
-            onPress={() => onChange({ mode: "reps" })}
-            style={[styles.unitChip, movement.mode === "reps" && styles.unitChipActive]}
-          >
-            <Text style={[styles.unitChipText, movement.mode === "reps" && styles.unitChipTextActive]}>Reps</Text>
-          </Pressable>
-          <Pressable
-            onPress={() => onChange({ mode: "time" })}
-            style={[styles.unitChip, movement.mode === "time" && styles.unitChipActive]}
-          >
-            <Text style={[styles.unitChipText, movement.mode === "time" && styles.unitChipTextActive]}>Time</Text>
-          </Pressable>
-        </View>
-
-        {movement.mode === "reps" ? (
-          <TextInput
-            value={movement.targetReps}
-            onChangeText={(v) => onChange({ targetReps: v })}
-            keyboardType="number-pad"
-            placeholder="Target e.g. 100"
-            placeholderTextColor={Color.textFaint}
-            style={[styles.smallInput, { flex: 1 }]}
-          />
-        ) : (
-          <TextInput
-            value={movement.targetSeconds}
-            onChangeText={(v) => onChange({ targetSeconds: v })}
-            onBlur={() => {
-              const formatted = formatAsMmSs(movement.targetSeconds);
-              if (formatted !== movement.targetSeconds) onChange({ targetSeconds: formatted });
-            }}
-            placeholder="Target e.g. 5:00"
-            placeholderTextColor={Color.textFaint}
-            style={[styles.smallInput, { flex: 1 }]}
-          />
-        )}
-      </View>
-
-      {target > 0 ? (
-        <View style={styles.chipperProgressRow}>
-          <Text style={styles.chipperProgressText}>
-            {movement.mode === "reps" ? (
-              <>
-                <Text style={{ color: Color.gold, fontWeight: "700" }}>{done}</Text> / {target} reps
-              </>
-            ) : (
-              <>
-                <Text style={{ color: Color.gold, fontWeight: "700" }}>{formatDuration(done)}</Text> / {formatDuration(target)}
-              </>
-            )}
-          </Text>
-          <Text style={[styles.chipperRemainingText, isComplete && styles.chipperRemainingDone]}>
-            {isComplete ? "Complete" : movement.mode === "reps" ? `${remaining} left` : `${formatDuration(remaining)} left`}
-          </Text>
-        </View>
-      ) : null}
-
-      <View style={styles.chipperInputRow}>
-        <TextInput
-          value={addValue}
-          onChangeText={setAddValue}
+          value={movement.targetReps}
+          onChangeText={(v) => onChange({ targetReps: v })}
           keyboardType="number-pad"
-          placeholder={movement.mode === "reps" ? "Reps just done" : "Seconds just done"}
+          placeholder="target reps"
           placeholderTextColor={Color.textFaint}
-          style={[styles.smallInput, { flex: 1 }]}
-          onSubmitEditing={addProgress}
-          returnKeyType="done"
+          style={styles.stationValueInput}
         />
-        <Pressable onPress={addProgress} style={styles.chipperAddButton}>
-          <Text style={styles.chipperAddButtonText}>+ Add</Text>
-        </Pressable>
-        {movement.mode === "time" ? (
-          <Pressable onPress={togglePlay} style={styles.chipperPlayButton}>
-            <Ionicons
-              name={movement.timerStartedAtMs ? "pause" : prepCountdown !== null ? "close" : "play"}
-              size={18}
-              color={Color.goldForeground}
-            />
-          </Pressable>
-        ) : null}
-      </View>
-      {prepCountdown !== null ? <Text style={styles.chipperPrepText}>Get ready… {prepCountdown}</Text> : null}
+      ) : (
+        <TextInput
+          value={movement.targetSeconds}
+          onChangeText={(v) => onChange({ targetSeconds: v })}
+          onBlur={() => {
+            const formatted = formatAsMmSs(movement.targetSeconds);
+            if (formatted !== movement.targetSeconds) onChange({ targetSeconds: formatted });
+          }}
+          placeholder="target e.g. 5:00"
+          placeholderTextColor={Color.textFaint}
+          style={styles.stationValueInput}
+        />
+      )}
+      <Pressable onPress={onRemove} hitSlop={6}>
+        <Ionicons name="close" size={16} color={Color.textFaint} />
+      </Pressable>
     </View>
   );
 }
@@ -402,9 +294,10 @@ function ChipperEditor({ movements, onChange }: { movements: ChipperMovement[]; 
     onChange(movements.filter((m) => m.key !== key));
   }
   return (
-    <View>
-      {movements.map((m) => (
-        <ChipperMovementRow key={m.key} movement={m} onChange={(patch) => update(m.key, patch)} onRemove={() => remove(m.key)} />
+    <View style={{ marginTop: Spacing.sm }}>
+      <Text style={styles.fieldLabel}>Movements</Text>
+      {movements.map((m, i) => (
+        <ChipperMovementRow key={m.key} movement={m} index={i} onChange={(patch) => update(m.key, patch)} onRemove={() => remove(m.key)} />
       ))}
       <Pressable onPress={() => onChange([...movements, newChipperMovement()])} style={styles.addChip}>
         <Text style={styles.addChipText}>+ Movement</Text>
@@ -553,6 +446,71 @@ function AmrapMovementsEditor({
   );
 }
 
+const RPE_DESCRIPTION =
+  "Rate of Perceived Exertion — how hard the session felt overall, from 1 (very easy, could do it all day) to 10 (maximal effort, couldn't do another rep).";
+const RPE_VALUES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+
+// Shown right after a workout is logged, for every format — feeds the
+// eventual workout review and AI report, so it's deliberately quick to fill
+// in (tap a number, optional line of text) rather than a long form.
+function HowDidYouFeelModal({
+  visible,
+  rpe,
+  onChangeRpe,
+  notes,
+  onChangeNotes,
+  onSkip,
+  onSubmit,
+  submitting,
+}: {
+  visible: boolean;
+  rpe: number | null;
+  onChangeRpe: (v: number | null) => void;
+  notes: string;
+  onChangeNotes: (v: string) => void;
+  onSkip: () => void;
+  onSubmit: () => void;
+  submitting: boolean;
+}) {
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onSkip}>
+      <Pressable style={feelStyles.backdrop} onPress={onSkip}>
+        <Pressable style={feelStyles.card} onPress={(e) => e.stopPropagation()}>
+          <Text style={feelStyles.title}>How did that feel?</Text>
+          <Text style={feelStyles.rpeDescription}>{RPE_DESCRIPTION}</Text>
+          <View style={feelStyles.rpeRow}>
+            {RPE_VALUES.map((v) => (
+              <Pressable
+                key={v}
+                onPress={() => {
+                  tapFeedback();
+                  onChangeRpe(rpe === v ? null : v);
+                }}
+                style={[feelStyles.rpeChip, rpe === v && feelStyles.rpeChipActive]}
+              >
+                <Text style={[feelStyles.rpeChipText, rpe === v && feelStyles.rpeChipTextActive]}>{v}</Text>
+              </Pressable>
+            ))}
+          </View>
+          <Text style={[styles.fieldLabel, { marginTop: Spacing.md }]}>Notes (optional)</Text>
+          <TextInput
+            value={notes}
+            onChangeText={onChangeNotes}
+            placeholder="Anything worth remembering about this session"
+            placeholderTextColor={Color.textFaint}
+            style={[styles.multiline, feelStyles.notesInput]}
+            multiline
+          />
+          <View style={feelStyles.actions}>
+            <Button title="Skip" variant="secondary" onPress={onSkip} style={{ flex: 1 }} disabled={submitting} />
+            <Button title="Log workout" onPress={onSubmit} loading={submitting} style={{ flex: 1 }} />
+          </View>
+        </Pressable>
+      </Pressable>
+    </Modal>
+  );
+}
+
 export default function LogWorkoutScreen() {
   const router = useRouter();
   const { programId, dayId, title: initialTitle, date: initialDate, templateId, addExerciseName, generatedExercises: generatedExercisesParam } = useLocalSearchParams<{
@@ -583,6 +541,9 @@ export default function LogWorkoutScreen() {
   const { draft, hydrated, update, startTimer, pauseTimer, resetTimer, discard, elapsedSecsNow } = useWorkoutDraft();
   const { title, date, durationMins, notes, exerciseRows, runRows, seeded, isLive } = draft;
   const [error, setError] = useState<string | null>(null);
+  const [feelModalOpen, setFeelModalOpen] = useState(false);
+  const [sessionRpe, setSessionRpe] = useState<number | null>(null);
+  const [feelingNotes, setFeelingNotes] = useState("");
 
   // Initialize once, on first arrival with an empty draft — resuming an
   // existing draft (the whole point of persisting it) must NOT be
@@ -777,7 +738,19 @@ export default function LogWorkoutScreen() {
     ]);
   }
 
-  async function handleSubmit() {
+  // Validates and opens the "How did that feel?" prompt — the actual save
+  // (handleSubmit) fires from there, whether the member fills in an RPE or
+  // taps Skip, so every format gets asked the same way.
+  function handleLogPress() {
+    setError(null);
+    if (!title.trim() || !date.trim()) {
+      setError("Title and date are required.");
+      return;
+    }
+    setFeelModalOpen(true);
+  }
+
+  async function handleSubmit(finalRpe: number | null, finalFeelingNotes: string) {
     setError(null);
     if (!title.trim() || !date.trim()) {
       setError("Title and date are required.");
@@ -913,13 +886,24 @@ export default function LogWorkoutScreen() {
     };
 
     try {
-      await create.mutateAsync({ title: title.trim(), date: date.trim(), durationMins: finalDurationMins, notes: combinedNotes, exercises, runs });
+      await create.mutateAsync({
+        title: title.trim(),
+        date: date.trim(),
+        durationMins: finalDurationMins,
+        notes: combinedNotes,
+        exercises,
+        runs,
+        sessionRpe: finalRpe,
+        feelingNotes: finalFeelingNotes.trim() || undefined,
+      });
       if (programId) await advanceProgram.mutateAsync(programId);
       successFeedback();
+      setFeelModalOpen(false);
       discard();
       router.replace({ pathname: "/workout-summary", params: { data: JSON.stringify(summary) } });
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Could not log workout. Please try again.");
+      setFeelModalOpen(false);
     }
   }
 
@@ -1017,13 +1001,34 @@ export default function LogWorkoutScreen() {
           {draft.format === "chipper" ? (
             <Card style={styles.entryCard}>
               <Text style={styles.formatHint}>
-                Add each movement with its total target, then log reps (or seconds) as you chip away at them — the
-                workout clock above is your score.
+                Add each movement with its total target — you&apos;ll log reps (or time) against each one from the
+                workout card as you chip away at them.
               </Text>
               <ChipperEditor
                 movements={draft.chipperConfig.movements}
                 onChange={(movements) => update({ chipperConfig: { movements } })}
               />
+              <Button
+                title="Go to workout card"
+                variant="secondary"
+                onPress={() => {
+                  update({
+                    formatSession: {
+                      ...draft.formatSession,
+                      started: false,
+                      phaseIndex: 0,
+                      phaseStartedAtMs: null,
+                      phaseElapsedAtPauseSecs: 0,
+                      totalElapsedAtPauseSecs: 0,
+                      totalStartedAtMs: null,
+                    },
+                  });
+                  router.push({ pathname: "/format-timer" });
+                }}
+                disabled={draft.chipperConfig.movements.filter((m) => m.name.trim()).length === 0}
+                style={{ marginTop: Spacing.md }}
+              />
+              {draft.formatResultNote ? <Text style={styles.formatResultText}>{draft.formatResultNote}</Text> : null}
             </Card>
           ) : null}
 
@@ -1514,9 +1519,20 @@ export default function LogWorkoutScreen() {
 
           {error ? <Text style={styles.error}>{error}</Text> : null}
 
-          <Button title="Log workout" onPress={handleSubmit} loading={create.isPending} style={{ marginTop: Spacing.lg }} />
+          <Button title="Log workout" onPress={handleLogPress} loading={create.isPending} style={{ marginTop: Spacing.lg }} />
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <HowDidYouFeelModal
+        visible={feelModalOpen}
+        rpe={sessionRpe}
+        onChangeRpe={setSessionRpe}
+        notes={feelingNotes}
+        onChangeNotes={setFeelingNotes}
+        onSkip={() => void handleSubmit(null, "")}
+        onSubmit={() => void handleSubmit(sessionRpe, feelingNotes)}
+        submitting={create.isPending}
+      />
     </SafeAreaView>
   );
 }
@@ -1677,31 +1693,6 @@ const styles = StyleSheet.create({
     borderRadius: Radius.md,
     backgroundColor: Color.goldWeak,
   },
-  chipperMovement: {
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-    padding: Spacing.sm,
-    marginTop: Spacing.sm,
-  },
-  chipperMovementComplete: { borderColor: Color.gold },
-  chipperProgressRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: Spacing.sm },
-  chipperProgressText: { fontSize: 13, color: Color.textSecondary },
-  chipperRemainingText: { fontSize: 12, fontWeight: "600", color: Color.textMuted },
-  chipperRemainingDone: { color: Color.gold },
-  chipperInputRow: { flexDirection: "row", gap: Spacing.xs, marginTop: Spacing.sm, alignItems: "center" },
-  chipperAddButton: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.gold, paddingHorizontal: Spacing.sm, paddingVertical: 9 },
-  chipperAddButtonText: { fontSize: 12, fontWeight: "700", color: Color.gold },
-  chipperPlayButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: Color.gold,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  chipperPrepText: { fontSize: 12, fontWeight: "700", color: Color.gold, marginTop: Spacing.xs },
   capModeRow: { flexDirection: "row", gap: Spacing.xs, marginTop: Spacing.sm, marginBottom: Spacing.xs },
   stationRow: { flexDirection: "row", alignItems: "center", gap: Spacing.xs, marginBottom: Spacing.xs },
   stationNameInput: {
@@ -1762,4 +1753,41 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   movementChipText: { fontSize: 11, color: Color.textSecondary, fontWeight: "500" },
+});
+
+const feelStyles = StyleSheet.create({
+  backdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.55)",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: Spacing.xl,
+  },
+  card: {
+    width: "100%",
+    maxWidth: 360,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    borderColor: Color.borderSubtle,
+    backgroundColor: Color.surface1,
+    padding: Spacing.lg,
+  },
+  title: { fontSize: 17, fontWeight: "700", color: Color.textPrimary },
+  rpeDescription: { fontSize: 12, color: Color.textMuted, marginTop: Spacing.xs, lineHeight: 17 },
+  rpeRow: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: Spacing.md },
+  rpeChip: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: Color.borderSubtle,
+    backgroundColor: Color.surface2,
+  },
+  rpeChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
+  rpeChipText: { fontSize: 13, fontWeight: "600", color: Color.textSecondary },
+  rpeChipTextActive: { color: Color.gold },
+  notesInput: { marginTop: Spacing.xs, minHeight: 64 },
+  actions: { flexDirection: "row", gap: Spacing.sm, marginTop: Spacing.lg },
 });

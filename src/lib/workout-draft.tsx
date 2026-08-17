@@ -99,6 +99,12 @@ export interface TabataConfig {
 
 export type ChipperMovementMode = "reps" | "time";
 
+/** One timestamped chip of progress against a movement — either a manual
+    "+ Add" entry or a paused timer segment folded in. Kept in order, oldest
+    first; this is what lets the eventual AI report see pacing within a
+    chipper, not just the final total. */
+export type ChipperLogEntry = { atMs: number; amount: number };
+
 export type ChipperMovement = {
   key: string;
   name: string;
@@ -115,6 +121,7 @@ export type ChipperMovement = {
       never started. Timestamp-based for the same reason the session timer
       is — stays correct across backgrounding. */
   timerStartedAtMs: number | null;
+  log: ChipperLogEntry[];
 };
 
 export interface ChipperConfig {

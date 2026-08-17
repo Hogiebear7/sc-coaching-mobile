@@ -873,15 +873,6 @@ export default function LogWorkoutScreen() {
               placeholder="e.g. 60"
             />
           ) : null}
-          <TextField
-            label="Notes — optional"
-            value={notes}
-            onChangeText={(v) => update({ notes: v })}
-            placeholder="What did you do, how did it feel"
-            multiline
-            style={styles.multiline}
-          />
-
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionLabel}>WORKOUT FORMAT</Text>
           </View>
@@ -1102,7 +1093,7 @@ export default function LogWorkoutScreen() {
                       // Don't clobber a rest that's already counting down —
                       // only reset to this exercise's rest duration when
                       // there's nothing actively running.
-                      if (!restTimer.isRunning) restTimer.reset(restTimerSeconds);
+                      if (!restTimer.isRunning) restTimer.reset(restTimerSeconds, row.name || null);
                       router.push({ pathname: "/rest-timer" });
                     }}
                     hitSlop={8}
@@ -1163,7 +1154,7 @@ export default function LogWorkoutScreen() {
               {row.unitMode === "time" ? (
                 <Pressable
                   onPress={() => {
-                    if (!restTimer.isRunning) restTimer.reset(60);
+                    if (!restTimer.isRunning) restTimer.reset(60, row.name || null);
                     router.push({ pathname: "/rest-timer" });
                   }}
                   style={styles.holdTimerHint}
@@ -1355,6 +1346,15 @@ export default function LogWorkoutScreen() {
               </View>
             </View>
           ) : null}
+
+          <TextField
+            label="Notes — optional"
+            value={notes}
+            onChangeText={(v) => update({ notes: v })}
+            placeholder="What did you do, how did it feel"
+            multiline
+            style={[styles.multiline, { marginTop: Spacing.lg }]}
+          />
 
           {error ? <Text style={styles.error}>{error}</Text> : null}
 

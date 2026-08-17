@@ -22,7 +22,15 @@ function formatClock(secs: number): string {
 
 export default function RestTimerScreen() {
   const router = useRouter();
-  const { seconds: initialSecondsParam, autostart } = useLocalSearchParams<{ seconds?: string; autostart?: string }>();
+  const { seconds: initialSecondsParam, autostart, label: labelParam } = useLocalSearchParams<{
+    seconds?: string;
+    autostart?: string;
+    /** Exercise name this timer is for — e.g. "Plank" — used only to seed
+     *  a fresh countdown's label on arrival. Once a timer's running, the
+     *  label lives in context (lib/rest-timer.tsx), not the route, so it
+     *  survives navigating away and back. */
+    label?: string;
+  }>();
   const timer = useRestTimer();
   // Purely a re-render trigger — the actual value read each render is
   // timer.remainingNow() below, wall-clock-derived so it's always correct
@@ -58,7 +66,7 @@ export default function RestTimerScreen() {
   useEffect(() => {
     if (autostart === "1" && !timer.isRunning) {
       const secs = Number(initialSecondsParam) > 0 ? Number(initialSecondsParam) : 90;
-      timer.start(secs);
+      timer.start(secs, labelParam ?? null);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -70,21 +78,31 @@ export default function RestTimerScreen() {
     return () => clearInterval(id);
   }, [timer.isRunning]);
 
+  // Stopwatch needs its own re-render tick while running — same purely-
+  // cosmetic role as the countdown one above.
+  useEffect(() => {
+    if (!timer.isStopwatchRunning) return;
+    const id = setInterval(() => forceTick((t) => t + 1), 1000);
+    return () => clearInterval(id);
+  }, [timer.isStopwatchRunning]);
+
   const remaining = timer.remainingNow();
+  const stopwatchElapsed = timer.stopwatchElapsedNow();
 
   useEffect(() => {
+    if (timer.state.mode !== "countdown") return;
     if (remaining <= 0 && !firedDoneFeedback.current) {
       firedDoneFeedback.current = true;
       successFeedback();
     }
-  }, [remaining]);
+  }, [remaining, timer.state.mode]);
 
   function handleStartPause() {
     tapFeedback();
     if (timer.isRunning) {
       timer.pause();
     } else if (timer.state.remainingAtPauseSecs <= 0) {
-      timer.start(timer.state.durationSecs);
+      timer.start(timer.state.durationSecs, timer.state.label);
     } else {
       timer.resume();
     }
@@ -92,12 +110,12 @@ export default function RestTimerScreen() {
 
   function handleReset() {
     tapFeedback();
-    timer.reset(timer.state.durationSecs);
+    timer.reset(timer.state.durationSecs, timer.state.label);
   }
 
   function handlePreset(secs: number) {
     tapFeedback();
-    timer.reset(secs);
+    timer.reset(secs, timer.state.label);
   }
 
   function adjust(delta: number) {
@@ -105,8 +123,32 @@ export default function RestTimerScreen() {
     timer.adjust(delta);
   }
 
+  function handleStopwatchStartPause() {
+    tapFeedback();
+    if (timer.isStopwatchRunning) timer.pauseStopwatch();
+    else timer.startStopwatch(timer.state.label);
+  }
+
+  function handleStopwatchReset() {
+    tapFeedback();
+    timer.resetStopwatch(timer.state.label);
+  }
+
+  function switchMode(mode: "countdown" | "stopwatch") {
+    if (mode === timer.state.mode) return;
+    tapFeedback();
+    timer.setMode(mode);
+  }
+
+  const isStopwatch = timer.state.mode === "stopwatch";
   const pct = timer.state.durationSecs > 0 ? Math.max(0, Math.min(1, remaining / timer.state.durationSecs)) : 0;
-  const done = remaining === 0;
+  const done = !isStopwatch && remaining === 0;
+
+  const headerTitle = timer.state.label
+    ? `${isStopwatch ? "Stopwatch" : "Countdown"} Timer — ${timer.state.label}`
+    : isStopwatch
+    ? "Stopwatch"
+    : "Rest Timer";
 
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
@@ -114,16 +156,27 @@ export default function RestTimerScreen() {
         <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backButton}>
           <Ionicons name="chevron-back" size={22} color={Color.textPrimary} />
         </Pressable>
-        <Text style={styles.headerTitle}>Rest Timer</Text>
+        <Text style={styles.headerTitle} numberOfLines={1}>
+          {headerTitle}
+        </Text>
         <View style={{ width: 22 }} />
       </View>
 
+      <View style={styles.modeBar}>
+        <Pressable onPress={() => switchMode("countdown")} style={[styles.modeButton, !isStopwatch && styles.modeButtonActive]}>
+          <Text style={[styles.modeButtonText, !isStopwatch && styles.modeButtonTextActive]}>Countdown</Text>
+        </Pressable>
+        <Pressable onPress={() => switchMode("stopwatch")} style={[styles.modeButton, isStopwatch && styles.modeButtonActive]}>
+          <Text style={[styles.modeButtonText, isStopwatch && styles.modeButtonTextActive]}>Stopwatch</Text>
+        </Pressable>
+      </View>
+
       <View style={styles.body}>
-        {showBatteryPrompt ? (
+        {showBatteryPrompt && !isStopwatch ? (
           <View style={styles.batteryBanner}>
             <Ionicons name="battery-charging-outline" size={18} color={Color.gold} />
             <View style={{ flex: 1 }}>
-              <Text style={styles.batteryBannerTitle}>Make rest alerts reliable</Text>
+              <Text style={styles.batteryBannerTitle}>Make timer alerts reliable</Text>
               <Text style={styles.batteryBannerBody}>
                 Android can delay or drop this alert in the background unless battery restrictions are off for this
                 app.
@@ -140,46 +193,69 @@ export default function RestTimerScreen() {
           </View>
         ) : null}
 
-        <View style={styles.ringWrap}>
-          <View style={[styles.ringTrack]} />
-          <View style={[styles.ringFill, { height: `${pct * 100}%` }]} />
-          <View style={styles.ringCenter}>
-            <Text style={[styles.clockText, done && { color: Color.success }]}>{formatClock(remaining)}</Text>
-            {done ? <Text style={styles.doneText}>Rest complete</Text> : null}
-          </View>
-        </View>
+        {isStopwatch ? (
+          <>
+            <View style={styles.ringWrap}>
+              <View style={styles.ringTrack} />
+              <View style={styles.ringCenter}>
+                <Text style={styles.clockText}>{formatClock(stopwatchElapsed)}</Text>
+              </View>
+            </View>
 
-        <View style={styles.adjustRow}>
-          <Pressable onPress={() => adjust(-15)} style={styles.adjustButton}>
-            <Text style={styles.adjustText}>−15s</Text>
-          </Pressable>
-          <Pressable onPress={() => adjust(15)} style={styles.adjustButton}>
-            <Text style={styles.adjustText}>+15s</Text>
-          </Pressable>
-        </View>
-
-        <View style={styles.controlsRow}>
-          <Pressable onPress={handleReset} style={styles.secondaryControl}>
-            <Ionicons name="refresh" size={20} color={Color.textSecondary} />
-          </Pressable>
-          <Pressable onPress={handleStartPause} style={styles.primaryControl}>
-            <Ionicons name={timer.isRunning ? "pause" : "play"} size={28} color={Color.goldForeground} />
-          </Pressable>
-          <View style={{ width: 48 }} />
-        </View>
-
-        <View style={styles.presetsWrap}>
-          <Text style={styles.presetsLabel}>PRESETS</Text>
-          <View style={styles.presetsRow}>
-            {PRESETS.map((p) => (
-              <Pressable key={p} onPress={() => handlePreset(p)} style={[styles.presetChip, timer.state.durationSecs === p && styles.presetChipActive]}>
-                <Text style={[styles.presetChipText, timer.state.durationSecs === p && styles.presetChipTextActive]}>
-                  {p < 60 ? `${p}s` : `${p / 60}m`}
-                </Text>
+            <View style={styles.controlsRow}>
+              <Pressable onPress={handleStopwatchReset} style={styles.secondaryControl}>
+                <Ionicons name="refresh" size={20} color={Color.textSecondary} />
               </Pressable>
-            ))}
-          </View>
-        </View>
+              <Pressable onPress={handleStopwatchStartPause} style={styles.primaryControl}>
+                <Ionicons name={timer.isStopwatchRunning ? "pause" : "play"} size={28} color={Color.goldForeground} />
+              </Pressable>
+              <View style={{ width: 48 }} />
+            </View>
+          </>
+        ) : (
+          <>
+            <View style={styles.ringWrap}>
+              <View style={[styles.ringTrack]} />
+              <View style={[styles.ringFill, { height: `${pct * 100}%` }]} />
+              <View style={styles.ringCenter}>
+                <Text style={[styles.clockText, done && { color: Color.success }]}>{formatClock(remaining)}</Text>
+                {done ? <Text style={styles.doneText}>Rest complete</Text> : null}
+              </View>
+            </View>
+
+            <View style={styles.adjustRow}>
+              <Pressable onPress={() => adjust(-15)} style={styles.adjustButton}>
+                <Text style={styles.adjustText}>−15s</Text>
+              </Pressable>
+              <Pressable onPress={() => adjust(15)} style={styles.adjustButton}>
+                <Text style={styles.adjustText}>+15s</Text>
+              </Pressable>
+            </View>
+
+            <View style={styles.controlsRow}>
+              <Pressable onPress={handleReset} style={styles.secondaryControl}>
+                <Ionicons name="refresh" size={20} color={Color.textSecondary} />
+              </Pressable>
+              <Pressable onPress={handleStartPause} style={styles.primaryControl}>
+                <Ionicons name={timer.isRunning ? "pause" : "play"} size={28} color={Color.goldForeground} />
+              </Pressable>
+              <View style={{ width: 48 }} />
+            </View>
+
+            <View style={styles.presetsWrap}>
+              <Text style={styles.presetsLabel}>PRESETS</Text>
+              <View style={styles.presetsRow}>
+                {PRESETS.map((p) => (
+                  <Pressable key={p} onPress={() => handlePreset(p)} style={[styles.presetChip, timer.state.durationSecs === p && styles.presetChipActive]}>
+                    <Text style={[styles.presetChipText, timer.state.durationSecs === p && styles.presetChipTextActive]}>
+                      {p < 60 ? `${p}s` : `${p / 60}m`}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+          </>
+        )}
       </View>
     </SafeAreaView>
   );
@@ -195,7 +271,22 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.md,
   },
   backButton: { padding: 4 },
-  headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
+  headerTitle: { flex: 1, textAlign: "center", fontSize: 16, fontWeight: "700", color: Color.textPrimary, marginHorizontal: Spacing.sm },
+  modeBar: {
+    flexDirection: "row",
+    gap: 4,
+    marginHorizontal: Spacing.lg,
+    marginBottom: Spacing.sm,
+    padding: 4,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: Color.borderSubtle,
+    backgroundColor: Color.surface1,
+  },
+  modeButton: { flex: 1, paddingVertical: Spacing.sm, borderRadius: Radius.sm, alignItems: "center" },
+  modeButtonActive: { backgroundColor: Color.surface2 },
+  modeButtonText: { fontSize: 13, fontWeight: "600", color: Color.textMuted },
+  modeButtonTextActive: { color: Color.textPrimary },
   body: { flex: 1, alignItems: "center", paddingTop: Spacing.xl, paddingHorizontal: Spacing.lg },
   batteryBanner: {
     flexDirection: "row",

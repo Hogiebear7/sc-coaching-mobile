@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import { Image, type ImageStyle } from "expo-image";
 import { useRouter } from "expo-router";
 import { useCallback } from "react";
 import {
@@ -22,6 +23,7 @@ import { Color, Spacing } from "@/constants/theme";
 import { useAuth } from "@/lib/auth-context";
 import { useDashboard } from "@/lib/queries/dashboard";
 import { useNotifications } from "@/lib/queries/notifications";
+import { useProfile } from "@/lib/queries/profile";
 
 function formatTodayLabel(): string {
   return new Date().toLocaleDateString(undefined, {
@@ -49,6 +51,7 @@ export default function DashboardScreen() {
   const { data, isLoading, isError, refetch, isRefetching } = useDashboard();
   const { data: notifications } = useNotifications();
   const unreadCount = notifications?.filter((n) => n.readAt === null).length ?? 0;
+  const { data: profile } = useProfile();
 
   const onRefresh = useCallback(() => {
     refetch();
@@ -114,13 +117,13 @@ export default function DashboardScreen() {
                   </View>
                 ) : null}
               </Pressable>
-              <Ionicons
-                name="person-circle-outline"
-                size={24}
-                color={Color.textMuted}
-                onPress={() => router.push("/profile")}
-                suppressHighlighting
-              />
+              <Pressable onPress={() => router.push("/profile")} hitSlop={8}>
+                {profile?.avatarDataUrl ? (
+                  <Image source={{ uri: profile.avatarDataUrl }} style={styles.avatarThumb as ImageStyle} contentFit="cover" />
+                ) : (
+                  <Ionicons name="person-circle-outline" size={24} color={Color.textMuted} />
+                )}
+              </Pressable>
               <Ionicons
                 name="log-out-outline"
                 size={22}
@@ -382,6 +385,13 @@ const styles = StyleSheet.create({
   },
   bellWrap: {
     position: "relative",
+  },
+  avatarThumb: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Color.borderSubtle,
   },
   bellBadge: {
     position: "absolute",

@@ -1,12 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
-import * as Notifications from "expo-notifications";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Color, Radius, Spacing } from "@/constants/theme";
 import { successFeedback, tapFeedback } from "@/lib/haptics";
+import { useRestTimer } from "@/lib/rest-timer";
 
 const PRESETS = [30, 60, 90, 120, 180, 300];
 
@@ -16,118 +16,73 @@ function formatClock(secs: number): string {
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
-// Schedules a local notification so the rest alert fires even if the member
-// backgrounds the app to check something else mid-rest. Harmless no-op if
-// notification permission was never granted (see push-notifications.ts —
-// same "degrade quietly" philosophy).
-async function scheduleRestDoneNotification(seconds: number): Promise<string | null> {
-  if (Platform.OS === "web") return null;
-  try {
-    return await Notifications.scheduleNotificationAsync({
-      content: { title: "Rest complete", body: "Time for your next set." },
-      trigger: seconds > 0 ? ({ seconds, type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL } as const) : null,
-    });
-  } catch {
-    return null;
-  }
-}
-
-async function cancelNotification(id: string | null) {
-  if (!id || Platform.OS === "web") return;
-  try {
-    await Notifications.cancelScheduledNotificationAsync(id);
-  } catch {
-    // Best-effort.
-  }
-}
-
 export default function RestTimerScreen() {
   const router = useRouter();
   const { seconds: initialSecondsParam, autostart } = useLocalSearchParams<{ seconds?: string; autostart?: string }>();
-  const initialDuration = Number(initialSecondsParam) > 0 ? Number(initialSecondsParam) : 90;
+  const timer = useRestTimer();
+  // Purely a re-render trigger — the actual value read each render is
+  // timer.remainingNow() below, wall-clock-derived so it's always correct
+  // on its own, including right after this screen was unmounted for a
+  // while (navigated away, backgrounded) and remounts. No separate synced
+  // "remaining" state to de-sync from that source of truth.
+  const [, forceTick] = useState(0);
+  const firedDoneFeedback = useRef(false);
 
-  const [duration, setDuration] = useState(initialDuration);
-  const [remaining, setRemaining] = useState(initialDuration);
-  // Landing here straight from marking a set complete — start counting down
-  // immediately rather than waiting for a play tap, so the countdown is
-  // already running the moment someone puts their phone away. The manual
-  // timer-icon entry point still opens paused, unchanged.
-  const [running, setRunning] = useState(autostart === "1");
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const notificationIdRef = useRef<string | null>(null);
-
+  // The auto-start entry point (marking a set complete) already calls
+  // timer.start() itself before navigating here — this only covers a
+  // fallback if this screen is somehow the one starting it (deep link,
+  // future entry point) rather than duplicating the start on every mount.
   useEffect(() => {
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-      void cancelNotification(notificationIdRef.current);
-    };
-  }, []);
-
-  // The backstop notification for that auto-started countdown above —
-  // scheduled once on arrival rather than waiting for a play tap.
-  useEffect(() => {
-    if (autostart !== "1") return;
-    scheduleRestDoneNotification(initialDuration).then((id) => {
-      notificationIdRef.current = id;
-    });
+    if (autostart === "1" && !timer.isRunning) {
+      const secs = Number(initialSecondsParam) > 0 ? Number(initialSecondsParam) : 90;
+      timer.start(secs);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
-    if (!running) return;
-    intervalRef.current = setInterval(() => {
-      setRemaining((prev) => {
-        if (prev <= 1) {
-          if (intervalRef.current) clearInterval(intervalRef.current);
-          setRunning(false);
-          successFeedback();
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, [running]);
+    if (!timer.isRunning) return;
+    firedDoneFeedback.current = false;
+    const id = setInterval(() => forceTick((t) => t + 1), 250);
+    return () => clearInterval(id);
+  }, [timer.isRunning]);
 
-  async function handleStartPause() {
+  const remaining = timer.remainingNow();
+
+  useEffect(() => {
+    if (remaining <= 0 && !firedDoneFeedback.current) {
+      firedDoneFeedback.current = true;
+      successFeedback();
+    }
+  }, [remaining]);
+
+  function handleStartPause() {
     tapFeedback();
-    if (running) {
-      setRunning(false);
-      await cancelNotification(notificationIdRef.current);
-      notificationIdRef.current = null;
+    if (timer.isRunning) {
+      timer.pause();
+    } else if (timer.state.remainingAtPauseSecs <= 0) {
+      timer.start(timer.state.durationSecs);
     } else {
-      if (remaining <= 0) setRemaining(duration);
-      setRunning(true);
-      notificationIdRef.current = await scheduleRestDoneNotification(remaining > 0 ? remaining : duration);
+      timer.resume();
     }
   }
 
   function handleReset() {
     tapFeedback();
-    setRunning(false);
-    setRemaining(duration);
-    void cancelNotification(notificationIdRef.current);
-    notificationIdRef.current = null;
+    timer.reset(timer.state.durationSecs);
   }
 
   function handlePreset(secs: number) {
     tapFeedback();
-    setRunning(false);
-    void cancelNotification(notificationIdRef.current);
-    notificationIdRef.current = null;
-    setDuration(secs);
-    setRemaining(secs);
+    timer.reset(secs);
   }
 
   function adjust(delta: number) {
     tapFeedback();
-    setRemaining((prev) => Math.max(0, prev + delta));
-    setDuration((prev) => Math.max(0, prev + delta));
+    timer.adjust(delta);
   }
 
-  const pct = duration > 0 ? Math.max(0, Math.min(1, remaining / duration)) : 0;
+  const pct = timer.state.durationSecs > 0 ? Math.max(0, Math.min(1, remaining / timer.state.durationSecs)) : 0;
   const done = remaining === 0;
 
   return (
@@ -164,7 +119,7 @@ export default function RestTimerScreen() {
             <Ionicons name="refresh" size={20} color={Color.textSecondary} />
           </Pressable>
           <Pressable onPress={handleStartPause} style={styles.primaryControl}>
-            <Ionicons name={running ? "pause" : "play"} size={28} color={Color.goldForeground} />
+            <Ionicons name={timer.isRunning ? "pause" : "play"} size={28} color={Color.goldForeground} />
           </Pressable>
           <View style={{ width: 48 }} />
         </View>
@@ -173,8 +128,8 @@ export default function RestTimerScreen() {
           <Text style={styles.presetsLabel}>PRESETS</Text>
           <View style={styles.presetsRow}>
             {PRESETS.map((p) => (
-              <Pressable key={p} onPress={() => handlePreset(p)} style={[styles.presetChip, duration === p && styles.presetChipActive]}>
-                <Text style={[styles.presetChipText, duration === p && styles.presetChipTextActive]}>
+              <Pressable key={p} onPress={() => handlePreset(p)} style={[styles.presetChip, timer.state.durationSecs === p && styles.presetChipActive]}>
+                <Text style={[styles.presetChipText, timer.state.durationSecs === p && styles.presetChipTextActive]}>
                   {p < 60 ? `${p}s` : `${p / 60}m`}
                 </Text>
               </Pressable>

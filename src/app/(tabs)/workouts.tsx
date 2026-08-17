@@ -12,6 +12,7 @@ import { TrendChart } from "@/components/ui/TrendChart";
 import { Color, Radius, Spacing } from "@/constants/theme";
 import { tapFeedback } from "@/lib/haptics";
 import { useAdvanceProgram, useMyProgram } from "@/lib/queries/programs";
+import { useRestTimer } from "@/lib/rest-timer";
 import { type PersonalBest, useWorkouts } from "@/lib/queries/workouts";
 import {
   TREND_RANGES,
@@ -46,6 +47,7 @@ function formatShortDate(dateISO: string): string {
 
 export default function WorkoutsScreen() {
   const router = useRouter();
+  const restTimer = useRestTimer();
   const { data, isLoading, isError, refetch, isRefetching } = useWorkouts();
   const { data: program } = useMyProgram();
   const advanceProgram = useAdvanceProgram();
@@ -247,7 +249,13 @@ export default function WorkoutsScreen() {
             <Ionicons name="barbell-outline" size={18} color={Color.gold} />
             <Text style={styles.toolCardText}>Plate Calculator</Text>
           </Pressable>
-          <Pressable onPress={() => router.push({ pathname: "/rest-timer", params: { seconds: "90" } })} style={styles.toolCard}>
+          <Pressable
+            onPress={() => {
+              if (!restTimer.isRunning) restTimer.reset(90);
+              router.push({ pathname: "/rest-timer" });
+            }}
+            style={styles.toolCard}
+          >
             <Ionicons name="timer-outline" size={18} color={Color.gold} />
             <Text style={styles.toolCardText}>Rest Timer</Text>
           </Pressable>

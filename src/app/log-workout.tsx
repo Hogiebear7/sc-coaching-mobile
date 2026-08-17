@@ -24,7 +24,9 @@ import { Color, Radius, Spacing } from "@/constants/theme";
 import { successFeedback, tapFeedback } from "@/lib/haptics";
 import { ApiError } from "@/lib/api-client";
 import { useAdvanceProgram, useMyProgram } from "@/lib/queries/programs";
+import { useExerciseLibraryNameIndex } from "@/lib/queries/exercise-library";
 import { useProfile } from "@/lib/queries/profile";
+import { useRestTimer } from "@/lib/rest-timer";
 import { useWorkoutTemplates } from "@/lib/queries/workout-templates";
 import {
   SET_TYPE_OPTIONS,
@@ -443,6 +445,8 @@ export default function LogWorkoutScreen() {
   const { data } = useWorkouts();
   const { data: profile } = useProfile();
   const restTimerSeconds = profile?.restTimerSeconds ?? 90;
+  const restTimer = useRestTimer();
+  const { data: libraryIndex } = useExerciseLibraryNameIndex();
   const { data: program } = useMyProgram();
   const { data: templates } = useWorkoutTemplates();
   const create = useCreateWorkout();
@@ -599,10 +603,12 @@ export default function LogWorkoutScreen() {
       // The screen stays mounted underneath (this is a stack push, not a
       // replace), so the focus() above still lands once the member comes
       // back — they land straight on the next set with the rest already
-      // counted down. autostart: the countdown (and its backstop
-      // notification) needs to be running immediately, not waiting on a
-      // play tap, since the whole point is not needing to look at the phone.
-      router.push({ pathname: "/rest-timer", params: { seconds: String(restTimerSeconds), autostart: "1" } });
+      // counted down. Starting the timer here (not on the rest-timer
+      // screen's own mount) means it keeps running and still notifies on
+      // completion even if they never open that screen at all, or leave it
+      // immediately — see lib/rest-timer.tsx for why that distinction matters.
+      restTimer.start(restTimerSeconds);
+      router.push({ pathname: "/rest-timer" });
     }
     updateSetRow(rowKey, setKey, { completed: !wasCompleted });
   }
@@ -1063,7 +1069,13 @@ export default function LogWorkoutScreen() {
                     <Ionicons name="barbell-outline" size={16} color={Color.textMuted} />
                   </Pressable>
                   <Pressable
-                    onPress={() => router.push({ pathname: "/rest-timer", params: { seconds: String(restTimerSeconds) } })}
+                    onPress={() => {
+                      // Don't clobber a rest that's already counting down —
+                      // only reset to this exercise's rest duration when
+                      // there's nothing actively running.
+                      if (!restTimer.isRunning) restTimer.reset(restTimerSeconds);
+                      router.push({ pathname: "/rest-timer" });
+                    }}
                     hitSlop={8}
                   >
                     <Ionicons name="timer-outline" size={16} color={Color.textMuted} />
@@ -1088,6 +1100,19 @@ export default function LogWorkoutScreen() {
                 onChange={(name, exerciseId) => updateRow(row.key, { name, exerciseId })}
               />
 
+              {(() => {
+                const slug = libraryIndex?.get(row.name.trim().toLowerCase());
+                return slug ? (
+                  <Pressable
+                    onPress={() => router.push({ pathname: "/exercise-library-detail", params: { slug } })}
+                    style={styles.demoLink}
+                  >
+                    <Ionicons name="play-circle-outline" size={13} color={Color.gold} />
+                    <Text style={styles.demoLinkText}>View demonstration</Text>
+                  </Pressable>
+                ) : null;
+              })()}
+
               {last ? (
                 <Text style={styles.lastTimeText}>
                   Last time ({last.date}): <Text style={styles.lastTimeValue}>{last.summary}</Text>
@@ -1108,7 +1133,10 @@ export default function LogWorkoutScreen() {
 
               {row.unitMode === "time" ? (
                 <Pressable
-                  onPress={() => router.push({ pathname: "/rest-timer", params: { seconds: "60" } })}
+                  onPress={() => {
+                    if (!restTimer.isRunning) restTimer.reset(60);
+                    router.push({ pathname: "/rest-timer" });
+                  }}
                   style={styles.holdTimerHint}
                 >
                   <Ionicons name="hourglass-outline" size={13} color={Color.gold} />
@@ -1343,6 +1371,8 @@ const styles = StyleSheet.create({
   removeText: { fontSize: 12, color: Color.danger },
   lastTimeText: { fontSize: 11, color: Color.textMuted, marginTop: 4 },
   lastTimeValue: { color: Color.textSecondary, fontWeight: "600" },
+  demoLink: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 6, alignSelf: "flex-start" },
+  demoLinkText: { fontSize: 12, fontWeight: "600", color: Color.gold },
   timerCard: {
     flexDirection: "row",
     alignItems: "center",

@@ -51,6 +51,27 @@ export function useExerciseLibrary() {
   });
 }
 
+interface ExerciseLibraryNamesResponse {
+  success: true;
+  items: { name: string; slug: string }[];
+}
+
+// Lightweight name -> slug lookup, mirroring the web app's WorkoutLogForm.tsx
+// — lets the workout logger link "you typed Barbell Bench Press" straight to
+// its demonstration without pulling the full exercise list. Works for any
+// exercise in the library, not just the ones seeded so far, so this needs no
+// changes as more get imported.
+export function useExerciseLibraryNameIndex() {
+  return useQuery({
+    queryKey: ["exercise-library", "names"],
+    queryFn: () =>
+      apiFetch<ExerciseLibraryNamesResponse>("/api/exercise-library/names").then(
+        (r) => new Map(r.items.map((i) => [i.name.trim().toLowerCase(), i.slug]))
+      ),
+    staleTime: 5 * 60_000,
+  });
+}
+
 interface RelatedExerciseRef {
   id: string;
   name: string;

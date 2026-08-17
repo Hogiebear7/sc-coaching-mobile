@@ -8,6 +8,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { Color } from "@/constants/theme";
 import { AuthProvider, useAuth } from "@/lib/auth-context";
 import { addNotificationTapListener, mapLinkHrefToRoute } from "@/lib/push-notifications";
+import { RestTimerProvider } from "@/lib/rest-timer";
 import { WorkoutDraftProvider } from "@/lib/workout-draft";
 
 SplashScreen.preventAutoHideAsync();
@@ -113,10 +114,12 @@ export default function RootLayout() {
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <WorkoutDraftProvider>
-            <StatusBar barStyle="light-content" backgroundColor={Color.bg0} />
-            <View style={styles.root}>
-              <AuthGate />
-            </View>
+            <RestTimerProvider>
+              <StatusBar barStyle="light-content" backgroundColor={Color.bg0} />
+              <View style={styles.root}>
+                <AuthGate />
+              </View>
+            </RestTimerProvider>
           </WorkoutDraftProvider>
         </AuthProvider>
       </QueryClientProvider>

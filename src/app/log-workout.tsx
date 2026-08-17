@@ -67,6 +67,18 @@ const FORMAT_OPTIONS: { value: WorkoutFormat; label: string }[] = [
   { value: "tabata", label: "Tabata" },
 ];
 
+// Shown live below the format picker so a member who doesn't recognize a
+// name (what even is EMOM?) can see what they're choosing before they
+// commit to building it out.
+const FORMAT_DESCRIPTIONS: Record<WorkoutFormat, string> = {
+  standard: "Straight sets — log your weight and reps for each exercise as you go, same as any traditional workout.",
+  chipper: "One long list of movements, each with a target. Work through them in order, logging reps or time as you complete each one — the clock keeps running until you're done.",
+  circuit: "A set of stations you rotate through, each for a target time or rep count with rest in between, repeated for a set number of rounds.",
+  amrap: "As Many Reps (or Rounds) As Possible — set a time cap, then work through your movements for as much output as you can fit in before time's up.",
+  emom: "Every Minute On the Minute — start a new movement at the top of each interval. Finish early and the rest of that minute is your rest.",
+  tabata: "20 seconds of work, 10 seconds of rest, repeated for a set number of rounds — a short, high-intensity interval format.",
+};
+
 const FORMAT_LABELS: Record<WorkoutFormat, string> = {
   standard: "Standard",
   chipper: "Chipper (for time)",
@@ -892,6 +904,7 @@ export default function LogWorkoutScreen() {
               </Pressable>
             ))}
           </View>
+          <Text style={styles.formatDescription}>{FORMAT_DESCRIPTIONS[draft.format]}</Text>
 
           {draft.format === "chipper" ? (
             <Card style={styles.entryCard}>
@@ -1510,6 +1523,7 @@ const styles = StyleSheet.create({
   formatChipText: { fontSize: 12, fontWeight: "600", color: Color.textMuted },
   formatChipTextActive: { color: Color.gold },
   formatHint: { fontSize: 12, color: Color.textMuted, marginTop: Spacing.sm, lineHeight: 17 },
+  formatDescription: { fontSize: 12, color: Color.textFaint, marginTop: Spacing.sm, lineHeight: 17, fontStyle: "italic" },
   formatFieldsRow: { flexDirection: "row", gap: Spacing.sm, marginTop: Spacing.sm },
   formatResultText: {
     fontSize: 12,

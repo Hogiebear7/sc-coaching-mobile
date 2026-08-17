@@ -69,6 +69,12 @@ export default function ExerciseLibraryDetailScreen() {
         <ScrollView contentContainerStyle={styles.scroll}>
           <GifSlot url={pickHeroMedia(data.media)?.url ?? null} name={data.exercise.name} />
 
+          <Button
+            title="Add to workout"
+            onPress={() => router.push({ pathname: "/log-workout", params: { addExerciseName: data.exercise.name } })}
+            style={{ marginTop: Spacing.md }}
+          />
+
           <View style={styles.chipRow}>
             {data.exercise.bodyPart ? (
               <View style={styles.chip}>

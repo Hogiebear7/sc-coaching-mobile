@@ -79,7 +79,6 @@ function AuthGate() {
       <Stack.Screen name="membership" options={{ presentation: "card" }} />
       <Stack.Screen name="messages" options={{ presentation: "card" }} />
       <Stack.Screen name="notifications" options={{ presentation: "card" }} />
-      <Stack.Screen name="exercise-library" options={{ presentation: "card" }} />
       <Stack.Screen name="exercise-library-detail" options={{ presentation: "card" }} />
       <Stack.Screen name="profile" options={{ presentation: "card" }} />
       <Stack.Screen name="settings" options={{ presentation: "card" }} />
@@ -89,6 +88,7 @@ function AuthGate() {
       <Stack.Screen name="staff-nutrition-target" options={{ presentation: "card" }} />
       <Stack.Screen name="class-workout-builder" options={{ presentation: "card" }} />
       <Stack.Screen name="workout-library" options={{ presentation: "card" }} />
+      <Stack.Screen name="workout-generator" options={{ presentation: "card" }} />
       <Stack.Screen name="workout-template-builder" options={{ presentation: "card" }} />
       <Stack.Screen name="workout-history" options={{ presentation: "card" }} />
       <Stack.Screen name="workout-archive" options={{ presentation: "card" }} />

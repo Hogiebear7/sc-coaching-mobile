@@ -435,12 +435,20 @@ function StationsEditor({ stations, onChange }: { stations: CircuitStation[]; on
 
 export default function LogWorkoutScreen() {
   const router = useRouter();
-  const { programId, dayId, title: initialTitle, date: initialDate, templateId } = useLocalSearchParams<{
+  const { programId, dayId, title: initialTitle, date: initialDate, templateId, addExerciseName, generatedExercises: generatedExercisesParam } = useLocalSearchParams<{
     programId?: string;
     dayId?: string;
     title?: string;
     date?: string;
     templateId?: string;
+    /** From the exercise library's "Add to workout" action — appended to
+     *  whatever's already in progress (the draft persists across screens),
+     *  not a fresh-seed like programId/templateId above. */
+    addExerciseName?: string;
+    /** JSON-encoded PrescribedExercise[] from the workout generator — a
+     *  fresh-seed source alongside programId/templateId below, not merged
+     *  with addExerciseName's append-to-in-progress behavior. */
+    generatedExercises?: string;
   }>();
   const { data } = useWorkouts();
   const { data: profile } = useProfile();
@@ -479,16 +487,25 @@ export default function LogWorkoutScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [draft.startedAtMs, draft.accumulatedSecs]);
 
-  // Arriving from the Active Program card or a saved Library template —
-  // either way prefill exercise rows (name, target sets, set type) from a
-  // PrescribedExercise[] so the member only has to fill in what they
-  // actually did. Only runs for a genuinely fresh draft (seeded guards it).
+  // Arriving from the Active Program card, a saved Library template, or the
+  // workout generator — all three prefill exercise rows (name, target sets,
+  // set type) from a PrescribedExercise[] so the member only has to fill in
+  // what they actually did. Only runs for a genuinely fresh draft (seeded
+  // guards it).
   useEffect(() => {
     if (seeded || exerciseRows.length > 0) return;
 
     const dayExercises = programId && dayId ? program?.days.find((d) => d.id === dayId)?.exercises : undefined;
     const templateExercises = templateId ? templates?.find((t) => t.id === templateId)?.exercises : undefined;
-    const source = dayExercises ?? templateExercises;
+    let generatedExercisesSource: typeof dayExercises;
+    if (generatedExercisesParam) {
+      try {
+        generatedExercisesSource = JSON.parse(generatedExercisesParam);
+      } catch {
+        // Malformed/tampered param — fall through to the other sources.
+      }
+    }
+    const source = dayExercises ?? templateExercises ?? generatedExercisesSource;
     if (!source) return;
 
     const rows: ExerciseRow[] = source.map((ex) => {
@@ -512,7 +529,19 @@ export default function LogWorkoutScreen() {
     });
     update({ exerciseRows: rows, seeded: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [programId, dayId, program, templateId, templates, seeded, exerciseRows.length]);
+  }, [programId, dayId, program, templateId, templates, generatedExercisesParam, seeded, exerciseRows.length]);
+
+  // "Add to workout" from the exercise library — appends to whatever's
+  // already in progress (a ref, not the `seeded` flag above, since this can
+  // fire on a draft that's already seeded or mid-edit; it just needs to not
+  // re-add the same param value twice across re-renders).
+  const consumedAddExerciseName = useRef<string | null>(null);
+  useEffect(() => {
+    if (!addExerciseName || consumedAddExerciseName.current === addExerciseName) return;
+    consumedAddExerciseName.current = addExerciseName;
+    update({ exerciseRows: [...exerciseRows, { ...newExerciseRow(), name: addExerciseName }] });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [addExerciseName]);
 
   const weightInputRefs = useRef<Record<string, TextInput | null>>({});
 

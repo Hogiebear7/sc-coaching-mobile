@@ -307,13 +307,16 @@ export default function DashboardScreen() {
               </View>
               <Ionicons name="chevron-forward" size={18} color={Color.textFaint} />
             </Pressable>
-            <Pressable onPress={() => router.push("/exercise-library")} style={styles.rowCard}>
+            <Pressable
+              onPress={() => router.push({ pathname: "/workout-library", params: { tab: "exercises" } })}
+              style={styles.rowCard}
+            >
               <View style={styles.rowCardIcon}>
                 <Ionicons name="body-outline" size={18} color={Color.gold} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.rowCardTitle}>Exercise Library</Text>
-                <Text style={styles.rowCardSub}>Browse demonstrations</Text>
+                <Text style={styles.rowCardTitle}>Library</Text>
+                <Text style={styles.rowCardSub}>Exercises, demonstrations & your saved workouts</Text>
               </View>
               <Ionicons name="chevron-forward" size={18} color={Color.textFaint} />
             </Pressable>

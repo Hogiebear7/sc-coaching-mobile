@@ -259,6 +259,10 @@ export default function WorkoutsScreen() {
             <Ionicons name="timer-outline" size={18} color={Color.gold} />
             <Text style={styles.toolCardText}>Rest Timer</Text>
           </Pressable>
+          <Pressable onPress={() => router.push("/workout-generator")} style={styles.toolCard}>
+            <Ionicons name="sparkles-outline" size={18} color={Color.gold} />
+            <Text style={styles.toolCardText}>Generate</Text>
+          </Pressable>
         </View>
 
         {weeklyStats ? (

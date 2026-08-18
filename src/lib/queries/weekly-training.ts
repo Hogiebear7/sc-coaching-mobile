@@ -16,6 +16,11 @@ export interface WeeklyTrainingSession {
   timeOfDay: TrainingTimeOfDay | null;
   intensity: TrainingIntensity | null;
   notes: string | null;
+  /** true = repeats every week. false = a one-off for this week only — the
+      server drops it once the week is over, no action needed here. */
+  recurring: boolean;
+  /** Server-assigned; the client never sets this directly. */
+  weekOf: string | null;
 }
 
 export interface WeeklyTrainingScheduleData {

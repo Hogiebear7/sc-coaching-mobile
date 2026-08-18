@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
@@ -26,6 +26,17 @@ function computeElapsed(startedAtMs: number | null, elapsedAtPauseSecs: number):
   return elapsedAtPauseSecs + (Date.now() - startedAtMs) / 1000;
 }
 
+// A confirmation on Restart (and the header back button, see
+// FormatTimerScreen) — both are easy to hit by accident mid-workout and
+// both throw away real progress, so a confirm dialog is worth the one extra
+// tap the rest of these controls deliberately avoid.
+function confirmRestart(onConfirm: () => void) {
+  Alert.alert("Restart this workout?", "This resets your progress back to the beginning.", [
+    { text: "Cancel", style: "cancel" },
+    { text: "Restart", style: "destructive", onPress: onConfirm },
+  ]);
+}
+
 // One flat list of phases covers Circuit/EMOM/Tabata with a single countdown
 // engine below — a "manual" phase (durationSecs 0, reps-based circuit
 // stations) waits for a tap instead of auto-advancing. Next-phase preview is
@@ -42,13 +53,8 @@ function buildCircuitPhases(config: CircuitConfig): Phase[] {
   const phases: Phase[] = [];
   for (let r = 0; r < roundsCount; r++) {
     stations.forEach((s, i) => {
-      const dur = s.mode === "time" ? Math.max(1, parseInt(s.seconds, 10) || 30) : 0;
-      const repSuffix =
-        s.mode === "reps" && s.reps.trim()
-          ? ` — ${s.reps.trim()} reps`
-          : s.mode === "time" && s.repTarget.trim()
-          ? ` — ${s.repTarget.trim()} reps target`
-          : "";
+      const dur = Math.max(1, parseInt(s.seconds, 10) || 30);
+      const repSuffix = s.repTarget.trim() ? ` — ${s.repTarget.trim()} reps target` : "";
       phases.push({
         label: `${s.name}${repSuffix}`,
         kind: "work",
@@ -156,6 +162,7 @@ function usePhaseClock(phases: Phase[], timeCapSecs?: number) {
 
   function start() {
     const now = Date.now();
+    autoAdvancedForPhaseRef.current = -1;
     setSession({ started: true, phaseStartedAtMs: now, totalStartedAtMs: now, phaseElapsedAtPauseSecs: 0, totalElapsedAtPauseSecs: 0, phaseIndex: 0 });
   }
 
@@ -197,6 +204,7 @@ function usePhaseClock(phases: Phase[], timeCapSecs?: number) {
     elapsedInPhase,
     totalElapsed,
     start,
+    restart: start,
     togglePause,
     skipNext,
     finish,
@@ -319,26 +327,16 @@ function CircuitWorkoutCard({ config, onStart }: { config: CircuitConfig; onStar
         {restLabel ? ` · ${restLabel}` : ""}
       </Text>
       <View style={styles.cardList}>
-        {stations.map((s, i) => {
-          const repSuffix =
-            s.mode === "reps" && s.reps.trim()
-              ? `${s.reps.trim()} reps`
-              : s.mode === "time" && s.repTarget.trim()
-                ? `${s.repTarget.trim()} reps target`
-                : null;
-          return (
-            <View key={s.key} style={[styles.cardRow, i > 0 && styles.cardRowDivider]}>
-              <Text style={styles.cardRowIndex}>{i + 1}</Text>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.cardRowLabel}>{s.name}</Text>
-                {repSuffix ? <Text style={styles.cardRowMeta}>{repSuffix}</Text> : null}
-              </View>
-              {s.mode === "time" ? (
-                <Text style={styles.cardRowDuration}>{formatDuration(Math.max(1, parseInt(s.seconds, 10) || 30))}</Text>
-              ) : null}
+        {stations.map((s, i) => (
+          <View key={s.key} style={[styles.cardRow, i > 0 && styles.cardRowDivider]}>
+            <Text style={styles.cardRowIndex}>{i + 1}</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.cardRowLabel}>{s.name}</Text>
+              {s.repTarget.trim() ? <Text style={styles.cardRowMeta}>{s.repTarget.trim()} reps target</Text> : null}
             </View>
-          );
-        })}
+            <Text style={styles.cardRowDuration}>{formatDuration(Math.max(1, parseInt(s.seconds, 10) || 30))}</Text>
+          </View>
+        ))}
       </View>
       <Button
         title="Start circuit timer"
@@ -414,6 +412,9 @@ function PhaseLiveView({ phases, timeCapSecs }: { phases: Phase[]; timeCapSecs?:
           <Button title="Done — next station" onPress={clock.skipNext} style={{ flex: 1 }} />
         ) : (
           <>
+            <Pressable onPress={() => confirmRestart(clock.restart)} style={styles.secondaryControl}>
+              <Ionicons name="refresh" size={20} color={Color.textSecondary} />
+            </Pressable>
             <Pressable onPress={clock.togglePause} style={styles.primaryControl}>
               <Ionicons name={running ? "pause" : "play"} size={28} color={Color.goldForeground} />
             </Pressable>
@@ -527,6 +528,15 @@ function AmrapLiveView({ config }: { config: AmrapConfig }) {
     });
   }
 
+  function restart() {
+    finishedRef.current = false;
+    setSession({ totalStartedAtMs: Date.now(), totalElapsedAtPauseSecs: 0 });
+    update({
+      amrapConfig: { ...config, movements: config.movements.map((m) => ({ ...m, completedReps: 0 })) },
+      formatResultNote: "",
+    });
+  }
+
   return (
     <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
       <Text style={styles.phaseKind}>AMRAP</Text>
@@ -553,6 +563,9 @@ function AmrapLiveView({ config }: { config: AmrapConfig }) {
       </View>
 
       <View style={styles.controlsRow}>
+        <Pressable onPress={() => confirmRestart(restart)} style={styles.secondaryControl}>
+          <Ionicons name="refresh" size={20} color={Color.textSecondary} />
+        </Pressable>
         <Pressable onPress={togglePause} style={styles.primaryControl}>
           <Ionicons name={running ? "pause" : "play"} size={28} color={Color.goldForeground} />
         </Pressable>
@@ -769,6 +782,17 @@ function ChipperLiveView({ config }: { config: ChipperConfig }) {
     successFeedback();
   }
 
+  function restart() {
+    finishedRef.current = false;
+    setSession({ totalStartedAtMs: Date.now(), totalElapsedAtPauseSecs: 0 });
+    update({
+      chipperConfig: {
+        movements: config.movements.map((m) => ({ ...m, doneReps: 0, doneSeconds: 0, timerStartedAtMs: null, log: [] })),
+      },
+      formatResultNote: "",
+    });
+  }
+
   return (
     <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
       <Text style={styles.phaseKind}>CHIPPER</Text>
@@ -781,6 +805,9 @@ function ChipperLiveView({ config }: { config: ChipperConfig }) {
       </View>
 
       <View style={styles.controlsRow}>
+        <Pressable onPress={() => confirmRestart(restart)} style={styles.secondaryControl}>
+          <Ionicons name="refresh" size={20} color={Color.textSecondary} />
+        </Pressable>
         <Pressable onPress={togglePause} style={styles.primaryControl}>
           <Ionicons name={running ? "pause" : "play"} size={28} color={Color.goldForeground} />
         </Pressable>
@@ -797,6 +824,20 @@ export default function FormatTimerScreen() {
 
   function handleStart() {
     update({ formatSession: { ...draft.formatSession, started: true, phaseStartedAtMs: Date.now(), totalStartedAtMs: Date.now(), phaseIndex: 0, phaseElapsedAtPauseSecs: 0, totalElapsedAtPauseSecs: 0 } });
+  }
+
+  // A live session in progress is real progress to lose — confirm before
+  // the back button throws it away. Still on the review card (not started
+  // yet)? Nothing to lose, so leave immediately.
+  function handleBack() {
+    if (!draft.formatSession.started) {
+      router.back();
+      return;
+    }
+    Alert.alert("Leave this workout?", "Your progress won't be saved unless you finish it first.", [
+      { text: "Cancel", style: "cancel" },
+      { text: "Leave", style: "destructive", onPress: () => router.back() },
+    ]);
   }
 
   let title = "Format Timer";
@@ -860,7 +901,7 @@ export default function FormatTimerScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backButton}>
+        <Pressable onPress={handleBack} hitSlop={12} style={styles.backButton}>
           <Ionicons name="chevron-back" size={22} color={Color.textPrimary} />
         </Pressable>
         <View style={styles.headerTitleWrap}>

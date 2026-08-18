@@ -26,7 +26,17 @@ function nextId(): string {
 }
 
 function newSession(dayOfWeek: TrainingDayOfWeek): WeeklyTrainingSession {
-  return { id: nextId(), dayOfWeek, label: "", activityType: "gym", timeOfDay: null, intensity: null, notes: null };
+  return {
+    id: nextId(),
+    dayOfWeek,
+    label: "",
+    activityType: "gym",
+    timeOfDay: null,
+    intensity: null,
+    notes: null,
+    recurring: true,
+    weekOf: null,
+  };
 }
 
 // Monday-first display order — reads more naturally as "the week" than
@@ -131,7 +141,9 @@ export default function WeeklyTrainingScreen() {
           <View style={styles.introBlock}>
             <Text style={styles.introText}>
               Set your typical week — gym sessions, sport practice, anything else — so your nutrition coach and your
-              trainer can see your real training load, not just what's logged here.
+              trainer can see your real training load, not just what&apos;s logged here. Mark a session &quot;This
+              week only&quot; for a one-off that shouldn&apos;t stick around — it clears itself once the week&apos;s
+              over.
             </Text>
           </View>
 
@@ -196,6 +208,15 @@ export default function WeeklyTrainingScreen() {
                             />
                           ))}
                         </View>
+                        <View style={styles.recurringRow}>
+                          <View style={styles.chipRow}>
+                            <Chip label="Every week" active={s.recurring} onPress={() => updateSession(s.id, { recurring: true })} />
+                            <Chip label="This week only" active={!s.recurring} onPress={() => updateSession(s.id, { recurring: false })} />
+                          </View>
+                          {!s.recurring ? (
+                            <Text style={styles.oneOffHint}>Clears automatically after this week.</Text>
+                          ) : null}
+                        </View>
                       </Card>
                     ))
                   )}
@@ -255,6 +276,8 @@ const styles = StyleSheet.create({
   chipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
   chipText: { fontSize: 11, fontWeight: "500", color: Color.textMuted },
   chipTextActive: { color: Color.gold },
+  recurringRow: { borderTopWidth: 1, borderTopColor: Color.borderSubtle, paddingTop: Spacing.sm, marginTop: 2 },
+  oneOffHint: { fontSize: 11, color: Color.textFaint, marginTop: 6, fontStyle: "italic" },
   errorText: { fontSize: 12, color: Color.warning, textAlign: "center", marginTop: Spacing.sm },
   footer: { padding: Spacing.lg, borderTopWidth: 1, borderTopColor: Color.borderSubtle },
 });

@@ -48,9 +48,11 @@ export type RunRow = {
 
 export type WorkoutFormat = "standard" | "circuit" | "amrap" | "emom" | "tabata" | "chipper";
 
-// Optional per-station rep target shown alongside the time — "3 rounds of
-// 40s work" can still care about hitting e.g. 15 reps in that window.
-export type CircuitStation = { key: string; name: string; mode: "reps" | "time"; reps: string; seconds: string; repTarget: string };
+// Every circuit station always runs on a clock — reps-only stations with no
+// time limit at all aren't a circuit, they're just an exercise list. repTarget
+// is optional and shown alongside the time, for when a station still cares
+// about hitting e.g. 15 reps inside that window.
+export type CircuitStation = { key: string; name: string; seconds: string; repTarget: string };
 
 export interface CircuitConfig {
   stations: CircuitStation[];

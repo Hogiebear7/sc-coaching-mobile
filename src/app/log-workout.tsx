@@ -160,7 +160,7 @@ function NumberField({ label, value, onChangeText, placeholder }: { label: strin
 }
 
 function newCircuitStation(defaultSeconds?: string): CircuitStation {
-  return { key: nextKey(), name: "", mode: "reps", reps: "", seconds: defaultSeconds ?? "", repTarget: "" };
+  return { key: nextKey(), name: "", seconds: defaultSeconds ?? "30", repTarget: "" };
 }
 
 function newEmomMovement(): EmomMovement {
@@ -315,8 +315,7 @@ function StationsEditor({ stations, onChange }: { stations: CircuitStation[]; on
     // A new station defaults its time to whatever the first station is
     // already set to — most circuits run every station on the same clock,
     // so this saves re-typing it each time; still freely editable after.
-    const defaultSeconds = stations[0]?.mode === "time" ? stations[0].seconds : undefined;
-    onChange([...stations, newCircuitStation(defaultSeconds)]);
+    onChange([...stations, newCircuitStation(stations[0]?.seconds)]);
   }
   return (
     <View>
@@ -330,30 +329,22 @@ function StationsEditor({ stations, onChange }: { stations: CircuitStation[]; on
             placeholderTextColor={Color.textFaint}
             style={styles.stationNameInput}
           />
-          <Pressable
-            onPress={() => updateStation(s.key, { mode: s.mode === "reps" ? "time" : "reps" })}
-            style={styles.stationModeChip}
-          >
-            <Text style={styles.stationModeText}>{s.mode === "reps" ? "Reps" : "Time"}</Text>
-          </Pressable>
           <TextInput
-            value={s.mode === "reps" ? s.reps : s.seconds}
-            onChangeText={(v) => updateStation(s.key, s.mode === "reps" ? { reps: v } : { seconds: v })}
+            value={s.seconds}
+            onChangeText={(v) => updateStation(s.key, { seconds: v })}
             keyboardType="number-pad"
-            placeholder={s.mode === "reps" ? "reps" : "secs"}
+            placeholder="secs"
             placeholderTextColor={Color.textFaint}
             style={styles.stationValueInput}
           />
-          {s.mode === "time" ? (
-            <TextInput
-              value={s.repTarget}
-              onChangeText={(v) => updateStation(s.key, { repTarget: v })}
-              keyboardType="number-pad"
-              placeholder="reps (opt.)"
-              placeholderTextColor={Color.textFaint}
-              style={styles.stationValueInput}
-            />
-          ) : null}
+          <TextInput
+            value={s.repTarget}
+            onChangeText={(v) => updateStation(s.key, { repTarget: v })}
+            keyboardType="number-pad"
+            placeholder="reps (opt.)"
+            placeholderTextColor={Color.textFaint}
+            style={styles.stationValueInput}
+          />
           <Pressable onPress={() => onChange(stations.filter((row) => row.key !== s.key))} hitSlop={6}>
             <Ionicons name="close" size={16} color={Color.textFaint} />
           </Pressable>

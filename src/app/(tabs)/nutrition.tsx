@@ -78,17 +78,26 @@ function MacroBar({ label, consumed, target }: { label: string; consumed: number
 
 const WATER_QUICK_ADDS = [250, 500, 750];
 
-// Target is 1ml water per estimated kcal expended that day — simple, easy
-// rule of thumb rather than a precise hydration model. Falls back to a
-// generic "log more to unlock a target" message when there isn't enough
-// data yet to estimate expenditure (cold start, no weight on file).
+// Target is 1ml water per kcal in the daily calorie target above (same
+// number, so it can't disagree) — 2805 kcal target means 2.8L. Falls back to
+// a generic "no target yet" message when the calorie target itself isn't
+// available (cold start, no weight on file, or the coach has it disabled).
 function HydrationCard({ date }: { date: string }) {
   const { data: hydration } = useHydration(date);
   const logWater = useLogWater();
+  const [manualEntry, setManualEntry] = useState("");
 
   const target = hydration?.targetMl ?? null;
   const logged = hydration?.loggedMl ?? 0;
   const pct = target && target > 0 ? Math.min(100, Math.round((logged / target) * 100)) : 0;
+
+  function handleSetManual() {
+    const ml = Math.round(parseFloat(manualEntry) * 1000);
+    if (!Number.isFinite(ml) || ml < 0) return;
+    tapFeedback();
+    logWater.mutate({ date, setMl: ml });
+    setManualEntry("");
+  }
 
   return (
     <Card style={styles.hydrationCard}>
@@ -104,7 +113,7 @@ function HydrationCard({ date }: { date: string }) {
         </View>
       ) : (
         <Text style={styles.hydrationEmptyText}>
-          Log a few more workouts and a weight check-in to unlock a target — 1ml of water per estimated calorie burned.
+          No calorie target yet, so there&apos;s nothing to base a hydration target on — set one up in the card above.
         </Text>
       )}
       <View style={styles.hydrationQuickAddRow}>
@@ -120,6 +129,21 @@ function HydrationCard({ date }: { date: string }) {
             <Text style={styles.hydrationChipText}>+{ml}ml</Text>
           </Pressable>
         ))}
+      </View>
+      <View style={styles.hydrationManualRow}>
+        <TextInput
+          value={manualEntry}
+          onChangeText={setManualEntry}
+          keyboardType="decimal-pad"
+          placeholder="Or type total litres, e.g. 1.5"
+          placeholderTextColor={Color.textFaint}
+          style={styles.hydrationManualInput}
+          onSubmitEditing={handleSetManual}
+          returnKeyType="done"
+        />
+        <Pressable onPress={handleSetManual} style={styles.hydrationManualButton} disabled={!manualEntry.trim()}>
+          <Text style={styles.hydrationManualButtonText}>Set</Text>
+        </Pressable>
       </View>
     </Card>
   );
@@ -150,7 +174,15 @@ function EmphasisRow({ icon, tone, title, text }: { icon: keyof typeof Ionicons.
   );
 }
 
-function CoachChat({ configured, initialMessages }: { configured: boolean; initialMessages: NutritionAiMessage[] }) {
+function CoachChat({
+  configured,
+  initialMessages,
+  onFocusInput,
+}: {
+  configured: boolean;
+  initialMessages: NutritionAiMessage[];
+  onFocusInput: () => void;
+}) {
   const [messages, setMessages] = useState<NutritionAiMessage[]>(initialMessages);
   const [input, setInput] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -203,7 +235,16 @@ function CoachChat({ configured, initialMessages }: { configured: boolean; initi
       </View>
       {error ? <Text style={styles.error}>{error}</Text> : null}
       <View style={styles.chatInputRow}>
-        <TextInput value={input} onChangeText={setInput} placeholder="Ask the coach…" placeholderTextColor={Color.textFaint} style={styles.chatInput} multiline onSubmitEditing={handleSend} />
+        <TextInput
+          value={input}
+          onChangeText={setInput}
+          placeholder="Ask the coach…"
+          placeholderTextColor={Color.textFaint}
+          style={styles.chatInput}
+          multiline
+          onSubmitEditing={handleSend}
+          onFocus={onFocusInput}
+        />
         <Pressable onPress={handleSend} disabled={send.isPending || !input.trim()} style={styles.sendButton}>
           <Text style={styles.sendButtonText}>Send</Text>
         </Pressable>
@@ -216,6 +257,12 @@ export default function NutritionScreen() {
   const router = useRouter();
   const today = todayDateString();
   const [selectedDate, setSelectedDate] = useState(today);
+  // The coach chat's input sits near the bottom of a long scroll view —
+  // KeyboardAvoidingView alone doesn't scroll a *specific* field into view,
+  // it only resizes/pads the container, so the keyboard can still end up
+  // covering an input that wasn't already on screen when it opened. Scroll
+  // to the end on focus since the chat input is always the last thing here.
+  const scrollRef = useRef<ScrollView>(null);
 
   const { data, isLoading, isError, refetch, isRefetching } = useNutrition();
   const { data: target } = useMyNutritionTarget();
@@ -296,8 +343,9 @@ export default function NutritionScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
         <ScrollView
+          ref={scrollRef}
           contentContainerStyle={styles.scroll}
           keyboardShouldPersistTaps="handled"
           refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => refetch()} tintColor={Color.gold} />}
@@ -523,7 +571,11 @@ export default function NutritionScreen() {
           </View>
 
           <View style={styles.section}>
-            <CoachChat configured={data.aiNutritionCoachConfigured} initialMessages={data.initialAiNutritionMessages} />
+            <CoachChat
+              configured={data.aiNutritionCoachConfigured}
+              initialMessages={data.initialAiNutritionMessages}
+              onFocusInput={() => setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 150)}
+            />
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -623,6 +675,27 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   hydrationChipText: { fontSize: 12, fontWeight: "600", color: Color.textSecondary },
+  hydrationManualRow: { flexDirection: "row", gap: Spacing.xs, marginTop: Spacing.sm },
+  hydrationManualInput: {
+    flex: 1,
+    height: 38,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: Color.borderSubtle,
+    backgroundColor: Color.surface1,
+    paddingHorizontal: Spacing.sm,
+    fontSize: 12,
+    color: Color.textPrimary,
+  },
+  hydrationManualButton: {
+    justifyContent: "center",
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: Color.goldBorder,
+    backgroundColor: Color.goldWeak,
+    paddingHorizontal: Spacing.md,
+  },
+  hydrationManualButtonText: { fontSize: 12, fontWeight: "700", color: Color.gold },
   moreRow: { flexDirection: "row", alignItems: "center", gap: Spacing.sm, padding: Spacing.md },
   moreRowDivider: { borderTopWidth: 1, borderTopColor: Color.borderSubtle },
   drinkCardIcon: {

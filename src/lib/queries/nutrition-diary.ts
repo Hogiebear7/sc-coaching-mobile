@@ -49,7 +49,6 @@ export interface ResolvedNutritionTarget {
   source: "adaptive" | "estimated" | "manual" | null;
   notes: string | null;
   bodyWeightKg: number | null;
-  expenditureKcal: number | null;
 }
 
 export interface ResolvedNutritionWeek {
@@ -153,9 +152,10 @@ export function useDeleteFoodEntry() {
   });
 }
 
-// Target is 1ml water per estimated kcal expended that day — see
-// lib/nutrition-target.ts's expenditureKcal on the main repo. null target
-// means there isn't enough data yet (no weight on file, cold start, etc).
+// Target is 1ml water per kcal in the member's daily calorie target — the
+// same number shown at the top of this screen. null target means there
+// isn't enough data yet (no weight on file, cold start, etc), or the
+// coach has disabled daily targets.
 export interface HydrationData {
   date: string;
   targetMl: number | null;
@@ -169,13 +169,15 @@ export function useHydration(date: string) {
   });
 }
 
+// Pass deltaMl to add (quick-add chips) or setMl to overwrite the day's
+// total outright (the manual-entry fix for an accidental double-tap).
 export function useLogWater() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ date, deltaMl }: { date: string; deltaMl: number }) =>
+    mutationFn: (input: { date: string } & ({ deltaMl: number; setMl?: never } | { setMl: number; deltaMl?: never })) =>
       apiFetch<{ success: true; data: { date: string; loggedMl: number } }>("/api/mobile/hydration", {
         method: "POST",
-        body: { date, deltaMl },
+        body: input,
       }),
     onSuccess: (_res, vars) => qc.invalidateQueries({ queryKey: ["hydration", vars.date] }),
   });

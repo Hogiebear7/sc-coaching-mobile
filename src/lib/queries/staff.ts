@@ -137,6 +137,114 @@ export function useMarkAttendance() {
   });
 }
 
+// Reuses the existing web removal route (classes.manage) — always fully
+// restores the member's credit, since this is a staff decision, not the
+// member's own late cancellation.
+export function useRemoveBooking() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (bookingId: string) =>
+      apiFetch<{ success: true; message: string }>("/api/staff/bookings/remove", {
+        method: "POST",
+        body: { bookingId },
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["staff-classes"] }),
+  });
+}
+
+// Mirrors ClassWorkoutTemplateRecord / ClassWorkoutTemplateExercise in the
+// main repo's lib/db.ts.
+export interface StaffTemplateExercise {
+  exerciseId: string | null;
+  name: string;
+  weight: string;
+  reps: number | null;
+  sets: number | null;
+  // "ST1", "ST2", etc — exercises sharing a label render as one station.
+  supersetGroup: string | null;
+}
+
+export interface StaffWorkoutTemplate {
+  id: string;
+  name: string;
+  categories: string[];
+  exercises: StaffTemplateExercise[];
+  notes: string | null;
+  createdByStaffId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface StaffWorkoutTemplatesData {
+  templates: StaffWorkoutTemplate[];
+  libraryExercises: ClassWorkoutLibraryExercise[];
+}
+
+interface StaffWorkoutTemplatesResponse {
+  success: true;
+  data: StaffWorkoutTemplatesData;
+}
+
+export function useStaffWorkoutTemplates() {
+  return useQuery({
+    queryKey: ["staff-workout-templates"],
+    queryFn: () =>
+      apiFetch<StaffWorkoutTemplatesResponse>("/api/mobile/staff/workout-templates").then((r) => r.data),
+  });
+}
+
+export interface SaveStaffWorkoutTemplateInput {
+  id?: string;
+  name: string;
+  categories: string[];
+  notes: string;
+  exercises: StaffTemplateExercise[];
+}
+
+// Reuses the existing web create/update route (classes.manage, already
+// Bearer-compatible) — id present = update, absent = create.
+export function useSaveStaffWorkoutTemplate() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: SaveStaffWorkoutTemplateInput) =>
+      apiFetch<{ success: true; message: string; data: StaffWorkoutTemplate }>(
+        "/api/staff/workout-templates",
+        { method: "POST", body: input }
+      ),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["staff-workout-templates"] }),
+  });
+}
+
+export function useDeleteStaffWorkoutTemplate() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      apiFetch<{ success: true; message: string }>("/api/staff/workout-templates/delete", {
+        method: "POST",
+        body: { id },
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["staff-workout-templates"] }),
+  });
+}
+
+export interface StaffClassCategoryOption {
+  slug: string;
+  name: string;
+}
+
+interface StaffClassCategoriesResponse {
+  success: true;
+  data: StaffClassCategoryOption[];
+}
+
+export function useStaffClassCategories() {
+  return useQuery({
+    queryKey: ["staff-class-categories"],
+    queryFn: () =>
+      apiFetch<StaffClassCategoriesResponse>("/api/mobile/staff/class-categories").then((r) => r.data),
+  });
+}
+
 // Mirrors StaffMemberSummary / StaffMemberDetail in
 // lib/staff-members-data.ts.
 export interface StaffMemberSummary {

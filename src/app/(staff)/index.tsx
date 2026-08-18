@@ -20,7 +20,7 @@ import { Color, Radius, Spacing } from "@/constants/theme";
 import { useAuth } from "@/lib/auth-context";
 import { successFeedback, tapFeedback } from "@/lib/haptics";
 import { useProvisionMemberProfile } from "@/lib/queries/profile";
-import { useMarkAttendance, useStaffClasses, type StaffClassSummary } from "@/lib/queries/staff";
+import { useMarkAttendance, useRemoveBooking, useStaffClasses, type StaffClassSummary } from "@/lib/queries/staff";
 
 function formatClassDate(dateISO: string): string {
   const d = new Date(`${dateISO}T00:00:00`);
@@ -43,27 +43,57 @@ function formatTime(time: string): string {
 
 function RosterRow({ classId, entry }: { classId: string; entry: StaffClassSummary["roster"][number] }) {
   const mark = useMarkAttendance();
+  const removeBooking = useRemoveBooking();
   const attended = !!entry.attendedAt;
 
+  function confirmRemove() {
+    Alert.alert(
+      "Remove from class?",
+      `${entry.fullName ?? entry.email} will be removed from this booking and their credit will be returned.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Remove",
+          style: "destructive",
+          onPress: () => {
+            tapFeedback();
+            removeBooking.mutate(entry.bookingId, {
+              onError: () => Alert.alert("Couldn't remove", "Please try again."),
+            });
+          },
+        },
+      ]
+    );
+  }
+
   return (
-    <Pressable
-      onPress={() => {
-        successFeedback();
-        mark.mutate({ bookingId: entry.bookingId, attended: !attended });
-      }}
-      disabled={mark.isPending}
-      style={styles.rosterRow}
-    >
-      <Ionicons
-        name={attended ? "checkmark-circle" : "ellipse-outline"}
-        size={20}
-        color={attended ? Color.success : Color.textFaint}
-      />
-      <View style={{ flex: 1 }}>
-        <Text style={styles.rosterName}>{entry.fullName ?? entry.email}</Text>
-        {entry.fullName ? <Text style={styles.rosterEmail}>{entry.email}</Text> : null}
-      </View>
-    </Pressable>
+    <View style={styles.rosterRow}>
+      <Pressable
+        onPress={() => {
+          successFeedback();
+          mark.mutate({ bookingId: entry.bookingId, attended: !attended });
+        }}
+        disabled={mark.isPending}
+        style={styles.rosterRowMain}
+      >
+        <Ionicons
+          name={attended ? "checkmark-circle" : "ellipse-outline"}
+          size={20}
+          color={attended ? Color.success : Color.textFaint}
+        />
+        <View style={{ flex: 1 }}>
+          <Text style={styles.rosterName}>{entry.fullName ?? entry.email}</Text>
+          {entry.fullName ? <Text style={styles.rosterEmail}>{entry.email}</Text> : null}
+        </View>
+      </Pressable>
+      <Pressable onPress={confirmRemove} disabled={removeBooking.isPending} hitSlop={10} style={styles.rosterRemoveButton}>
+        {removeBooking.isPending ? (
+          <ActivityIndicator size="small" color={Color.danger} />
+        ) : (
+          <Ionicons name="close-circle-outline" size={18} color={Color.danger} />
+        )}
+      </Pressable>
+    </View>
   );
 }
 
@@ -483,7 +513,9 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.sm,
   },
   rosterEmpty: { fontSize: 12, color: Color.textMuted, paddingVertical: Spacing.xs },
-  rosterRow: { flexDirection: "row", alignItems: "center", gap: Spacing.sm, paddingVertical: Spacing.xs },
+  rosterRow: { flexDirection: "row", alignItems: "center", paddingVertical: Spacing.xs },
+  rosterRowMain: { flex: 1, flexDirection: "row", alignItems: "center", gap: Spacing.sm },
+  rosterRemoveButton: { paddingLeft: Spacing.sm, paddingVertical: 4 },
   rosterName: { fontSize: 13, color: Color.textPrimary },
   rosterEmail: { fontSize: 11, color: Color.textMuted },
   workoutButton: {

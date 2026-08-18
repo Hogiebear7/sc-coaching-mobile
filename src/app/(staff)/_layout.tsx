@@ -12,12 +12,14 @@ import { useStaffMessageThreads } from "@/lib/queries/staff";
 // roles here instead of (tabs).
 const ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
   index: "calendar-outline",
+  workouts: "albums-outline",
   members: "people-outline",
   "staff-messages": "chatbubble-ellipses-outline",
 };
 
 const LABELS: Record<string, string> = {
   index: "Classes",
+  workouts: "Workouts",
   members: "Members",
   "staff-messages": "Messages",
 };
@@ -45,6 +47,7 @@ export default function StaffTabsLayout() {
       })}
     >
       <Tabs.Screen name="index" />
+      <Tabs.Screen name="workouts" />
       <Tabs.Screen name="members" />
       <Tabs.Screen name="staff-messages" options={{ tabBarBadge: unreadCount > 0 ? unreadCount : undefined }} />
     </Tabs>

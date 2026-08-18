@@ -11,7 +11,8 @@ export type NotificationType =
   | "waitlist_offer"
   | "waitlist_timeout"
   | "readiness_alert"
-  | "cancellation_credit_restored";
+  | "cancellation_credit_restored"
+  | "no_show";
 
 export interface NotificationRecord {
   id: string;

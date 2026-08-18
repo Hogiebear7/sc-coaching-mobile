@@ -32,6 +32,7 @@ const TYPE_LABEL: Record<NotificationType, string> = {
   waitlist_timeout: "Offer expiring",
   readiness_alert: "Readiness alert",
   cancellation_credit_restored: "Credit restored",
+  no_show: "Missed class",
 };
 
 const TYPE_ICON: Record<NotificationType, keyof typeof Ionicons.glyphMap> = {
@@ -43,6 +44,7 @@ const TYPE_ICON: Record<NotificationType, keyof typeof Ionicons.glyphMap> = {
   waitlist_timeout: "time-outline",
   readiness_alert: "heart-outline",
   cancellation_credit_restored: "return-up-back-outline",
+  no_show: "alert-circle-outline",
 };
 
 // Mirrors the web app's urgent/routine split (dashboard/notifications/
@@ -57,6 +59,7 @@ const TYPE_IS_URGENT: Record<NotificationType, boolean> = {
   waitlist_timeout: true,
   readiness_alert: true,
   cancellation_credit_restored: false,
+  no_show: false,
 };
 
 function formatRelativeTime(iso: string): string {

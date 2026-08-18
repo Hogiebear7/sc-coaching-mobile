@@ -459,12 +459,15 @@ function AmrapWorkoutCard({ config, onStart }: { config: AmrapConfig; onStart: (
   );
 }
 
-function AmrapLiveView({ config }: { config: AmrapConfig }) {
+// The overall session clock for the two "one running total, no phases"
+// formats (AMRAP counts down from a cap, Chipper counts up with no cap) —
+// pulled into one shared hook so there is exactly one implementation of
+// "start/pause/resume/restart a totalStartedAtMs-based clock" in this file,
+// not two that could quietly drift apart.
+function useSimpleTotalClock() {
   const { draft, update } = useWorkoutDraft();
   const session = draft.formatSession;
   const [, forceTick] = useState(0);
-  const capSecs = Math.max(30, (parseInt(config.timeCapMins, 10) || 12) * 60);
-  const finishedRef = useRef(false);
 
   function setSession(patch: Partial<FormatSessionState>) {
     update({ formatSession: { ...draft.formatSession, ...patch } });
@@ -478,6 +481,28 @@ function AmrapLiveView({ config }: { config: AmrapConfig }) {
 
   const running = session.totalStartedAtMs !== null;
   const totalElapsed = computeElapsed(session.totalStartedAtMs, session.totalElapsedAtPauseSecs);
+
+  function togglePause() {
+    tapFeedback();
+    if (running) {
+      setSession({ totalStartedAtMs: null, totalElapsedAtPauseSecs: totalElapsed });
+    } else {
+      setSession({ totalStartedAtMs: Date.now() });
+    }
+  }
+
+  function restartClock() {
+    setSession({ totalStartedAtMs: Date.now(), totalElapsedAtPauseSecs: 0 });
+  }
+
+  return { draft, update, session, running, totalElapsed, setSession, togglePause, restartClock };
+}
+
+function AmrapLiveView({ config }: { config: AmrapConfig }) {
+  const { update, running, totalElapsed, setSession, togglePause, restartClock } = useSimpleTotalClock();
+  const capSecs = Math.max(30, (parseInt(config.timeCapMins, 10) || 12) * 60);
+  const finishedRef = useRef(false);
+
   const remaining = Math.max(0, capSecs - totalElapsed);
 
   function finish(summary: string) {
@@ -509,15 +534,6 @@ function AmrapLiveView({ config }: { config: AmrapConfig }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [Math.ceil(remaining), running]);
 
-  function togglePause() {
-    tapFeedback();
-    if (running) {
-      setSession({ totalStartedAtMs: null, totalElapsedAtPauseSecs: totalElapsed });
-    } else {
-      setSession({ totalStartedAtMs: Date.now() });
-    }
-  }
-
   function adjustReps(key: string, delta: number) {
     tapFeedback();
     update({
@@ -530,7 +546,7 @@ function AmrapLiveView({ config }: { config: AmrapConfig }) {
 
   function restart() {
     finishedRef.current = false;
-    setSession({ totalStartedAtMs: Date.now(), totalElapsedAtPauseSecs: 0 });
+    restartClock();
     update({
       amrapConfig: { ...config, movements: config.movements.map((m) => ({ ...m, completedReps: 0 })) },
       formatResultNote: "",
@@ -732,23 +748,8 @@ function ChipperMovementLive({ movement, onChange }: { movement: ChipperMovement
 }
 
 function ChipperLiveView({ config }: { config: ChipperConfig }) {
-  const { draft, update } = useWorkoutDraft();
-  const session = draft.formatSession;
-  const [, forceTick] = useState(0);
+  const { update, running, totalElapsed, setSession, togglePause, restartClock } = useSimpleTotalClock();
   const finishedRef = useRef(false);
-
-  function setSession(patch: Partial<FormatSessionState>) {
-    update({ formatSession: { ...draft.formatSession, ...patch } });
-  }
-
-  useEffect(() => {
-    if (session.totalStartedAtMs === null) return;
-    const id = setInterval(() => forceTick((t) => t + 1), 250);
-    return () => clearInterval(id);
-  }, [session.totalStartedAtMs]);
-
-  const running = session.totalStartedAtMs !== null;
-  const totalElapsed = computeElapsed(session.totalStartedAtMs, session.totalElapsedAtPauseSecs);
 
   function updateMovement(key: string, patch: Partial<ChipperMovement>) {
     update({
@@ -756,15 +757,6 @@ function ChipperLiveView({ config }: { config: ChipperConfig }) {
         movements: config.movements.map((m) => (m.key === key ? { ...m, ...patch } : m)),
       },
     });
-  }
-
-  function togglePause() {
-    tapFeedback();
-    if (running) {
-      setSession({ totalStartedAtMs: null, totalElapsedAtPauseSecs: totalElapsed });
-    } else {
-      setSession({ totalStartedAtMs: Date.now() });
-    }
   }
 
   function finish() {
@@ -784,7 +776,7 @@ function ChipperLiveView({ config }: { config: ChipperConfig }) {
 
   function restart() {
     finishedRef.current = false;
-    setSession({ totalStartedAtMs: Date.now(), totalElapsedAtPauseSecs: 0 });
+    restartClock();
     update({
       chipperConfig: {
         movements: config.movements.map((m) => ({ ...m, doneReps: 0, doneSeconds: 0, timerStartedAtMs: null, log: [] })),

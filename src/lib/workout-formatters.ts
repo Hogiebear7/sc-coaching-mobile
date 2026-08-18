@@ -2,6 +2,7 @@ import type { WorkoutExerciseEntry, WorkoutRunEntry, WorkoutSessionSummary, Work
 
 export const SET_TYPE_LABEL: Record<WorkoutSetType, string> = {
   standard: "",
+  warmup: "warm-up",
   dropset: "dropset",
   myoset: "myoset",
   failure: "failure",

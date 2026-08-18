@@ -1,7 +1,16 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { useEffect, useRef, useState } from "react";
+import {
+  ActivityIndicator,
+  findNodeHandle,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
@@ -90,6 +99,28 @@ export default function WeeklyTrainingScreen() {
   const [hydrated, setHydrated] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Each session card has several chip rows below its label input — on a
+  // shorter screen the keyboard can cover all of them once it opens, and
+  // KeyboardAvoidingView alone only resizes the container, it doesn't scroll
+  // a specific field into view. Scroll the tapped card to the top instead.
+  const scrollRef = useRef<ScrollView>(null);
+  const cardRefs = useRef<Record<string, View | null>>({});
+
+  function scrollCardIntoView(id: string) {
+    const card = cardRefs.current[id];
+    const scrollNode = scrollRef.current;
+    if (!card || !scrollNode) return;
+    const scrollHandle = findNodeHandle(scrollNode);
+    if (!scrollHandle) return;
+    setTimeout(() => {
+      card.measureLayout(
+        scrollHandle,
+        (_x, y) => scrollNode.scrollTo({ y: Math.max(0, y - 12), animated: true }),
+        () => {}
+      );
+    }, 150);
+  }
+
   useEffect(() => {
     if (hydrated || isLoading) return;
     setSessions(data?.sessions ?? []);
@@ -147,7 +178,7 @@ export default function WeeklyTrainingScreen() {
             </Text>
           </View>
 
-          <ScrollView contentContainerStyle={styles.scroll}>
+          <ScrollView ref={scrollRef} contentContainerStyle={styles.scroll}>
             {DAY_ORDER.map((day) => {
               const daySessions = sessions.filter((s) => s.dayOfWeek === day);
               return (
@@ -164,11 +195,13 @@ export default function WeeklyTrainingScreen() {
                     <Text style={styles.dayEmptyText}>Nothing set</Text>
                   ) : (
                     daySessions.map((s) => (
-                      <Card key={s.id} style={styles.sessionCard}>
+                      <View key={s.id} ref={(el) => { cardRefs.current[s.id] = el; }}>
+                      <Card style={styles.sessionCard}>
                         <View style={styles.sessionTopRow}>
                           <TextInput
                             value={s.label}
                             onChangeText={(text) => updateSession(s.id, { label: text })}
+                            onFocus={() => scrollCardIntoView(s.id)}
                             placeholder="e.g. Football training"
                             placeholderTextColor={Color.textFaint}
                             style={styles.labelInput}
@@ -218,6 +251,7 @@ export default function WeeklyTrainingScreen() {
                           ) : null}
                         </View>
                       </Card>
+                      </View>
                     ))
                   )}
                 </View>

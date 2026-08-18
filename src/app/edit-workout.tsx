@@ -14,6 +14,7 @@ import { Color, Radius, Spacing } from "@/constants/theme";
 import { tapFeedback } from "@/lib/haptics";
 import { ApiError } from "@/lib/api-client";
 import {
+  SET_TYPE_OPTIONS,
   useEditWorkout,
   useWorkouts,
   type CreateWorkoutExerciseInput,
@@ -21,6 +22,13 @@ import {
   type WorkoutSetType,
 } from "@/lib/queries/workouts";
 import { formatAsKg, formatDuration, parseDuration, todayDateString } from "@/lib/workout-formatters";
+
+type EditSetRow = { key: string; weight: string; reps: string; setType: WorkoutSetType };
+
+function nextEditSetType(current: WorkoutSetType): WorkoutSetType {
+  const idx = SET_TYPE_OPTIONS.findIndex((opt) => opt.value === current);
+  return SET_TYPE_OPTIONS[(idx + 1) % SET_TYPE_OPTIONS.length].value;
+}
 
 let keySeq = 0;
 function nextKey(): string {
@@ -32,17 +40,13 @@ type EditExerciseRow = {
   key: string;
   exerciseId: string | null;
   name: string;
-  weight: string;
-  reps: string;
-  sets: string;
+  // Editable per-set — each set's own weight/reps/type, same as when the
+  // workout was first logged. Fixes a real gap: a bad value in one specific
+  // set (rather than the shared summary) previously had no way to be
+  // corrected here at all.
+  setRows: EditSetRow[];
   rir: string;
   notes: string;
-  // Carried through unchanged from the original entry — this screen edits
-  // the shared weight/reps/sets/notes fields plus superset grouping and
-  // per-side, not per-set breakdowns or a default set type, so those pass
-  // straight through on save.
-  setDetails: CreateWorkoutExerciseInput["setDetails"];
-  setType: WorkoutSetType | null;
   supersetGroup: string | null;
   perSide: boolean;
 };
@@ -56,18 +60,46 @@ type EditRunRow = {
   notes: string;
 };
 
+function newEditSetRow(setType: WorkoutSetType = "standard"): EditSetRow {
+  return { key: nextKey(), weight: "", reps: "", setType };
+}
+
+// Older entries (or ones logged as a single summary rather than per-set)
+// don't have setDetails — expand them into that many identical rows so
+// there's always a real per-set list to edit, seeded from whatever the
+// summary already said.
+function deriveSetRows(ex: {
+  weight: string | null;
+  reps: number | null;
+  sets: number | null;
+  setType?: WorkoutSetType | null;
+  setDetails?: CreateWorkoutExerciseInput["setDetails"] | null;
+}): EditSetRow[] {
+  if (ex.setDetails && ex.setDetails.length > 0) {
+    return ex.setDetails.map((sd) => ({
+      key: nextKey(),
+      weight: sd.weight ?? "",
+      reps: sd.reps != null ? String(sd.reps) : "",
+      setType: sd.setType ?? "standard",
+    }));
+  }
+  const count = ex.sets && ex.sets > 0 ? ex.sets : 1;
+  return Array.from({ length: count }, () => ({
+    key: nextKey(),
+    weight: ex.weight ?? "",
+    reps: ex.reps != null ? String(ex.reps) : "",
+    setType: ex.setType ?? "standard",
+  }));
+}
+
 function newExerciseRow(): EditExerciseRow {
   return {
     key: nextKey(),
     exerciseId: null,
     name: "",
-    weight: "",
-    reps: "",
-    sets: "",
+    setRows: [newEditSetRow()],
     rir: "",
     notes: "",
-    setDetails: [],
-    setType: null,
     supersetGroup: null,
     perSide: false,
   };
@@ -110,13 +142,9 @@ export default function EditWorkoutScreen() {
         key: nextKey(),
         exerciseId: ex.exerciseId,
         name: ex.name,
-        weight: ex.weight ?? "",
-        reps: ex.reps != null ? String(ex.reps) : "",
-        sets: ex.sets != null ? String(ex.sets) : "",
+        setRows: deriveSetRows(ex),
         rir: ex.rir != null ? String(ex.rir) : "",
         notes: ex.notes ?? "",
-        setDetails: ex.setDetails ?? [],
-        setType: ex.setType ?? null,
         supersetGroup: ex.supersetGroup ?? null,
         perSide: ex.perSide ?? false,
       }))
@@ -136,6 +164,28 @@ export default function EditWorkoutScreen() {
 
   function updateRow(key: string, patch: Partial<Omit<EditExerciseRow, "key">>) {
     setExerciseRows((prev) => prev.map((r) => (r.key === key ? { ...r, ...patch } : r)));
+  }
+
+  function updateSetRow(rowKey: string, setKey: string, patch: Partial<Omit<EditSetRow, "key">>) {
+    setExerciseRows((prev) =>
+      prev.map((r) =>
+        r.key === rowKey ? { ...r, setRows: r.setRows.map((sr) => (sr.key === setKey ? { ...sr, ...patch } : sr)) } : r
+      )
+    );
+  }
+
+  function addSetRow(rowKey: string) {
+    tapFeedback();
+    setExerciseRows((prev) =>
+      prev.map((r) => (r.key === rowKey ? { ...r, setRows: [...r.setRows, newEditSetRow(r.setRows[0]?.setType)] } : r))
+    );
+  }
+
+  function removeSetRow(rowKey: string, setKey: string) {
+    tapFeedback();
+    setExerciseRows((prev) =>
+      prev.map((r) => (r.key === rowKey ? { ...r, setRows: r.setRows.filter((sr) => sr.key !== setKey) } : r))
+    );
   }
 
   function removeRow(key: string) {
@@ -184,19 +234,27 @@ export default function EditWorkoutScreen() {
 
     const exercises: CreateWorkoutExerciseInput[] = exerciseRows
       .filter((row) => row.name.trim())
-      .map((row) => ({
-        exerciseId: row.exerciseId,
-        name: row.name.trim(),
-        weight: row.weight.trim() || null,
-        reps: row.reps.trim() ? parseInt(row.reps, 10) : null,
-        sets: row.sets.trim() ? parseInt(row.sets, 10) : null,
-        rir: row.rir.trim() ? parseInt(row.rir, 10) : null,
-        setDetails: row.setDetails ?? [],
-        setType: row.setType,
-        supersetGroup: row.supersetGroup,
-        perSide: row.perSide,
-        notes: row.notes.trim() || null,
-      }));
+      .map((row) => {
+        const filled = row.setRows.filter((sr) => sr.weight.trim() || sr.reps.trim());
+        const first = filled[0];
+        return {
+          exerciseId: row.exerciseId,
+          name: row.name.trim(),
+          weight: first?.weight?.trim() || null,
+          reps: first?.reps?.trim() ? parseInt(first.reps, 10) : null,
+          sets: filled.length || null,
+          rir: row.rir.trim() ? parseInt(row.rir, 10) : null,
+          setDetails: filled.map((sr) => ({
+            weight: sr.weight.trim() || null,
+            reps: sr.reps.trim() ? parseInt(sr.reps, 10) : null,
+            setType: sr.setType === "standard" ? null : sr.setType,
+          })),
+          setType: first && first.setType !== "standard" ? first.setType : null,
+          supersetGroup: row.supersetGroup,
+          perSide: row.perSide,
+          notes: row.notes.trim() || null,
+        };
+      });
 
     const runs: CreateWorkoutRunInput[] = runRows.map((row) => ({
       distance: row.distance.trim() ? parseFloat(row.distance) : null,
@@ -309,45 +367,68 @@ export default function EditWorkoutScreen() {
                   onChange={(name, exerciseId) => updateRow(row.key, { name, exerciseId })}
                 />
 
-                <View style={styles.gridRow}>
-                  <TextField
-                    label="Weight"
-                    value={row.weight}
-                    onChangeText={(v) => updateRow(row.key, { weight: v })}
-                    onBlur={() => {
-                      const formatted = formatAsKg(row.weight);
-                      if (formatted !== row.weight) updateRow(row.key, { weight: formatted });
-                    }}
-                    placeholder="e.g. 60"
-                    style={styles.gridInput}
-                  />
-                  <TextField
-                    label="Reps"
-                    value={row.reps}
-                    onChangeText={(v) => updateRow(row.key, { reps: v })}
-                    keyboardType="number-pad"
-                    placeholder="e.g. 8"
-                    style={styles.gridInput}
-                  />
+                <View style={styles.setColumnHeader}>
+                  <Text style={[styles.setColumnLabel, { width: 36 }]}>Set</Text>
+                  <Text style={[styles.setColumnLabel, { flex: 1 }]}>Weight</Text>
+                  <Text style={[styles.setColumnLabel, { flex: 1 }]}>Reps</Text>
+                  <View style={{ width: 24 }} />
                 </View>
-                <View style={styles.gridRow}>
-                  <TextField
-                    label="Sets"
-                    value={row.sets}
-                    onChangeText={(v) => updateRow(row.key, { sets: v })}
-                    keyboardType="number-pad"
-                    placeholder="e.g. 3"
-                    style={styles.gridInput}
-                  />
-                  <TextField
-                    label="RIR (opt.)"
-                    value={row.rir}
-                    onChangeText={(v) => updateRow(row.key, { rir: v })}
-                    keyboardType="number-pad"
-                    placeholder="e.g. 2"
-                    style={styles.gridInput}
-                  />
+                {row.setRows.map((sr, setIdx) => (
+                  <View key={sr.key} style={styles.setEditRow}>
+                    <Pressable
+                      onPress={() => updateSetRow(row.key, sr.key, { setType: nextEditSetType(sr.setType) })}
+                      style={{ width: 36 }}
+                    >
+                      <Text style={styles.setNumber}>{setIdx + 1}</Text>
+                      {sr.setType !== "standard" ? (
+                        <Text style={styles.setTypeTag} numberOfLines={1}>
+                          {SET_TYPE_OPTIONS.find((o) => o.value === sr.setType)?.label}
+                        </Text>
+                      ) : null}
+                    </Pressable>
+                    <TextInput
+                      value={sr.weight}
+                      onChangeText={(v) => updateSetRow(row.key, sr.key, { weight: v })}
+                      onBlur={() => {
+                        const formatted = formatAsKg(sr.weight);
+                        if (formatted !== sr.weight) updateSetRow(row.key, sr.key, { weight: formatted });
+                      }}
+                      placeholder="e.g. 60"
+                      placeholderTextColor={Color.textFaint}
+                      style={[styles.setInput, { flex: 1 }]}
+                    />
+                    <TextInput
+                      value={sr.reps}
+                      onChangeText={(v) => updateSetRow(row.key, sr.key, { reps: v })}
+                      keyboardType="number-pad"
+                      placeholder="e.g. 8"
+                      placeholderTextColor={Color.textFaint}
+                      style={[styles.setInput, { flex: 1 }]}
+                    />
+                    <Pressable onPress={() => removeSetRow(row.key, sr.key)} hitSlop={8} style={{ width: 24, alignItems: "center" }}>
+                      <Ionicons name="close" size={16} color={Color.textFaint} />
+                    </Pressable>
+                  </View>
+                ))}
+                <View style={styles.setRowActions}>
+                  <Pressable onPress={() => addSetRow(row.key)}>
+                    <Text style={styles.addSetText}>+ Add set</Text>
+                  </Pressable>
+                  {row.setRows.length > 1 ? (
+                    <Pressable onPress={() => removeSetRow(row.key, row.setRows[row.setRows.length - 1].key)}>
+                      <Text style={styles.removeSetText}>Remove last set</Text>
+                    </Pressable>
+                  ) : null}
                 </View>
+
+                <TextField
+                  label="RIR (opt.)"
+                  value={row.rir}
+                  onChangeText={(v) => updateRow(row.key, { rir: v })}
+                  keyboardType="number-pad"
+                  placeholder="e.g. 2"
+                  style={{ marginTop: Spacing.sm }}
+                />
 
                 <Pressable onPress={() => updateRow(row.key, { perSide: !row.perSide })} style={styles.perSideRow}>
                   <Ionicons
@@ -466,6 +547,24 @@ const styles = StyleSheet.create({
   fieldLabel: { fontSize: 13, fontWeight: "500", color: Color.textSecondary, marginBottom: 6 },
   gridRow: { flexDirection: "row", gap: Spacing.sm },
   gridInput: { flex: 1 },
+  setColumnHeader: { flexDirection: "row", alignItems: "center", gap: Spacing.xs, marginTop: Spacing.sm, paddingHorizontal: 2 },
+  setColumnLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.4, color: Color.textFaint, textTransform: "uppercase" },
+  setEditRow: { flexDirection: "row", alignItems: "center", gap: Spacing.xs, marginTop: Spacing.xs, padding: 4 },
+  setNumber: { fontSize: 13, fontWeight: "700", color: Color.textPrimary, textAlign: "center" },
+  setTypeTag: { fontSize: 7, fontWeight: "700", color: Color.gold, textAlign: "center", textTransform: "uppercase" },
+  setInput: {
+    height: 40,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: Color.borderSubtle,
+    backgroundColor: Color.surface1,
+    paddingHorizontal: Spacing.sm,
+    fontSize: 14,
+    color: Color.textPrimary,
+  },
+  setRowActions: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: Spacing.sm },
+  addSetText: { fontSize: 12, fontWeight: "600", color: Color.gold },
+  removeSetText: { fontSize: 12, color: Color.textMuted },
   perSideRow: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: Spacing.sm },
   perSideText: { fontSize: 12, fontWeight: "500", color: Color.textMuted },
   perSideTextActive: { color: Color.textPrimary },

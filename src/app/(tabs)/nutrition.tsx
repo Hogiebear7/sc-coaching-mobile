@@ -82,6 +82,23 @@ const WATER_QUICK_ADDS = [250, 500, 750];
 // number, so it can't disagree) — 2805 kcal target means 2.8L. Falls back to
 // a generic "no target yet" message when the calorie target itself isn't
 // available (cold start, no weight on file, or the coach has it disabled).
+// A bottle that starts full (nothing drunk yet) and drains as the member
+// logs water — the fill represents what's LEFT to drink, not what's been
+// drunk, since "drink from a full bottle over the day" is the metaphor.
+// Past target it just reads empty; the text above is what carries the
+// "you went over" info ("2.5L / 2.2L").
+function HydrationBottle({ remainingPct }: { remainingPct: number }) {
+  return (
+    <View style={styles.bottleWrap}>
+      <View style={styles.bottleCap} />
+      <View style={styles.bottleNeck} />
+      <View style={styles.bottleBody}>
+        <View style={[styles.bottleFill, { height: `${remainingPct}%` }]} />
+      </View>
+    </View>
+  );
+}
+
 function HydrationCard({ date }: { date: string }) {
   const { data: hydration } = useHydration(date);
   const logWater = useLogWater();
@@ -89,7 +106,7 @@ function HydrationCard({ date }: { date: string }) {
 
   const target = hydration?.targetMl ?? null;
   const logged = hydration?.loggedMl ?? 0;
-  const pct = target && target > 0 ? Math.min(100, Math.round((logged / target) * 100)) : 0;
+  const remainingPct = target && target > 0 ? Math.max(0, Math.min(100, 100 - (logged / target) * 100)) : 100;
 
   function handleSetManual() {
     const ml = Math.round(parseFloat(manualEntry) * 1000);
@@ -107,15 +124,23 @@ function HydrationCard({ date }: { date: string }) {
           {(logged / 1000).toFixed(1)}L{target ? ` / ${(target / 1000).toFixed(1)}L` : ""}
         </Text>
       </View>
-      {target ? (
-        <View style={styles.macroTrack}>
-          <View style={[styles.macroFill, styles.hydrationFill, { width: `${pct}%` }]} />
+      <View style={styles.hydrationBodyRow}>
+        <HydrationBottle remainingPct={remainingPct} />
+        <View style={styles.hydrationSideCol}>
+          {target ? (
+            <Text style={styles.hydrationSideText}>
+              {remainingPct <= 0
+                ? "Target hit — nice work."
+                : `${((remainingPct / 100) * (target / 1000)).toFixed(1)}L left to drink today.`}
+            </Text>
+          ) : (
+            <Text style={styles.hydrationEmptyText}>
+              No calorie target yet, so there&apos;s nothing to base a hydration target on — set one up in the card
+              above.
+            </Text>
+          )}
         </View>
-      ) : (
-        <Text style={styles.hydrationEmptyText}>
-          No calorie target yet, so there&apos;s nothing to base a hydration target on — set one up in the card above.
-        </Text>
-      )}
+      </View>
       <View style={styles.hydrationQuickAddRow}>
         {WATER_QUICK_ADDS.map((ml) => (
           <Pressable
@@ -662,8 +687,37 @@ const styles = StyleSheet.create({
   hydrationHeaderRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "baseline", marginBottom: Spacing.sm },
   hydrationTitle: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
   hydrationValue: { fontSize: 14, fontWeight: "700", color: Color.gold, fontVariant: ["tabular-nums"] },
-  hydrationFill: { backgroundColor: "#3f8fe0" },
   hydrationEmptyText: { fontSize: 11, color: Color.textMuted, lineHeight: 16 },
+  hydrationBodyRow: { flexDirection: "row", alignItems: "center", gap: Spacing.lg },
+  hydrationSideCol: { flex: 1 },
+  hydrationSideText: { fontSize: 13, color: Color.textSecondary, lineHeight: 18 },
+  bottleWrap: { width: 60, alignItems: "center" },
+  bottleCap: {
+    width: 22,
+    height: 8,
+    borderTopLeftRadius: 4,
+    borderTopRightRadius: 4,
+    backgroundColor: Color.textFaint,
+  },
+  bottleNeck: {
+    width: 26,
+    height: 14,
+    backgroundColor: Color.surface2,
+    borderWidth: 1,
+    borderBottomWidth: 0,
+    borderColor: Color.borderSubtle,
+  },
+  bottleBody: {
+    width: 60,
+    height: 130,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: Color.borderSubtle,
+    backgroundColor: Color.surface2,
+    overflow: "hidden",
+    justifyContent: "flex-end",
+  },
+  bottleFill: { width: "100%", backgroundColor: "#3f8fe0" },
   hydrationQuickAddRow: { flexDirection: "row", gap: Spacing.xs, marginTop: Spacing.md },
   hydrationChip: {
     flex: 1,

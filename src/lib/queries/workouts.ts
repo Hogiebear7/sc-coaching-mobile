@@ -3,10 +3,11 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api-client";
 
 // Mirrors WorkoutSetType in the main repo's lib/db.ts.
-export type WorkoutSetType = "standard" | "dropset" | "myoset" | "failure" | "partial";
+export type WorkoutSetType = "standard" | "warmup" | "dropset" | "myoset" | "failure" | "partial";
 
 export const SET_TYPE_OPTIONS: { value: WorkoutSetType; label: string }[] = [
   { value: "standard", label: "Standard" },
+  { value: "warmup", label: "Warm-up" },
   { value: "dropset", label: "Dropset" },
   { value: "myoset", label: "Myoset" },
   { value: "failure", label: "Failure" },

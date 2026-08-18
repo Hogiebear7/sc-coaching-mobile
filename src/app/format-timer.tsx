@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
@@ -194,6 +194,7 @@ function usePhaseClock(phases: Phase[], timeCapSecs?: number) {
     running,
     manual,
     remaining,
+    elapsedInPhase,
     totalElapsed,
     start,
     togglePause,
@@ -202,14 +203,27 @@ function usePhaseClock(phases: Phase[], timeCapSecs?: number) {
   };
 }
 
-function CircularClock({ label, remaining, durationSecs, kind }: { label: string; remaining: number; durationSecs: number; kind: "work" | "rest" }) {
+// A manual (reps-based) phase has no fixed duration to count down from, but
+// it still deserves live feedback — a bare "—" with nothing moving reads as
+// broken. Show elapsed time on this station counting up instead.
+function CircularClock({
+  remaining,
+  elapsed,
+  durationSecs,
+  kind,
+}: {
+  remaining: number;
+  elapsed: number;
+  durationSecs: number;
+  kind: "work" | "rest";
+}) {
   const pct = durationSecs > 0 ? Math.max(0, Math.min(1, remaining / durationSecs)) : 0;
   return (
     <View style={styles.ringWrap}>
       <View style={styles.ringTrack} />
       <View style={[styles.ringFill, { height: `${pct * 100}%` }, kind === "rest" && styles.ringFillRest]} />
       <View style={styles.ringCenter}>
-        <Text style={styles.clock}>{durationSecs > 0 ? formatDuration(Math.ceil(remaining)) : "—"}</Text>
+        <Text style={styles.clock}>{formatDuration(durationSecs > 0 ? Math.ceil(remaining) : Math.floor(elapsed))}</Text>
       </View>
     </View>
   );
@@ -278,9 +292,97 @@ function PhaseWorkoutCard({
   );
 }
 
+// Circuit and EMOM's workout cards list the distinct stations/movements
+// once each, not one row per round — a 3-station, 5-round circuit is 3 rows
+// plus a round count, not 15 rows. The live view still runs the fully
+// exploded phase list underneath; this is purely the review card.
+function CircuitWorkoutCard({ config, onStart }: { config: CircuitConfig; onStart: () => void }) {
+  const [counting, setCounting] = useState(false);
+  if (counting) return <FiveSecondCountdown onDone={onStart} />;
+
+  const stations = config.stations.filter((s) => s.name.trim());
+  const roundsLabel =
+    config.capMode === "sets"
+      ? `${config.totalSets || "1"} round${config.totalSets === "1" ? "" : "s"}`
+      : `${config.timeCapMins || "20"} min time cap`;
+  const restLabel = [
+    Number(config.restBetweenStationsSecs) > 0 ? `${config.restBetweenStationsSecs}s between stations` : null,
+    Number(config.restBetweenSetsSecs) > 0 ? `${config.restBetweenSetsSecs}s between rounds` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
+  return (
+    <ScrollView contentContainerStyle={styles.cardBody}>
+      <Text style={styles.cardHint}>
+        {roundsLabel}
+        {restLabel ? ` · ${restLabel}` : ""}
+      </Text>
+      <View style={styles.cardList}>
+        {stations.map((s, i) => {
+          const repSuffix =
+            s.mode === "reps" && s.reps.trim()
+              ? `${s.reps.trim()} reps`
+              : s.mode === "time" && s.repTarget.trim()
+                ? `${s.repTarget.trim()} reps target`
+                : null;
+          return (
+            <View key={s.key} style={[styles.cardRow, i > 0 && styles.cardRowDivider]}>
+              <Text style={styles.cardRowIndex}>{i + 1}</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.cardRowLabel}>{s.name}</Text>
+                {repSuffix ? <Text style={styles.cardRowMeta}>{repSuffix}</Text> : null}
+              </View>
+              {s.mode === "time" ? (
+                <Text style={styles.cardRowDuration}>{formatDuration(Math.max(1, parseInt(s.seconds, 10) || 30))}</Text>
+              ) : null}
+            </View>
+          );
+        })}
+      </View>
+      <Button
+        title="Start circuit timer"
+        onPress={() => setCounting(true)}
+        disabled={stations.length === 0}
+        style={{ marginTop: Spacing.lg, alignSelf: "stretch" }}
+      />
+    </ScrollView>
+  );
+}
+
+function EmomWorkoutCard({ config, onStart }: { config: EmomConfig; onStart: () => void }) {
+  const interval = Math.max(5, parseInt(config.intervalSecs, 10) || 60);
+  const totalSecs = Math.max(interval, (parseInt(config.totalMins, 10) || 10) * 60);
+  const roundCount = Math.max(1, Math.round(totalSecs / interval));
+  const movements = config.movements.filter((m) => m.name.trim());
+
+  return (
+    <ScrollView contentContainerStyle={styles.cardBody}>
+      <Text style={styles.cardHint}>
+        Every {interval}s for {config.totalMins || "10"} min — {roundCount} round{roundCount === 1 ? "" : "s"} through your movements.
+      </Text>
+      <View style={styles.cardList}>
+        {movements.map((m, i) => (
+          <View key={m.key} style={[styles.cardRow, i > 0 && styles.cardRowDivider]}>
+            <Text style={styles.cardRowIndex}>{i + 1}</Text>
+            <Text style={styles.cardRowLabel}>{m.name}</Text>
+            {m.repsOrTime.trim() ? <Text style={styles.cardRowDuration}>{m.repsOrTime.trim()}</Text> : null}
+          </View>
+        ))}
+      </View>
+      <Button
+        title="Start EMOM timer"
+        onPress={onStart}
+        disabled={movements.length === 0}
+        style={{ marginTop: Spacing.lg, alignSelf: "stretch" }}
+      />
+    </ScrollView>
+  );
+}
+
 function PhaseLiveView({ phases, timeCapSecs }: { phases: Phase[]; timeCapSecs?: number }) {
   const clock = usePhaseClock(phases, timeCapSecs);
-  const { phase, nextPhase, remaining, totalElapsed, running, manual } = clock;
+  const { phase, nextPhase, remaining, elapsedInPhase, totalElapsed, running, manual } = clock;
 
   if (!phase) {
     return (
@@ -296,7 +398,7 @@ function PhaseLiveView({ phases, timeCapSecs }: { phases: Phase[]; timeCapSecs?:
       <Text style={styles.phaseLabel}>{phase.label}</Text>
       {phase.meta ? <Text style={styles.phaseMeta}>{phase.meta}</Text> : null}
 
-      <CircularClock label={phase.label} remaining={manual ? 0 : remaining} durationSecs={phase.durationSecs} kind={phase.kind} />
+      <CircularClock remaining={remaining} elapsed={elapsedInPhase} durationSecs={phase.durationSecs} kind={phase.kind} />
 
       <Text style={styles.totalElapsed}>Total {formatDuration(Math.floor(totalElapsed))}</Text>
 
@@ -628,7 +730,7 @@ function ChipperLiveView({ config }: { config: ChipperConfig }) {
 
   useEffect(() => {
     if (session.totalStartedAtMs === null) return;
-    const id = setInterval(() => forceTick((t) => t + 1), 1000);
+    const id = setInterval(() => forceTick((t) => t + 1), 250);
     return () => clearInterval(id);
   }, [session.totalStartedAtMs]);
 
@@ -728,7 +830,7 @@ export default function FormatTimerScreen() {
     body = draft.formatSession.started ? (
       <PhaseLiveView phases={phases} />
     ) : (
-      <PhaseWorkoutCard title="EMOM" phases={phases} onStart={handleStart} />
+      <EmomWorkoutCard config={draft.emomConfig} onStart={handleStart} />
     );
   } else if (draft.format === "circuit") {
     title = "Circuit";
@@ -740,7 +842,7 @@ export default function FormatTimerScreen() {
     body = draft.formatSession.started ? (
       <PhaseLiveView phases={phases} timeCapSecs={capSecs} />
     ) : (
-      <PhaseWorkoutCard title="Circuit" phases={phases} onStart={handleStart} needsCountdown />
+      <CircuitWorkoutCard config={draft.circuitConfig} onStart={handleStart} />
     );
   } else {
     body = (
@@ -750,16 +852,28 @@ export default function FormatTimerScreen() {
     );
   }
 
+  // The member's own workout title takes priority — the format name still
+  // shows underneath as a subtitle so context isn't lost, and is the only
+  // thing shown when no title has been typed yet.
+  const headerTitle = draft.title.trim() || title;
+
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
       <View style={styles.header}>
         <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backButton}>
           <Ionicons name="chevron-back" size={22} color={Color.textPrimary} />
         </Pressable>
-        <Text style={styles.headerTitle}>{title}</Text>
+        <View style={styles.headerTitleWrap}>
+          <Text style={styles.headerTitle} numberOfLines={1}>
+            {headerTitle}
+          </Text>
+          {headerTitle !== title ? <Text style={styles.headerSubtitle}>{title}</Text> : null}
+        </View>
         <View style={{ width: 22 }} />
       </View>
-      {body}
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
+        {body}
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -774,7 +888,9 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.md,
   },
   backButton: { padding: 4 },
-  headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
+  headerTitleWrap: { flex: 1, alignItems: "center", paddingHorizontal: Spacing.sm },
+  headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary, textAlign: "center" },
+  headerSubtitle: { fontSize: 11, fontWeight: "600", color: Color.textFaint, marginTop: 1, letterSpacing: 0.4, textTransform: "uppercase" },
   body: { flexGrow: 1, alignItems: "center", paddingTop: Spacing.xl, paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
   doneText: { fontSize: 14, color: Color.textMuted, textAlign: "center", marginTop: Spacing.xl },
   getReadyText: { fontSize: 16, fontWeight: "600", color: Color.textMuted, marginTop: Spacing.xxl },

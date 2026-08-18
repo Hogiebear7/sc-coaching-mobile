@@ -335,22 +335,17 @@ export default function WorkoutsScreen() {
                       <Text style={styles.pbTitle}>{pb.exerciseName}</Text>
                       <Ionicons name="chevron-forward" size={16} color={Color.textFaint} />
                     </View>
-                    <View style={styles.pbRow}>
-                      {pb.heaviestWeight ? (
-                        <View style={styles.pbStat}>
-                          <Text style={styles.pbValue}>{pb.heaviestWeight.weightStr}</Text>
-                          <Text style={styles.pbLabel}>
-                            heaviest{pb.heaviestWeight.reps ? ` · ${pb.heaviestWeight.reps} reps` : ""}
-                          </Text>
-                        </View>
-                      ) : null}
-                      {pb.highestReps ? (
-                        <View style={styles.pbStat}>
-                          <Text style={styles.pbValue}>{pb.highestReps.reps}</Text>
-                          <Text style={styles.pbLabel}>best reps</Text>
-                        </View>
-                      ) : null}
-                    </View>
+                    {pb.heaviestWeight ? (
+                      <View style={styles.pbStat}>
+                        <Text style={styles.pbValue}>{pb.heaviestWeight.weightStr}</Text>
+                        <Text style={styles.pbLabel}>PB weight — tap for reps, sets &amp; history</Text>
+                      </View>
+                    ) : pb.highestReps ? (
+                      <View style={styles.pbStat}>
+                        <Text style={styles.pbValue}>{pb.highestReps.reps} reps</Text>
+                        <Text style={styles.pbLabel}>best reps — tap for history</Text>
+                      </View>
+                    ) : null}
                   </Card>
                 </Pressable>
               ))
@@ -528,10 +523,9 @@ const styles = StyleSheet.create({
   pbEmptyText: { fontSize: 12, color: Color.textMuted, textAlign: "center" },
   pbHeaderRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: Spacing.xs },
   pbTitle: { fontSize: 13, fontWeight: "600", color: Color.textPrimary },
-  pbRow: { flexDirection: "row", gap: Spacing.lg },
   pbStat: {},
-  pbValue: { fontSize: 18, fontWeight: "700", color: Color.gold, fontVariant: ["tabular-nums"] },
-  pbLabel: { fontSize: 10, color: Color.textMuted, marginTop: 1 },
+  pbValue: { fontSize: 22, fontWeight: "700", color: Color.gold, fontVariant: ["tabular-nums"] },
+  pbLabel: { fontSize: 10, color: Color.textMuted, marginTop: 2 },
   programCard: { padding: Spacing.md },
   programName: { fontSize: 11, fontWeight: "600", color: Color.textMuted },
   programDayLabel: { fontSize: 18, fontWeight: "700", color: Color.textPrimary, marginTop: 2, marginBottom: Spacing.sm },

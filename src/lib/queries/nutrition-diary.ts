@@ -49,6 +49,7 @@ export interface ResolvedNutritionTarget {
   source: "adaptive" | "estimated" | "manual" | null;
   notes: string | null;
   bodyWeightKg: number | null;
+  expenditureKcal: number | null;
 }
 
 export interface ResolvedNutritionWeek {
@@ -149,6 +150,34 @@ export function useDeleteFoodEntry() {
     mutationFn: ({ id }: { id: string; date: string }) =>
       apiFetch<{ success: true }>("/api/mobile/nutrition/diary/delete", { method: "POST", body: { id } }),
     onSuccess: (_res, vars) => qc.invalidateQueries({ queryKey: ["nutrition-diary", vars.date] }),
+  });
+}
+
+// Target is 1ml water per estimated kcal expended that day — see
+// lib/nutrition-target.ts's expenditureKcal on the main repo. null target
+// means there isn't enough data yet (no weight on file, cold start, etc).
+export interface HydrationData {
+  date: string;
+  targetMl: number | null;
+  loggedMl: number;
+}
+
+export function useHydration(date: string) {
+  return useQuery({
+    queryKey: ["hydration", date],
+    queryFn: () => apiFetch<{ success: true; data: HydrationData }>(`/api/mobile/hydration?date=${encodeURIComponent(date)}`).then((r) => r.data),
+  });
+}
+
+export function useLogWater() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ date, deltaMl }: { date: string; deltaMl: number }) =>
+      apiFetch<{ success: true; data: { date: string; loggedMl: number } }>("/api/mobile/hydration", {
+        method: "POST",
+        body: { date, deltaMl },
+      }),
+    onSuccess: (_res, vars) => qc.invalidateQueries({ queryKey: ["hydration", vars.date] }),
   });
 }
 

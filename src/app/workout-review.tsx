@@ -118,6 +118,19 @@ export default function WorkoutReviewScreen() {
             </>
           ) : null}
 
+          {data.hydration && data.hydration.targetMl !== null ? (
+            <>
+              <Text style={styles.sectionLabel}>HYDRATION THAT DAY</Text>
+              <Card style={styles.detailCard}>
+                <DetailRow
+                  label="Water"
+                  value={`${(data.hydration.loggedMl / 1000).toFixed(1)}L / ${(data.hydration.targetMl / 1000).toFixed(1)}L`}
+                  last
+                />
+              </Card>
+            </>
+          ) : null}
+
           <Button title="Done" onPress={() => router.replace("/workouts")} style={{ marginTop: Spacing.xl }} />
         </ScrollView>
       )}

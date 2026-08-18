@@ -26,6 +26,8 @@ import {
   MEAL_TYPE_OPTIONS,
   useCreateFoodEntry,
   useDeleteFoodEntry,
+  useHydration,
+  useLogWater,
   useMyNutritionTarget,
   useNutritionDiary,
   useRecentFoods,
@@ -71,6 +73,55 @@ function MacroBar({ label, consumed, target }: { label: string; consumed: number
         </View>
       ) : null}
     </View>
+  );
+}
+
+const WATER_QUICK_ADDS = [250, 500, 750];
+
+// Target is 1ml water per estimated kcal expended that day — simple, easy
+// rule of thumb rather than a precise hydration model. Falls back to a
+// generic "log more to unlock a target" message when there isn't enough
+// data yet to estimate expenditure (cold start, no weight on file).
+function HydrationCard({ date }: { date: string }) {
+  const { data: hydration } = useHydration(date);
+  const logWater = useLogWater();
+
+  const target = hydration?.targetMl ?? null;
+  const logged = hydration?.loggedMl ?? 0;
+  const pct = target && target > 0 ? Math.min(100, Math.round((logged / target) * 100)) : 0;
+
+  return (
+    <Card style={styles.hydrationCard}>
+      <View style={styles.hydrationHeaderRow}>
+        <Text style={styles.hydrationTitle}>Hydration</Text>
+        <Text style={styles.hydrationValue}>
+          {(logged / 1000).toFixed(1)}L{target ? ` / ${(target / 1000).toFixed(1)}L` : ""}
+        </Text>
+      </View>
+      {target ? (
+        <View style={styles.macroTrack}>
+          <View style={[styles.macroFill, styles.hydrationFill, { width: `${pct}%` }]} />
+        </View>
+      ) : (
+        <Text style={styles.hydrationEmptyText}>
+          Log a few more workouts and a weight check-in to unlock a target — 1ml of water per estimated calorie burned.
+        </Text>
+      )}
+      <View style={styles.hydrationQuickAddRow}>
+        {WATER_QUICK_ADDS.map((ml) => (
+          <Pressable
+            key={ml}
+            onPress={() => {
+              tapFeedback();
+              logWater.mutate({ date, deltaMl: ml });
+            }}
+            style={styles.hydrationChip}
+          >
+            <Text style={styles.hydrationChipText}>+{ml}ml</Text>
+          </Pressable>
+        ))}
+      </View>
+    </Card>
   );
 }
 
@@ -312,6 +363,11 @@ export default function NutritionScreen() {
             </Card>
           </Pressable>
 
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>HYDRATION</Text>
+            <HydrationCard date={selectedDate} />
+          </View>
+
           {recentFoods && recentFoods.length > 0 ? (
             <View style={styles.section}>
               <Text style={styles.sectionLabel}>QUICK ADD</Text>
@@ -550,6 +606,23 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Color.textPrimary,
   },
+  hydrationCard: { padding: Spacing.md },
+  hydrationHeaderRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "baseline", marginBottom: Spacing.sm },
+  hydrationTitle: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
+  hydrationValue: { fontSize: 14, fontWeight: "700", color: Color.gold, fontVariant: ["tabular-nums"] },
+  hydrationFill: { backgroundColor: "#3f8fe0" },
+  hydrationEmptyText: { fontSize: 11, color: Color.textMuted, lineHeight: 16 },
+  hydrationQuickAddRow: { flexDirection: "row", gap: Spacing.xs, marginTop: Spacing.md },
+  hydrationChip: {
+    flex: 1,
+    alignItems: "center",
+    borderRadius: Radius.pill,
+    borderWidth: 1,
+    borderColor: Color.borderSubtle,
+    backgroundColor: Color.surface1,
+    paddingVertical: 8,
+  },
+  hydrationChipText: { fontSize: 12, fontWeight: "600", color: Color.textSecondary },
   moreRow: { flexDirection: "row", alignItems: "center", gap: Spacing.sm, padding: Spacing.md },
   moreRowDivider: { borderTopWidth: 1, borderTopColor: Color.borderSubtle },
   drinkCardIcon: {

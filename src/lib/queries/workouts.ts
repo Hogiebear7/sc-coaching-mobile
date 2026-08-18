@@ -226,11 +226,17 @@ export interface WorkoutReviewNutrition {
   actualProteinG: number | null;
 }
 
+export interface WorkoutReviewHydration {
+  targetMl: number | null;
+  loggedMl: number;
+}
+
 export interface WorkoutReviewData {
   comparison: WorkoutReviewComparison;
   recovery: WorkoutReviewRecovery | null;
   cyclePhase: WorkoutReviewCyclePhase | null;
   nutrition: WorkoutReviewNutrition | null;
+  hydration: WorkoutReviewHydration | null;
   reviewText: string;
 }
 

@@ -138,7 +138,7 @@ export default function PlateCalculatorScreen() {
                             styles.plateBar,
                             {
                               backgroundColor: PLATE_COLORS[p.plate] ?? Color.surface3,
-                              width: 60 + (p.plate / (plates[0] || 1)) * 140,
+                              width: Math.min(140, 50 + (p.plate / (plates[0] || 1)) * 90),
                             },
                           ]}
                         />
@@ -229,7 +229,7 @@ const styles = StyleSheet.create({
   resultLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginBottom: Spacing.md },
   noPlatesText: { fontSize: 13, color: Color.textMuted },
   stackWrap: { width: "100%", alignItems: "center", gap: 3, marginBottom: Spacing.md },
-  stackRow: { flexDirection: "row-reverse", alignItems: "center", justifyContent: "center", gap: 3 },
+  stackRow: { flexDirection: "row-reverse", flexWrap: "wrap", alignItems: "center", justifyContent: "center", gap: 3 },
   plateBar: { height: 16, borderRadius: 3 },
   plateListWrap: { gap: 6 },
   plateListRow: { flexDirection: "row", alignItems: "center", gap: Spacing.sm },

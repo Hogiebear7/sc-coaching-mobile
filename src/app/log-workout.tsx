@@ -262,9 +262,9 @@ function ChipperMovementRow({
           value={movement.targetReps}
           onChangeText={(v) => onChange({ targetReps: v })}
           keyboardType="number-pad"
-          placeholder="target reps"
+          placeholder="reps"
           placeholderTextColor={Color.textFaint}
-          style={styles.stationValueInput}
+          style={styles.stationValueInputWide}
         />
       ) : (
         <TextInput
@@ -274,9 +274,9 @@ function ChipperMovementRow({
             const formatted = formatAsMmSs(movement.targetSeconds);
             if (formatted !== movement.targetSeconds) onChange({ targetSeconds: formatted });
           }}
-          placeholder="target e.g. 5:00"
+          placeholder="5:00"
           placeholderTextColor={Color.textFaint}
-          style={styles.stationValueInput}
+          style={styles.stationValueInputWide}
         />
       )}
       <Pressable onPress={onRemove} hitSlop={6}>
@@ -385,9 +385,9 @@ function EmomMovementsEditor({ movements, onChange }: { movements: EmomMovement[
           <TextInput
             value={m.repsOrTime}
             onChangeText={(v) => update(m.key, { repsOrTime: v })}
-            placeholder="reps/time e.g. 30/30s"
+            placeholder="30/30s"
             placeholderTextColor={Color.textFaint}
-            style={styles.stationValueInput}
+            style={styles.stationValueInputWide}
           />
           <Pressable onPress={() => onChange(movements.filter((row) => row.key !== m.key))} hitSlop={6}>
             <Ionicons name="close" size={16} color={Color.textFaint} />
@@ -430,9 +430,9 @@ function AmrapMovementsEditor({
               value={m.targetReps}
               onChangeText={(v) => update(m.key, { targetReps: v })}
               keyboardType="number-pad"
-              placeholder="reps / round"
+              placeholder="reps/rd"
               placeholderTextColor={Color.textFaint}
-              style={styles.stationValueInput}
+              style={styles.stationValueInputWide}
             />
           ) : null}
           <Pressable onPress={() => onChange(movements.filter((row) => row.key !== m.key))} hitSlop={6}>
@@ -475,6 +475,10 @@ function HowDidYouFeelModal({
 }) {
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onSkip}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
       <Pressable style={feelStyles.backdrop} onPress={onSkip}>
         <Pressable style={feelStyles.card} onPress={(e) => e.stopPropagation()}>
           <Text style={feelStyles.title}>How did that feel?</Text>
@@ -508,6 +512,7 @@ function HowDidYouFeelModal({
           </View>
         </Pressable>
       </Pressable>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -931,7 +936,7 @@ export default function LogWorkoutScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
         <View style={styles.header}>
           <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backButton}>
             <Ionicons name="chevron-back" size={22} color={Color.textPrimary} />
@@ -1729,6 +1734,22 @@ const styles = StyleSheet.create({
   stationModeText: { fontSize: 10, fontWeight: "700", color: Color.textMuted },
   stationValueInput: {
     width: 56,
+    height: 38,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: Color.borderSubtle,
+    backgroundColor: Color.surface1,
+    paddingHorizontal: Spacing.xs,
+    fontSize: 13,
+    color: Color.textPrimary,
+    textAlign: "center",
+  },
+  // Same as stationValueInput but wider — for fields whose placeholder/value
+  // is longer than a couple of digits (EMOM's "reps/time" text, Chipper's
+  // rep/duration targets, AMRAP's "reps per round"), which clipped badly at
+  // the narrower 56px width sized for plain numeric fields.
+  stationValueInputWide: {
+    width: 88,
     height: 38,
     borderRadius: Radius.md,
     borderWidth: 1,

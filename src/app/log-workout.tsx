@@ -122,6 +122,30 @@ function newExerciseRow(): ExerciseRow {
   };
 }
 
+// Exercises sharing a superset label render together as one visual block
+// (the "ST1"-style grouping from a station-based program layout) instead of
+// as separate cards — a row's FIRST appearance decides where its group sits
+// in the list; later rows with the same label join that group wherever it
+// already is, even if other rows come between them in the raw list.
+function groupExerciseRowsBySuperset(rows: ExerciseRow[]): { group: string | null; rows: ExerciseRow[] }[] {
+  const groups: { group: string | null; rows: ExerciseRow[] }[] = [];
+  const groupIndexByLabel = new Map<string, number>();
+  for (const row of rows) {
+    if (row.supersetGroup) {
+      const existingIdx = groupIndexByLabel.get(row.supersetGroup);
+      if (existingIdx !== undefined) {
+        groups[existingIdx].rows.push(row);
+        continue;
+      }
+      groupIndexByLabel.set(row.supersetGroup, groups.length);
+      groups.push({ group: row.supersetGroup, rows: [row] });
+    } else {
+      groups.push({ group: null, rows: [row] });
+    }
+  }
+  return groups;
+}
+
 // Chip row for the exercise's default set type, applied to newly added sets.
 function SetTypeChips({ value, onChange }: { value: WorkoutSetType; onChange: (v: WorkoutSetType) => void }) {
   return (
@@ -1243,11 +1267,20 @@ export default function LogWorkoutScreen() {
             <Text style={styles.emptyHint}>No entries yet. Use the buttons above to log exercises or a run.</Text>
           ) : null}
 
-          {exerciseRows.map((row, idx) => {
+          {groupExerciseRowsBySuperset(exerciseRows).map((grp, gIdx) => {
+            const isGrouped = grp.rows.length > 1;
+            const cards = grp.rows.map((row, memberIdx) => {
+            const idx = exerciseRows.indexOf(row);
             const allComplete = row.setRows.length > 0 && row.setRows.every((sr) => sr.completed);
             const last = getLastExercisePerformance(data?.sessions ?? [], row.name);
             return (
-            <Card key={row.key} style={styles.entryCard}>
+            <Card
+              key={row.key}
+              style={[
+                isGrouped ? styles.entryCardGrouped : styles.entryCard,
+                isGrouped && memberIdx > 0 && styles.entryCardGroupedDivider,
+              ]}
+            >
               <View style={styles.entryHeader}>
                 <View style={styles.entryHeaderTitle}>
                   <Text style={styles.entryLabel}>Exercise {idx + 1}</Text>
@@ -1433,6 +1466,17 @@ export default function LogWorkoutScreen() {
               />
             </Card>
             );
+            });
+            return isGrouped ? (
+              <View key={`superset-${grp.group}-${gIdx}`} style={styles.supersetGroupWrap}>
+                <View style={styles.supersetGroupHeader}>
+                  <Text style={styles.supersetGroupHeaderText}>{grp.group}</Text>
+                </View>
+                {cards}
+              </View>
+            ) : (
+              cards
+            );
           })}
 
           {runRows.map((row, idx) => (
@@ -1572,6 +1616,33 @@ const styles = StyleSheet.create({
   addChipText: { fontSize: 11, fontWeight: "600", color: Color.textSecondary },
   emptyHint: { fontSize: 12, color: Color.textMuted, borderWidth: 1, borderColor: Color.borderSubtle, borderStyle: "dashed", borderRadius: Radius.md, padding: Spacing.md },
   entryCard: { padding: Spacing.md, marginBottom: Spacing.md },
+  // A superset group wraps its member cards in one bordered block with a
+  // shared "ST1" label — members render edge-to-edge inside it (no
+  // individual margin/radius/border of their own) so it reads as one
+  // station, not a stack of separate cards.
+  supersetGroupWrap: {
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: Color.goldBorder,
+    backgroundColor: Color.goldWeak,
+    marginBottom: Spacing.md,
+    overflow: "hidden",
+  },
+  supersetGroupHeader: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: Color.goldBorder,
+  },
+  supersetGroupHeaderText: { fontSize: 12, fontWeight: "700", color: Color.gold, letterSpacing: 0.4 },
+  entryCardGrouped: {
+    padding: Spacing.md,
+    marginBottom: 0,
+    borderRadius: 0,
+    borderWidth: 0,
+    backgroundColor: "transparent",
+  },
+  entryCardGroupedDivider: { borderTopWidth: 1, borderTopColor: Color.goldBorder },
   entryHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: Spacing.sm },
   entryHeaderTitle: { flexDirection: "row", alignItems: "center", gap: Spacing.xs },
   entryHeaderActions: { flexDirection: "row", alignItems: "center", gap: Spacing.md },

@@ -34,6 +34,9 @@ type ExerciseRow = {
   muscleTags: string;
   targetSets: string;
   targetReps: string;
+  perSide: boolean;
+  targetRepsRight: string;
+  targetRepsLeft: string;
   targetWeight: string;
   setType: WorkoutSetType;
   notes: string;
@@ -48,11 +51,31 @@ function newExerciseRow(): ExerciseRow {
     muscleTags: "",
     targetSets: "",
     targetReps: "",
+    perSide: false,
+    targetRepsRight: "",
+    targetRepsLeft: "",
     targetWeight: "",
     setType: "standard",
     notes: "",
     supersetGroup: null,
   };
+}
+
+// targetReps is free text ("8-10", "AMRAP", ...), so a per-side split is
+// encoded into that same string ("R8 / L6") rather than needing new backend
+// fields — decoded back into the two-box UI on edit when it matches.
+const PER_SIDE_REPS_PATTERN = /^R(.*) \/ L(.*)$/;
+
+function encodePerSideReps(right: string, left: string): string {
+  return `R${right.trim()} / L${left.trim()}`;
+}
+
+function decodeTargetReps(value: string | null): Pick<ExerciseRow, "targetReps" | "perSide" | "targetRepsRight" | "targetRepsLeft"> {
+  const match = value?.match(PER_SIDE_REPS_PATTERN);
+  if (match) {
+    return { targetReps: "", perSide: true, targetRepsRight: match[1].trim(), targetRepsLeft: match[2].trim() };
+  }
+  return { targetReps: value ?? "", perSide: false, targetRepsRight: "", targetRepsLeft: "" };
 }
 
 function templateToRows(exercises: PrescribedExercise[]): ExerciseRow[] {
@@ -62,11 +85,11 @@ function templateToRows(exercises: PrescribedExercise[]): ExerciseRow[] {
     name: ex.name,
     muscleTags: ex.muscleTags.join(", "),
     targetSets: ex.targetSets !== null ? String(ex.targetSets) : "",
-    targetReps: ex.targetReps ?? "",
     targetWeight: ex.targetWeight ?? "",
     setType: ex.setType ?? "standard",
     notes: ex.notes ?? "",
     supersetGroup: ex.supersetGroup,
+    ...decodeTargetReps(ex.targetReps),
   }));
 }
 
@@ -79,7 +102,11 @@ function rowsToExercises(rows: ExerciseRow[]): PrescribedExercise[] {
     name: r.name.trim(),
     muscleTags: r.muscleTags.split(",").map((t) => t.trim()).filter(Boolean),
     targetSets: r.targetSets.trim() ? parseInt(r.targetSets, 10) : null,
-    targetReps: r.targetReps.trim() || null,
+    targetReps: r.perSide
+      ? r.targetRepsRight.trim() || r.targetRepsLeft.trim()
+        ? encodePerSideReps(r.targetRepsRight, r.targetRepsLeft)
+        : null
+      : r.targetReps.trim() || null,
     targetWeight: r.targetWeight.trim() || null,
     setType: r.setType === "standard" ? null : r.setType,
     sets: null,
@@ -256,29 +283,63 @@ export default function WorkoutTemplateBuilderScreen() {
                 style={styles.smallInput}
               />
 
-              <View style={styles.gridRow}>
-                <View style={styles.numberField}>
-                  <Text style={styles.fieldLabel}>Target sets</Text>
-                  <TextInput
-                    value={ex.targetSets}
-                    onChangeText={(v) => updateExercise(ex.key, { targetSets: v })}
-                    keyboardType="number-pad"
-                    placeholder="e.g. 4"
-                    placeholderTextColor={Color.textFaint}
-                    style={styles.smallInput}
+              <Text style={[styles.fieldLabel, { marginTop: Spacing.sm }]}>Target sets</Text>
+              <TextInput
+                value={ex.targetSets}
+                onChangeText={(v) => updateExercise(ex.key, { targetSets: v })}
+                keyboardType="number-pad"
+                placeholder="e.g. 4"
+                placeholderTextColor={Color.textFaint}
+                style={styles.smallInput}
+              />
+
+              <View style={styles.repsHeaderRow}>
+                <Text style={styles.fieldLabel}>Target reps</Text>
+                <Pressable
+                  onPress={() => updateExercise(ex.key, { perSide: !ex.perSide })}
+                  style={styles.perSideRow}
+                >
+                  <Ionicons
+                    name={ex.perSide ? "checkbox" : "square-outline"}
+                    size={16}
+                    color={ex.perSide ? Color.gold : Color.textFaint}
                   />
-                </View>
-                <View style={styles.numberField}>
-                  <Text style={styles.fieldLabel}>Target reps</Text>
-                  <TextInput
-                    value={ex.targetReps}
-                    onChangeText={(v) => updateExercise(ex.key, { targetReps: v })}
-                    placeholder="e.g. 8-10"
-                    placeholderTextColor={Color.textFaint}
-                    style={styles.smallInput}
-                  />
-                </View>
+                  <Text style={[styles.perSideText, ex.perSide && styles.perSideTextActive]}>Per arm/leg</Text>
+                </Pressable>
               </View>
+
+              {ex.perSide ? (
+                <View style={styles.gridRow}>
+                  <View style={styles.numberField}>
+                    <Text style={styles.fieldLabel}>Right</Text>
+                    <TextInput
+                      value={ex.targetRepsRight}
+                      onChangeText={(v) => updateExercise(ex.key, { targetRepsRight: v })}
+                      placeholder="e.g. 8"
+                      placeholderTextColor={Color.textFaint}
+                      style={styles.smallInput}
+                    />
+                  </View>
+                  <View style={styles.numberField}>
+                    <Text style={styles.fieldLabel}>Left</Text>
+                    <TextInput
+                      value={ex.targetRepsLeft}
+                      onChangeText={(v) => updateExercise(ex.key, { targetRepsLeft: v })}
+                      placeholder="e.g. 8"
+                      placeholderTextColor={Color.textFaint}
+                      style={styles.smallInput}
+                    />
+                  </View>
+                </View>
+              ) : (
+                <TextInput
+                  value={ex.targetReps}
+                  onChangeText={(v) => updateExercise(ex.key, { targetReps: v })}
+                  placeholder="e.g. 8-10"
+                  placeholderTextColor={Color.textFaint}
+                  style={styles.smallInput}
+                />
+              )}
 
               <Text style={[styles.fieldLabel, { marginTop: Spacing.sm }]}>Target weight / guidance (optional)</Text>
               <TextInput
@@ -339,6 +400,10 @@ const styles = StyleSheet.create({
   entryLabel: { fontSize: 12, fontWeight: "600", color: Color.textMuted },
   removeText: { fontSize: 12, color: Color.danger },
   fieldLabel: { fontSize: 12, fontWeight: "500", color: Color.textSecondary, marginBottom: 4 },
+  repsHeaderRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: Spacing.sm },
+  perSideRow: { flexDirection: "row", alignItems: "center", gap: 6 },
+  perSideText: { fontSize: 11, fontWeight: "500", color: Color.textMuted },
+  perSideTextActive: { color: Color.gold },
   gridRow: { flexDirection: "row", gap: Spacing.sm, marginTop: Spacing.sm },
   numberField: { flex: 1 },
   smallInput: {

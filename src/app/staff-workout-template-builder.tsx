@@ -32,12 +32,26 @@ type ExerciseRow = {
   name: string;
   weight: string;
   reps: string;
+  repsRight: string;
+  repsLeft: string;
+  perSide: boolean;
   sets: string;
   supersetGroup: string | null;
 };
 
 function newExerciseRow(): ExerciseRow {
-  return { key: nextKey(), exerciseId: null, name: "", weight: "", reps: "", sets: "", supersetGroup: null };
+  return {
+    key: nextKey(),
+    exerciseId: null,
+    name: "",
+    weight: "",
+    reps: "",
+    repsRight: "",
+    repsLeft: "",
+    perSide: false,
+    sets: "",
+    supersetGroup: null,
+  };
 }
 
 function templateToRows(exercises: StaffTemplateExercise[]): ExerciseRow[] {
@@ -47,6 +61,9 @@ function templateToRows(exercises: StaffTemplateExercise[]): ExerciseRow[] {
     name: ex.name,
     weight: ex.weight,
     reps: ex.reps !== null ? String(ex.reps) : "",
+    repsRight: ex.repsRight !== null ? String(ex.repsRight) : "",
+    repsLeft: ex.repsLeft !== null ? String(ex.repsLeft) : "",
+    perSide: ex.perSide,
     sets: ex.sets !== null ? String(ex.sets) : "",
     supersetGroup: ex.supersetGroup,
   }));
@@ -59,9 +76,12 @@ function rowsToExercises(rows: ExerciseRow[]): StaffTemplateExercise[] {
       exerciseId: r.exerciseId,
       name: r.name.trim(),
       weight: r.weight.trim(),
-      reps: r.reps.trim() ? parseInt(r.reps, 10) : null,
+      reps: !r.perSide && r.reps.trim() ? parseInt(r.reps, 10) : null,
       sets: r.sets.trim() ? parseInt(r.sets, 10) : null,
       supersetGroup: r.supersetGroup,
+      perSide: r.perSide,
+      repsRight: r.perSide && r.repsRight.trim() ? parseInt(r.repsRight, 10) : null,
+      repsLeft: r.perSide && r.repsLeft.trim() ? parseInt(r.repsLeft, 10) : null,
     }));
 }
 
@@ -223,6 +243,57 @@ export default function StaffWorkoutTemplateBuilderScreen() {
                 onChange={(exName, exerciseId) => updateExercise(ex.key, { name: exName, exerciseId })}
               />
 
+              <View style={styles.repsHeaderRow}>
+                <Text style={styles.fieldLabel}>Reps</Text>
+                <Pressable
+                  onPress={() => updateExercise(ex.key, { perSide: !ex.perSide })}
+                  style={styles.perSideRow}
+                >
+                  <Ionicons
+                    name={ex.perSide ? "checkbox" : "square-outline"}
+                    size={16}
+                    color={ex.perSide ? Color.gold : Color.textFaint}
+                  />
+                  <Text style={[styles.perSideText, ex.perSide && styles.perSideTextActive]}>Per arm/leg</Text>
+                </Pressable>
+              </View>
+
+              {ex.perSide ? (
+                <View style={styles.gridRow}>
+                  <View style={styles.numberField}>
+                    <Text style={styles.fieldLabel}>Right</Text>
+                    <TextInput
+                      value={ex.repsRight}
+                      onChangeText={(v) => updateExercise(ex.key, { repsRight: v })}
+                      keyboardType="number-pad"
+                      placeholder="e.g. 8"
+                      placeholderTextColor={Color.textFaint}
+                      style={styles.smallInput}
+                    />
+                  </View>
+                  <View style={styles.numberField}>
+                    <Text style={styles.fieldLabel}>Left</Text>
+                    <TextInput
+                      value={ex.repsLeft}
+                      onChangeText={(v) => updateExercise(ex.key, { repsLeft: v })}
+                      keyboardType="number-pad"
+                      placeholder="e.g. 8"
+                      placeholderTextColor={Color.textFaint}
+                      style={styles.smallInput}
+                    />
+                  </View>
+                </View>
+              ) : (
+                <TextInput
+                  value={ex.reps}
+                  onChangeText={(v) => updateExercise(ex.key, { reps: v })}
+                  keyboardType="number-pad"
+                  placeholder="e.g. 8"
+                  placeholderTextColor={Color.textFaint}
+                  style={styles.smallInput}
+                />
+              )}
+
               <View style={styles.gridRow}>
                 <View style={styles.numberField}>
                   <Text style={styles.fieldLabel}>Weight</Text>
@@ -230,17 +301,6 @@ export default function StaffWorkoutTemplateBuilderScreen() {
                     value={ex.weight}
                     onChangeText={(v) => updateExercise(ex.key, { weight: v })}
                     placeholder="e.g. 60kg"
-                    placeholderTextColor={Color.textFaint}
-                    style={styles.smallInput}
-                  />
-                </View>
-                <View style={styles.numberField}>
-                  <Text style={styles.fieldLabel}>Reps</Text>
-                  <TextInput
-                    value={ex.reps}
-                    onChangeText={(v) => updateExercise(ex.key, { reps: v })}
-                    keyboardType="number-pad"
-                    placeholder="e.g. 8"
                     placeholderTextColor={Color.textFaint}
                     style={styles.smallInput}
                   />
@@ -307,6 +367,10 @@ const styles = StyleSheet.create({
   entryHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: Spacing.sm },
   entryLabel: { fontSize: 12, fontWeight: "600", color: Color.textMuted },
   removeText: { fontSize: 12, color: Color.danger },
+  repsHeaderRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: Spacing.sm },
+  perSideRow: { flexDirection: "row", alignItems: "center", gap: 6 },
+  perSideText: { fontSize: 11, fontWeight: "500", color: Color.textMuted },
+  perSideTextActive: { color: Color.gold },
   gridRow: { flexDirection: "row", gap: Spacing.sm, marginTop: Spacing.sm },
   numberField: { flex: 1 },
   smallInput: {

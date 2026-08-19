@@ -162,6 +162,11 @@ export interface StaffTemplateExercise {
   sets: number | null;
   // "ST1", "ST2", etc — exercises sharing a label render as one station.
   supersetGroup: string | null;
+  // True when reps differ per side (unilateral) — repsRight/repsLeft hold
+  // the split target and reps is null.
+  perSide: boolean;
+  repsRight: number | null;
+  repsLeft: number | null;
 }
 
 export interface StaffWorkoutTemplate {

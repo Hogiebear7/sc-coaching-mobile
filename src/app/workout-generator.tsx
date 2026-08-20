@@ -1,12 +1,14 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
 import { Color, Radius, Spacing } from "@/constants/theme";
+import { equipmentSlugMatchesVendorString } from "@/lib/equipment-matching";
 import { useExerciseLibrary } from "@/lib/queries/exercise-library";
+import { useEquipmentCatalog, useGymProfiles } from "@/lib/queries/gym-profiles";
 import { generateWorkout } from "@/lib/workout-generator";
 
 const TIME_PRESETS = [15, 30, 45, 60, 90];
@@ -41,12 +43,34 @@ function ChipGroup({
 export default function WorkoutGeneratorScreen() {
   const router = useRouter();
   const { data, isLoading, isError, refetch } = useExerciseLibrary();
+  const { data: gymProfilesData } = useGymProfiles();
+  const { data: equipmentCatalogData } = useEquipmentCatalog();
 
   const [primaryBodyParts, setPrimaryBodyParts] = useState<Set<string>>(new Set());
   const [secondaryBodyParts, setSecondaryBodyParts] = useState<Set<string>>(new Set());
   const [equipment, setEquipment] = useState<Set<string>>(new Set());
   const [timeMinutes, setTimeMinutes] = useState(45);
   const [error, setError] = useState<string | null>(null);
+  const [equipmentHydrated, setEquipmentHydrated] = useState(false);
+
+  const activeProfile = gymProfilesData?.profiles.find((p) => p.id === gymProfilesData.activeGymProfileId) ?? null;
+
+  // Defaults the equipment chips from the active gym profile once data's
+  // ready, instead of making a member re-pick equipment on every visit —
+  // still fully editable afterward via the same chips.
+  useEffect(() => {
+    if (equipmentHydrated || !data) return;
+    if (gymProfilesData === undefined) return; // still loading — wait rather than default to "no profile"
+    if (activeProfile && equipmentCatalogData === undefined) return; // still loading the catalog
+    if (activeProfile && equipmentCatalogData) {
+      const catalog = equipmentCatalogData.equipment.filter((e) => activeProfile.equipmentSlugs.includes(e.slug));
+      const defaulted = data.filters.equipment.filter((vendorValue) =>
+        catalog.some((item) => equipmentSlugMatchesVendorString(item, vendorValue))
+      );
+      setEquipment(new Set(defaulted));
+    }
+    setEquipmentHydrated(true);
+  }, [data, activeProfile, equipmentCatalogData, gymProfilesData, equipmentHydrated]);
 
   function handleGenerate() {
     if (!data || primaryBodyParts.size === 0) {
@@ -128,7 +152,11 @@ export default function WorkoutGeneratorScreen() {
           </View>
 
           <Text style={styles.sectionLabel}>EQUIPMENT AVAILABLE — OPTIONAL</Text>
-          <Text style={styles.sectionSub}>Leave blank to allow any equipment.</Text>
+          <Text style={styles.sectionSub}>
+            {activeProfile
+              ? `Defaulted from your "${activeProfile.name}" gym profile — adjust as needed, or clear all to allow any equipment.`
+              : "Leave blank to allow any equipment."}
+          </Text>
           <ChipGroup
             options={data.filters.equipment}
             selected={equipment}

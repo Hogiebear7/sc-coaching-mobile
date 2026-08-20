@@ -7,7 +7,9 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Color, Radius, Spacing } from "@/constants/theme";
+import { exerciseMatchesEquipmentSlugs } from "@/lib/equipment-matching";
 import { useExerciseLibrary, type ExerciseLibraryRecord } from "@/lib/queries/exercise-library";
+import { useEquipmentCatalog, useGymProfiles } from "@/lib/queries/gym-profiles";
 import { useWorkoutTemplates, type WorkoutTemplate } from "@/lib/queries/workout-templates";
 
 type LibraryTab = "exercises" | "workouts";
@@ -90,18 +92,28 @@ function WorkoutsTab({ router }: { router: ReturnType<typeof useRouter> }) {
 
 function ExercisesTab({ router }: { router: ReturnType<typeof useRouter> }) {
   const { data, isLoading, isError, refetch } = useExerciseLibrary();
+  const { data: gymProfilesData } = useGymProfiles();
+  const { data: equipmentCatalogData } = useEquipmentCatalog();
   const [query, setQuery] = useState("");
   const [bodyPart, setBodyPart] = useState<string | null>(null);
+  const [showAllEquipment, setShowAllEquipment] = useState(false);
+
+  const activeProfile = gymProfilesData?.profiles.find((p) => p.id === gymProfilesData.activeGymProfileId) ?? null;
+  const equipmentFilterActive = !!activeProfile && !showAllEquipment;
 
   const filtered = useMemo(() => {
     const exercises = data?.exercises ?? [];
     const q = query.trim().toLowerCase();
+    const catalog = equipmentCatalogData?.equipment ?? [];
     return exercises.filter((e) => {
       if (bodyPart && e.bodyPart !== bodyPart) return false;
       if (q && !e.name.toLowerCase().includes(q) && !e.aliases.some((a) => a.toLowerCase().includes(q))) return false;
+      if (equipmentFilterActive && activeProfile) {
+        if (!exerciseMatchesEquipmentSlugs(e.equipment, activeProfile.equipmentSlugs, catalog)) return false;
+      }
       return true;
     });
-  }, [data, query, bodyPart]);
+  }, [data, query, bodyPart, equipmentFilterActive, activeProfile, equipmentCatalogData]);
 
   function renderItem({ item }: { item: ExerciseLibraryRecord }) {
     const meta = [item.bodyPart, item.equipment].filter(Boolean).join(" · ");
@@ -149,6 +161,18 @@ function ExercisesTab({ router }: { router: ReturnType<typeof useRouter> }) {
         />
       </View>
 
+      {activeProfile ? (
+        <Pressable onPress={() => setShowAllEquipment((v) => !v)} style={styles.equipmentFilterRow}>
+          <Ionicons name={equipmentFilterActive ? "barbell" : "barbell-outline"} size={13} color={equipmentFilterActive ? Color.gold : Color.textFaint} />
+          <Text style={styles.equipmentFilterText}>
+            {equipmentFilterActive
+              ? `Filtered to ${activeProfile.icon ?? ""} ${activeProfile.name}`.trim()
+              : "Showing all exercises"}
+          </Text>
+          <Text style={styles.equipmentFilterAction}>{equipmentFilterActive ? "Show all" : "Only what I have"}</Text>
+        </Pressable>
+      ) : null}
+
       {data && data.filters.bodyParts.length > 0 ? (
         <ScrollView
           horizontal
@@ -178,8 +202,18 @@ function ExercisesTab({ router }: { router: ReturnType<typeof useRouter> }) {
           <Text style={styles.emptySub}>
             {(data?.exercises.length ?? 0) === 0
               ? "Your coach is still building out the demonstration library."
-              : "Try a different search or muscle area."}
+              : equipmentFilterActive
+                ? "Nothing matches your search within your active gym profile's equipment."
+                : "Try a different search or muscle area."}
           </Text>
+          {equipmentFilterActive ? (
+            <Button
+              title="Show all exercises"
+              onPress={() => setShowAllEquipment(true)}
+              variant="secondary"
+              style={{ marginTop: Spacing.sm }}
+            />
+          ) : null}
         </View>
       ) : (
         <FlatList
@@ -294,6 +328,15 @@ const styles = StyleSheet.create({
     backgroundColor: Color.surface1,
   },
   searchInput: { flex: 1, paddingVertical: 10, fontSize: 13, color: Color.textPrimary },
+  equipmentFilterRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginHorizontal: Spacing.lg,
+    marginBottom: Spacing.sm,
+  },
+  equipmentFilterText: { flex: 1, fontSize: 11, color: Color.textMuted },
+  equipmentFilterAction: { fontSize: 11, fontWeight: "600", color: Color.gold },
   bodyPartScroll: { flexGrow: 0, marginBottom: Spacing.sm },
   bodyPartRow: { paddingHorizontal: Spacing.lg, gap: Spacing.xs },
   bodyPartChip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.md, paddingVertical: 6 },

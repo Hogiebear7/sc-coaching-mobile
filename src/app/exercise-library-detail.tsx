@@ -7,7 +7,9 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Color, Radius, Spacing } from "@/constants/theme";
+import { exerciseMatchesEquipmentSlugs } from "@/lib/equipment-matching";
 import { pickHeroMedia, useExerciseLibraryDetail } from "@/lib/queries/exercise-library";
+import { useEquipmentCatalog, useGymProfiles } from "@/lib/queries/gym-profiles";
 
 function GifSlot({ url, name }: { url: string | null; name: string }) {
   const [loaded, setLoaded] = useState(false);
@@ -43,6 +45,14 @@ export default function ExerciseLibraryDetailScreen() {
   const router = useRouter();
   const { slug } = useLocalSearchParams<{ slug?: string }>();
   const { data, isLoading, isError, refetch } = useExerciseLibraryDetail(slug ?? "");
+  const { data: gymProfilesData } = useGymProfiles();
+  const { data: equipmentCatalogData } = useEquipmentCatalog();
+
+  const activeProfile = gymProfilesData?.profiles.find((p) => p.id === gymProfilesData.activeGymProfileId) ?? null;
+  const isAvailable =
+    activeProfile && equipmentCatalogData
+      ? exerciseMatchesEquipmentSlugs(data?.exercise.equipment ?? null, activeProfile.equipmentSlugs, equipmentCatalogData.equipment)
+      : null;
 
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
@@ -92,6 +102,19 @@ export default function ExerciseLibraryDetailScreen() {
               </View>
             ) : null}
           </View>
+
+          {isAvailable !== null && data.exercise.equipment ? (
+            <View style={[styles.availabilityBadge, isAvailable ? styles.availabilityBadgeYes : styles.availabilityBadgeNo]}>
+              <Ionicons
+                name={isAvailable ? "checkmark-circle" : "close-circle"}
+                size={13}
+                color={isAvailable ? Color.success : Color.danger}
+              />
+              <Text style={[styles.availabilityText, isAvailable ? styles.availabilityTextYes : styles.availabilityTextNo]}>
+                {isAvailable ? `Available in ${activeProfile?.name}` : `Not available in ${activeProfile?.name}`}
+              </Text>
+            </View>
+          ) : null}
 
           {data.exercise.description ? (
             <Text style={styles.description}>{data.exercise.description}</Text>
@@ -170,6 +193,22 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   chipText: { fontSize: 11, fontWeight: "600", color: Color.gold, textTransform: "capitalize" },
+  availabilityBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    alignSelf: "flex-start",
+    marginTop: Spacing.sm,
+    borderRadius: Radius.pill,
+    borderWidth: 1,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 4,
+  },
+  availabilityBadgeYes: { borderColor: Color.success, backgroundColor: `${Color.success}22` },
+  availabilityBadgeNo: { borderColor: Color.danger, backgroundColor: `${Color.danger}22` },
+  availabilityText: { fontSize: 11, fontWeight: "600" },
+  availabilityTextYes: { color: Color.success },
+  availabilityTextNo: { color: Color.danger },
   description: { fontSize: 13, color: Color.textSecondary, lineHeight: 19, marginTop: Spacing.md },
   sectionLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginTop: Spacing.xl, marginBottom: Spacing.sm },
   instructionsCard: { padding: 0, overflow: "hidden" },

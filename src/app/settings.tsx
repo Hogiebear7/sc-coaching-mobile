@@ -246,6 +246,16 @@ export default function SettingsScreen() {
             />
           </Card>
 
+          <SectionLabel>TRAINING</SectionLabel>
+          <Card style={styles.settingsCard}>
+            <Row
+              icon="barbell-outline"
+              title="Gym profiles"
+              sub="Equipment available — filters the exercise library"
+              onPress={() => router.push("/gym-profiles")}
+            />
+          </Card>
+
           <SectionLabel>PREFERENCES</SectionLabel>
           <Card style={styles.settingsCard}>
             <View style={styles.row}>

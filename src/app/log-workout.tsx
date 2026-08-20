@@ -811,7 +811,7 @@ export default function LogWorkoutScreen() {
     try {
       const rowsWithContent = exerciseRows.filter((r) => r.name.trim());
       const filledSetsByRow = rowsWithContent.map((r) =>
-        r.setRows.filter((sr) => sr.weight.trim() || sr.reps.trim() || sr.repsRight.trim() || sr.repsLeft.trim())
+        r.setRows.filter((sr) => sr.weight?.trim() || sr.reps?.trim() || sr.repsRight?.trim() || sr.repsLeft?.trim())
       );
 
       const exercises: CreateWorkoutExerciseInput[] = rowsWithContent.map((r, idx) => {
@@ -828,8 +828,8 @@ export default function LogWorkoutScreen() {
             weight: sr.weight.trim() || null,
             reps: sr.reps.trim() ? parseInt(sr.reps, 10) : null,
             setType: sr.setType === "standard" ? null : sr.setType,
-            repsRight: sr.repsRight.trim() ? parseInt(sr.repsRight, 10) : null,
-            repsLeft: sr.repsLeft.trim() ? parseInt(sr.repsLeft, 10) : null,
+            repsRight: sr.repsRight?.trim() ? parseInt(sr.repsRight, 10) : null,
+            repsLeft: sr.repsLeft?.trim() ? parseInt(sr.repsLeft, 10) : null,
           })),
           setType: first && first.setType !== "standard" ? first.setType : null,
           supersetGroup: r.supersetGroup,
@@ -1432,7 +1432,7 @@ export default function LogWorkoutScreen() {
                     {row.perSide ? (
                       <View style={{ flex: 1, flexDirection: "row", gap: 4 }}>
                         <TextInput
-                          value={set.repsRight}
+                          value={set.repsRight ?? ""}
                           onChangeText={(v) => updateFirstSetField(row.key, set.key, "repsRight", v)}
                           keyboardType="number-pad"
                           placeholder="R"
@@ -1440,7 +1440,7 @@ export default function LogWorkoutScreen() {
                           style={[styles.setInput, set.completed && styles.setInputCompleted, { flex: 1 }]}
                         />
                         <TextInput
-                          value={set.repsLeft}
+                          value={set.repsLeft ?? ""}
                           onChangeText={(v) => updateFirstSetField(row.key, set.key, "repsLeft", v)}
                           keyboardType="number-pad"
                           placeholder="L"

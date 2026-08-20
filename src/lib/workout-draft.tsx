@@ -244,6 +244,76 @@ function emptyDraft(): WorkoutDraft {
   };
 }
 
+// A draft persisted to AsyncStorage by an older build can be missing fields
+// that got added to SetRow/ExerciseRow/RunRow since — repsRight/repsLeft and
+// perSide, for instance, only exist as of today's per-side-reps feature. The
+// hydration effect below used to shallow-merge {...emptyDraft(), ...parsed},
+// which only backfills missing *top-level* WorkoutDraft fields; a member who
+// had an in-progress workout open when the app updated would load rows
+// silently missing whatever's new, and any code that trusts those fields
+// unconditionally (e.g. `.trim()` on a reps string) throws. This has broken
+// log-workout.tsx's submit path twice before (034c762, 0916b1f) for exactly
+// this reason — normalizing every persisted row on load, once, here, is
+// cheaper and more durable than re-auditing every read site each time a
+// field is added.
+function normalizeSetRow(raw: Partial<SetRow> | null | undefined): SetRow {
+  const r = raw ?? {};
+  return {
+    key: r.key ?? `sr-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    weight: r.weight ?? "",
+    reps: r.reps ?? "",
+    repsRight: r.repsRight ?? "",
+    repsLeft: r.repsLeft ?? "",
+    setType: r.setType ?? "standard",
+    completed: r.completed ?? false,
+  };
+}
+
+function normalizeExerciseRow(raw: Partial<ExerciseRow> | null | undefined): ExerciseRow {
+  const r = raw ?? {};
+  return {
+    key: r.key ?? `er-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    exerciseId: r.exerciseId ?? null,
+    name: r.name ?? "",
+    notes: r.notes ?? "",
+    rir: r.rir ?? "",
+    setRows: Array.isArray(r.setRows) ? r.setRows.map(normalizeSetRow) : [],
+    unitMode: r.unitMode ?? "weight",
+    defaultSetType: r.defaultSetType ?? "standard",
+    supersetGroup: r.supersetGroup ?? null,
+    perSide: r.perSide ?? false,
+  };
+}
+
+function normalizeRunRow(raw: Partial<RunRow> | null | undefined): RunRow {
+  const r = raw ?? {};
+  return {
+    key: r.key ?? `rr-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    distance: r.distance ?? "",
+    distanceUnit: r.distanceUnit ?? "km",
+    duration: r.duration ?? "",
+    reps: r.reps ?? "",
+    sets: r.sets ?? "",
+    notes: r.notes ?? "",
+    splits: Array.isArray(r.splits) ? r.splits : [],
+  };
+}
+
+// Merges a persisted draft (however old) onto a fresh emptyDraft() for every
+// flat/top-level field, then deep-normalizes the two arrays whose element
+// shape actually changes release to release. The other config objects
+// (circuitConfig, chipperConfig, etc.) are left to the shallow merge — they
+// haven't been implicated in a crash and re-normalizing every nested shape
+// preemptively risks introducing new bugs for no known problem.
+function normalizeDraft(raw: Partial<WorkoutDraft>): WorkoutDraft {
+  const merged = { ...emptyDraft(), ...raw };
+  return {
+    ...merged,
+    exerciseRows: Array.isArray(raw.exerciseRows) ? raw.exerciseRows.map(normalizeExerciseRow) : [],
+    runRows: Array.isArray(raw.runRows) ? raw.runRows.map(normalizeRunRow) : [],
+  };
+}
+
 async function scheduleLiveNotification(elapsedSecs: number): Promise<void> {
   if (Platform.OS === "web") return;
   const mins = Math.floor(elapsedSecs / 60);
@@ -298,7 +368,7 @@ export function WorkoutDraftProvider({ children }: { children: ReactNode }) {
     (async () => {
       try {
         const raw = await AsyncStorage.getItem(STORAGE_KEY);
-        if (raw) setDraft({ ...emptyDraft(), ...JSON.parse(raw) });
+        if (raw) setDraft(normalizeDraft(JSON.parse(raw)));
       } catch {
         // Corrupt/unreadable draft — start fresh rather than crash.
       } finally {

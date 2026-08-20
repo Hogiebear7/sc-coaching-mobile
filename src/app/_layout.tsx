@@ -1,17 +1,20 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack, useRouter, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import { useEffect } from "react";
-import { ActivityIndicator, StatusBar, StyleSheet, View } from "react-native";
+import { useEffect, useState } from "react";
+import { ActivityIndicator, ScrollView, StatusBar, StyleSheet, Text, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
-import { Color } from "@/constants/theme";
+import { Button } from "@/components/ui/Button";
+import { Color, Radius, Spacing } from "@/constants/theme";
 import { AuthProvider, useAuth } from "@/lib/auth-context";
+import { clearLastCrash, getLastCrash, installGlobalCrashHandler, type CrashRecord } from "@/lib/crash-log";
 import { addNotificationTapListener, mapLinkHrefToRoute } from "@/lib/push-notifications";
 import { RestTimerProvider } from "@/lib/rest-timer";
 import { WorkoutDraftProvider } from "@/lib/workout-draft";
 
 SplashScreen.preventAutoHideAsync();
+installGlobalCrashHandler();
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 30_000 } },
@@ -108,7 +111,58 @@ function AuthGate() {
   );
 }
 
+// Diagnostic-only: shows whatever installGlobalCrashHandler() captured from
+// the app's last fatal JS error, so it can be read/screenshotted and sent
+// back rather than lost the moment the app terminates. Blocks the rest of
+// the app behind "Dismiss" so it's impossible to miss after a crash.
+function CrashViewer({ crash, onDismiss }: { crash: CrashRecord; onDismiss: () => void }) {
+  return (
+    <View style={styles.crashRoot}>
+      <ScrollView contentContainerStyle={styles.crashScroll}>
+        <Text style={styles.crashTitle}>The app crashed last time it was open</Text>
+        <Text style={styles.crashSubtitle}>
+          {new Date(crash.timestamp).toLocaleString()} · Screenshot this and send it over so it can be fixed.
+        </Text>
+        <View style={styles.crashBox}>
+          <Text style={styles.crashLabel}>MESSAGE</Text>
+          <Text style={styles.crashText}>{crash.message}</Text>
+          {crash.stack ? (
+            <>
+              <Text style={[styles.crashLabel, { marginTop: Spacing.md }]}>STACK</Text>
+              <Text style={styles.crashText}>{crash.stack}</Text>
+            </>
+          ) : null}
+        </View>
+      </ScrollView>
+      <View style={styles.crashFooter}>
+        <Button title="Dismiss" onPress={onDismiss} />
+      </View>
+    </View>
+  );
+}
+
 export default function RootLayout() {
+  const [lastCrash, setLastCrash] = useState<CrashRecord | null | undefined>(undefined);
+
+  useEffect(() => {
+    getLastCrash().then(setLastCrash);
+  }, []);
+
+  if (lastCrash) {
+    return (
+      <SafeAreaProvider>
+        <StatusBar barStyle="light-content" backgroundColor={Color.bg0} />
+        <CrashViewer
+          crash={lastCrash}
+          onDismiss={() => {
+            void clearLastCrash();
+            setLastCrash(null);
+          }}
+        />
+      </SafeAreaProvider>
+    );
+  }
+
   return (
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>
@@ -138,4 +192,19 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: Color.bg0,
   },
+  crashRoot: { flex: 1, backgroundColor: Color.bg0 },
+  crashScroll: { padding: Spacing.lg, paddingTop: Spacing.xxl },
+  crashTitle: { fontSize: 18, fontWeight: "700", color: Color.textPrimary },
+  crashSubtitle: { fontSize: 12, color: Color.textMuted, marginTop: Spacing.xs, lineHeight: 17 },
+  crashBox: {
+    marginTop: Spacing.lg,
+    padding: Spacing.md,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: Color.borderSubtle,
+    backgroundColor: Color.surface1,
+  },
+  crashLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted },
+  crashText: { fontSize: 12, color: Color.textSecondary, marginTop: Spacing.xs, fontFamily: "monospace" },
+  crashFooter: { padding: Spacing.lg },
 });

@@ -1,39 +1,27 @@
-import Svg, { Circle, Rect } from "react-native-svg";
+import { useWindowDimensions, View } from "react-native";
+import Body, { type ExtendedBodyPart, type Slug } from "react-native-body-highlighter";
 
 import { Color } from "@/constants/theme";
 import { BODY_ZONES, type BodyZoneKey } from "@/lib/body-zones";
+import { ZONE_FOR_SLUG } from "@/lib/muscle-slug-map";
 
-// Stylized (not medical/anatomical) tappable body diagram — geometric
-// blocks in a body-like arrangement, same philosophy as the web app's
-// MuscleMap.tsx reference, ported to react-native-svg and re-keyed off the
-// real exercise-library bodyPart taxonomy instead of that component's own
-// unrelated section enum.
-//
-// One shared coordinate layout for front/back — the two views only differ
-// in the central torso zone (chest vs back) and a couple of decorative
-// front-only details (face dots), since the underlying library taxonomy
-// doesn't distinguish "front waist" from "back waist" etc.
+// Real anatomical silhouette (react-native-body-highlighter) instead of
+// the earlier geometric-block placeholder — genuine front/back SVG paths
+// with named muscle regions, male/female variants. This component only
+// ever speaks BodyZoneKey to the outside world; ZONE_FOR_SLUG is the sole
+// bridge between the picker's ~20 anatomical regions and the exercise
+// library's 9 actual filterable body parts, so workout-generator.tsx needs
+// no changes — same isZoneSelected/isZoneAvailable/onToggleZone contract
+// as the component it replaces.
 
-const VIEWBOX_W = 200;
-const VIEWBOX_H = 360;
+// The package renders at a fixed 200x400 * scale pixel size (not
+// percentage-based), so scale is derived from the window width to fill the
+// available column responsively across phone sizes, capped so it doesn't
+// blow out on tablets.
+const NATIVE_W = 200;
+const HORIZONTAL_INSET = 64; // ~ screen padding either side of the diagram column
 
 type Sex = "male" | "female";
-
-// Subtle silhouette variation — narrower shoulders/upper-arms and a bit
-// more hip width for the female variant. Not an attempt at anatomical
-// accuracy, just enough to visually differentiate the two.
-function layoutFor(sex: Sex) {
-  const shoulderSpan = sex === "female" ? 14 : 22;
-  const hipSpan = sex === "female" ? 6 : 0;
-  return {
-    shoulderLeftX: 40 - shoulderSpan / 2,
-    shoulderRightX: 122 + shoulderSpan / 2,
-    armLeftX: 22 - shoulderSpan / 2,
-    armRightX: 152 + shoulderSpan / 2,
-    hipLeftX: 68 - hipSpan / 2,
-    hipRightX: 102 + hipSpan / 2,
-  };
-}
 
 export interface BodyDiagramProps {
   view: "front" | "back";
@@ -43,109 +31,45 @@ export interface BodyDiagramProps {
   onToggleZone: (key: BodyZoneKey) => void;
 }
 
+const UNAVAILABLE_FILL = "rgba(255,255,255,0.05)";
+
 export function BodyDiagram({ view, sex, isZoneSelected, isZoneAvailable, onToggleZone }: BodyDiagramProps) {
-  const l = layoutFor(sex);
+  const { width } = useWindowDimensions();
+  const scale = Math.min(Math.max((width - HORIZONTAL_INSET) / NATIVE_W, 1.2), 2.1);
 
-  function fillFor(key: BodyZoneKey) {
-    if (!isZoneAvailable(key)) return Color.surface2;
-    return isZoneSelected(key) ? Color.gold : Color.surface1;
-  }
-  function strokeFor(key: BodyZoneKey) {
-    return isZoneSelected(key) && isZoneAvailable(key) ? Color.gold : Color.borderSubtle;
-  }
-  function press(key: BodyZoneKey) {
-    if (!isZoneAvailable(key)) return;
-    onToggleZone(key);
-  }
+  const data: ExtendedBodyPart[] = (Object.keys(ZONE_FOR_SLUG) as Slug[]).reduce<ExtendedBodyPart[]>(
+    (acc, slug) => {
+      const zone = ZONE_FOR_SLUG[slug];
+      if (!zone) return acc; // decorative part — left at defaultFill, never selectable
+      const available = isZoneAvailable(zone);
+      const selected = available && isZoneSelected(zone);
+      acc.push({
+        slug,
+        color: selected ? Color.gold : available ? Color.surface2 : UNAVAILABLE_FILL,
+      });
+      return acc;
+    },
+    []
+  );
 
-  const torsoKey: BodyZoneKey = view === "front" ? "chest" : "back";
+  function handlePress(part: ExtendedBodyPart) {
+    const zone = part.slug ? ZONE_FOR_SLUG[part.slug] : null;
+    if (!zone || !isZoneAvailable(zone)) return;
+    onToggleZone(zone);
+  }
 
   return (
-    <Svg width="100%" viewBox={`0 0 ${VIEWBOX_W} ${VIEWBOX_H}`} style={{ aspectRatio: VIEWBOX_W / VIEWBOX_H }}>
-      {/* Head — decorative, not tappable */}
-      <Circle cx={100} cy={30} r={22} fill={Color.surface2} stroke={Color.borderSubtle} strokeWidth={1.5} />
-
-      {/* Neck */}
-      <Rect
-        x={88} y={50} width={24} height={16} rx={4}
-        fill={fillFor("neck")} stroke={strokeFor("neck")} strokeWidth={1.5}
-        onPress={() => press("neck")}
+    <View style={{ alignItems: "center" }} accessibilityLabel={`${sex} body diagram, ${view} view`}>
+      <Body
+        data={data}
+        gender={sex}
+        side={view}
+        scale={scale}
+        border={Color.borderSubtle}
+        defaultFill={Color.surface1}
+        onBodyPartPress={handlePress}
       />
-
-      {/* Shoulders (bilateral — one zone) */}
-      <Rect
-        x={l.shoulderLeftX} y={66} width={38} height={18} rx={7}
-        fill={fillFor("shoulders")} stroke={strokeFor("shoulders")} strokeWidth={1.5}
-        onPress={() => press("shoulders")}
-      />
-      <Rect
-        x={l.shoulderRightX - 38} y={66} width={38} height={18} rx={7}
-        fill={fillFor("shoulders")} stroke={strokeFor("shoulders")} strokeWidth={1.5}
-        onPress={() => press("shoulders")}
-      />
-
-      {/* Chest / Back — central torso, upper */}
-      <Rect
-        x={70} y={68} width={60} height={50} rx={8}
-        fill={fillFor(torsoKey)} stroke={strokeFor(torsoKey)} strokeWidth={1.5}
-        onPress={() => press(torsoKey)}
-      />
-
-      {/* Waist — central torso, lower */}
-      <Rect
-        x={72} y={118} width={56} height={46} rx={8}
-        fill={fillFor("waist")} stroke={strokeFor("waist")} strokeWidth={1.5}
-        onPress={() => press("waist")}
-      />
-
-      {/* Upper arms (bilateral) */}
-      <Rect
-        x={l.armLeftX} y={84} width={26} height={70} rx={10}
-        fill={fillFor("upper-arms")} stroke={strokeFor("upper-arms")} strokeWidth={1.5}
-        onPress={() => press("upper-arms")}
-      />
-      <Rect
-        x={l.armRightX - 26} y={84} width={26} height={70} rx={10}
-        fill={fillFor("upper-arms")} stroke={strokeFor("upper-arms")} strokeWidth={1.5}
-        onPress={() => press("upper-arms")}
-      />
-
-      {/* Lower arms (bilateral) */}
-      <Rect
-        x={l.armLeftX - 4} y={154} width={24} height={60} rx={10}
-        fill={fillFor("lower-arms")} stroke={strokeFor("lower-arms")} strokeWidth={1.5}
-        onPress={() => press("lower-arms")}
-      />
-      <Rect
-        x={l.armRightX - 20} y={154} width={24} height={60} rx={10}
-        fill={fillFor("lower-arms")} stroke={strokeFor("lower-arms")} strokeWidth={1.5}
-        onPress={() => press("lower-arms")}
-      />
-
-      {/* Upper legs (bilateral) */}
-      <Rect
-        x={l.hipLeftX} y={164} width={30} height={90} rx={11}
-        fill={fillFor("upper-legs")} stroke={strokeFor("upper-legs")} strokeWidth={1.5}
-        onPress={() => press("upper-legs")}
-      />
-      <Rect
-        x={l.hipRightX - 30} y={164} width={30} height={90} rx={11}
-        fill={fillFor("upper-legs")} stroke={strokeFor("upper-legs")} strokeWidth={1.5}
-        onPress={() => press("upper-legs")}
-      />
-
-      {/* Lower legs (bilateral) */}
-      <Rect
-        x={70} y={254} width={26} height={100} rx={10}
-        fill={fillFor("lower-legs")} stroke={strokeFor("lower-legs")} strokeWidth={1.5}
-        onPress={() => press("lower-legs")}
-      />
-      <Rect
-        x={104} y={254} width={26} height={100} rx={10}
-        fill={fillFor("lower-legs")} stroke={strokeFor("lower-legs")} strokeWidth={1.5}
-        onPress={() => press("lower-legs")}
-      />
-    </Svg>
+    </View>
   );
 }
 

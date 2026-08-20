@@ -17,7 +17,15 @@ import type { WorkoutSetType } from "@/lib/queries/workouts";
 const STORAGE_KEY = "workout-draft-v1";
 const LIVE_NOTIFICATION_ID = "workout-draft-live";
 
-export type SetRow = { key: string; weight: string; reps: string; setType: WorkoutSetType; completed: boolean };
+export type SetRow = {
+  key: string;
+  weight: string;
+  reps: string;
+  repsRight: string;
+  repsLeft: string;
+  setType: WorkoutSetType;
+  completed: boolean;
+};
 
 export type ExerciseRow = {
   key: string;
@@ -26,7 +34,7 @@ export type ExerciseRow = {
   notes: string;
   rir: string;
   setRows: SetRow[];
-  unitMode: "weight" | "time";
+  unitMode: "weight" | "time" | "band";
   defaultSetType: WorkoutSetType;
   /** "ST1", "ST2", etc. — exercises sharing a label were performed
       back-to-back as a superset. null = not part of one. */

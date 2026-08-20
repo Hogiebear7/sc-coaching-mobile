@@ -99,7 +99,19 @@ function nextKey(): string {
 }
 
 function newSetRow(setType: WorkoutSetType = "standard"): SetRow {
-  return { key: nextKey(), weight: "", reps: "", setType, completed: false };
+  return { key: nextKey(), weight: "", reps: "", repsRight: "", repsLeft: "", setType, completed: false };
+}
+
+function unitModeLabel(mode: ExerciseRow["unitMode"]): string {
+  if (mode === "time") return "Time unit";
+  if (mode === "band") return "Band";
+  return "Weight unit";
+}
+
+function unitModeColumnLabel(mode: ExerciseRow["unitMode"]): string {
+  if (mode === "time") return "Time";
+  if (mode === "band") return "Band";
+  return "Weight";
 }
 
 function nextSetType(current: WorkoutSetType): WorkoutSetType {
@@ -690,7 +702,7 @@ export default function LogWorkoutScreen() {
   // Editing set 1's weight/reps also fills any later set that's still blank —
   // most sets are the same or similar, and this saves retyping each one.
   // Sets the member has already typed something into are left alone.
-  function updateFirstSetField(rowKey: string, setKey: string, field: "weight" | "reps", value: string) {
+  function updateFirstSetField(rowKey: string, setKey: string, field: "weight" | "reps" | "repsRight" | "repsLeft", value: string) {
     update({
       exerciseRows: exerciseRows.map((r) => {
         if (r.key !== rowKey) return r;
@@ -798,7 +810,9 @@ export default function LogWorkoutScreen() {
     // message instead.
     try {
       const rowsWithContent = exerciseRows.filter((r) => r.name.trim());
-      const filledSetsByRow = rowsWithContent.map((r) => r.setRows.filter((sr) => sr.weight.trim() || sr.reps.trim()));
+      const filledSetsByRow = rowsWithContent.map((r) =>
+        r.setRows.filter((sr) => sr.weight.trim() || sr.reps.trim() || sr.repsRight.trim() || sr.repsLeft.trim())
+      );
 
       const exercises: CreateWorkoutExerciseInput[] = rowsWithContent.map((r, idx) => {
         const filled = filledSetsByRow[idx];
@@ -814,6 +828,8 @@ export default function LogWorkoutScreen() {
             weight: sr.weight.trim() || null,
             reps: sr.reps.trim() ? parseInt(sr.reps, 10) : null,
             setType: sr.setType === "standard" ? null : sr.setType,
+            repsRight: sr.repsRight.trim() ? parseInt(sr.repsRight, 10) : null,
+            repsLeft: sr.repsLeft.trim() ? parseInt(sr.repsLeft, 10) : null,
           })),
           setType: first && first.setType !== "standard" ? first.setType : null,
           supersetGroup: r.supersetGroup,
@@ -1349,13 +1365,16 @@ export default function LogWorkoutScreen() {
               ) : null}
 
               <View style={styles.unitToggleRow}>
-                <Text style={styles.fieldLabel}>{row.unitMode === "time" ? "Time" : "Weight"} unit</Text>
+                <Text style={styles.fieldLabel}>{unitModeLabel(row.unitMode)}</Text>
                 <View style={{ flexDirection: "row", gap: 4 }}>
                   <Pressable onPress={() => updateRow(row.key, { unitMode: "weight" })} style={[styles.unitChip, row.unitMode === "weight" && styles.unitChipActive]}>
                     <Text style={[styles.unitChipText, row.unitMode === "weight" && styles.unitChipTextActive]}>kg</Text>
                   </Pressable>
                   <Pressable onPress={() => updateRow(row.key, { unitMode: "time" })} style={[styles.unitChip, row.unitMode === "time" && styles.unitChipActive]}>
                     <Text style={[styles.unitChipText, row.unitMode === "time" && styles.unitChipTextActive]}>time</Text>
+                  </Pressable>
+                  <Pressable onPress={() => updateRow(row.key, { unitMode: "band" })} style={[styles.unitChip, row.unitMode === "band" && styles.unitChipActive]}>
+                    <Text style={[styles.unitChipText, row.unitMode === "band" && styles.unitChipTextActive]}>band</Text>
                   </Pressable>
                 </View>
               </View>
@@ -1375,8 +1394,8 @@ export default function LogWorkoutScreen() {
 
               <View style={styles.setColumnHeader}>
                 <Text style={[styles.setColumnLabel, { width: 40 }]}>Set</Text>
-                <Text style={[styles.setColumnLabel, { flex: 1 }]}>{row.unitMode === "time" ? "Time" : "Weight"}</Text>
-                <Text style={[styles.setColumnLabel, { flex: 1 }]}>Reps</Text>
+                <Text style={[styles.setColumnLabel, { flex: 1 }]}>{unitModeColumnLabel(row.unitMode)}</Text>
+                <Text style={[styles.setColumnLabel, { flex: 1 }]}>{row.perSide ? "Reps (R/L)" : "Reps"}</Text>
                 <View style={{ width: 32 }} />
               </View>
 
@@ -1402,21 +1421,43 @@ export default function LogWorkoutScreen() {
                       value={set.weight}
                       onChangeText={(v) => updateFirstSetField(row.key, set.key, "weight", v)}
                       onBlur={() => {
+                        if (row.unitMode === "band") return;
                         const formatted = row.unitMode === "time" ? formatAsMmSs(set.weight) : formatAsKg(set.weight);
                         if (formatted !== set.weight) updateSetRow(row.key, set.key, { weight: formatted });
                       }}
-                      placeholder={lastSet?.weight ?? (row.unitMode === "time" ? "1:30" : "60")}
+                      placeholder={lastSet?.weight ?? (row.unitMode === "time" ? "1:30" : row.unitMode === "band" ? "e.g. Purple" : "60")}
                       placeholderTextColor={Color.textFaint}
                       style={[styles.setInput, set.completed && styles.setInputCompleted, { flex: 1 }]}
                     />
-                    <TextInput
-                      value={set.reps}
-                      onChangeText={(v) => updateFirstSetField(row.key, set.key, "reps", v)}
-                      keyboardType="number-pad"
-                      placeholder={lastSet?.reps != null ? String(lastSet.reps) : "8"}
-                      placeholderTextColor={Color.textFaint}
-                      style={[styles.setInput, set.completed && styles.setInputCompleted, { flex: 1 }]}
-                    />
+                    {row.perSide ? (
+                      <View style={{ flex: 1, flexDirection: "row", gap: 4 }}>
+                        <TextInput
+                          value={set.repsRight}
+                          onChangeText={(v) => updateFirstSetField(row.key, set.key, "repsRight", v)}
+                          keyboardType="number-pad"
+                          placeholder="R"
+                          placeholderTextColor={Color.textFaint}
+                          style={[styles.setInput, set.completed && styles.setInputCompleted, { flex: 1 }]}
+                        />
+                        <TextInput
+                          value={set.repsLeft}
+                          onChangeText={(v) => updateFirstSetField(row.key, set.key, "repsLeft", v)}
+                          keyboardType="number-pad"
+                          placeholder="L"
+                          placeholderTextColor={Color.textFaint}
+                          style={[styles.setInput, set.completed && styles.setInputCompleted, { flex: 1 }]}
+                        />
+                      </View>
+                    ) : (
+                      <TextInput
+                        value={set.reps}
+                        onChangeText={(v) => updateFirstSetField(row.key, set.key, "reps", v)}
+                        keyboardType="number-pad"
+                        placeholder={lastSet?.reps != null ? String(lastSet.reps) : "8"}
+                        placeholderTextColor={Color.textFaint}
+                        style={[styles.setInput, set.completed && styles.setInputCompleted, { flex: 1 }]}
+                      />
+                    )}
                     <Pressable onPress={() => toggleSetComplete(row.key, set.key)} hitSlop={8} style={styles.setCheckWrap}>
                       <View style={[styles.setCheck, set.completed && styles.setCheckDone]}>
                         {set.completed ? <Ionicons name="checkmark" size={16} color={Color.bg0} /> : null}

@@ -93,14 +93,17 @@ export function formatExerciseLoad(ex: WorkoutExerciseEntry): string {
   if (ex.setDetails && ex.setDetails.length > 0) {
     return ex.setDetails
       .map((s) => {
-        const load =
-          s.weight && s.reps !== null
-            ? `${s.weight}×${s.reps}${perSideSuffix}`
-            : s.weight
-              ? `${s.weight}`
-              : s.reps !== null
-                ? `×${s.reps}${perSideSuffix}`
-                : "—";
+        const repsLabel =
+          s.repsRight !== null && s.repsRight !== undefined && s.repsLeft !== null && s.repsLeft !== undefined
+            ? `R${s.repsRight}/L${s.repsLeft}`
+            : s.reps !== null
+              ? `×${s.reps}${perSideSuffix}`
+              : null;
+        const load = s.weight && repsLabel
+          ? `${s.weight}${repsLabel.startsWith("R") ? " " : ""}${repsLabel}`
+          : s.weight
+            ? s.weight
+            : (repsLabel ?? "—");
         const typeLabel = s.setType ? SET_TYPE_LABEL[s.setType] : "";
         return typeLabel ? `${load} (${typeLabel})` : load;
       })

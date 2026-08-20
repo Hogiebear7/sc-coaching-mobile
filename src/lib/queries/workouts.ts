@@ -19,6 +19,10 @@ export interface WorkoutSetDetail {
   weight: string | null;
   reps: number | null;
   setType?: WorkoutSetType | null;
+  // Per-side reps for a unilateral set (perSide true on the parent
+  // exercise) — reps is null when these are used, and vice versa.
+  repsRight?: number | null;
+  repsLeft?: number | null;
 }
 
 export interface WorkoutExerciseEntry {

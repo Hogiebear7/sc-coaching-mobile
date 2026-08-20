@@ -23,7 +23,17 @@ import {
 } from "@/lib/queries/workouts";
 import { formatAsKg, formatDuration, parseDuration, todayDateString } from "@/lib/workout-formatters";
 
-type EditSetRow = { key: string; weight: string; reps: string; setType: WorkoutSetType };
+type EditSetRow = {
+  key: string;
+  weight: string;
+  reps: string;
+  setType: WorkoutSetType;
+  // Preserved but not editable here — log-workout.tsx is where a per-side
+  // set is actually entered/split; this screen just must not silently drop
+  // these values on an unrelated save.
+  repsRight: string;
+  repsLeft: string;
+};
 
 function nextEditSetType(current: WorkoutSetType): WorkoutSetType {
   const idx = SET_TYPE_OPTIONS.findIndex((opt) => opt.value === current);
@@ -61,7 +71,7 @@ type EditRunRow = {
 };
 
 function newEditSetRow(setType: WorkoutSetType = "standard"): EditSetRow {
-  return { key: nextKey(), weight: "", reps: "", setType };
+  return { key: nextKey(), weight: "", reps: "", repsRight: "", repsLeft: "", setType };
 }
 
 // Older entries (or ones logged as a single summary rather than per-set)
@@ -81,6 +91,8 @@ function deriveSetRows(ex: {
       weight: sd.weight ?? "",
       reps: sd.reps != null ? String(sd.reps) : "",
       setType: sd.setType ?? "standard",
+      repsRight: sd.repsRight != null ? String(sd.repsRight) : "",
+      repsLeft: sd.repsLeft != null ? String(sd.repsLeft) : "",
     }));
   }
   const count = ex.sets && ex.sets > 0 ? ex.sets : 1;
@@ -89,6 +101,8 @@ function deriveSetRows(ex: {
     weight: ex.weight ?? "",
     reps: ex.reps != null ? String(ex.reps) : "",
     setType: ex.setType ?? "standard",
+    repsRight: "",
+    repsLeft: "",
   }));
 }
 
@@ -235,7 +249,7 @@ export default function EditWorkoutScreen() {
     const exercises: CreateWorkoutExerciseInput[] = exerciseRows
       .filter((row) => row.name.trim())
       .map((row) => {
-        const filled = row.setRows.filter((sr) => sr.weight.trim() || sr.reps.trim());
+        const filled = row.setRows.filter((sr) => sr.weight.trim() || sr.reps.trim() || sr.repsRight.trim() || sr.repsLeft.trim());
         const first = filled[0];
         return {
           exerciseId: row.exerciseId,
@@ -248,6 +262,8 @@ export default function EditWorkoutScreen() {
             weight: sr.weight.trim() || null,
             reps: sr.reps.trim() ? parseInt(sr.reps, 10) : null,
             setType: sr.setType === "standard" ? null : sr.setType,
+            repsRight: sr.repsRight.trim() ? parseInt(sr.repsRight, 10) : null,
+            repsLeft: sr.repsLeft.trim() ? parseInt(sr.repsLeft, 10) : null,
           })),
           setType: first && first.setType !== "standard" ? first.setType : null,
           supersetGroup: row.supersetGroup,

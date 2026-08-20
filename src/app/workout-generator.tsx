@@ -1,8 +1,28 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  LayoutAnimation,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  UIManager,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+
+// Android needs this opt-in for LayoutAnimation pre-Fabric; harmless no-op
+// on the New Architecture and on iOS/web. Runs once at module load.
+if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+
+function animateLayout() {
+  LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+}
 
 import { BodyDiagram, type ZoneSelectionState } from "@/components/ui/BodyDiagram";
 import { Button } from "@/components/ui/Button";
@@ -72,6 +92,94 @@ function ChipGroup({
   );
 }
 
+// "2 selected · Chest, Shoulders" / "4 selected · Chest, Shoulders +2 more"
+// / "None selected" — first two names always shown so the summary stays
+// legible instead of running off the header.
+function summarizeSelection(names: string[]): string {
+  if (names.length === 0) return "None selected";
+  const shown = names.slice(0, 2).join(", ");
+  const extra = names.length > 2 ? ` +${names.length - 2} more` : "";
+  return `${names.length} selected · ${shown}${extra}`;
+}
+
+// Collapsed by default — the header alone (title + live count + a
+// same-breath name summary) is the primary feedback loop for "did my tap
+// register", so the member never has to open this to know what's
+// selected. Expanding is only for reviewing/removing. Only ever renders
+// values that are actually selected — this is a summary, not the full
+// picker (that's the "Select from list" fallback below it).
+function SelectedMusclesSection({
+  title,
+  values,
+  labels,
+  variant,
+  onRemove,
+  emptyHint,
+}: {
+  title: string;
+  values: string[];
+  labels: Record<string, string>;
+  variant: "primary" | "secondary";
+  onRemove: (value: string) => void;
+  emptyHint: string;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const names = values.map((v) => labels[v] ?? humanizeZoneValue(v));
+  const dotColor = variant === "primary" ? Color.gold : Color.accentData;
+  const activeChipStyle = variant === "primary" ? styles.chipActive : styles.chipActiveSecondary;
+  const activeTextStyle = variant === "primary" ? styles.chipTextActive : styles.chipTextActiveSecondary;
+
+  function toggleExpanded() {
+    animateLayout();
+    tapFeedback();
+    setExpanded((e) => !e);
+  }
+
+  return (
+    <View style={styles.summarySection}>
+      <Pressable
+        onPress={toggleExpanded}
+        style={styles.summaryHeader}
+        accessibilityRole="button"
+        accessibilityState={{ expanded }}
+        accessibilityLabel={`${title}. ${values.length} selected${names.length > 0 ? `: ${names.join(", ")}` : ""}.`}
+        accessibilityHint={expanded ? "Double tap to collapse" : "Double tap to expand and review"}
+      >
+        <View style={[styles.summaryDot, { backgroundColor: dotColor }]} />
+        <Text style={styles.summaryHeaderText} numberOfLines={1}>
+          <Text style={styles.summaryTitle}>{title}</Text>
+          <Text style={styles.summaryMeta}> · {summarizeSelection(names)}</Text>
+        </Text>
+        <Ionicons name={expanded ? "chevron-up" : "chevron-down"} size={16} color={Color.textFaint} />
+      </Pressable>
+
+      {expanded ? (
+        values.length === 0 ? (
+          <Text style={styles.summaryEmptyText}>{emptyHint}</Text>
+        ) : (
+          <View style={styles.summaryChipRow}>
+            {values.map((v) => (
+              <Pressable
+                key={v}
+                onPress={() => {
+                  animateLayout();
+                  onRemove(v);
+                }}
+                style={[styles.chip, activeChipStyle]}
+                accessibilityRole="button"
+                accessibilityLabel={`${labels[v] ?? humanizeZoneValue(v)}, selected. Double tap to remove.`}
+              >
+                <Text style={[styles.chipText, activeTextStyle]}>{labels[v] ?? humanizeZoneValue(v)}</Text>
+                <Ionicons name="close" size={12} color={dotColor} style={{ marginLeft: 4 }} />
+              </Pressable>
+            ))}
+          </View>
+        )
+      ) : null}
+    </View>
+  );
+}
+
 export default function WorkoutGeneratorScreen() {
   const router = useRouter();
   const { data, isLoading, isError, refetch } = useExerciseLibrary();
@@ -90,6 +198,10 @@ export default function WorkoutGeneratorScreen() {
   const [view, setView] = useState<"front" | "back">("front");
   const [timeMinutes, setTimeMinutes] = useState(45);
   const [error, setError] = useState<string | null>(null);
+  // Precision/accessibility fallback — the full option list, hidden by
+  // default now that the collapsed summaries are the primary review
+  // surface. Diagram taps and this list both write the same state.
+  const [showFullList, setShowFullList] = useState(false);
 
   const [equipmentSlugs, setEquipmentSlugs] = useState<string[]>([]);
   const [selectedGymProfileId, setSelectedGymProfileId] = useState<string | null>(null);
@@ -138,6 +250,7 @@ export default function WorkoutGeneratorScreen() {
     const vendorValues = vendorValuesPresentForZone(zone, data.filters.bodyParts);
     if (vendorValues.length === 0) return;
     tapFeedback();
+    animateLayout();
 
     const currentSet = bodyMode === "primary" ? primaryBodyParts : secondaryBodyParts;
     const otherSet = bodyMode === "primary" ? secondaryBodyParts : primaryBodyParts;
@@ -168,6 +281,7 @@ export default function WorkoutGeneratorScreen() {
   // ChipGroup falls back to humanizeZoneValue for anything without a
   // recorded label.
   function toggleBodyPartChip(mode: "primary" | "secondary", value: string) {
+    animateLayout();
     const setter = mode === "primary" ? setPrimaryBodyParts : setSecondaryBodyParts;
     const otherSet = mode === "primary" ? secondaryBodyParts : primaryBodyParts;
     setter((prev) => toggleInSet(prev, value));
@@ -362,23 +476,60 @@ export default function WorkoutGeneratorScreen() {
             </View>
           </Card>
 
-          <Text style={[styles.fieldLabel, { marginTop: Spacing.md }]}>Selected — primary (required)</Text>
-          <ChipGroup
-            options={data.filters.bodyParts}
-            selected={primaryBodyParts}
-            labels={zoneLabels}
-            variant="primary"
-            onToggle={(v) => toggleBodyPartChip("primary", v)}
-          />
+          <View style={styles.summaryGroup}>
+            <SelectedMusclesSection
+              title="Primary (required)"
+              values={[...primaryBodyParts]}
+              labels={zoneLabels}
+              variant="primary"
+              onRemove={(v) => toggleBodyPartChip("primary", v)}
+              emptyHint="Tap the body above, in Primary mode, to add the muscles this workout should focus on."
+            />
+            <SelectedMusclesSection
+              title="Secondary (optional)"
+              values={[...secondaryBodyParts]}
+              labels={zoneLabels}
+              variant="secondary"
+              onRemove={(v) => toggleBodyPartChip("secondary", v)}
+              emptyHint="Tap the body above, in Secondary mode, to add extra areas for variety."
+            />
+          </View>
 
-          <Text style={[styles.fieldLabel, { marginTop: Spacing.sm }]}>Selected — secondary (optional)</Text>
-          <ChipGroup
-            options={data.filters.bodyParts}
-            selected={secondaryBodyParts}
-            labels={zoneLabels}
-            variant="secondary"
-            onToggle={(v) => toggleBodyPartChip("secondary", v)}
-          />
+          <Pressable
+            onPress={() => {
+              animateLayout();
+              setShowFullList((v) => !v);
+            }}
+            style={styles.fullListToggle}
+            accessibilityRole="button"
+            accessibilityState={{ expanded: showFullList }}
+            accessibilityLabel={showFullList ? "Hide full muscle list" : "Select from full muscle list"}
+          >
+            <Ionicons name="list-outline" size={13} color={Color.textMuted} />
+            <Text style={styles.fullListToggleText}>{showFullList ? "Hide full list" : "Select from list"}</Text>
+          </Pressable>
+
+          {showFullList ? (
+            <>
+              <Text style={[styles.fieldLabel, { marginTop: Spacing.sm }]}>All primary options</Text>
+              <ChipGroup
+                options={data.filters.bodyParts}
+                selected={primaryBodyParts}
+                labels={zoneLabels}
+                variant="primary"
+                onToggle={(v) => toggleBodyPartChip("primary", v)}
+              />
+
+              <Text style={[styles.fieldLabel, { marginTop: Spacing.sm }]}>All secondary options</Text>
+              <ChipGroup
+                options={data.filters.bodyParts}
+                selected={secondaryBodyParts}
+                labels={zoneLabels}
+                variant="secondary"
+                onToggle={(v) => toggleBodyPartChip("secondary", v)}
+              />
+            </>
+          ) : null}
 
           <Text style={styles.sectionLabel}>TIME AVAILABLE</Text>
           <View style={styles.chipRow}>
@@ -478,6 +629,51 @@ const styles = StyleSheet.create({
   chipText: { fontSize: 12, fontWeight: "600", color: Color.textMuted, textTransform: "capitalize" },
   chipTextActive: { color: Color.gold },
   chipTextActiveSecondary: { color: Color.accentData },
+  // Collapsed-by-default review area — replaces the old always-open chip
+  // wall. Header alone (dot + title + live count/name summary + chevron)
+  // is the whole feedback loop; expanding is only for removing chips.
+  summaryGroup: { marginTop: Spacing.md, gap: Spacing.xs },
+  summarySection: {
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: Color.borderSubtle,
+    backgroundColor: Color.surface1,
+    overflow: "hidden",
+  },
+  summaryHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm + 2,
+  },
+  summaryDot: { width: 8, height: 8, borderRadius: 4 },
+  summaryHeaderText: { flex: 1 },
+  summaryTitle: { fontSize: 12, fontWeight: "700", color: Color.textPrimary },
+  summaryMeta: { fontSize: 12, fontWeight: "500", color: Color.textMuted },
+  summaryEmptyText: {
+    fontSize: 11,
+    color: Color.textFaint,
+    lineHeight: 16,
+    paddingHorizontal: Spacing.md,
+    paddingBottom: Spacing.sm,
+  },
+  summaryChipRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: Spacing.xs,
+    paddingHorizontal: Spacing.md,
+    paddingBottom: Spacing.sm,
+  },
+  fullListToggle: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    marginTop: Spacing.sm,
+    paddingVertical: 6,
+  },
+  fullListToggleText: { fontSize: 11, fontWeight: "600", color: Color.textMuted },
   // The diagram module reads as one contained "picker" panel — Front/Back,
   // Primary/Secondary, the silhouette, and the cardio pill all live inside
   // it, rather than floating loose against the screen background.

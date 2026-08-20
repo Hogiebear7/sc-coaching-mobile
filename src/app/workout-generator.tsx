@@ -4,13 +4,15 @@ import { useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { BodyDiagram } from "@/components/ui/BodyDiagram";
+import { BodyDiagram, type ZoneSelectionState } from "@/components/ui/BodyDiagram";
 import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
 import { EquipmentPicker } from "@/components/ui/EquipmentPicker";
 import { Color, Radius, Spacing } from "@/constants/theme";
 import { CARDIO_VENDOR_VALUE, findBodyZone, vendorValuesPresentForZone, type BodyZoneKey } from "@/lib/body-zones";
 import { equipmentSlugMatchesVendorString } from "@/lib/equipment-matching";
 import { tapFeedback } from "@/lib/haptics";
+import { humanizeZoneValue } from "@/lib/muscle-slug-map";
 import { useExerciseLibrary } from "@/lib/queries/exercise-library";
 import { useEquipmentCatalog, useGymProfiles } from "@/lib/queries/gym-profiles";
 import { useProfile } from "@/lib/queries/profile";
@@ -25,22 +27,47 @@ function toggleInSet(set: Set<string>, value: string): Set<string> {
   return next;
 }
 
+// Labels: the friendly anatomical name the member actually tapped (e.g.
+// "Biceps"), recorded separately from the coarse filter value it maps to
+// (see workout-generator's zoneLabels state) — falls back to a Title-Cased
+// version of the raw filter value for chips added directly from the list
+// rather than by tapping the diagram.
 function ChipGroup({
   options,
   selected,
+  labels,
   onToggle,
+  variant = "primary",
 }: {
   options: string[];
   selected: Set<string>;
+  labels: Record<string, string>;
   onToggle: (value: string) => void;
+  variant?: "primary" | "secondary";
 }) {
+  const activeStyle = variant === "primary" ? styles.chipActive : styles.chipActiveSecondary;
+  const activeTextStyle = variant === "primary" ? styles.chipTextActive : styles.chipTextActiveSecondary;
+  const dotColor = variant === "primary" ? Color.gold : Color.accentData;
+
   return (
     <View style={styles.chipRow}>
-      {options.map((opt) => (
-        <Pressable key={opt} onPress={() => onToggle(opt)} style={[styles.chip, selected.has(opt) && styles.chipActive]}>
-          <Text style={[styles.chipText, selected.has(opt) && styles.chipTextActive]}>{opt}</Text>
-        </Pressable>
-      ))}
+      {options.map((opt) => {
+        const active = selected.has(opt);
+        const label = labels[opt] ?? humanizeZoneValue(opt);
+        return (
+          <Pressable
+            key={opt}
+            onPress={() => onToggle(opt)}
+            style={[styles.chip, active && activeStyle]}
+            accessibilityRole="button"
+            accessibilityState={{ selected: active }}
+            accessibilityLabel={`${label}${active ? ", selected. Double tap to remove." : ". Double tap to add."}`}
+          >
+            <Text style={[styles.chipText, active && activeTextStyle]}>{label}</Text>
+            {active ? <Ionicons name="close" size={12} color={dotColor} style={{ marginLeft: 4 }} /> : null}
+          </Pressable>
+        );
+      })}
     </View>
   );
 }
@@ -54,6 +81,11 @@ export default function WorkoutGeneratorScreen() {
 
   const [primaryBodyParts, setPrimaryBodyParts] = useState<Set<string>>(new Set());
   const [secondaryBodyParts, setSecondaryBodyParts] = useState<Set<string>>(new Set());
+  // Friendly anatomical label per selected filter value (e.g.
+  // "upper arms" -> "Biceps") — set whenever a diagram tap turns a value
+  // on, cleared only once that value is deselected everywhere. Purely
+  // display state; generation always reads the coarse filter values above.
+  const [zoneLabels, setZoneLabels] = useState<Record<string, string>>({});
   const [bodyMode, setBodyMode] = useState<"primary" | "secondary">("primary");
   const [view, setView] = useState<"front" | "back">("front");
   const [timeMinutes, setTimeMinutes] = useState(45);
@@ -86,36 +118,73 @@ export default function WorkoutGeneratorScreen() {
     return vendorValuesPresentForZone(zone, data.filters.bodyParts).length > 0;
   }
 
-  function isZoneSelected(key: BodyZoneKey): boolean {
+  function zoneSelectionFor(key: BodyZoneKey): ZoneSelectionState {
     const zone = findBodyZone(key);
-    if (!zone) return false;
-    return zone.vendorValues.some((v) => primaryBodyParts.has(v) || secondaryBodyParts.has(v));
+    if (!zone) return "none";
+    const inPrimary = zone.vendorValues.some((v) => primaryBodyParts.has(v));
+    const inSecondary = zone.vendorValues.some((v) => secondaryBodyParts.has(v));
+    if (inPrimary && inSecondary) return "both";
+    if (inPrimary) return "primary";
+    if (inSecondary) return "secondary";
+    return "none";
   }
 
-  function handleZoneToggle(key: BodyZoneKey) {
+  // label is the friendly anatomical name of whichever region was actually
+  // tapped (e.g. "Biceps") — recorded into zoneLabels so the chip list can
+  // show it, even though `key`/vendorValues are the coarser filter zone.
+  function handleZoneToggle(key: BodyZoneKey, label: string) {
     const zone = findBodyZone(key);
     if (!zone || !data) return;
     const vendorValues = vendorValuesPresentForZone(zone, data.filters.bodyParts);
     if (vendorValues.length === 0) return;
     tapFeedback();
+
+    const currentSet = bodyMode === "primary" ? primaryBodyParts : secondaryBodyParts;
+    const otherSet = bodyMode === "primary" ? secondaryBodyParts : primaryBodyParts;
+    const turningOn = !vendorValues.some((v) => currentSet.has(v));
+
     const setter = bodyMode === "primary" ? setPrimaryBodyParts : setSecondaryBodyParts;
     setter((prev) => {
       const next = new Set(prev);
-      const anySelected = vendorValues.some((v) => next.has(v));
       for (const v of vendorValues) {
-        if (anySelected) next.delete(v);
-        else next.add(v);
+        if (turningOn) next.add(v);
+        else next.delete(v);
       }
       return next;
     });
+
+    setZoneLabels((prev) => {
+      const next = { ...prev };
+      for (const v of vendorValues) {
+        if (turningOn) next[v] = label;
+        else if (!otherSet.has(v)) delete next[v];
+      }
+      return next;
+    });
+  }
+
+  // For chips toggled directly (not via a diagram tap) — no anatomical
+  // slug context here, so labels only ever get cleaned up, never set; the
+  // ChipGroup falls back to humanizeZoneValue for anything without a
+  // recorded label.
+  function toggleBodyPartChip(mode: "primary" | "secondary", value: string) {
+    const setter = mode === "primary" ? setPrimaryBodyParts : setSecondaryBodyParts;
+    const otherSet = mode === "primary" ? secondaryBodyParts : primaryBodyParts;
+    setter((prev) => toggleInSet(prev, value));
+    if (!otherSet.has(value)) {
+      setZoneLabels((prev) => {
+        const next = { ...prev };
+        delete next[value];
+        return next;
+      });
+    }
   }
 
   const cardioAvailable = (data?.filters.bodyParts ?? []).some((v) => v.toLowerCase() === CARDIO_VENDOR_VALUE);
   const cardioSelected = primaryBodyParts.has(CARDIO_VENDOR_VALUE) || secondaryBodyParts.has(CARDIO_VENDOR_VALUE);
   function toggleCardio() {
     tapFeedback();
-    const setter = bodyMode === "primary" ? setPrimaryBodyParts : setSecondaryBodyParts;
-    setter((prev) => toggleInSet(prev, CARDIO_VENDOR_VALUE));
+    toggleBodyPartChip(bodyMode, CARDIO_VENDOR_VALUE);
   }
 
   const selectedProfile = gymProfilesData?.profiles.find((p) => p.id === selectedGymProfileId) ?? null;
@@ -192,58 +261,123 @@ export default function WorkoutGeneratorScreen() {
           <Text style={styles.sectionLabel}>MUSCLE AREAS</Text>
           <Text style={styles.sectionSub}>Tap the body to pick where to focus.</Text>
 
-          <View style={styles.diagramControlsRow}>
-            <View style={styles.segmentGroup}>
-              <Pressable onPress={() => setView("front")} style={[styles.segment, view === "front" && styles.segmentActive]}>
-                <Text style={[styles.segmentText, view === "front" && styles.segmentTextActive]}>Front</Text>
-              </Pressable>
-              <Pressable onPress={() => setView("back")} style={[styles.segment, view === "back" && styles.segmentActive]}>
-                <Text style={[styles.segmentText, view === "back" && styles.segmentTextActive]}>Back</Text>
-              </Pressable>
+          <Card style={styles.diagramCard}>
+            <View style={styles.diagramCardInner}>
+              <View
+                style={styles.segmentGroup}
+                accessibilityRole="tablist"
+                accessibilityLabel="Body view"
+              >
+                <Pressable
+                  onPress={() => setView("front")}
+                  style={[styles.segment, view === "front" && styles.segmentActive]}
+                  accessibilityRole="tab"
+                  accessibilityState={{ selected: view === "front" }}
+                  accessibilityLabel="Show front of body"
+                >
+                  <Text style={[styles.segmentText, view === "front" && styles.segmentTextActive]}>Front</Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => setView("back")}
+                  style={[styles.segment, view === "back" && styles.segmentActive]}
+                  accessibilityRole="tab"
+                  accessibilityState={{ selected: view === "back" }}
+                  accessibilityLabel="Show back of body"
+                >
+                  <Text style={[styles.segmentText, view === "back" && styles.segmentTextActive]}>Back</Text>
+                </Pressable>
+              </View>
+
+              <View
+                style={styles.modeSegmentGroup}
+                accessibilityRole="tablist"
+                accessibilityLabel="Selection mode"
+              >
+                <Pressable
+                  onPress={() => setBodyMode("primary")}
+                  style={[styles.modeSegment, bodyMode === "primary" && styles.modeSegmentActivePrimary]}
+                  accessibilityRole="tab"
+                  accessibilityState={{ selected: bodyMode === "primary" }}
+                  accessibilityLabel="Tap muscles to add as primary focus"
+                  accessibilityHint="Primary areas are required to generate a workout"
+                >
+                  <View style={[styles.modeDot, { backgroundColor: Color.gold }]} />
+                  <Text style={[styles.modeSegmentText, bodyMode === "primary" && styles.modeSegmentTextActivePrimary]}>
+                    Primary
+                  </Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => setBodyMode("secondary")}
+                  style={[styles.modeSegment, bodyMode === "secondary" && styles.modeSegmentActiveSecondary]}
+                  accessibilityRole="tab"
+                  accessibilityState={{ selected: bodyMode === "secondary" }}
+                  accessibilityLabel="Tap muscles to add as secondary focus"
+                  accessibilityHint="Secondary areas are optional, added for variety"
+                >
+                  <View style={[styles.modeDot, { backgroundColor: Color.accentData }]} />
+                  <Text
+                    style={[styles.modeSegmentText, bodyMode === "secondary" && styles.modeSegmentTextActiveSecondary]}
+                  >
+                    Secondary
+                  </Text>
+                </Pressable>
+              </View>
+
+              <View style={styles.diagramWrap}>
+                <BodyDiagram
+                  view={view}
+                  sex={diagramSex}
+                  zoneSelection={zoneSelectionFor}
+                  isZoneAvailable={isZoneAvailable}
+                  onToggleZone={handleZoneToggle}
+                />
+              </View>
+
+              {cardioAvailable ? (
+                <Pressable
+                  onPress={toggleCardio}
+                  style={[
+                    styles.cardioChip,
+                    cardioSelected && (bodyMode === "primary" ? styles.chipActive : styles.chipActiveSecondary),
+                  ]}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: cardioSelected }}
+                  accessibilityLabel={`Cardio${cardioSelected ? ", selected" : ""}, as ${bodyMode} focus`}
+                >
+                  <Ionicons
+                    name="heart-outline"
+                    size={14}
+                    color={cardioSelected ? (bodyMode === "primary" ? Color.gold : Color.accentData) : Color.textMuted}
+                  />
+                  <Text
+                    style={[
+                      styles.cardioChipText,
+                      cardioSelected && (bodyMode === "primary" ? styles.chipTextActive : styles.chipTextActiveSecondary),
+                    ]}
+                  >
+                    Cardio
+                  </Text>
+                </Pressable>
+              ) : null}
             </View>
+          </Card>
 
-            <Pressable
-              onPress={() => setBodyMode((m) => (m === "primary" ? "secondary" : "primary"))}
-              style={[styles.modeToggle, bodyMode === "secondary" && styles.modeToggleActive]}
-            >
-              <Ionicons name="add-circle-outline" size={13} color={bodyMode === "secondary" ? Color.gold : Color.textMuted} />
-              <Text style={[styles.modeToggleText, bodyMode === "secondary" && styles.modeToggleTextActive]}>
-                {bodyMode === "primary" ? "Tapping: Primary" : "Tapping: Secondary"}
-              </Text>
-            </Pressable>
-          </View>
-
-          <View style={styles.diagramWrap}>
-            <BodyDiagram
-              view={view}
-              sex={diagramSex}
-              isZoneSelected={isZoneSelected}
-              isZoneAvailable={isZoneAvailable}
-              onToggleZone={handleZoneToggle}
-            />
-          </View>
-
-          {cardioAvailable ? (
-            <Pressable onPress={toggleCardio} style={[styles.cardioChip, cardioSelected && styles.cardioChipActive]}>
-              <Ionicons name="heart-outline" size={14} color={cardioSelected ? Color.gold : Color.textMuted} />
-              <Text style={[styles.cardioChipText, cardioSelected && styles.cardioChipTextActive]}>
-                Cardio {bodyMode === "primary" ? "(primary)" : "(secondary)"}
-              </Text>
-            </Pressable>
-          ) : null}
-
-          <Text style={[styles.fieldLabel, { marginTop: Spacing.md }]}>Selected — primary</Text>
+          <Text style={[styles.fieldLabel, { marginTop: Spacing.md }]}>Selected — primary (required)</Text>
           <ChipGroup
             options={data.filters.bodyParts}
             selected={primaryBodyParts}
-            onToggle={(v) => setPrimaryBodyParts((prev) => toggleInSet(prev, v))}
+            labels={zoneLabels}
+            variant="primary"
+            onToggle={(v) => toggleBodyPartChip("primary", v)}
           />
 
           <Text style={[styles.fieldLabel, { marginTop: Spacing.sm }]}>Selected — secondary (optional)</Text>
           <ChipGroup
             options={data.filters.bodyParts}
             selected={secondaryBodyParts}
-            onToggle={(v) => setSecondaryBodyParts((prev) => toggleInSet(prev, v))}
+            labels={zoneLabels}
+            variant="secondary"
+            onToggle={(v) => toggleBodyPartChip("secondary", v)}
           />
 
           <Text style={styles.sectionLabel}>TIME AVAILABLE</Text>
@@ -330,11 +464,25 @@ const styles = StyleSheet.create({
   sectionSub: { fontSize: 12, color: Color.textFaint, marginTop: 2, marginBottom: Spacing.sm },
   fieldLabel: { fontSize: 11, fontWeight: "600", color: Color.textSecondary, marginBottom: 4 },
   chipRow: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.xs },
-  chip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.md, paddingVertical: 8 },
+  chip: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: Radius.pill,
+    borderWidth: 1,
+    borderColor: Color.borderSubtle,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 8,
+  },
   chipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
+  chipActiveSecondary: { borderColor: Color.accentData, backgroundColor: "rgba(85,196,254,0.12)" },
   chipText: { fontSize: 12, fontWeight: "600", color: Color.textMuted, textTransform: "capitalize" },
   chipTextActive: { color: Color.gold },
-  diagramControlsRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: Spacing.sm },
+  chipTextActiveSecondary: { color: Color.accentData },
+  // The diagram module reads as one contained "picker" panel — Front/Back,
+  // Primary/Secondary, the silhouette, and the cardio pill all live inside
+  // it, rather than floating loose against the screen background.
+  diagramCard: { marginTop: Spacing.xs },
+  diagramCardInner: { padding: Spacing.md, alignItems: "center" },
   segmentGroup: {
     flexDirection: "row",
     gap: 4,
@@ -342,41 +490,50 @@ const styles = StyleSheet.create({
     borderRadius: Radius.md,
     borderWidth: 1,
     borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
+    backgroundColor: Color.bg0,
   },
-  segment: { paddingHorizontal: Spacing.md, paddingVertical: 6, borderRadius: Radius.sm },
+  segment: { minWidth: 64, alignItems: "center", paddingHorizontal: Spacing.md, paddingVertical: 8, borderRadius: Radius.sm },
   segmentActive: { backgroundColor: Color.surface2 },
   segmentText: { fontSize: 12, fontWeight: "600", color: Color.textMuted },
   segmentTextActive: { color: Color.textPrimary },
-  modeToggle: {
+  // Both modes shown at once (rather than one button whose label changes)
+  // so it's always visually obvious which one is active, and the dot color
+  // pre-teaches the gold/blue coding used on the silhouette itself.
+  modeSegmentGroup: {
+    flexDirection: "row",
+    gap: Spacing.xs,
+    marginTop: Spacing.sm,
+  },
+  modeSegment: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
+    gap: 6,
     borderRadius: Radius.pill,
     borderWidth: 1,
     borderColor: Color.borderSubtle,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 6,
+    backgroundColor: Color.bg0,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 8,
   },
-  modeToggleActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
-  modeToggleText: { fontSize: 11, fontWeight: "600", color: Color.textMuted },
-  modeToggleTextActive: { color: Color.gold },
-  diagramWrap: { alignItems: "center", paddingVertical: Spacing.sm },
+  modeSegmentActivePrimary: { borderColor: Color.goldBorder, backgroundColor: Color.goldWeak },
+  modeSegmentActiveSecondary: { borderColor: Color.accentData, backgroundColor: "rgba(85,196,254,0.12)" },
+  modeDot: { width: 7, height: 7, borderRadius: 4 },
+  modeSegmentText: { fontSize: 12, fontWeight: "600", color: Color.textMuted },
+  modeSegmentTextActivePrimary: { color: Color.gold },
+  modeSegmentTextActiveSecondary: { color: Color.accentData },
+  diagramWrap: { alignItems: "center", paddingVertical: Spacing.md },
   cardioChip: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    alignSelf: "center",
     borderRadius: Radius.pill,
     borderWidth: 1,
     borderColor: Color.borderSubtle,
     paddingHorizontal: Spacing.md,
-    paddingVertical: 6,
+    paddingVertical: 8,
     marginTop: Spacing.xs,
   },
-  cardioChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
   cardioChipText: { fontSize: 12, fontWeight: "600", color: Color.textMuted },
-  cardioChipTextActive: { color: Color.gold },
   profileRow: { gap: Spacing.xs, paddingBottom: 2 },
   profileChip: {
     flexDirection: "row",

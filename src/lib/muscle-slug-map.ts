@@ -47,3 +47,41 @@ export const ZONE_FOR_SLUG: Record<Slug, BodyZoneKey | null> = {
   feet: null,
   ankles: null,
 };
+
+// User-facing label for the exact region tapped — deliberately NOT the same
+// as the zone's own label (e.g. tapping "deltoids" or "biceps" should say
+// so, even though both resolve to the coarser "shoulders"/"upper-arms" zone
+// for filtering). This is what makes the picker feel anatomically precise
+// while the backend still only ever sees the 9 coarse zones. Only the real
+// (non-null-mapped) slugs need entries — decorative parts are never tapped.
+export const SLUG_LABEL: Partial<Record<Slug, string>> = {
+  chest: "Chest",
+  biceps: "Biceps",
+  triceps: "Triceps",
+  abs: "Abs",
+  obliques: "Obliques",
+  quadriceps: "Quads",
+  tibialis: "Shins",
+  trapezius: "Traps",
+  "upper-back": "Upper Back",
+  "lower-back": "Lower Back",
+  hamstring: "Hamstrings",
+  gluteal: "Glutes",
+  deltoids: "Shoulders",
+  forearm: "Forearms",
+  adductors: "Inner Thighs",
+  calves: "Calves",
+  neck: "Neck",
+};
+
+// Fallback for a chip that was never set from a diagram tap — either it was
+// toggled directly in the fallback chip list, or it was already selected
+// before this labeling feature existed. Title-cases the raw vendor string
+// (e.g. "upper arms" -> "Upper Arms") rather than showing it lowercase.
+export function humanizeZoneValue(vendorValue: string): string {
+  return vendorValue
+    .split(" ")
+    .filter(Boolean)
+    .map((word) => word[0].toUpperCase() + word.slice(1))
+    .join(" ");
+}

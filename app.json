@@ -38,7 +38,7 @@
         {
           "backgroundColor": "#0a1526",
           "image": "./assets/images/splash-icon.png",
-          "imageWidth": 300
+          "imageWidth": 500
         }
       ],
       "expo-secure-store",
@@ -68,7 +68,7 @@
       "eas": {
         "projectId": "b628245b-4347-4792-a061-b315e69c1a27"
       },
-      "buildLabel": "2026-08-21-splash-overflow-v6"
+      "buildLabel": "2026-08-21-splash-bigger-v7"
     },
     "owner": "hogiebear777"
   }

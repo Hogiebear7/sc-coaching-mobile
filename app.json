@@ -37,7 +37,7 @@
         {
           "backgroundColor": "#0a1526",
           "image": "./assets/images/splash-icon.png",
-          "imageWidth": 538
+          "imageWidth": 700
         }
       ],
       "expo-secure-store",
@@ -67,7 +67,7 @@
       "eas": {
         "projectId": "b628245b-4347-4792-a061-b315e69c1a27"
       },
-      "buildLabel": "2026-08-21-splashcrash-v3"
+      "buildLabel": "2026-08-21-iconfix-v4"
     },
     "owner": "hogiebear777"
   }

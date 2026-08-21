@@ -13,6 +13,7 @@ import { Card } from "@/components/ui/Card";
 import { Color, Radius, Spacing } from "@/constants/theme";
 import { ApiError } from "@/lib/api-client";
 import { isBatteryOptimizationRelevant, openBatteryOptimizationSettings } from "@/lib/battery-optimization";
+import { getLastRejection, type CrashRecord } from "@/lib/crash-log";
 import {
   useProfile,
   useRequestPasswordReset,
@@ -86,12 +87,21 @@ export default function SettingsScreen() {
   const [remindersDirty, setRemindersDirty] = useState(false);
   const [remindersSaved, setRemindersSaved] = useState(false);
   const [avatarError, setAvatarError] = useState<string | null>(null);
+  const [lastRejection, setLastRejection] = useState<CrashRecord | null>(null);
 
   useEffect(() => {
     if (!data || remindersHydrated) return;
     setTimings(data.reminderTimingsMins);
     setRemindersHydrated(true);
   }, [data, remindersHydrated]);
+
+  // Debug-only visibility into the last unhandled promise rejection (see
+  // lib/crash-log.ts) — never blocks or alarms, just something to check
+  // when diagnosing a crash report that a JS-level ErrorUtils handler
+  // never caught.
+  useEffect(() => {
+    getLastRejection().then(setLastRejection);
+  }, []);
 
   function togglePreset(mins: number) {
     setTimings((prev) => {
@@ -421,6 +431,11 @@ export default function SettingsScreen() {
           <Text style={styles.buildInfo}>
             Build {Constants.expoConfig?.extra?.buildLabel ?? "dev"}
           </Text>
+          {lastRejection ? (
+            <Text style={styles.buildInfo}>
+              Last unhandled rejection ({new Date(lastRejection.timestamp).toLocaleString()}): {lastRejection.message}
+            </Text>
+          ) : null}
         </ScrollView>
       )}
     </SafeAreaView>

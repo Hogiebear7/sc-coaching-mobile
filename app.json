@@ -31,6 +31,7 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
+      "./plugins/withFixedLauncherIcons.js",
       "expo-router",
       [
         "expo-splash-screen",
@@ -67,7 +68,7 @@
       "eas": {
         "projectId": "b628245b-4347-4792-a061-b315e69c1a27"
       },
-      "buildLabel": "2026-08-21-iconfix-v4"
+      "buildLabel": "2026-08-21-iconfix-v5-legacy"
     },
     "owner": "hogiebear777"
   }

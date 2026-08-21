@@ -16,8 +16,10 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { BrandMark } from "@/components/ui/BrandMark";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { ReadinessRing } from "@/components/ui/ReadinessRing";
 import { ReadinessSparkline } from "@/components/ui/ReadinessSparkline";
+import { SectionHeader } from "@/components/ui/SectionHeader";
 import { StatCard } from "@/components/ui/StatCard";
 import { Color, Spacing } from "@/constants/theme";
 import { useAuth } from "@/lib/auth-context";
@@ -79,14 +81,6 @@ export default function DashboardScreen() {
   }
 
   const readiness = data.readiness;
-  const ringColor =
-    readiness.today === null
-      ? Color.textMuted
-      : readiness.today >= 60
-      ? Color.success
-      : readiness.today >= 40
-      ? Color.accentData
-      : Color.warning;
 
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
@@ -138,18 +132,20 @@ export default function DashboardScreen() {
 
         {/* Next Session */}
         <View style={styles.section}>
-          <View style={styles.sectionHeaderRow}>
-            <Text style={styles.sectionLabel}>NEXT SESSION</Text>
-            {data.hasMonthPasses && (
-              <View style={styles.chip}>
-                <Text style={styles.chipText}>
-                  {data.monthPassesRemaining === null
-                    ? "Unlimited classes"
-                    : `${data.monthPassesRemaining} left this month`}
-                </Text>
-              </View>
-            )}
-          </View>
+          <SectionHeader
+            label="NEXT SESSION"
+            right={
+              data.hasMonthPasses ? (
+                <View style={styles.chip}>
+                  <Text style={styles.chipText}>
+                    {data.monthPassesRemaining === null
+                      ? "Unlimited classes"
+                      : `${data.monthPassesRemaining} left this month`}
+                  </Text>
+                </View>
+              ) : undefined
+            }
+          />
           <Card style={styles.nextSessionCard}>
             {data.nextSession ? (
               <View style={styles.nextSessionRow}>
@@ -167,23 +163,29 @@ export default function DashboardScreen() {
                 </View>
               </View>
             ) : (
-              <View style={styles.emptyState}>
-                <Text style={styles.emptyTitle}>Nothing booked</Text>
-                <Text style={styles.emptyBody}>Reserve your next session in a couple of taps.</Text>
-              </View>
+              <EmptyState
+                icon="calendar-outline"
+                title="No session booked yet"
+                body="Book your next session to keep your training on track."
+                actionLabel="Book next session"
+                onAction={() => router.push("/(tabs)/schedule")}
+                variant="primary"
+              />
             )}
           </Card>
         </View>
 
-        {/* Readiness */}
+        {/* Readiness — the one dominant module on Home: hero surface tier,
+            a bigger ring, and (when there's no check-in yet) a real action
+            instead of a dead-end line of text. */}
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>READINESS</Text>
-          <Card style={styles.readinessCard}>
-            <View style={styles.readinessRow}>
-              <ReadinessRing score={readiness.today} />
-              <View style={styles.readinessTextWrap}>
-                {readiness.today !== null ? (
-                  <>
+          <SectionHeader label="READINESS" />
+          <Card style={styles.readinessCard} tier="hero">
+            {readiness.today !== null ? (
+              <>
+                <View style={styles.readinessRow}>
+                  <ReadinessRing score={readiness.today} size={88} />
+                  <View style={styles.readinessTextWrap}>
                     <View style={styles.readinessStatusRow}>
                       <Text style={styles.readinessStatus}>{readiness.status}</Text>
                       {readiness.delta !== null && readiness.delta !== 0 && (
@@ -210,27 +212,29 @@ export default function DashboardScreen() {
                       )}
                     </View>
                     <Text style={styles.readinessGuidance}>{readiness.guidance}</Text>
-                  </>
-                ) : (
-                  <>
-                    <Text style={styles.readinessStatus}>No check-in yet</Text>
-                    <Text style={styles.readinessGuidance}>
-                      Log today&apos;s recovery to get a readiness score and session guidance.
-                    </Text>
-                  </>
-                )}
-                {readiness.phaseNote ? (
-                  <Text style={styles.readinessGuidance}>{readiness.phaseNote}</Text>
-                ) : null}
-              </View>
-            </View>
+                    {readiness.phaseNote ? (
+                      <Text style={styles.readinessGuidance}>{readiness.phaseNote}</Text>
+                    ) : null}
+                  </View>
+                </View>
 
-            {readiness.hasTrend ? (
-              <View style={styles.trendRow}>
-                <ReadinessSparkline series={readiness.trend} />
-                <Text style={styles.trendLabel}>Readiness · 14d trend</Text>
-              </View>
-            ) : null}
+                {readiness.hasTrend ? (
+                  <View style={styles.trendRow}>
+                    <ReadinessSparkline series={readiness.trend} />
+                    <Text style={styles.trendLabel}>Readiness · 14d trend</Text>
+                  </View>
+                ) : null}
+              </>
+            ) : (
+              <EmptyState
+                icon="heart-outline"
+                title="No check-in yet"
+                body="Log today's recovery to get a readiness score and session guidance."
+                actionLabel="Log check-in"
+                onAction={() => router.push("/(tabs)/recovery")}
+                variant="primary"
+              />
+            )}
           </Card>
 
           <View style={styles.kpiRow}>
@@ -251,7 +255,7 @@ export default function DashboardScreen() {
 
         {/* Nutrition */}
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>NUTRITION</Text>
+          <SectionHeader label="NUTRITION" />
           <Card>
             <Pressable onPress={() => router.push("/(tabs)/nutrition")} style={styles.rowCard}>
               <View style={styles.rowCardIcon}>
@@ -270,10 +274,12 @@ export default function DashboardScreen() {
           </Card>
         </View>
 
-        {/* Club */}
+        {/* Club — lower-priority utility info relative to Readiness/Next
+            Session/Nutrition above, so it gets the quiet tier rather than
+            competing at the same visual weight as everything else. */}
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>YOUR CLUB</Text>
-          <Card>
+          <SectionHeader label="YOUR CLUB" />
+          <Card tier="quiet">
             <Pressable onPress={() => router.push("/membership")} style={[styles.rowCard, styles.rowCardDivider]}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.rowCardLabel}>MEMBERSHIP</Text>
@@ -326,31 +332,44 @@ export default function DashboardScreen() {
           </Card>
         </View>
 
-        {/* Quick actions */}
+        {/* Quick actions — these used to be two identical cards with the
+            same gold icon, same size, same weight, so nothing told you
+            which one mattered more. Today's workout is the genuinely
+            high-frequency action during a training day, so it gets the
+            accent top-border (the one place on Home that signal is worth
+            spending) and a bigger icon; View profile drops to a quiet,
+            un-accented row underneath rather than competing for the same
+            attention. */}
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>QUICK ACTIONS</Text>
-          <View style={styles.quickActionsRow}>
-            <Card style={{ flex: 1 }}>
-              <Pressable onPress={() => router.push("/(tabs)/workouts")} style={styles.quickActionCard}>
-                <Ionicons name="flash-outline" size={18} color={Color.gold} />
-                <Text style={styles.quickActionTitle}>Today&apos;s workout</Text>
-                <Text style={styles.quickActionSub} numberOfLines={1}>
+          <SectionHeader label="QUICK ACTIONS" />
+          <Card accent style={styles.primaryActionCard}>
+            <Pressable onPress={() => router.push("/(tabs)/workouts")} style={styles.primaryActionInner}>
+              <View style={styles.primaryActionIcon}>
+                <Ionicons name="flash-outline" size={22} color={Color.gold} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.primaryActionTitle}>Today&apos;s workout</Text>
+                <Text style={styles.primaryActionSub} numberOfLines={1}>
                   {data.quickActions.programmeEnabled && data.quickActions.programmeTitle
                     ? data.quickActions.programmeTitle
                     : "Log & review sessions"}
                 </Text>
-              </Pressable>
-            </Card>
-            <Card style={{ flex: 1 }}>
-              <Pressable onPress={() => router.push("/profile")} style={styles.quickActionCard}>
-                <Ionicons name="person-outline" size={18} color={Color.gold} />
-                <Text style={styles.quickActionTitle}>View profile</Text>
-                <Text style={styles.quickActionSub} numberOfLines={1}>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={Color.textFaint} />
+            </Pressable>
+          </Card>
+          <Card tier="quiet">
+            <Pressable onPress={() => router.push("/profile")} style={styles.rowCard}>
+              <Ionicons name="person-outline" size={18} color={Color.textMuted} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.rowCardTitle}>View profile</Text>
+                <Text style={styles.rowCardSub} numberOfLines={1}>
                   {data.quickActions.primaryGoal ?? "Goals & intake"}
                 </Text>
-              </Pressable>
-            </Card>
-          </View>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={Color.textFaint} />
+            </Pressable>
+          </Card>
         </View>
 
         <Text style={styles.signedInAs}>Signed in as {user?.email}</Text>
@@ -431,19 +450,6 @@ const styles = StyleSheet.create({
   section: {
     marginBottom: Spacing.xl,
   },
-  sectionHeaderRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: Spacing.sm,
-  },
-  sectionLabel: {
-    fontSize: 10,
-    fontWeight: "700",
-    letterSpacing: 0.6,
-    color: Color.textMuted,
-    marginBottom: Spacing.sm,
-  },
   chip: {
     borderRadius: 999,
     borderWidth: 1,
@@ -492,21 +498,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: Color.textMuted,
     marginTop: 2,
-  },
-  emptyState: {
-    alignItems: "center",
-    padding: Spacing.xl,
-  },
-  emptyTitle: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: Color.textPrimary,
-  },
-  emptyBody: {
-    fontSize: 12,
-    color: Color.textMuted,
-    marginTop: 4,
-    textAlign: "center",
   },
   readinessCard: {
     padding: Spacing.md,
@@ -615,23 +606,32 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: Color.gold,
   },
-  quickActionsRow: {
+  primaryActionCard: {
+    marginBottom: Spacing.sm,
+  },
+  primaryActionInner: {
     flexDirection: "row",
-    gap: Spacing.sm,
-  },
-  quickActionCard: {
-    flex: 1,
+    alignItems: "center",
     padding: Spacing.md,
-    gap: Spacing.sm,
+    gap: Spacing.md,
   },
-  quickActionTitle: {
-    fontSize: 13,
-    fontWeight: "600",
+  primaryActionIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 8,
+    backgroundColor: Color.goldWeak,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  primaryActionTitle: {
+    fontSize: 15,
+    fontWeight: "700",
     color: Color.textPrimary,
   },
-  quickActionSub: {
-    fontSize: 11,
+  primaryActionSub: {
+    fontSize: 12,
     color: Color.textMuted,
+    marginTop: 2,
   },
   signedInAs: {
     fontSize: 11,

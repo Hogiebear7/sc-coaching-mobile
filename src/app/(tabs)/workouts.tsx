@@ -7,6 +7,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { DateStrip } from "@/components/ui/DateStrip";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { SectionHeader } from "@/components/ui/SectionHeader";
 import { SessionCard } from "@/components/ui/SessionCard";
 import { TrendChart } from "@/components/ui/TrendChart";
 import { Color, Radius, Spacing } from "@/constants/theme";
@@ -148,7 +150,7 @@ export default function WorkoutsScreen() {
 
         <View style={styles.section}>
           <DateStrip dates={dateWindow} selectedDate={selectedDate} today={today} markedDates={markedDates} onSelect={setSelectedDate} />
-          <Card style={styles.dayDetailCard}>
+          <Card style={styles.dayDetailCard} tier={selectedDate === today ? "hero" : "standard"}>
             <Text style={styles.dayDetailDate}>{selectedDate === today ? "Today" : formatLongDate(selectedDate)}</Text>
             {sessionsForSelectedDate.length > 0 ? (
               sessionsForSelectedDate.map((s) => (
@@ -160,23 +162,22 @@ export default function WorkoutsScreen() {
                 />
               ))
             ) : (
-              <View style={styles.dayDetailEmpty}>
-                <Text style={styles.dayDetailEmptyText}>Nothing logged this day.</Text>
-                <Button
-                  title="Log a workout"
-                  variant="secondary"
-                  onPress={() => router.push({ pathname: "/log-workout", params: { date: selectedDate } })}
-                  style={{ marginTop: Spacing.sm }}
-                />
-              </View>
+              <EmptyState
+                icon="barbell-outline"
+                title={selectedDate === today ? "Nothing logged today" : "Nothing logged this day"}
+                body="Log a workout or repeat your last session."
+                actionLabel="Log a workout"
+                onAction={() => router.push({ pathname: "/log-workout", params: { date: selectedDate } })}
+                variant="primary"
+              />
             )}
           </Card>
         </View>
 
         {program && currentDay ? (
           <View style={styles.section}>
-            <Text style={styles.sectionLabel}>ACTIVE PROGRAM</Text>
-            <Card style={styles.programCard}>
+            <SectionHeader label="ACTIVE PROGRAM" />
+            <Card style={styles.programCard} tier="hero">
               <Text style={styles.programName}>{program.name}</Text>
               <Text style={styles.programDayLabel}>{currentDay.label}</Text>
 
@@ -244,57 +245,62 @@ export default function WorkoutsScreen() {
           </View>
         ) : null}
 
-        <View style={styles.toolsRow}>
-          <Pressable onPress={() => router.push("/plate-calculator")} style={styles.toolCard}>
-            <Ionicons name="barbell-outline" size={18} color={Color.gold} />
-            <Text style={styles.toolCardText}>Plate Calculator</Text>
-          </Pressable>
-          <Pressable
-            onPress={() => {
-              if (!restTimer.isRunning) restTimer.reset(90);
-              router.push({ pathname: "/rest-timer" });
-            }}
-            style={styles.toolCard}
-          >
-            <Ionicons name="timer-outline" size={18} color={Color.gold} />
-            <Text style={styles.toolCardText}>Rest Timer</Text>
-          </Pressable>
-          <Pressable onPress={() => router.push("/workout-generator")} style={styles.toolCard}>
-            <Ionicons name="sparkles-outline" size={18} color={Color.gold} />
-            <Text style={styles.toolCardText}>Generate</Text>
-          </Pressable>
+        <View style={styles.section}>
+          <SectionHeader label="TOOLS" />
+          <View style={styles.toolsRow}>
+            <Card tier="compact" style={styles.toolCard}>
+              <Pressable onPress={() => router.push("/plate-calculator")} style={styles.toolCardInner}>
+                <Ionicons name="barbell-outline" size={18} color={Color.gold} />
+                <Text style={styles.toolCardText}>Plate Calculator</Text>
+              </Pressable>
+            </Card>
+            <Card tier="compact" style={styles.toolCard}>
+              <Pressable
+                onPress={() => {
+                  if (!restTimer.isRunning) restTimer.reset(90);
+                  router.push({ pathname: "/rest-timer" });
+                }}
+                style={styles.toolCardInner}
+              >
+                <Ionicons name="timer-outline" size={18} color={Color.gold} />
+                <Text style={styles.toolCardText}>Rest Timer</Text>
+              </Pressable>
+            </Card>
+            <Card tier="compact" style={styles.toolCard}>
+              <Pressable onPress={() => router.push("/workout-generator")} style={styles.toolCardInner}>
+                <Ionicons name="sparkles-outline" size={18} color={Color.gold} />
+                <Text style={styles.toolCardText}>Generate</Text>
+              </Pressable>
+            </Card>
+          </View>
         </View>
 
         {weeklyStats ? (
           <View style={styles.section}>
-            <Text style={styles.sectionLabel}>THIS WEEK</Text>
+            <SectionHeader label="THIS WEEK" />
             <View style={styles.weekStatsRow}>
-              <View style={styles.weekStat}>
+              <Card tier="compact" style={styles.weekStat}>
                 <Text style={styles.weekStatValue}>{weeklyStats.workoutCount}</Text>
                 <Text style={styles.weekStatLabel}>workouts</Text>
-              </View>
-              <View style={styles.weekStat}>
+              </Card>
+              <Card tier="compact" style={styles.weekStat}>
                 <Text style={styles.weekStatValue}>{weeklyStats.totalSets}</Text>
                 <Text style={styles.weekStatLabel}>sets</Text>
-              </View>
-              <View style={styles.weekStat}>
+              </Card>
+              <Card tier="compact" style={styles.weekStat}>
                 <Text style={styles.weekStatValue}>{weeklyStats.totalVolume > 0 ? weeklyStats.totalVolume.toLocaleString() : "0"}</Text>
                 <Text style={styles.weekStatLabel}>kg volume</Text>
-              </View>
+              </Card>
             </View>
           </View>
         ) : null}
 
         {recentRecords.length > 0 ? (
           <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionLabel}>RECENT RECORDS</Text>
-              {allRecentRecords.length > 3 ? (
-                <Pressable onPress={() => router.push({ pathname: "/workout-records" })}>
-                  <Text style={styles.seeMoreLink}>See more</Text>
-                </Pressable>
-              ) : null}
-            </View>
+            <SectionHeader
+              label="RECENT RECORDS"
+              action={allRecentRecords.length > 3 ? { label: "See more", onPress: () => router.push({ pathname: "/workout-records" }) } : undefined}
+            />
             <Card style={styles.recordsList}>
               {recentRecords.map((r, idx) => (
                 <Pressable
@@ -318,12 +324,10 @@ export default function WorkoutsScreen() {
 
         {data.personalBests.length > 0 && (
           <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionLabel}>PERSONAL BESTS</Text>
-              <Pressable onPress={() => router.push("/personal-bests-edit")}>
-                <Text style={styles.seeMoreLink}>{pinnedBests.length > 0 ? "Edit" : "Choose"}</Text>
-              </Pressable>
-            </View>
+            <SectionHeader
+              label="PERSONAL BESTS"
+              action={{ label: pinnedBests.length > 0 ? "Edit" : "Choose", onPress: () => router.push("/personal-bests-edit") }}
+            />
             {pinnedBests.length > 0 ? (
               pinnedBests.map((pb) => (
                 <Pressable
@@ -350,22 +354,35 @@ export default function WorkoutsScreen() {
                 </Pressable>
               ))
             ) : (
-              <Card style={styles.pbEmptyCard}>
-                <Text style={styles.pbEmptyText}>Pick up to 5 lifts to feature here.</Text>
-                <Button
-                  title="Choose your personal bests"
-                  variant="secondary"
-                  onPress={() => router.push("/personal-bests-edit")}
-                  style={{ marginTop: Spacing.sm }}
+              <Card tier="quiet">
+                <EmptyState
+                  icon="trophy-outline"
+                  title="No personal bests yet"
+                  body="Pick up to 5 lifts to feature here and track them at a glance."
+                  actionLabel="Choose your personal bests"
+                  onAction={() => router.push("/personal-bests-edit")}
                 />
               </Card>
             )}
           </View>
         )}
 
+        {data.sessions.length > 0 && trendCandidates.length === 0 ? (
+          <View style={styles.section}>
+            <SectionHeader label="PROGRESSION" />
+            <Card tier="quiet">
+              <EmptyState
+                icon="trending-up-outline"
+                title="Not enough data yet"
+                body="Log the same exercise a couple more times to unlock your progression trend."
+              />
+            </Card>
+          </View>
+        ) : null}
+
         {trendCandidates.length > 0 && activeTrendExercise ? (
           <View style={styles.section}>
-            <Text style={styles.sectionLabel}>PROGRESSION</Text>
+            <SectionHeader label="PROGRESSION" />
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.trendPicker} contentContainerStyle={{ gap: Spacing.xs }}>
               {trendCandidates.slice(0, 10).map((c) => (
                 <Pressable
@@ -402,19 +419,20 @@ export default function WorkoutsScreen() {
         ) : null}
 
         <View style={styles.section}>
-          <View style={styles.sectionHeaderRow}>
-            <Text style={styles.sectionLabel}>RECENT SESSIONS</Text>
-            {data.sessions.length > 0 ? (
-              <Pressable onPress={() => router.push("/workout-history")}>
-                <Text style={styles.seeAllText}>See all</Text>
-              </Pressable>
-            ) : null}
-          </View>
+          <SectionHeader
+            label="RECENT SESSIONS"
+            action={data.sessions.length > 0 ? { label: "See all", onPress: () => router.push("/workout-history") } : undefined}
+          />
           {data.sessions.length === 0 ? (
-            <Card style={styles.emptyCard}>
-              <Ionicons name="barbell-outline" size={22} color={Color.textFaint} />
-              <Text style={styles.emptyText}>No workouts logged yet.</Text>
-              <Button title="Log your first workout" onPress={() => router.push("/log-workout")} variant="secondary" style={{ marginTop: Spacing.sm }} />
+            <Card tier="quiet">
+              <EmptyState
+                icon="barbell-outline"
+                title="No workouts logged yet"
+                body="Log your first workout to start building your training history."
+                actionLabel="Log your first workout"
+                onAction={() => router.push("/log-workout")}
+                variant="primary"
+              />
             </Card>
           ) : (
             data.sessions
@@ -430,8 +448,8 @@ export default function WorkoutsScreen() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>MORE</Text>
-          <Card>
+          <SectionHeader label="MORE" />
+          <Card tier="quiet">
             <Pressable onPress={() => router.push("/workout-trends")} style={styles.moreRow}>
               <View style={styles.moreRowIcon}>
                 <Ionicons name="trending-up-outline" size={18} color={Color.gold} />
@@ -489,24 +507,11 @@ const styles = StyleSheet.create({
   logButton: { flexDirection: "row", alignItems: "center", gap: 2, backgroundColor: Color.gold, borderRadius: Radius.pill, paddingHorizontal: Spacing.md, paddingVertical: 8 },
   logButtonText: { fontSize: 12, fontWeight: "700", color: Color.goldForeground },
   section: { marginBottom: Spacing.xl },
-  sectionLabel: {
-    fontSize: 10,
-    fontWeight: "700",
-    letterSpacing: 0.6,
-    color: Color.textMuted,
-    marginBottom: Spacing.sm,
-  },
-  sectionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  seeMoreLink: { fontSize: 12, fontWeight: "600", color: Color.gold, marginBottom: Spacing.sm },
   weekStatsRow: { flexDirection: "row", gap: Spacing.sm },
   weekStat: {
     flex: 1,
     alignItems: "center",
     paddingVertical: Spacing.md,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
   },
   weekStatValue: { fontSize: 20, fontWeight: "700", color: Color.gold, fontVariant: ["tabular-nums"] },
   weekStatLabel: { fontSize: 10, color: Color.textMuted, marginTop: 2 },
@@ -519,8 +524,6 @@ const styles = StyleSheet.create({
   recordValue: { fontSize: 14, fontWeight: "700", color: Color.gold, fontVariant: ["tabular-nums"] },
   recordDate: { fontSize: 10, color: Color.textFaint, marginTop: 1 },
   pbCard: { padding: Spacing.md, marginBottom: Spacing.sm },
-  pbEmptyCard: { alignItems: "center", padding: Spacing.lg, gap: Spacing.xs },
-  pbEmptyText: { fontSize: 12, color: Color.textMuted, textAlign: "center" },
   pbHeaderRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: Spacing.xs },
   pbTitle: { fontSize: 13, fontWeight: "600", color: Color.textPrimary },
   pbStat: {},
@@ -541,18 +544,14 @@ const styles = StyleSheet.create({
   muscleTagChipText: { fontSize: 10, fontWeight: "600", color: Color.gold },
   skipRow: { alignItems: "center", marginTop: Spacing.sm, paddingVertical: 6 },
   skipText: { fontSize: 12, color: Color.textFaint },
-  toolsRow: { flexDirection: "row", gap: Spacing.sm, marginBottom: Spacing.xl },
-  toolCard: {
-    flex: 1,
+  toolsRow: { flexDirection: "row", gap: Spacing.sm },
+  toolCard: { flex: 1 },
+  toolCardInner: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: Spacing.xs,
     paddingVertical: Spacing.sm,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
   },
   toolCardText: { fontSize: 12, fontWeight: "600", color: Color.textSecondary },
   trendPicker: { marginBottom: Spacing.sm },
@@ -568,14 +567,8 @@ const styles = StyleSheet.create({
   trendCard: { padding: Spacing.md, alignItems: "center" },
   viewHistoryRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 4, marginTop: Spacing.sm, paddingVertical: 6 },
   viewHistoryText: { fontSize: 12, fontWeight: "600", color: Color.gold },
-  emptyCard: { alignItems: "center", padding: Spacing.xl, gap: Spacing.sm },
-  emptyText: { fontSize: 12, color: Color.textMuted },
   dayDetailCard: { padding: Spacing.md, marginTop: Spacing.sm },
   dayDetailDate: { fontSize: 13, fontWeight: "600", color: Color.textSecondary, marginBottom: Spacing.sm },
-  dayDetailEmpty: { alignItems: "center", paddingVertical: Spacing.md },
-  dayDetailEmptyText: { fontSize: 12, color: Color.textMuted },
-  sectionHeaderRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  seeAllText: { fontSize: 12, fontWeight: "600", color: Color.gold, marginBottom: Spacing.sm },
   moreRow: { flexDirection: "row", alignItems: "center", gap: Spacing.sm, padding: Spacing.md },
   moreRowDivider: { borderTopWidth: 1, borderTopColor: Color.borderSubtle },
   moreRowIcon: {

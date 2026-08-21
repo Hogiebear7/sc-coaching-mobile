@@ -17,6 +17,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { SectionHeader } from "@/components/ui/SectionHeader";
 import { WeightTrendChart } from "@/components/ui/WeightTrendChart";
 import { Color, Radius, Spacing } from "@/constants/theme";
 import { ApiError } from "@/lib/auth-context";
@@ -47,6 +48,13 @@ function formatDateLabel(dateISO: string, today: string): string {
   if (dateISO === shiftDate(today, -1)) return "Yesterday";
   return new Date(`${dateISO}T00:00:00`).toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" });
 }
+
+const MEAL_EMPTY_COPY: Record<MealType, string> = {
+  breakfast: "Nothing logged — tap + to add what you had this morning.",
+  lunch: "Nothing logged — tap + to log lunch and keep today on track.",
+  dinner: "Nothing logged — tap + to add dinner when you're ready.",
+  snack: "Nothing logged — snacks count too, tap + to add one.",
+};
 
 function defaultMealTypeForNow(): MealType {
   const hour = new Date().getHours();
@@ -174,11 +182,26 @@ function HydrationCard({ date }: { date: string }) {
   );
 }
 
-function FoodChip({ item }: { item: FoodItem }) {
+// Previously a plain View — looked tappable (chip shape, in a grid) but
+// did nothing on tap. There's no catalog id/nutrition data on a
+// recommendation item to log directly, so tapping seeds a food search
+// with that name instead, which is the one honest thing a chip like this
+// can actually do.
+function FoodChip({ item, date }: { item: FoodItem; date: string }) {
+  const router = useRouter();
   return (
-    <View style={styles.foodChip}>
+    <Pressable
+      onPress={() => {
+        tapFeedback();
+        router.push({
+          pathname: "/log-food",
+          params: { date, mealType: defaultMealTypeForNow(), query: item.name },
+        });
+      }}
+      style={styles.foodChip}
+    >
       <Text style={styles.foodChipText}>{item.name}</Text>
-    </View>
+    </Pressable>
   );
 }
 
@@ -395,7 +418,7 @@ export default function NutritionScreen() {
           </View>
 
           <Pressable onPress={() => router.push("/nutrition-targets")}>
-            <Card style={styles.targetCard}>
+            <Card style={styles.targetCard} tier="hero">
               {target && target.mode !== "disabled" && target.calories !== null ? (
                 <>
                   <View style={styles.targetHeaderRow}>
@@ -437,13 +460,13 @@ export default function NutritionScreen() {
           </Pressable>
 
           <View style={styles.section}>
-            <Text style={styles.sectionLabel}>HYDRATION</Text>
+            <SectionHeader label="HYDRATION" />
             <HydrationCard date={selectedDate} />
           </View>
 
           {recentFoods && recentFoods.length > 0 ? (
             <View style={styles.section}>
-              <Text style={styles.sectionLabel}>QUICK ADD</Text>
+              <SectionHeader label="QUICK ADD" />
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: Spacing.xs }}>
                 {recentFoods.slice(0, 10).map((f) => (
                   <Pressable key={f.id} onPress={() => handleQuickAdd(f)} style={styles.quickAddChip}>
@@ -456,12 +479,10 @@ export default function NutritionScreen() {
           ) : null}
 
           <View style={styles.section}>
-            <View style={styles.sectionHeaderRow}>
-              <Text style={styles.sectionLabel}>DIARY</Text>
-              <Pressable onPress={() => router.push({ pathname: "/log-food", params: { date: selectedDate } })}>
-                <Text style={styles.addFoodText}>+ Add food</Text>
-              </Pressable>
-            </View>
+            <SectionHeader
+              label="DIARY"
+              action={{ label: "+ Add food", onPress: () => router.push({ pathname: "/log-food", params: { date: selectedDate } }) }}
+            />
 
             {MEAL_TYPE_OPTIONS.map((meal) => {
               const mealEntries = (diary?.entries ?? []).filter((e) => e.mealType === meal.value);
@@ -479,7 +500,9 @@ export default function NutritionScreen() {
                     </View>
                   </Pressable>
                   {mealEntries.length === 0 ? (
-                    <Text style={styles.mealEmpty}>Nothing logged.</Text>
+                    <Pressable onPress={() => router.push({ pathname: "/log-food", params: { date: selectedDate, mealType: meal.value } })}>
+                      <Text style={styles.mealEmpty}>{MEAL_EMPTY_COPY[meal.value]}</Text>
+                    </Pressable>
                   ) : (
                     mealEntries.map((e) => (
                       <View key={e.id} style={styles.entryRow}>
@@ -501,7 +524,7 @@ export default function NutritionScreen() {
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.sectionLabel}>WEIGHT CHECK-IN</Text>
+            <SectionHeader label="WEIGHT CHECK-IN" />
             <Card style={styles.weightCard}>
               <View style={styles.weightHeaderRow}>
                 <View>
@@ -535,8 +558,8 @@ export default function NutritionScreen() {
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.sectionLabel}>MORE</Text>
-            <Card>
+            <SectionHeader label="MORE TOOLS" />
+            <Card tier="quiet">
               <Pressable onPress={() => router.push("/drink-calculator")} style={styles.moreRow}>
                 <View style={styles.drinkCardIcon}>
                   <Ionicons name="water-outline" size={18} color={Color.gold} />
@@ -571,16 +594,18 @@ export default function NutritionScreen() {
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.sectionLabel}>FOOD IDEAS</Text>
-            <View style={styles.foodGrid}>
-              {allFoods.slice(0, 18).map((f) => (
-                <FoodChip key={f.name} item={f} />
-              ))}
-            </View>
+            <SectionHeader label="FOOD IDEAS" />
+            <Card tier="quiet" style={{ padding: Spacing.md }}>
+              <View style={styles.foodGrid}>
+                {allFoods.slice(0, 18).map((f) => (
+                  <FoodChip key={f.name} item={f} date={selectedDate} />
+                ))}
+              </View>
+            </Card>
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.sectionLabel}>TODAY&apos;S EMPHASIS</Text>
+            <SectionHeader label={"TODAY'S EMPHASIS"} />
             <Card style={styles.emphasisCard}>
               <EmphasisRow icon="water-outline" tone="neutral" title="Hydration" text={hydrationLine} />
               <View style={styles.emphasisDivider} />
@@ -636,9 +661,6 @@ const styles = StyleSheet.create({
   macroTrack: { height: 6, borderRadius: 3, backgroundColor: Color.surface2, overflow: "hidden" },
   macroFill: { height: "100%", backgroundColor: Color.gold, borderRadius: 3 },
   section: { marginBottom: Spacing.xl },
-  sectionHeaderRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: Spacing.sm },
-  sectionLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginBottom: Spacing.sm },
-  addFoodText: { fontSize: 12, fontWeight: "600", color: Color.gold, marginBottom: Spacing.sm },
   quickAddChip: {
     borderRadius: Radius.md,
     borderWidth: 1,
@@ -717,7 +739,7 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     justifyContent: "flex-end",
   },
-  bottleFill: { width: "100%", backgroundColor: "#3f8fe0" },
+  bottleFill: { width: "100%", backgroundColor: Color.accentData },
   hydrationQuickAddRow: { flexDirection: "row", gap: Spacing.xs, marginTop: Spacing.md },
   hydrationChip: {
     flex: 1,

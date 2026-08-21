@@ -4,7 +4,10 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { Collapsible } from "@/components/ui/Collapsible";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { ReadinessRing } from "@/components/ui/ReadinessRing";
+import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Stepper } from "@/components/ui/Stepper";
 import { Color, Spacing } from "@/constants/theme";
 import { ApiError } from "@/lib/auth-context";
@@ -142,14 +145,16 @@ export default function RecoveryScreen() {
       >
         <Text style={styles.heading}>Recovery</Text>
 
-        <Card style={styles.summaryCard}>
+        <Card style={styles.summaryCard} tier="hero">
           <View style={styles.summaryRow}>
-            <ReadinessRing score={data.latestReadinessScore} />
+            <ReadinessRing score={data.latestReadinessScore} size={88} />
             <View style={{ flex: 1 }}>
               {data.latestGuidance ? (
                 <Text style={styles.guidance}>{data.latestGuidance}</Text>
               ) : (
-                <Text style={styles.guidance}>Log today&apos;s recovery to get a readiness score.</Text>
+                <Text style={styles.guidance}>
+                  Log today&apos;s check-in below and we&apos;ll tell you how ready your body is to train.
+                </Text>
               )}
               {data.phaseNote ? <Text style={styles.phaseNote}>{data.phaseNote}</Text> : null}
             </View>
@@ -160,10 +165,12 @@ export default function RecoveryScreen() {
               {data.rollingLoad.daysWithLoad > 0 ? data.rollingLoad.sevenDaySum : "—"}
             </Text>
           </View>
-          <Text style={styles.scoreHelp}>
-            Readiness scores today&apos;s check-in out of 100 — sleep hours, sleep quality, soreness, and fatigue
-            each contribute up to 25 points. Higher means you&apos;re better recovered to train.
-          </Text>
+          <Collapsible title="How your score works">
+            <Text style={styles.scoreHelp}>
+              We blend last night&apos;s sleep, how sore and fatigued you&apos;re feeling into a score out of
+              100 — the higher it sits, the more ready your body is to push today.
+            </Text>
+          </Collapsible>
         </Card>
 
         {editingDate === null ? (
@@ -173,10 +180,14 @@ export default function RecoveryScreen() {
         )}
 
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>HISTORY</Text>
+          <SectionHeader label="HISTORY" />
           {data.logs.length === 0 ? (
-            <Card style={styles.emptyCard}>
-              <Text style={styles.emptyText}>No check-ins logged yet.</Text>
+            <Card tier="quiet">
+              <EmptyState
+                icon="moon-outline"
+                title="No check-ins logged yet"
+                body="Log a check-in above to start building your recovery history."
+              />
             </Card>
           ) : (
             data.logs.slice(0, 5).map((log) => (
@@ -184,7 +195,7 @@ export default function RecoveryScreen() {
                 key={log.id}
                 onPress={() => setEditingDate(log.date === editingDate ? null : log.date)}
               >
-                <Card style={[styles.logCard, log.date === editingDate && styles.logCardActive]}>
+                <Card style={[styles.logCard, log.date === editingDate && styles.logCardActive]} tier="compact">
                   <View style={{ flex: 1 }}>
                     <Text style={styles.logDate}>{formatDate(log.date)}</Text>
                     <Text style={styles.logMeta}>
@@ -200,7 +211,7 @@ export default function RecoveryScreen() {
           )}
         </View>
 
-        <Card style={styles.referenceCard}>
+        <Card style={styles.referenceCard} tier="quiet">
           <Text style={styles.referenceTitle}>RECOVERY GUIDANCE</Text>
           <Text style={styles.referenceHeading}>What helps recovery</Text>
           <Text style={styles.referenceBody}>
@@ -263,15 +274,6 @@ const styles = StyleSheet.create({
   error: { fontSize: 12, color: Color.danger, marginBottom: Spacing.sm },
   saved: { fontSize: 12, color: Color.success, marginBottom: Spacing.sm },
   section: { marginBottom: Spacing.xl },
-  sectionLabel: {
-    fontSize: 10,
-    fontWeight: "700",
-    letterSpacing: 0.6,
-    color: Color.textMuted,
-    marginBottom: Spacing.sm,
-  },
-  emptyCard: { alignItems: "center", padding: Spacing.xl },
-  emptyText: { fontSize: 12, color: Color.textMuted },
   logCard: {
     flexDirection: "row",
     alignItems: "center",

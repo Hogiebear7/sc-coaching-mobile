@@ -18,6 +18,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { Collapsible } from "@/components/ui/Collapsible";
 import { DateField } from "@/components/ui/DateField";
 import { ExerciseAutocomplete } from "@/components/ui/ExerciseAutocomplete";
 import { SupersetChips } from "@/components/ui/SupersetChips";
@@ -1331,13 +1332,6 @@ export default function LogWorkoutScreen() {
                 </View>
               </View>
 
-              <Text style={styles.fieldLabel}>Superset (opt.)</Text>
-              <SupersetChips
-                value={row.supersetGroup}
-                allGroups={exerciseRows.map((r) => r.supersetGroup)}
-                onChange={(v) => updateRow(row.key, { supersetGroup: v })}
-              />
-
               <Text style={styles.fieldLabel}>Exercise name</Text>
               <ExerciseAutocomplete
                 exercises={data?.exerciseLibrary ?? []}
@@ -1478,33 +1472,57 @@ export default function LogWorkoutScreen() {
                 ) : null}
               </View>
 
-              <Text style={[styles.fieldLabel, { marginTop: Spacing.sm }]}>Default set type (for new sets)</Text>
-              <SetTypeChips value={row.defaultSetType} onChange={(v) => updateRow(row.key, { defaultSetType: v })} />
-
-              <NumberField label="RIR (opt.)" value={row.rir} onChangeText={(v) => updateRow(row.key, { rir: v })} placeholder="e.g. 2" />
-
-              <Pressable
-                onPress={() => updateRow(row.key, { perSide: !row.perSide })}
-                style={styles.supersetRow}
+              <Collapsible
+                title="More options"
+                summary={
+                  [
+                    row.supersetGroup ? `Superset ${row.supersetGroup}` : null,
+                    row.rir.trim() ? `RIR ${row.rir.trim()}` : null,
+                    row.perSide ? "Unilateral" : null,
+                    row.notes.trim() ? "Note added" : null,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ") || undefined
+                }
+                defaultExpanded={Boolean(
+                  row.supersetGroup || row.rir.trim() || row.perSide || row.notes.trim() || row.defaultSetType !== "standard"
+                )}
               >
-                <Ionicons
-                  name={row.perSide ? "checkbox" : "square-outline"}
-                  size={16}
-                  color={row.perSide ? Color.gold : Color.textFaint}
+                <Text style={styles.fieldLabel}>Superset (opt.)</Text>
+                <SupersetChips
+                  value={row.supersetGroup}
+                  allGroups={exerciseRows.map((r) => r.supersetGroup)}
+                  onChange={(v) => updateRow(row.key, { supersetGroup: v })}
                 />
-                <Text style={[styles.supersetText, row.perSide && styles.supersetTextActive]}>
-                  Reps are per arm/leg (unilateral)
-                </Text>
-              </Pressable>
 
-              <Text style={[styles.fieldLabel, { marginTop: Spacing.sm }]}>Notes (optional)</Text>
-              <TextInput
-                value={row.notes}
-                onChangeText={(v) => updateRow(row.key, { notes: v })}
-                placeholder="e.g. Felt strong, could go heavier"
-                placeholderTextColor={Color.textFaint}
-                style={styles.smallInput}
-              />
+                <Text style={[styles.fieldLabel, { marginTop: Spacing.sm }]}>Default set type (for new sets)</Text>
+                <SetTypeChips value={row.defaultSetType} onChange={(v) => updateRow(row.key, { defaultSetType: v })} />
+
+                <NumberField label="RIR (opt.)" value={row.rir} onChangeText={(v) => updateRow(row.key, { rir: v })} placeholder="e.g. 2" />
+
+                <Pressable
+                  onPress={() => updateRow(row.key, { perSide: !row.perSide })}
+                  style={styles.supersetRow}
+                >
+                  <Ionicons
+                    name={row.perSide ? "checkbox" : "square-outline"}
+                    size={16}
+                    color={row.perSide ? Color.gold : Color.textFaint}
+                  />
+                  <Text style={[styles.supersetText, row.perSide && styles.supersetTextActive]}>
+                    Reps are per arm/leg (unilateral)
+                  </Text>
+                </Pressable>
+
+                <Text style={[styles.fieldLabel, { marginTop: Spacing.sm }]}>Notes (optional)</Text>
+                <TextInput
+                  value={row.notes}
+                  onChangeText={(v) => updateRow(row.key, { notes: v })}
+                  placeholder="e.g. Felt strong, could go heavier"
+                  placeholderTextColor={Color.textFaint}
+                  style={styles.smallInput}
+                />
+              </Collapsible>
             </Card>
             );
             });

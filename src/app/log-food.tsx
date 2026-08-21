@@ -56,7 +56,7 @@ function FoodResultRow({ food, onPress }: { food: FoodRecord; onPress: () => voi
 
 export default function LogFoodScreen() {
   const router = useRouter();
-  const { date: dateParam, mealType: mealTypeParam, foodJson } = useLocalSearchParams<{ date?: string; mealType?: string; foodJson?: string }>();
+  const { date: dateParam, mealType: mealTypeParam, foodJson, query: queryParam } = useLocalSearchParams<{ date?: string; mealType?: string; foodJson?: string; query?: string }>();
   const { data: recentFoods } = useRecentFoods();
   const createEntry = useCreateFoodEntry();
   const reportMissing = useReportMissingFood();
@@ -64,8 +64,11 @@ export default function LogFoodScreen() {
   const date = dateParam ?? todayDateString();
   const [mealType, setMealType] = useState<MealType>((mealTypeParam as MealType) ?? defaultMealTypeForNow());
 
-  const [query, setQuery] = useState("");
-  const [debouncedQuery, setDebouncedQuery] = useState("");
+  // A Food Ideas chip arrives here as a plain name suggestion (no catalog
+  // id/nutrition data to add directly), so it seeds the search box and
+  // opens results immediately rather than logging anything on its own.
+  const [query, setQuery] = useState(queryParam ?? "");
+  const [debouncedQuery, setDebouncedQuery] = useState(queryParam ?? "");
   useEffect(() => {
     const t = setTimeout(() => setDebouncedQuery(query), 300);
     return () => clearTimeout(t);
@@ -79,7 +82,7 @@ export default function LogFoodScreen() {
     if (!debouncedQuery.trim()) trackedSearchRef.current = false;
   }, [debouncedQuery]);
   const { data: searchGroups, isFetching: isSearching } = useFoodSearch(debouncedQuery);
-  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(!!queryParam);
 
   const [selectedFood, setSelectedFood] = useState<{ food: FoodRecord; domain: FoodDomain } | null>(null);
   const [servingLabel, setServingLabel] = useState<string | null>(null);

@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import Constants from "expo-constants";
 import { manipulateAsync, SaveFormat } from "expo-image-manipulator";
 import * as ImagePicker from "expo-image-picker";
 import { Image, type ImageStyle } from "expo-image";
@@ -411,6 +412,15 @@ export default function SettingsScreen() {
               ) : null}
             </View>
           </Card>
+
+          {/* Lets a build be identified from a screenshot alone — critical
+              when diagnosing "is this actually the build I sent you" during
+              a bug report, since Android will happily reinstall over an
+              existing app without any visible confirmation of which
+              version ended up on the device. */}
+          <Text style={styles.buildInfo}>
+            Build {Constants.expoConfig?.extra?.buildLabel ?? "dev"}
+          </Text>
         </ScrollView>
       )}
     </SafeAreaView>
@@ -518,4 +528,5 @@ const styles = StyleSheet.create({
   },
   reminderSaveButton: { height: 36, paddingHorizontal: Spacing.lg },
   saved: { color: Color.success, fontSize: 12 },
+  buildInfo: { fontSize: 11, color: Color.textFaint, textAlign: "center", marginTop: Spacing.xl },
 });

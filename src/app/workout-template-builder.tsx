@@ -20,6 +20,7 @@ import {
   useWorkoutTemplates,
 } from "@/lib/queries/workout-templates";
 import { SET_TYPE_OPTIONS, useWorkouts, type WorkoutSetType } from "@/lib/queries/workouts";
+import { takePendingWorkoutTemplateSeed } from "@/lib/workout-template-seed";
 
 let keySeq = 0;
 function nextKey(): string {
@@ -150,7 +151,17 @@ export default function WorkoutTemplateBuilderScreen() {
       setName(existing.name);
       setExercises(templateToRows(existing.exercises));
     } else if (!templateId) {
-      setExercises([newExerciseRow()]);
+      // "Save as template" from a just-logged workout hands its exercises
+      // over this way (see log-workout.tsx) rather than a route param — a
+      // read-once in-memory value, so it only ever applies on this first,
+      // genuinely-fresh visit.
+      const seed = takePendingWorkoutTemplateSeed();
+      if (seed) {
+        setName(seed.name);
+        setExercises(seed.exercises.length > 0 ? templateToRows(seed.exercises) : [newExerciseRow()]);
+      } else {
+        setExercises([newExerciseRow()]);
+      }
     }
     setHydrated(true);
   }, [existing, hydrated, isLoading, templateId]);

@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import { useMemo } from "react";
+import { useRouter } from "expo-router";
+import { useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { StatCard } from "@/components/ui/StatCard";
 import { Color, Radius, Spacing } from "@/constants/theme";
+import { takePendingWorkoutSummary } from "@/lib/workout-summary-handoff";
 
 // Built entirely from the payload the logging screen just submitted, plus
 // the personalBests it already had in memory — no server round-trip, no
@@ -27,16 +28,9 @@ export interface WorkoutSummaryData {
 
 export default function WorkoutSummaryScreen() {
   const router = useRouter();
-  const { data: dataParam } = useLocalSearchParams<{ data?: string }>();
-
-  const summary = useMemo<WorkoutSummaryData | null>(() => {
-    if (!dataParam) return null;
-    try {
-      return JSON.parse(dataParam) as WorkoutSummaryData;
-    } catch {
-      return null;
-    }
-  }, [dataParam]);
+  // Lazy initializer so this read-once handoff is only taken on the first
+  // render of this screen instance, not on every re-render.
+  const [summary] = useState<WorkoutSummaryData | null>(() => takePendingWorkoutSummary());
 
   if (!summary) {
     return (

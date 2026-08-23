@@ -93,6 +93,10 @@ const LINK_HREF_ROUTES: Record<string, string> = {
   "/dashboard/bookings": "/(tabs)/schedule",
   "/dashboard/membership": "/membership",
   "/dashboard/messages": "/messages",
+  // The live-workout-in-progress notification (workout-draft.tsx) sets
+  // linkHref to an already-valid native route rather than a web dashboard
+  // path — passed through as-is instead of falling back to Home.
+  "/log-workout": "/log-workout",
 };
 
 export function mapLinkHrefToRoute(linkHref: string): string {

@@ -26,7 +26,7 @@ import { TextField } from "@/components/ui/TextField";
 import { Color, Radius, Spacing } from "@/constants/theme";
 import { successFeedback, tapFeedback } from "@/lib/haptics";
 import { ApiError } from "@/lib/api-client";
-import { useAdvanceProgram, useMyProgram } from "@/lib/queries/programs";
+import { useAdvanceProgram, useMyProgram, type PrescribedExercise } from "@/lib/queries/programs";
 import { useExerciseLibraryNameIndex } from "@/lib/queries/exercise-library";
 import { useProfile } from "@/lib/queries/profile";
 import { useRestTimer } from "@/lib/rest-timer";
@@ -62,6 +62,8 @@ import {
   type WorkoutFormat,
 } from "@/lib/workout-draft";
 import type { WorkoutSummaryData } from "@/app/workout-summary";
+import { setPendingWorkoutSummary } from "@/lib/workout-summary-handoff";
+import { setPendingWorkoutTemplateSeed } from "@/lib/workout-template-seed";
 
 const FORMAT_OPTIONS: { value: WorkoutFormat; label: string }[] = [
   { value: "standard", label: "Standard" },
@@ -739,7 +741,13 @@ export default function LogWorkoutScreen() {
       exerciseRows: exerciseRows.map((r) => (r.key === rowKey ? { ...r, setRows: r.setRows.filter((sr) => sr.key !== setKey) } : r)),
     });
   }
-  function toggleSetComplete(rowKey: string, setKey: string) {
+  // `isLastInSupersetGroup` is true for standalone exercises (no group to
+  // wait on) and for the last exercise rendered within a superset block —
+  // false for every other member of that group. A superset round isn't
+  // actually "resting" until every exercise in it has been worked through,
+  // so starting the countdown after the first or middle exercise's set
+  // would cut into time that's really still work, not rest.
+  function toggleSetComplete(rowKey: string, setKey: string, isLastInSupersetGroup: boolean) {
     const row = exerciseRows.find((r) => r.key === rowKey);
     const setIdx = row?.setRows.findIndex((sr) => sr.key === setKey) ?? -1;
     const wasCompleted = row?.setRows[setIdx]?.completed ?? false;
@@ -752,17 +760,53 @@ export default function LogWorkoutScreen() {
       if (next) {
         setTimeout(() => weightInputRefs.current[next.key]?.focus(), 50);
       }
-      // The screen stays mounted underneath (this is a stack push, not a
-      // replace), so the focus() above still lands once the member comes
-      // back — they land straight on the next set with the rest already
-      // counted down. Starting the timer here (not on the rest-timer
-      // screen's own mount) means it keeps running and still notifies on
-      // completion even if they never open that screen at all, or leave it
-      // immediately — see lib/rest-timer.tsx for why that distinction matters.
-      restTimer.start(restTimerSeconds);
-      router.push({ pathname: "/rest-timer" });
+      if (isLastInSupersetGroup) {
+        // The screen stays mounted underneath (this is a stack push, not a
+        // replace), so the focus() above still lands once the member comes
+        // back — they land straight on the next set with the rest already
+        // counted down. Starting the timer here (not on the rest-timer
+        // screen's own mount) means it keeps running and still notifies on
+        // completion even if they never open that screen at all, or leave it
+        // immediately — see lib/rest-timer.tsx for why that distinction matters.
+        restTimer.start(restTimerSeconds);
+        router.push({ pathname: "/rest-timer" });
+      }
     }
     updateSetRow(rowKey, setKey, { completed: !wasCompleted });
+  }
+
+  // Lets a member redo a workout without re-typing every exercise. Carries
+  // over exercise identity, superset grouping, and set type — but not the
+  // specific weights/reps actually done today, since a template describes
+  // "what to do next time," not a record of this session (that's what the
+  // logged workout itself already is).
+  function handleSaveAsTemplate() {
+    const rowsWithContent = exerciseRows.filter((r) => r.name.trim());
+    if (rowsWithContent.length === 0) return;
+    tapFeedback();
+    const templateExercises: PrescribedExercise[] = rowsWithContent.map((r) => {
+      const firstFilled = r.setRows.find((sr) => sr.weight.trim() || sr.reps.trim() || sr.repsRight.trim() || sr.repsLeft.trim());
+      const targetReps = r.perSide
+        ? firstFilled?.repsRight.trim() || firstFilled?.repsLeft.trim()
+          ? `R${firstFilled.repsRight.trim()} / L${firstFilled.repsLeft.trim()}`
+          : null
+        : firstFilled?.reps.trim() || null;
+      return {
+        id: nextKey(),
+        exerciseId: r.exerciseId,
+        name: r.name.trim(),
+        muscleTags: [],
+        targetSets: r.setRows.length || null,
+        targetReps,
+        targetWeight: firstFilled?.weight.trim() || null,
+        setType: r.defaultSetType === "standard" ? null : r.defaultSetType,
+        sets: null,
+        supersetGroup: r.supersetGroup,
+        notes: r.notes.trim() || null,
+      };
+    });
+    setPendingWorkoutTemplateSeed({ name: title.trim(), exercises: templateExercises });
+    router.push("/workout-template-builder");
   }
 
   function handleDiscard() {
@@ -956,7 +1000,8 @@ export default function LogWorkoutScreen() {
       successFeedback();
       setFeelModalOpen(false);
       discard();
-      router.replace({ pathname: "/workout-summary", params: { data: JSON.stringify(summary) } });
+      setPendingWorkoutSummary(summary);
+      router.replace("/workout-summary");
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Could not log workout. Please try again.");
       setFeelModalOpen(false);
@@ -1452,7 +1497,11 @@ export default function LogWorkoutScreen() {
                         style={[styles.setInput, set.completed && styles.setInputCompleted, { flex: 1 }]}
                       />
                     )}
-                    <Pressable onPress={() => toggleSetComplete(row.key, set.key)} hitSlop={8} style={styles.setCheckWrap}>
+                    <Pressable
+                      onPress={() => toggleSetComplete(row.key, set.key, !isGrouped || memberIdx === grp.rows.length - 1)}
+                      hitSlop={8}
+                      style={styles.setCheckWrap}
+                    >
                       <View style={[styles.setCheck, set.completed && styles.setCheckDone]}>
                         {set.completed ? <Ionicons name="checkmark" size={16} color={Color.bg0} /> : null}
                       </View>
@@ -1638,6 +1687,13 @@ export default function LogWorkoutScreen() {
           {error ? <Text style={styles.error}>{error}</Text> : null}
 
           <Button title="Log workout" onPress={handleLogPress} loading={create.isPending} style={{ marginTop: Spacing.lg }} />
+
+          {exerciseRows.some((r) => r.name.trim()) ? (
+            <Pressable onPress={handleSaveAsTemplate} style={styles.saveTemplateRow}>
+              <Ionicons name="bookmark-outline" size={14} color={Color.gold} />
+              <Text style={styles.saveTemplateText}>Save as template</Text>
+            </Pressable>
+          ) : null}
         </ScrollView>
       </KeyboardAvoidingView>
 
@@ -1667,6 +1723,8 @@ const styles = StyleSheet.create({
   backButton: { padding: 4 },
   headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
   discardText: { fontSize: 12, fontWeight: "600", color: Color.danger },
+  saveTemplateRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, marginTop: Spacing.md, paddingVertical: 6 },
+  saveTemplateText: { fontSize: 12, fontWeight: "600", color: Color.gold },
   scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
   multiline: { height: 80, paddingTop: 12, textAlignVertical: "top" },
   sectionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: Spacing.md, marginBottom: Spacing.sm },

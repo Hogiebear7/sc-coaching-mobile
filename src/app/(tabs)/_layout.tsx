@@ -1,10 +1,23 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Tabs } from "expo-router";
-import { Animated, Dimensions, Easing } from "react-native";
+import { Tabs, usePathname, useRouter } from "expo-router";
+import { useMemo } from "react";
+import { Animated, Dimensions, Easing, PanResponder, View } from "react-native";
 
 import { Color } from "@/constants/theme";
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
+
+// Same 5 routes, in tab-bar order, as hrefs — used both to resolve "which
+// tab am I on" from the current pathname and to know what "next"/"previous"
+// means for a swipe.
+const TAB_ROUTES = ["/(tabs)", "/(tabs)/schedule", "/(tabs)/workouts", "/(tabs)/recovery", "/(tabs)/nutrition"];
+const TAB_SEGMENTS = ["index", "schedule", "workouts", "recovery", "nutrition"];
+
+function currentTabIndex(pathname: string): number {
+  const segment = pathname.replace(/^\/+|\/+$/g, "") || "index";
+  const idx = TAB_SEGMENTS.indexOf(segment);
+  return idx === -1 ? 0 : idx;
+}
 
 // A page-turn-style transition between the 5 tabs, built on expo-router's
 // built-in bottom-tabs scene interpolator hook (the same mechanism behind
@@ -88,31 +101,68 @@ const LABELS: Record<string, string> = {
 };
 
 export default function TabsLayout() {
-  return (
-    <Tabs
-      screenOptions={({ route }) => ({
-        headerShown: false,
-        tabBarActiveTintColor: Color.gold,
-        tabBarInactiveTintColor: Color.textFaint,
-        tabBarStyle: {
-          backgroundColor: Color.surface1,
-          borderTopColor: Color.borderSubtle,
-          borderTopWidth: 1,
+  const router = useRouter();
+  const pathname = usePathname();
+
+  // Recreated per pathname change (cheap) rather than once via useRef, so
+  // the release handler always reads the tab we're actually on — a
+  // useRef'd responder would close over whatever pathname was current the
+  // first time this component rendered.
+  //
+  // The capture threshold is deliberately generous (60px, and horizontal
+  // movement has to clearly dominate vertical) rather than the usual
+  // hair-trigger swipe feel: several screens have their own horizontal
+  // ScrollViews (the date strip, exercise/trend chip rows, food quick-add
+  // chips), and RN's responder system lets an ancestor's *Capture handler
+  // steal an in-progress gesture from a descendant at any point — so a
+  // twitchy threshold here would fight those scroll views for every drag
+  // instead of just the swipes that are clearly "change tab."
+  const panResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onMoveShouldSetPanResponderCapture: (_evt, gestureState) => {
+          const { dx, dy } = gestureState;
+          return Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 2;
         },
-        tabBarLabelStyle: { fontSize: 10, fontWeight: "600" },
-        tabBarIcon: ({ color, size }) => (
-          <Ionicons name={ICONS[route.name] ?? "ellipse-outline"} size={size - 2} color={color} />
-        ),
-        title: LABELS[route.name] ?? route.name,
-        sceneStyleInterpolator: pageTurnStyleInterpolator,
-        transitionSpec: pageTurnTransitionSpec,
-      })}
-    >
-      <Tabs.Screen name="index" />
-      <Tabs.Screen name="schedule" />
-      <Tabs.Screen name="workouts" />
-      <Tabs.Screen name="recovery" />
-      <Tabs.Screen name="nutrition" />
-    </Tabs>
+        onPanResponderRelease: (_evt, gestureState) => {
+          const idx = currentTabIndex(pathname);
+          if (gestureState.dx < 0 && idx < TAB_ROUTES.length - 1) {
+            router.push(TAB_ROUTES[idx + 1] as never);
+          } else if (gestureState.dx > 0 && idx > 0) {
+            router.push(TAB_ROUTES[idx - 1] as never);
+          }
+        },
+      }),
+    [pathname, router]
+  );
+
+  return (
+    <View style={{ flex: 1 }} {...panResponder.panHandlers}>
+      <Tabs
+        screenOptions={({ route }) => ({
+          headerShown: false,
+          tabBarActiveTintColor: Color.gold,
+          tabBarInactiveTintColor: Color.textFaint,
+          tabBarStyle: {
+            backgroundColor: Color.surface1,
+            borderTopColor: Color.borderSubtle,
+            borderTopWidth: 1,
+          },
+          tabBarLabelStyle: { fontSize: 10, fontWeight: "600" },
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name={ICONS[route.name] ?? "ellipse-outline"} size={size - 2} color={color} />
+          ),
+          title: LABELS[route.name] ?? route.name,
+          sceneStyleInterpolator: pageTurnStyleInterpolator,
+          transitionSpec: pageTurnTransitionSpec,
+        })}
+      >
+        <Tabs.Screen name="index" />
+        <Tabs.Screen name="schedule" />
+        <Tabs.Screen name="workouts" />
+        <Tabs.Screen name="recovery" />
+        <Tabs.Screen name="nutrition" />
+      </Tabs>
+    </View>
   );
 }

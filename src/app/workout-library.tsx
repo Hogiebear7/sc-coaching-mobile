@@ -337,7 +337,11 @@ const styles = StyleSheet.create({
   },
   equipmentFilterText: { flex: 1, fontSize: 11, color: Color.textMuted },
   equipmentFilterAction: { fontSize: 11, fontWeight: "600", color: Color.gold },
-  bodyPartScroll: { flexGrow: 0, marginBottom: Spacing.sm },
+  // flexShrink: 0 is load-bearing — react-native-web's ScrollView defaults to
+  // flexShrink: 1 on its outer wrapper, so without this the FlatList below
+  // (which wants all remaining vertical space) squeezes this row down toward
+  // 0 height instead of leaving it at its natural content-based size.
+  bodyPartScroll: { flexGrow: 0, flexShrink: 0, marginBottom: Spacing.sm },
   bodyPartRow: { paddingHorizontal: Spacing.lg, gap: Spacing.xs },
   bodyPartChip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.md, paddingVertical: 6 },
   bodyPartChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },

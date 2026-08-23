@@ -19,12 +19,35 @@ import { type PersonalBest, useWorkouts } from "@/lib/queries/workouts";
 import {
   TREND_RANGES,
   computeWeeklyStats,
-  exerciseTrendToPoints,
   filterPointsByRange,
-  getExerciseTrend,
+  getExerciseMetricTrend,
   getRecentRecords,
   todayDateString,
+  type ExerciseMetricKey,
 } from "@/lib/workout-formatters";
+
+// A deliberately narrow slice of the full EXERCISE_METRICS list (which also
+// has Est. 1RM/Volume/Best Set Vol./Sets) — this compact widget covers just
+// the three axes a member actually thinks in day-to-day ("how heavy, how
+// many, how long"), matching how log-workout's own weight/time/band toggle
+// frames a set. The full switcher is one tap away via "View history."
+const COMPACT_TREND_METRICS: { key: ExerciseMetricKey; label: string }[] = [
+  { key: "heaviestWeight", label: "Weight" },
+  { key: "totalReps", label: "Reps" },
+  { key: "bestTimeSecs", label: "Time" },
+];
+
+// getExerciseMetricTrend never returns a null point, but an "additive"
+// metric like totalReps defaults to 0 (not null) for a session where that
+// axis genuinely wasn't tracked — a pure-hold exercise like Plank Hold logs
+// real seconds and no reps at all, so its reps series is two same-day
+// zeroes, which technically satisfies "length >= 2" without meaning
+// anything. Requiring at least one real (>0) value is what actually
+// distinguishes "tracked but small" from "never tracked."
+function hasMetricTrend(sessions: Parameters<typeof getExerciseMetricTrend>[0], name: string, key: ExerciseMetricKey): boolean {
+  const points = getExerciseMetricTrend(sessions, name, key);
+  return points.length >= 2 && points.some((p) => p.value > 0);
+}
 
 // Oldest-first window of dates ending today, for the date strip. UTC-based
 // arithmetic to match todayDateString()'s convention (used app-wide for the
@@ -73,8 +96,10 @@ export default function WorkoutsScreen() {
     advanceProgram.mutate(program.id);
   }
 
-  // Exercises with at least 2 logged dates — the only ones a trend chart
-  // can say anything about. Most-recently-logged first.
+  // Exercises with at least 2 dated points on ANY of the three compact
+  // metrics — the only ones a trend chart can say anything about. A
+  // hold-only exercise (no weight ever logged) still qualifies via Time,
+  // a bodyweight-only one via Reps. Most-recently-logged first.
   const trendCandidates = useMemo(() => {
     if (!data) return [];
     const seen = new Map<string, string>(); // name -> most recent date
@@ -88,18 +113,31 @@ export default function WorkoutsScreen() {
     }
     return [...seen.entries()]
       .map(([key, date]) => ({ key, date, name: data.sessions.flatMap((s) => s.exercises).find((e) => e.name.trim().toLowerCase() === key)?.name ?? key }))
-      .filter((c) => getExerciseTrend(data.sessions, c.name).length >= 2)
+      .filter((c) => COMPACT_TREND_METRICS.some((m) => hasMetricTrend(data.sessions, c.name, m.key)))
       .sort((a, b) => b.date.localeCompare(a.date));
   }, [data]);
 
   const activeTrendExercise = trendExercise ?? trendCandidates[0]?.name ?? null;
-  const trendPoints = data && activeTrendExercise ? getExerciseTrend(data.sessions, activeTrendExercise) : [];
+
+  const [trendMetric, setTrendMetric] = useState<ExerciseMetricKey | null>(null);
+  // Default to whichever of weight/reps/time actually has data for the
+  // exercise currently selected — same "don't default to an empty chart"
+  // rule exercise-detail.tsx already uses for its own metric switcher.
+  const availableMetrics = useMemo(
+    () =>
+      data && activeTrendExercise
+        ? COMPACT_TREND_METRICS.filter((m) => hasMetricTrend(data.sessions, activeTrendExercise, m.key))
+        : [],
+    [data, activeTrendExercise]
+  );
+  const activeTrendMetric: ExerciseMetricKey = trendMetric ?? availableMetrics[0]?.key ?? "heaviestWeight";
 
   const [trendRange, setTrendRange] = useState("All");
-  const filteredTrendPoints = useMemo(() => {
-    const { points } = exerciseTrendToPoints(trendPoints);
-    return filterPointsByRange(points, trendRange, today);
-  }, [trendPoints, trendRange, today]);
+  const trendPoints = useMemo(
+    () => (data && activeTrendExercise ? getExerciseMetricTrend(data.sessions, activeTrendExercise, activeTrendMetric) : []),
+    [data, activeTrendExercise, activeTrendMetric]
+  );
+  const filteredTrendPoints = useMemo(() => filterPointsByRange(trendPoints, trendRange, today), [trendPoints, trendRange, today]);
 
   const weeklyStats = useMemo(() => (data ? computeWeeklyStats(data.sessions, today) : null), [data, today]);
   const allRecentRecords = useMemo(() => (data ? getRecentRecords(data.sessions, 30, today) : []), [data, today]);
@@ -387,13 +425,29 @@ export default function WorkoutsScreen() {
               {trendCandidates.slice(0, 10).map((c) => (
                 <Pressable
                   key={c.key}
-                  onPress={() => setTrendExercise(c.name)}
+                  onPress={() => {
+                    setTrendExercise(c.name);
+                    setTrendMetric(null);
+                  }}
                   style={[styles.trendChip, activeTrendExercise === c.name && styles.trendChipActive]}
                 >
                   <Text style={[styles.trendChipText, activeTrendExercise === c.name && styles.trendChipTextActive]}>{c.name}</Text>
                 </Pressable>
               ))}
             </ScrollView>
+            {availableMetrics.length > 1 ? (
+              <View style={styles.metricRow}>
+                {availableMetrics.map((m) => (
+                  <Pressable
+                    key={m.key}
+                    onPress={() => setTrendMetric(m.key)}
+                    style={[styles.metricChip, activeTrendMetric === m.key && styles.metricChipActive]}
+                  >
+                    <Text style={[styles.metricChipText, activeTrendMetric === m.key && styles.metricChipTextActive]}>{m.label}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            ) : null}
             <View style={styles.rangeRow}>
               {TREND_RANGES.map((r) => (
                 <Pressable
@@ -559,6 +613,11 @@ const styles = StyleSheet.create({
   trendChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
   trendChipText: { fontSize: 11, fontWeight: "500", color: Color.textMuted },
   trendChipTextActive: { color: Color.gold },
+  metricRow: { flexDirection: "row", gap: 6, marginBottom: Spacing.sm },
+  metricChip: { flex: 1, alignItems: "center", borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingVertical: 6 },
+  metricChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
+  metricChipText: { fontSize: 11, fontWeight: "600", color: Color.textMuted },
+  metricChipTextActive: { color: Color.gold },
   rangeRow: { flexDirection: "row", gap: 6, marginBottom: Spacing.sm },
   rangeChip: { flex: 1, alignItems: "center", borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingVertical: 5 },
   rangeChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },

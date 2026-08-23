@@ -6,8 +6,11 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { TrendChart } from "@/components/ui/TrendChart";
+import { WeightTrendChart } from "@/components/ui/WeightTrendChart";
 import { Color, Radius, Spacing } from "@/constants/theme";
+import { useBodyWeightLogs } from "@/lib/queries/body-weight";
 import { useWorkouts } from "@/lib/queries/workouts";
 import {
   TREND_RANGES,
@@ -20,15 +23,41 @@ import {
 
 type Metric = "sets" | "volume";
 
+function formatEntryDate(iso: string): string {
+  return new Date(`${iso}T00:00:00`).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+}
+
 export default function WorkoutTrendsScreen() {
   const router = useRouter();
   const { data, isLoading, isError, refetch } = useWorkouts();
+  const { data: weightLogs } = useBodyWeightLogs();
   const [metric, setMetric] = useState<Metric>("volume");
   const [range, setRange] = useState("3M");
+  const [bwRange, setBwRange] = useState("All");
 
   const today = todayDateString();
 
   const weeklyTrend = useMemo(() => (data ? getWeeklyTrend(data.sessions) : []), [data]);
+
+  const sortedWeightLogs = useMemo(
+    () => (weightLogs ? [...weightLogs].sort((a, b) => a.date.localeCompare(b.date)) : []),
+    [weightLogs]
+  );
+  const filteredWeightLogs = useMemo(
+    () => filterPointsByRange(sortedWeightLogs, bwRange, today),
+    [sortedWeightLogs, bwRange, today]
+  );
+  // Always computed from the FULL history, independent of the active range
+  // filter — "since your first entry" should mean exactly that, not "since
+  // the start of whatever window happens to be selected."
+  const weightChangeSummary = useMemo(() => {
+    if (sortedWeightLogs.length < 2) return null;
+    const first = sortedWeightLogs[0];
+    const latest = sortedWeightLogs[sortedWeightLogs.length - 1];
+    const delta = Math.round((latest.weightKg - first.weightKg) * 10) / 10;
+    const direction = delta === 0 ? "No change" : delta > 0 ? `Up ${delta} kg` : `Down ${Math.abs(delta)} kg`;
+    return `${direction} since your first entry (${formatEntryDate(first.date)})`;
+  }, [sortedWeightLogs]);
   const filteredWeeks = useMemo(() => filterPointsByRange(weeklyTrend, range, today), [weeklyTrend, range, today]);
 
   const chartPoints: TrendPoint[] = useMemo(
@@ -75,10 +104,43 @@ export default function WorkoutTrendsScreen() {
           <Button title="Retry" onPress={() => refetch()} variant="secondary" style={{ marginTop: Spacing.md }} />
         </View>
       ) : weeklyTrend.length === 0 ? (
-        <View style={styles.centerFill}>
-          <Ionicons name="trending-up-outline" size={22} color={Color.textFaint} />
-          <Text style={[styles.emptyText, { marginTop: Spacing.sm }]}>Log a few workouts to see trends here.</Text>
-        </View>
+        <ScrollView contentContainerStyle={styles.scroll}>
+          <Card tier="quiet">
+            <EmptyState
+              icon="trending-up-outline"
+              title="No workouts logged yet"
+              body="Log a few workouts to see sets, volume, and top-exercise trends here."
+            />
+          </Card>
+          <Text style={styles.sectionLabel}>BODYWEIGHT</Text>
+          {sortedWeightLogs.length < 2 ? (
+            <Card tier="quiet">
+              <EmptyState
+                icon="body-outline"
+                title="No weight trend yet"
+                body="Log a couple of weight check-ins in Nutrition to see your bodyweight trend here."
+              />
+            </Card>
+          ) : (
+            <>
+              <View style={styles.rangeRow}>
+                {TREND_RANGES.map((r) => (
+                  <Pressable
+                    key={r.key}
+                    onPress={() => setBwRange(r.key)}
+                    style={[styles.rangeChip, bwRange === r.key && styles.rangeChipActive]}
+                  >
+                    <Text style={[styles.rangeChipText, bwRange === r.key && styles.rangeChipTextActive]}>{r.key}</Text>
+                  </Pressable>
+                ))}
+              </View>
+              {weightChangeSummary ? <Text style={styles.chartCaption}>{weightChangeSummary}</Text> : null}
+              <Card style={styles.trendCard}>
+                <WeightTrendChart logs={filteredWeightLogs} />
+              </Card>
+            </>
+          )}
+        </ScrollView>
       ) : (
         <ScrollView contentContainerStyle={styles.scroll}>
           <View style={styles.metricToggleRow}>
@@ -148,6 +210,35 @@ export default function WorkoutTrendsScreen() {
               </Card>
             </>
           ) : null}
+
+          <Text style={styles.sectionLabel}>BODYWEIGHT</Text>
+          {sortedWeightLogs.length < 2 ? (
+            <Card tier="quiet">
+              <EmptyState
+                icon="body-outline"
+                title="No weight trend yet"
+                body="Log a couple of weight check-ins in Nutrition to see your bodyweight trend here."
+              />
+            </Card>
+          ) : (
+            <>
+              <View style={styles.rangeRow}>
+                {TREND_RANGES.map((r) => (
+                  <Pressable
+                    key={r.key}
+                    onPress={() => setBwRange(r.key)}
+                    style={[styles.rangeChip, bwRange === r.key && styles.rangeChipActive]}
+                  >
+                    <Text style={[styles.rangeChipText, bwRange === r.key && styles.rangeChipTextActive]}>{r.key}</Text>
+                  </Pressable>
+                ))}
+              </View>
+              {weightChangeSummary ? <Text style={styles.chartCaption}>{weightChangeSummary}</Text> : null}
+              <Card style={styles.trendCard}>
+                <WeightTrendChart logs={filteredWeightLogs} />
+              </Card>
+            </>
+          )}
         </ScrollView>
       )}
     </SafeAreaView>

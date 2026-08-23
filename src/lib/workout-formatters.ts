@@ -63,6 +63,18 @@ export function formatAsKg(raw: string): string {
   return /^\d+(\.\d+)?$/.test(trimmed) ? `${trimmed} kg` : trimmed;
 }
 
+// Detects a time-hold set (e.g. a plank logged via unitMode "time") from its
+// raw weight string. There's no stored flag for which unit mode a set used
+// — it's discarded before the set ever reaches the backend — so this is the
+// only way to tell a "1:30" hold apart from a numeric weight after the
+// fact. Matches exactly what formatAsMmSs ever produces (M:SS, M unbounded).
+export function parseTimeSecs(raw: string | null): number | null {
+  if (!raw) return null;
+  const trimmed = raw.trim();
+  if (!/^\d+:\d{2}$/.test(trimmed)) return null;
+  return parseDuration(trimmed);
+}
+
 export function formatAsMmSs(raw: string): string {
   const trimmed = raw.trim();
   if (!trimmed || trimmed.includes(":")) return trimmed;
@@ -310,6 +322,7 @@ export interface ExerciseStats {
   bestSetReps: { reps: number; date: string } | null;
   bestSetVolume: { value: number; date: string } | null;
   estimatedOneRepMax: { value: number; date: string } | null;
+  bestHold: { secs: number; date: string } | null;
   history: ExerciseHistoryEntry[];
 }
 
@@ -328,6 +341,7 @@ export function getExerciseStats(sessions: WorkoutSessionSummary[], exerciseName
     bestSetReps: null,
     bestSetVolume: null,
     estimatedOneRepMax: null,
+    bestHold: null,
     history: [],
   };
   if (!normalized) return stats;
@@ -343,8 +357,13 @@ export function getExerciseStats(sessions: WorkoutSessionSummary[], exerciseName
       stats.totalSets += 1;
       if (set.reps !== null) stats.totalReps += set.reps;
 
+      const timeSecs = parseTimeSecs(set.weight);
+      if (timeSecs !== null && (!stats.bestHold || timeSecs > stats.bestHold.secs)) {
+        stats.bestHold = { secs: timeSecs, date: session.date };
+      }
+
       const w = set.weight ? parseFloat(set.weight) : NaN;
-      if (!Number.isFinite(w)) continue;
+      if (!Number.isFinite(w) || timeSecs !== null) continue;
 
       if (!stats.heaviestWeight || w > stats.heaviestWeight.value) {
         stats.heaviestWeight = { value: w, weightStr: set.weight as string, date: session.date, reps: set.reps };
@@ -404,19 +423,24 @@ function exerciseSessionMetrics(ex: WorkoutExerciseEntry): {
   heaviestWeight: number | null;
   bestSetVolume: number | null;
   estimatedOneRepMax: number | null;
+  bestTimeSecs: number | null;
 } {
   let totalReps = 0;
   let totalVolume = 0;
   let heaviestWeight: number | null = null;
   let bestSetVolume: number | null = null;
   let estimatedOneRepMax: number | null = null;
+  let bestTimeSecs: number | null = null;
 
   const sets = synthesizeSets(ex);
   for (const s of sets) {
     if (s.reps !== null) totalReps += s.reps;
 
+    const timeSecs = parseTimeSecs(s.weight);
+    if (timeSecs !== null && (bestTimeSecs === null || timeSecs > bestTimeSecs)) bestTimeSecs = timeSecs;
+
     const w = s.weight ? parseFloat(s.weight) : NaN;
-    if (!Number.isFinite(w)) continue;
+    if (!Number.isFinite(w) || timeSecs !== null) continue;
     if (heaviestWeight === null || w > heaviestWeight) heaviestWeight = w;
     if (s.reps === null) continue;
 
@@ -435,10 +459,18 @@ function exerciseSessionMetrics(ex: WorkoutExerciseEntry): {
     heaviestWeight,
     bestSetVolume: bestSetVolume !== null ? Math.round(bestSetVolume) : null,
     estimatedOneRepMax: estimatedOneRepMax !== null ? Math.round(estimatedOneRepMax * 10) / 10 : null,
+    bestTimeSecs,
   };
 }
 
-export type ExerciseMetricKey = "estimatedOneRepMax" | "heaviestWeight" | "totalVolume" | "bestSetVolume" | "totalReps" | "totalSets";
+export type ExerciseMetricKey =
+  | "estimatedOneRepMax"
+  | "heaviestWeight"
+  | "totalVolume"
+  | "bestSetVolume"
+  | "totalReps"
+  | "totalSets"
+  | "bestTimeSecs";
 
 export const EXERCISE_METRICS: { key: ExerciseMetricKey; label: string; unit: string }[] = [
   { key: "estimatedOneRepMax", label: "Est. 1RM", unit: "kg" },
@@ -447,6 +479,7 @@ export const EXERCISE_METRICS: { key: ExerciseMetricKey; label: string; unit: st
   { key: "bestSetVolume", label: "Best Set Vol.", unit: "kg" },
   { key: "totalReps", label: "Reps", unit: "reps" },
   { key: "totalSets", label: "Sets", unit: "sets" },
+  { key: "bestTimeSecs", label: "Best Hold", unit: "time" },
 ];
 
 // Per-session trend for one exercise metric — the data source behind
@@ -467,7 +500,7 @@ export function getExerciseMetricTrend(sessions: WorkoutSessionSummary[], exerci
 
     const existing = byDate.get(session.date);
     if (!existing || value > existing.value) {
-      byDate.set(session.date, { date: session.date, value, label: String(value) });
+      byDate.set(session.date, { date: session.date, value, label: metric === "bestTimeSecs" ? formatDuration(value) : String(value) });
     }
   }
   return [...byDate.values()].sort((a, b) => a.date.localeCompare(b.date));

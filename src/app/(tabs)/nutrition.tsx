@@ -590,6 +590,16 @@ export default function NutritionScreen() {
                 </View>
                 <Ionicons name="chevron-forward" size={18} color={Color.textFaint} />
               </Pressable>
+              <Pressable onPress={() => router.push("/shopping-list")} style={[styles.moreRow, styles.moreRowDivider]}>
+                <View style={styles.drinkCardIcon}>
+                  <Ionicons name="cart-outline" size={18} color={Color.gold} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.drinkCardTitle}>Shopping List</Text>
+                  <Text style={styles.drinkCardSub}>Your list, plus ingredients from saved recipes</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={Color.textFaint} />
+              </Pressable>
             </Card>
           </View>
 

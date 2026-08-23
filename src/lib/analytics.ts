@@ -28,7 +28,11 @@ export type FoodAnalyticsEvent =
   | "food_submission_camera_unavailable"
   | "meal_suggest_requested"
   | "meal_suggest_logged"
-  | "meal_suggest_camera_unavailable";
+  | "meal_suggest_camera_unavailable"
+  | "meal_suggest_recipe_saved"
+  | "receipt_scan_requested"
+  | "shopping_list_item_added"
+  | "shopping_list_recipe_ingredients_added";
 
 export interface AnalyticsProvider {
   readonly configured: boolean;

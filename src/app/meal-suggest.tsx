@@ -21,13 +21,33 @@ import { CameraPermissionDenied, CameraUnavailable } from "@/components/nutritio
 import { Color, Radius, Spacing } from "@/constants/theme";
 import { trackEvent } from "@/lib/analytics";
 import { tapFeedback } from "@/lib/haptics";
+import { parseIngredientText } from "@/lib/ingredient-text";
 import { ApiError } from "@/lib/auth-context";
 import { MEAL_TYPE_OPTIONS, useCreateFoodEntry, type MealType } from "@/lib/queries/nutrition-diary";
 import { useMealSuggest, type MealSuggestion } from "@/lib/queries/meal-suggest";
+import { useCreateRecipe } from "@/lib/queries/recipes";
+import { useReceiptScan } from "@/lib/queries/receipt-scan";
 import { todayDateString } from "@/lib/workout-formatters";
 
-type Mode = "photo" | "text";
-type Stage = "input" | "results";
+type Mode = "photo" | "receipt" | "text";
+type Stage = "input" | "confirm" | "results";
+
+// One row in the receipt-review stage — seeded from the AI's extraction,
+// then fully editable/removable before anything is sent to meal-suggest.
+// See "Important" in the brief: a receipt photo never feeds suggestions
+// directly, only this confirmed-and-possibly-edited list does.
+interface ConfirmItem {
+  key: string;
+  text: string;
+  included: boolean;
+  confidence: "confident" | "uncertain";
+}
+
+let confirmItemSeq = 0;
+function nextConfirmKey(): string {
+  confirmItemSeq += 1;
+  return `ci-${confirmItemSeq}`;
+}
 
 function defaultMealType(): MealType {
   const hour = new Date().getHours();
@@ -40,7 +60,9 @@ function defaultMealType(): MealType {
 function SuggestionCard({ suggestion }: { suggestion: MealSuggestion }) {
   const [mealType, setMealType] = useState<MealType>(defaultMealType());
   const createEntry = useCreateFoodEntry();
+  const createRecipe = useCreateRecipe();
   const [logged, setLogged] = useState(false);
+  const [saved, setSaved] = useState(false);
 
   async function handleLog() {
     tapFeedback();
@@ -58,6 +80,22 @@ function SuggestionCard({ suggestion }: { suggestion: MealSuggestion }) {
       trackEvent("meal_suggest_logged", { title: suggestion.title });
     } catch {
       // Swallow — the button reverts to its normal state and the member can retry.
+    }
+  }
+
+  async function handleSaveRecipe() {
+    tapFeedback();
+    try {
+      await createRecipe.mutateAsync({
+        title: suggestion.title,
+        ingredients: suggestion.ingredientsUsed.map(parseIngredientText),
+        notes: suggestion.description || null,
+        source: "meal-suggest",
+      });
+      setSaved(true);
+      trackEvent("meal_suggest_recipe_saved", { title: suggestion.title });
+    } catch {
+      // Swallow — button reverts, member can retry.
     }
   }
 
@@ -131,6 +169,18 @@ function SuggestionCard({ suggestion }: { suggestion: MealSuggestion }) {
           />
         </>
       )}
+
+      {saved ? (
+        <View style={styles.savedRow}>
+          <Ionicons name="bookmark" size={14} color={Color.gold} />
+          <Text style={styles.savedText}>Saved to recipes</Text>
+        </View>
+      ) : (
+        <Pressable onPress={handleSaveRecipe} disabled={createRecipe.isPending} style={styles.saveRecipeRow}>
+          <Ionicons name="bookmark-outline" size={14} color={Color.gold} />
+          <Text style={styles.saveRecipeText}>{createRecipe.isPending ? "Saving…" : "Save recipe"}</Text>
+        </Pressable>
+      )}
     </Card>
   );
 }
@@ -150,7 +200,11 @@ export default function MealSuggestScreen() {
   const [ingredientsText, setIngredientsText] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [suggestions, setSuggestions] = useState<MealSuggestion[]>([]);
+  const [confirmItems, setConfirmItems] = useState<ConfirmItem[]>([]);
+  const [newItemText, setNewItemText] = useState("");
+  const [ocrWasWeak, setOcrWasWeak] = useState(false);
   const mealSuggest = useMealSuggest();
+  const receiptScan = useReceiptScan();
 
   function handleMountError(e: CameraMountError) {
     trackEvent("meal_suggest_camera_unavailable", { message: e.message });
@@ -178,8 +232,44 @@ export default function MealSuggestScreen() {
     }
   }
 
+  // A receipt photo never goes straight into meal suggestions — it's read
+  // into candidate line items here, then the member reviews/edits them on
+  // the confirm stage before anything reaches generateMealSuggestions.
+  // Empty/weak extraction still lands on the confirm stage (never a dead
+  // end): an empty, clearly-labelled, fully-editable list beats a silent
+  // failure or a generic error with nothing to do next.
+  async function handleReceiptSubmit() {
+    setError(null);
+    if (!capturedPhoto) {
+      setError("Add a photo of your receipt.");
+      return;
+    }
+    try {
+      const res = await receiptScan.mutateAsync(capturedPhoto);
+      trackEvent("receipt_scan_requested", { count: res.items.length });
+      setConfirmItems(
+        res.items.map((it) => ({
+          key: nextConfirmKey(),
+          text: it.normalizedName,
+          included: it.isFood,
+          confidence: it.confidence,
+        }))
+      );
+      setOcrWasWeak(res.items.length === 0);
+      setStage("confirm");
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "Couldn't read that receipt right now. Please try again.");
+    }
+  }
+
   async function handleSubmit() {
     setError(null);
+
+    if (mode === "receipt") {
+      await handleReceiptSubmit();
+      return;
+    }
+
     if (!capturedPhoto && !ingredientsText.trim()) {
       setError("Add a photo or type what you've got.");
       return;
@@ -201,11 +291,56 @@ export default function MealSuggestScreen() {
     }
   }
 
+  function updateConfirmItem(key: string, patch: Partial<Omit<ConfirmItem, "key">>) {
+    setConfirmItems((prev) => prev.map((it) => (it.key === key ? { ...it, ...patch } : it)));
+  }
+
+  function removeConfirmItem(key: string) {
+    setConfirmItems((prev) => prev.filter((it) => it.key !== key));
+  }
+
+  function handleAddConfirmItem() {
+    const text = newItemText.trim();
+    if (!text) return;
+    setConfirmItems((prev) => [...prev, { key: nextConfirmKey(), text, included: true, confidence: "confident" }]);
+    setNewItemText("");
+  }
+
+  // The confirmed (possibly hand-edited) list is what actually reaches meal
+  // suggestions — reusing the same generateMealSuggestions path as typing
+  // ingredients directly, just pre-filled from the receipt.
+  async function handleConfirmContinue() {
+    setError(null);
+    const confirmedText = confirmItems
+      .filter((it) => it.included && it.text.trim())
+      .map((it) => it.text.trim())
+      .join(", ");
+    if (!confirmedText) {
+      setError("Select or add at least one item to continue.");
+      return;
+    }
+    try {
+      const res = await mealSuggest.mutateAsync({ imageBase64: null, ingredientsText: confirmedText });
+      trackEvent("meal_suggest_requested", { mode: "receipt", count: res.suggestions.length });
+      if (res.suggestions.length === 0) {
+        setError("Couldn't come up with anything from those items — try adding a few more.");
+        return;
+      }
+      setSuggestions(res.suggestions);
+      setStage("results");
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "Couldn't get suggestions right now. Please try again.");
+    }
+  }
+
   function handleReset() {
     setStage("input");
     setCapturedPhoto(null);
     setIngredientsText("");
     setSuggestions([]);
+    setConfirmItems([]);
+    setNewItemText("");
+    setOcrWasWeak(false);
     setError(null);
   }
 
@@ -221,11 +356,70 @@ export default function MealSuggestScreen() {
 
       {stage === "results" ? (
         <ScrollView contentContainerStyle={styles.scroll}>
-          <Text style={styles.subhead}>A few ideas from what you've got.</Text>
+          <Text style={styles.subhead}>A few ideas from what you&apos;ve got.</Text>
           {suggestions.map((s) => (
             <SuggestionCard key={s.title} suggestion={s} />
           ))}
           <Button title="Try again" variant="secondary" onPress={handleReset} style={{ marginTop: Spacing.sm }} />
+        </ScrollView>
+      ) : stage === "confirm" ? (
+        <ScrollView contentContainerStyle={styles.scroll}>
+          <Text style={styles.subhead}>
+            {ocrWasWeak
+              ? "Couldn't read much off that photo — add what you bought below."
+              : "Here's what we read off your receipt — untick anything that's not food, fix anything misread, or add what's missing."}
+          </Text>
+          {confirmItems.map((item) => (
+            <View key={item.key} style={styles.confirmRow}>
+              <Pressable onPress={() => updateConfirmItem(item.key, { included: !item.included })} hitSlop={8}>
+                <Ionicons
+                  name={item.included ? "checkbox" : "square-outline"}
+                  size={20}
+                  color={item.included ? Color.gold : Color.textFaint}
+                />
+              </Pressable>
+              <TextInput
+                value={item.text}
+                onChangeText={(v) => updateConfirmItem(item.key, { text: v })}
+                style={styles.confirmInput}
+                placeholderTextColor={Color.textFaint}
+              />
+              {item.confidence === "uncertain" ? (
+                <View style={styles.uncertainBadge}>
+                  <Text style={styles.uncertainBadgeText}>check</Text>
+                </View>
+              ) : null}
+              <Pressable onPress={() => removeConfirmItem(item.key)} hitSlop={8}>
+                <Ionicons name="close" size={18} color={Color.textFaint} />
+              </Pressable>
+            </View>
+          ))}
+
+          <View style={styles.confirmAddRow}>
+            <TextInput
+              value={newItemText}
+              onChangeText={setNewItemText}
+              placeholder="+ Add an item"
+              placeholderTextColor={Color.textFaint}
+              style={styles.confirmAddInput}
+              onSubmitEditing={handleAddConfirmItem}
+              returnKeyType="done"
+            />
+            <Pressable onPress={handleAddConfirmItem} disabled={!newItemText.trim()} style={styles.confirmAddButton}>
+              <Ionicons name="add" size={18} color={Color.gold} />
+            </Pressable>
+          </View>
+
+          {error ? <Text style={styles.errorText}>{error}</Text> : null}
+
+          <Button
+            title="Get suggestions"
+            onPress={handleConfirmContinue}
+            loading={mealSuggest.isPending}
+            disabled={!confirmItems.some((it) => it.included && it.text.trim())}
+            style={{ marginTop: Spacing.md }}
+          />
+          <Button title="Retake photo" variant="secondary" onPress={handleReset} style={{ marginTop: Spacing.sm }} />
         </ScrollView>
       ) : (
         <>
@@ -238,6 +432,13 @@ export default function MealSuggestScreen() {
               <Text style={[styles.modeChipText, mode === "photo" && styles.modeChipTextActive]}>Photo</Text>
             </Pressable>
             <Pressable
+              onPress={() => setMode("receipt")}
+              style={[styles.modeChip, mode === "receipt" && styles.modeChipActive]}
+            >
+              <Ionicons name="receipt-outline" size={14} color={mode === "receipt" ? Color.gold : Color.textMuted} />
+              <Text style={[styles.modeChipText, mode === "receipt" && styles.modeChipTextActive]}>Receipt</Text>
+            </Pressable>
+            <Pressable
               onPress={() => setMode("text")}
               style={[styles.modeChip, mode === "text" && styles.modeChipActive]}
             >
@@ -246,7 +447,13 @@ export default function MealSuggestScreen() {
             </Pressable>
           </View>
 
-          {mode === "photo" ? (
+          {mode === "receipt" ? (
+            <Text style={styles.receiptHint}>
+              Photograph a shopping receipt — you&apos;ll get to review what we read before it&apos;s used.
+            </Text>
+          ) : null}
+
+          {mode === "photo" || mode === "receipt" ? (
             capturedPhoto ? (
               <View style={styles.previewWrap}>
                 <Image source={{ uri: capturedPhoto }} style={styles.previewImage} />
@@ -263,7 +470,11 @@ export default function MealSuggestScreen() {
               <CameraPermissionDenied
                 canAskAgain={permission.canAskAgain}
                 requestPermission={requestPermission}
-                message="S&C Coaching needs camera access to photograph your ingredients."
+                message={
+                  mode === "receipt"
+                    ? "S&C Coaching needs camera access to photograph your receipt."
+                    : "S&C Coaching needs camera access to photograph your ingredients."
+                }
               />
             ) : (
               <View style={styles.cameraWrap}>
@@ -303,10 +514,12 @@ export default function MealSuggestScreen() {
 
           <View style={styles.footer}>
             <Button
-              title="Get suggestions"
+              title={mode === "receipt" ? "Scan receipt" : "Get suggestions"}
               onPress={handleSubmit}
-              loading={mealSuggest.isPending}
-              disabled={mode === "photo" && !capturedPhoto && !ingredientsText.trim()}
+              loading={mode === "receipt" ? receiptScan.isPending : mealSuggest.isPending}
+              disabled={
+                mode === "text" ? !ingredientsText.trim() : !capturedPhoto
+              }
             />
           </View>
         </>
@@ -439,6 +652,40 @@ const styles = StyleSheet.create({
     color: Color.textPrimary,
   },
   errorText: { fontSize: 12, color: Color.warning, textAlign: "center", marginBottom: Spacing.sm },
+  receiptHint: { fontSize: 12, color: Color.textMuted, textAlign: "center", paddingHorizontal: Spacing.lg, marginBottom: Spacing.sm },
+  confirmRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: Color.borderSubtle,
+  },
+  confirmInput: { flex: 1, fontSize: 14, color: Color.textPrimary, paddingVertical: 4 },
+  uncertainBadge: { borderRadius: Radius.pill, backgroundColor: Color.warningWeak, paddingHorizontal: 6, paddingVertical: 2 },
+  uncertainBadgeText: { fontSize: 9, fontWeight: "700", color: Color.warning, textTransform: "uppercase" },
+  confirmAddRow: { flexDirection: "row", alignItems: "center", gap: Spacing.sm, marginTop: Spacing.md },
+  confirmAddInput: {
+    flex: 1,
+    height: 40,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: Color.borderSubtle,
+    backgroundColor: Color.surface1,
+    paddingHorizontal: Spacing.sm,
+    fontSize: 13,
+    color: Color.textPrimary,
+  },
+  confirmAddButton: {
+    width: 40,
+    height: 40,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: Color.goldBorder,
+    backgroundColor: Color.goldWeak,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   footer: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.lg },
   suggestionCard: { padding: Spacing.md, marginBottom: Spacing.md },
   suggestionTitle: { fontSize: 15, fontWeight: "700", color: Color.textPrimary },
@@ -459,4 +706,8 @@ const styles = StyleSheet.create({
   mealTypeChipTextActive: { color: Color.gold },
   loggedRow: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: Spacing.md },
   loggedText: { fontSize: 12, fontWeight: "600", color: Color.success },
+  saveRecipeRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, marginTop: Spacing.sm, paddingVertical: 6 },
+  saveRecipeText: { fontSize: 12, fontWeight: "600", color: Color.gold },
+  savedRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, marginTop: Spacing.sm },
+  savedText: { fontSize: 12, fontWeight: "600", color: Color.gold },
 });

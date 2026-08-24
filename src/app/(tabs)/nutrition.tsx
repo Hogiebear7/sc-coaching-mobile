@@ -1,8 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { LinearGradient } from "expo-linear-gradient";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  AccessibilityInfo,
   ActivityIndicator,
+  Animated,
+  Easing,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -85,6 +89,30 @@ function MacroBar({ label, consumed, target }: { label: string; consumed: number
 }
 
 const WATER_QUICK_ADDS = [250, 500, 750];
+const WATER_RECOMMENDED_ML = 500;
+// Generous sanity cap on manual entry — catches the realistic typo (typing
+// "15" meaning "1.5") rather than trying to guess a "real" hydration max.
+const MANUAL_MAX_ML = 15_000;
+
+// Mirrors the OS-level "reduce motion" accessibility setting so the bottle
+// fill can skip its transition for members who've asked for that — nothing
+// else in this file animates, so this stays local rather than becoming a
+// shared hook.
+function useReduceMotionPref(): boolean {
+  const [reduceMotion, setReduceMotion] = useState(false);
+  useEffect(() => {
+    let mounted = true;
+    AccessibilityInfo.isReduceMotionEnabled().then((v) => {
+      if (mounted) setReduceMotion(v);
+    });
+    const sub = AccessibilityInfo.addEventListener("reduceMotionChanged", setReduceMotion);
+    return () => {
+      mounted = false;
+      sub.remove();
+    };
+  }, []);
+  return reduceMotion;
+}
 
 // Target is 1ml water per kcal in the daily calorie target above (same
 // number, so it can't disagree) — 2805 kcal target means 2.8L. Falls back to
@@ -94,14 +122,38 @@ const WATER_QUICK_ADDS = [250, 500, 750];
 // logs water — the fill represents what's LEFT to drink, not what's been
 // drunk, since "drink from a full bottle over the day" is the metaphor.
 // Past target it just reads empty; the text above is what carries the
-// "you went over" info ("2.5L / 2.2L").
-function HydrationBottle({ remainingPct }: { remainingPct: number }) {
+// "you went over" info ("2.5L / 2.2L"). The fill height eases toward the new
+// value instead of jumping — a restrained cue that a tap actually landed —
+// and skips the transition entirely when the member has reduce-motion on.
+function HydrationBottle({ remainingPct, reduceMotion }: { remainingPct: number; reduceMotion: boolean }) {
+  const fillAnim = useRef(new Animated.Value(remainingPct)).current;
+
+  useEffect(() => {
+    Animated.timing(fillAnim, {
+      toValue: remainingPct,
+      duration: reduceMotion ? 0 : 450,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: false, // animating height, not transform/opacity
+    }).start();
+  }, [remainingPct, reduceMotion, fillAnim]);
+
+  const height = fillAnim.interpolate({ inputRange: [0, 100], outputRange: ["0%", "100%"] });
+
   return (
     <View style={styles.bottleWrap}>
       <View style={styles.bottleCap} />
       <View style={styles.bottleNeck} />
       <View style={styles.bottleBody}>
-        <View style={[styles.bottleFill, { height: `${remainingPct}%` }]} />
+        <Animated.View style={[styles.bottleFill, { height }]} />
+        {/* Glass-sheen highlight, purely decorative — always sits above the
+            fill so it reads at any level, not tied to hydration data. */}
+        <LinearGradient
+          colors={["rgba(255,255,255,0.16)", "rgba(255,255,255,0)"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.bottleSheen}
+          pointerEvents="none"
+        />
       </View>
     </View>
   );
@@ -110,37 +162,63 @@ function HydrationBottle({ remainingPct }: { remainingPct: number }) {
 function HydrationCard({ date }: { date: string }) {
   const { data: hydration } = useHydration(date);
   const logWater = useLogWater();
+  const reduceMotion = useReduceMotionPref();
   const [manualEntry, setManualEntry] = useState("");
+  const [manualError, setManualError] = useState<string | null>(null);
 
   const target = hydration?.targetMl ?? null;
   const logged = hydration?.loggedMl ?? 0;
   const remainingPct = target && target > 0 ? Math.max(0, Math.min(100, 100 - (logged / target) * 100)) : 100;
 
+  // Distinguishes "exactly on target" from "over target" — both used to
+  // collapse into the same "target hit" copy once remainingPct clamped to 0,
+  // which read the same for someone 50ml over as someone 500ml over. Rounds
+  // to the same one-decimal precision as the headline metric so a target
+  // that isn't a round ml value (e.g. 2099ml) doesn't show "0.0L over" next
+  // to a headline that reads as an exact match.
+  const statusText = useMemo(() => {
+    if (!target || target <= 0) return null;
+    const diffMl = target - logged;
+    const diffL = Math.round(Math.abs(diffMl) / 100) / 10;
+    if (diffMl > 0) return `${diffL.toFixed(1)}L remaining today`;
+    if (diffL === 0) return "Target hit — nice work.";
+    return `Target hit — ${diffL.toFixed(1)}L over.`;
+  }, [target, logged]);
+
   function handleSetManual() {
-    const ml = Math.round(parseFloat(manualEntry) * 1000);
-    if (!Number.isFinite(ml) || ml < 0) return;
+    const parsed = parseFloat(manualEntry);
+    if (!manualEntry.trim() || !Number.isFinite(parsed) || parsed < 0) {
+      setManualError("Enter a valid number of litres.");
+      return;
+    }
+    const ml = Math.round(parsed * 1000);
+    if (ml > MANUAL_MAX_ML) {
+      setManualError("That's more than 15L — check the value.");
+      return;
+    }
     tapFeedback();
     logWater.mutate({ date, setMl: ml });
     setManualEntry("");
+    setManualError(null);
   }
 
   return (
     <Card style={styles.hydrationCard}>
-      <View style={styles.hydrationHeaderRow}>
-        <Text style={styles.hydrationTitle}>Hydration</Text>
-        <Text style={styles.hydrationValue}>
-          {(logged / 1000).toFixed(1)}L{target ? ` / ${(target / 1000).toFixed(1)}L` : ""}
-        </Text>
+      <View style={styles.hydrationLabelRow}>
+        <Ionicons name="water-outline" size={13} color={Color.textMuted} />
+        <Text style={styles.hydrationLabel}>Hydration</Text>
       </View>
+
+      <Text style={styles.hydrationMetricValue}>
+        {(logged / 1000).toFixed(1)}L
+        {target ? <Text style={styles.hydrationMetricTarget}> of {(target / 1000).toFixed(1)}L</Text> : null}
+      </Text>
+
       <View style={styles.hydrationBodyRow}>
-        <HydrationBottle remainingPct={remainingPct} />
+        <HydrationBottle remainingPct={remainingPct} reduceMotion={reduceMotion} />
         <View style={styles.hydrationSideCol}>
           {target ? (
-            <Text style={styles.hydrationSideText}>
-              {remainingPct <= 0
-                ? "Target hit — nice work."
-                : `${((remainingPct / 100) * (target / 1000)).toFixed(1)}L left to drink today.`}
-            </Text>
+            <Text style={styles.hydrationSideText}>{statusText}</Text>
           ) : (
             <Text style={styles.hydrationEmptyText}>
               No calorie target yet, so there&apos;s nothing to base a hydration target on — set one up in the card
@@ -149,35 +227,60 @@ function HydrationCard({ date }: { date: string }) {
           )}
         </View>
       </View>
+
       <View style={styles.hydrationQuickAddRow}>
-        {WATER_QUICK_ADDS.map((ml) => (
-          <Pressable
-            key={ml}
-            onPress={() => {
-              tapFeedback();
-              logWater.mutate({ date, deltaMl: ml });
-            }}
-            style={styles.hydrationChip}
-          >
-            <Text style={styles.hydrationChipText}>+{ml}ml</Text>
-          </Pressable>
-        ))}
+        {WATER_QUICK_ADDS.map((ml) => {
+          const isRecommended = ml === WATER_RECOMMENDED_ML;
+          return (
+            <Pressable
+              key={ml}
+              onPress={() => {
+                tapFeedback();
+                logWater.mutate({ date, deltaMl: ml });
+              }}
+              style={({ pressed }) => [
+                styles.hydrationChip,
+                isRecommended && styles.hydrationChipPrimary,
+                pressed && styles.pressed,
+              ]}
+            >
+              <Text style={[styles.hydrationChipText, isRecommended && styles.hydrationChipTextPrimary]}>
+                +{ml}ml
+              </Text>
+            </Pressable>
+          );
+        })}
       </View>
+
+      <View style={styles.hydrationManualDivider} />
+      <Text style={styles.hydrationManualLabel}>Or enter manually</Text>
       <View style={styles.hydrationManualRow}>
         <TextInput
           value={manualEntry}
-          onChangeText={setManualEntry}
+          onChangeText={(v) => {
+            setManualEntry(v);
+            if (manualError) setManualError(null);
+          }}
           keyboardType="decimal-pad"
-          placeholder="Or type total litres, e.g. 1.5"
+          placeholder="Enter total litres, e.g. 1.5"
           placeholderTextColor={Color.textFaint}
           style={styles.hydrationManualInput}
           onSubmitEditing={handleSetManual}
           returnKeyType="done"
         />
-        <Pressable onPress={handleSetManual} style={styles.hydrationManualButton} disabled={!manualEntry.trim()}>
+        <Pressable
+          onPress={handleSetManual}
+          disabled={!manualEntry.trim()}
+          style={({ pressed }) => [
+            styles.hydrationManualButton,
+            !manualEntry.trim() && styles.hydrationManualButtonDisabled,
+            pressed && styles.pressed,
+          ]}
+        >
           <Text style={styles.hydrationManualButtonText}>Set</Text>
         </Pressable>
       </View>
+      {manualError ? <Text style={styles.hydrationManualError}>{manualError}</Text> : null}
     </Card>
   );
 }
@@ -716,23 +819,30 @@ const styles = StyleSheet.create({
     color: Color.textPrimary,
   },
   hydrationCard: { padding: Spacing.md },
-  hydrationHeaderRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "baseline", marginBottom: Spacing.sm },
-  hydrationTitle: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
-  hydrationValue: { fontSize: 14, fontWeight: "700", color: Color.gold, fontVariant: ["tabular-nums"] },
+  hydrationLabelRow: { flexDirection: "row", alignItems: "center", gap: 5, marginBottom: 2 },
+  hydrationLabel: { fontSize: 11, fontWeight: "600", color: Color.textMuted, letterSpacing: 0.2 },
+  hydrationMetricValue: {
+    fontSize: 26,
+    fontWeight: "700",
+    color: Color.textPrimary,
+    fontVariant: ["tabular-nums"],
+    marginBottom: Spacing.sm,
+  },
+  hydrationMetricTarget: { fontSize: 15, fontWeight: "500", color: Color.textMuted },
   hydrationEmptyText: { fontSize: 11, color: Color.textMuted, lineHeight: 16 },
   hydrationBodyRow: { flexDirection: "row", alignItems: "center", gap: Spacing.lg },
   hydrationSideCol: { flex: 1 },
-  hydrationSideText: { fontSize: 13, color: Color.textSecondary, lineHeight: 18 },
-  bottleWrap: { width: 60, alignItems: "center" },
+  hydrationSideText: { fontSize: 13, fontWeight: "500", color: Color.textSecondary, lineHeight: 18 },
+  bottleWrap: { width: 64, alignItems: "center" },
   bottleCap: {
-    width: 22,
+    width: 24,
     height: 8,
     borderTopLeftRadius: 4,
     borderTopRightRadius: 4,
     backgroundColor: Color.textFaint,
   },
   bottleNeck: {
-    width: 26,
+    width: 28,
     height: 14,
     backgroundColor: Color.surface2,
     borderWidth: 1,
@@ -740,8 +850,8 @@ const styles = StyleSheet.create({
     borderColor: Color.borderSubtle,
   },
   bottleBody: {
-    width: 60,
-    height: 130,
+    width: 64,
+    height: 136,
     borderRadius: 16,
     borderWidth: 1,
     borderColor: Color.borderSubtle,
@@ -750,7 +860,10 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   bottleFill: { width: "100%", backgroundColor: Color.accentData },
-  hydrationQuickAddRow: { flexDirection: "row", gap: Spacing.xs, marginTop: Spacing.md },
+  // Decorative glass-sheen highlight — purely visual, not tied to hydration
+  // data, so it's fine as a static overlay rather than anything animated.
+  bottleSheen: { position: "absolute", top: 0, left: 0, bottom: 0, width: "45%" },
+  hydrationQuickAddRow: { flexDirection: "row", gap: Spacing.xs, marginTop: Spacing.lg },
   hydrationChip: {
     flex: 1,
     alignItems: "center",
@@ -758,10 +871,18 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Color.borderSubtle,
     backgroundColor: Color.surface1,
-    paddingVertical: 8,
+    paddingVertical: 10,
   },
+  // The recommended +500ml action — gold-accented like the rest of the
+  // app's primary/interactive elements, so the accent stays on something
+  // actionable rather than spent on a passive metric.
+  hydrationChipPrimary: { borderColor: Color.goldBorder, backgroundColor: Color.goldWeak },
   hydrationChipText: { fontSize: 12, fontWeight: "600", color: Color.textSecondary },
-  hydrationManualRow: { flexDirection: "row", gap: Spacing.xs, marginTop: Spacing.sm },
+  hydrationChipTextPrimary: { color: Color.gold, fontWeight: "700" },
+  pressed: { opacity: 0.85 },
+  hydrationManualDivider: { height: 1, backgroundColor: Color.borderSubtle, marginTop: Spacing.md },
+  hydrationManualLabel: { fontSize: 11, color: Color.textFaint, marginTop: Spacing.sm, marginBottom: 4 },
+  hydrationManualRow: { flexDirection: "row", gap: Spacing.xs },
   hydrationManualInput: {
     flex: 1,
     height: 38,
@@ -781,7 +902,9 @@ const styles = StyleSheet.create({
     backgroundColor: Color.goldWeak,
     paddingHorizontal: Spacing.md,
   },
+  hydrationManualButtonDisabled: { opacity: 0.5 },
   hydrationManualButtonText: { fontSize: 12, fontWeight: "700", color: Color.gold },
+  hydrationManualError: { fontSize: 11, color: Color.danger, marginTop: 6 },
   moreRow: { flexDirection: "row", alignItems: "center", gap: Spacing.sm, padding: Spacing.md },
   moreRowDivider: { borderTopWidth: 1, borderTopColor: Color.borderSubtle },
   drinkCardIcon: {

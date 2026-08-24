@@ -19,6 +19,7 @@ import { Card } from "@/components/ui/Card";
 import { ExerciseAutocomplete } from "@/components/ui/ExerciseAutocomplete";
 import { Color, Radius, Spacing } from "@/constants/theme";
 import { ApiError } from "@/lib/api-client";
+import { useExerciseLibraryNameIndex } from "@/lib/queries/exercise-library";
 import { tapFeedback } from "@/lib/haptics";
 import {
   useClassWorkout,
@@ -240,6 +241,7 @@ export default function ClassWorkoutBuilderScreen() {
   }>();
 
   const { data, isLoading } = useClassWorkout(classId);
+  const { data: libraryIndex } = useExerciseLibraryNameIndex();
   const saveWorkout = useSaveClassWorkout();
 
   const [template, setTemplate] = useState<TemplateRow[]>([newTemplateRow()]);
@@ -403,6 +405,7 @@ export default function ClassWorkoutBuilderScreen() {
                     <View style={{ flex: 1 }}>
                       <ExerciseAutocomplete
                         exercises={libraryExercises}
+                        libraryNames={libraryIndex?.items ?? []}
                         value={row.name}
                         onChange={(name, exerciseId) => updateTemplate(row.key, { name, exerciseId })}
                       />

@@ -11,6 +11,7 @@ import { SupersetChips } from "@/components/ui/SupersetChips";
 import { TextField } from "@/components/ui/TextField";
 import { Color, Radius, Spacing } from "@/constants/theme";
 import { ApiError } from "@/lib/api-client";
+import { useExerciseLibraryNameIndex } from "@/lib/queries/exercise-library";
 import { tapFeedback } from "@/lib/haptics";
 import type { PrescribedExercise } from "@/lib/queries/programs";
 import {
@@ -133,6 +134,7 @@ export default function WorkoutTemplateBuilderScreen() {
   const { templateId } = useLocalSearchParams<{ templateId?: string }>();
   const { data: templates, isLoading } = useWorkoutTemplates();
   const { data: workoutsData } = useWorkouts();
+  const { data: libraryIndex } = useExerciseLibraryNameIndex();
   const createTemplate = useCreateWorkoutTemplate();
   const updateTemplate = useUpdateWorkoutTemplate();
   const deleteTemplate = useDeleteWorkoutTemplate();
@@ -281,6 +283,7 @@ export default function WorkoutTemplateBuilderScreen() {
               <Text style={[styles.fieldLabel, { marginTop: Spacing.sm }]}>Exercise name</Text>
               <ExerciseAutocomplete
                 exercises={workoutsData?.exerciseLibrary ?? []}
+                libraryNames={libraryIndex?.items ?? []}
                 value={ex.name}
                 onChange={(exName, exerciseId) => updateExercise(ex.key, { name: exName, exerciseId })}
               />

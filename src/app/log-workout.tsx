@@ -1435,6 +1435,7 @@ export default function LogWorkoutScreen() {
               <Text style={styles.fieldLabel}>Exercise name</Text>
               <ExerciseAutocomplete
                 exercises={data?.exerciseLibrary ?? []}
+                libraryNames={libraryIndex?.items ?? []}
                 value={row.name}
                 onChange={(name, exerciseId) => updateRow(row.key, { name, exerciseId })}
               />

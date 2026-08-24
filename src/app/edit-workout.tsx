@@ -13,6 +13,7 @@ import { TextField } from "@/components/ui/TextField";
 import { Color, Radius, Spacing } from "@/constants/theme";
 import { tapFeedback } from "@/lib/haptics";
 import { ApiError } from "@/lib/api-client";
+import { useExerciseLibraryNameIndex } from "@/lib/queries/exercise-library";
 import {
   SET_TYPE_OPTIONS,
   useEditWorkout,
@@ -133,6 +134,7 @@ export default function EditWorkoutScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id?: string }>();
   const { data, isLoading } = useWorkouts();
+  const { data: libraryIndex } = useExerciseLibraryNameIndex();
   const editWorkout = useEditWorkout();
 
   const session = useMemo(() => data?.sessions.find((s) => s.id === id), [data, id]);
@@ -379,6 +381,7 @@ export default function EditWorkoutScreen() {
                 <Text style={styles.fieldLabel}>Exercise name</Text>
                 <ExerciseAutocomplete
                   exercises={data?.exerciseLibrary ?? []}
+                  libraryNames={libraryIndex?.items ?? []}
                   value={row.name}
                   onChange={(name, exerciseId) => updateRow(row.key, { name, exerciseId })}
                 />

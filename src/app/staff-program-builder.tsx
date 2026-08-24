@@ -22,6 +22,7 @@ import { SupersetChips } from "@/components/ui/SupersetChips";
 import { TextField } from "@/components/ui/TextField";
 import { Color, Radius, Spacing } from "@/constants/theme";
 import { ApiError } from "@/lib/api-client";
+import { useExerciseLibraryNameIndex } from "@/lib/queries/exercise-library";
 import { tapFeedback } from "@/lib/haptics";
 import {
   useCreateProgram,
@@ -178,6 +179,7 @@ export default function StaffProgramBuilderScreen() {
   const { userId, programId } = useLocalSearchParams<{ userId: string; programId?: string }>();
   const { data: programs, isLoading } = useStaffPrograms(userId);
   const { data: workoutsData } = useWorkouts();
+  const { data: libraryIndex } = useExerciseLibraryNameIndex();
   const createProgram = useCreateProgram();
   const updateProgram = useUpdateProgram();
   const deleteProgram = useDeleteProgram();
@@ -341,6 +343,7 @@ export default function StaffProgramBuilderScreen() {
                       <Text style={[styles.fieldLabel, { marginTop: Spacing.sm }]}>Exercise name</Text>
                       <ExerciseAutocomplete
                         exercises={workoutsData?.exerciseLibrary ?? []}
+                        libraryNames={libraryIndex?.items ?? []}
                         value={ex.name}
                         onChange={(exName, exerciseId) => updateExercise(day.key, ex.key, { name: exName, exerciseId })}
                       />

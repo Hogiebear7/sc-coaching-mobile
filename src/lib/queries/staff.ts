@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { apiFetch } from "@/lib/api-client";
+import type { ExerciseSection } from "@/lib/queries/workouts";
 import type { WeeklyTrainingSession } from "@/lib/queries/weekly-training";
 
 // Mirrors StaffClassSummary in the main repo's lib/staff-classes-data.ts.
@@ -69,7 +70,7 @@ export interface ClassWorkoutCheckedInMember {
 export interface ClassWorkoutLibraryExercise {
   id: string;
   name: string;
-  section: string;
+  section: ExerciseSection;
 }
 
 export interface ClassWorkoutData {

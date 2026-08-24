@@ -83,6 +83,10 @@ export default function WorkoutsScreen() {
   const [selectedDate, setSelectedDate] = useState(today);
 
   const markedDates = useMemo(() => new Set((data?.sessions ?? []).map((s) => s.date)), [data]);
+  const sectionByExerciseId = useMemo(
+    () => new Map((data?.exerciseLibrary ?? []).map((e) => [e.id, e.section])),
+    [data]
+  );
   const sessionsForSelectedDate = useMemo(
     () => (data?.sessions ?? []).filter((s) => s.date === selectedDate),
     [data, selectedDate]
@@ -206,6 +210,7 @@ export default function WorkoutsScreen() {
                   session={s}
                   showDate={false}
                   onPress={() => router.push({ pathname: "/session-detail", params: { id: s.id } })}
+                  sectionByExerciseId={sectionByExerciseId}
                 />
               ))
             ) : (
@@ -518,6 +523,7 @@ export default function WorkoutsScreen() {
                   key={s.id}
                   session={s}
                   onPress={() => router.push({ pathname: "/session-detail", params: { id: s.id } })}
+                  sectionByExerciseId={sectionByExerciseId}
                 />
               ))
           )}

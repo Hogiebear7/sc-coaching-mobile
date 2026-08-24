@@ -69,10 +69,15 @@ export interface PersonalBest {
   highestReps: { reps: number; date: string } | null;
 }
 
+// Mirrors gym-app's lib/db.ts ExerciseSection — the coach's curated
+// exercise list, distinct from the big imported exercise-library used for
+// demo thumbnails (see lib/queries/exercise-library.ts).
+export type ExerciseSection = "upper_push" | "upper_pull" | "lower_push" | "lower_pull" | "core" | "cardio";
+
 export interface ExerciseLibraryEntry {
   id: string;
   name: string;
-  section: string;
+  section: ExerciseSection;
 }
 
 export interface WorkoutsData {

@@ -36,6 +36,10 @@ export default function WorkoutHistoryScreen() {
     }
     return map;
   }, [data]);
+  const sectionByExerciseId = useMemo(
+    () => new Map((data?.exerciseLibrary ?? []).map((e) => [e.id, e.section])),
+    [data]
+  );
   const countByDate = useMemo(
     () => Object.fromEntries(Object.entries(sessionsByDate).map(([date, list]) => [date, list.length])),
     [sessionsByDate],
@@ -114,7 +118,12 @@ export default function WorkoutHistoryScreen() {
               </Card>
             ) : (
               selectedSessions.map((s) => (
-                <SessionCard key={s.id} session={s} onPress={() => router.push({ pathname: "/session-detail", params: { id: s.id } })} />
+                <SessionCard
+                  key={s.id}
+                  session={s}
+                  onPress={() => router.push({ pathname: "/session-detail", params: { id: s.id } })}
+                  sectionByExerciseId={sectionByExerciseId}
+                />
               ))
             )}
           </View>
@@ -137,6 +146,7 @@ export default function WorkoutHistoryScreen() {
                     key={s.id}
                     session={s}
                     onPress={() => router.push({ pathname: "/session-detail", params: { id: s.id } })}
+                    sectionByExerciseId={sectionByExerciseId}
                   />
                 ))}
               </View>

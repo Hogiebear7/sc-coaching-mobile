@@ -6,6 +6,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { MuscleMap } from "@/components/ui/MuscleMap";
 import { StatCard } from "@/components/ui/StatCard";
 import { Color, Radius, Spacing } from "@/constants/theme";
 import { tapFeedback } from "@/lib/haptics";
@@ -24,6 +25,10 @@ export default function SessionDetailScreen() {
 
   const session = useMemo(() => data?.sessions.find((s) => s.id === id), [data, id]);
   const totals = useMemo(() => (session ? computeSessionTotals(session.exercises) : null), [session]);
+  const sectionByExerciseId = useMemo(
+    () => new Map((data?.exerciseLibrary ?? []).map((e) => [e.id, e.section])),
+    [data]
+  );
 
   function handleDelete() {
     if (!session) return;
@@ -103,6 +108,7 @@ export default function SessionDetailScreen() {
                 {session.exercises.map((ex, idx) => {
                   const exTotals = computeExerciseSetTotals(ex);
                   const setLabels = formatExerciseSetLabels(ex);
+                  const section = ex.exerciseId ? sectionByExerciseId.get(ex.exerciseId) : undefined;
                   return (
                     <Pressable
                       key={idx}
@@ -111,6 +117,7 @@ export default function SessionDetailScreen() {
                     >
                       <View style={{ flex: 1 }}>
                         <View style={styles.exerciseTitleRow}>
+                          {section ? <MuscleMap section={section} size={16} /> : null}
                           {ex.supersetGroup ? (
                             <View style={styles.supersetBadge}>
                               <Text style={styles.supersetBadgeText}>{ex.supersetGroup}</Text>

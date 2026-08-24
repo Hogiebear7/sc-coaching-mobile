@@ -12,9 +12,15 @@ export const Color = {
   surface2: "#142b4a",
   surface3: "#24405f",
 
-  // Borders (white at fixed opacity — same as the web app's literal values)
-  borderSubtle: "rgba(255,255,255,0.16)",
-  borderDefault: "rgba(255,255,255,0.26)",
+  // Borders (white at fixed opacity). Deliberately softer than the web
+  // app's literal values — web's borders sit against a much larger canvas
+  // where a crisper line reads as structure; stacked on a phone screen,
+  // the same weight repeated across every card/chip/row edge added up to
+  // visual noise, so these run about a third lighter than their web
+  // equivalents (borderSubtle) or a fifth lighter (borderDefault, which
+  // still needs to read as a clear step up for hero cards/active states).
+  borderSubtle: "rgba(255,255,255,0.11)",
+  borderDefault: "rgba(255,255,255,0.22)",
 
   // Text
   textPrimary: "#fcfeff",

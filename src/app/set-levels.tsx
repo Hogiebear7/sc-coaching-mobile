@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { Card } from "@/components/ui/Card";
 import { SECTION_LABELS } from "@/components/ui/ExerciseAutocomplete";
 import { MuscleSetLevelDiagram } from "@/components/ui/MuscleSetLevels";
 import { Color, Radius, Spacing } from "@/constants/theme";
@@ -82,7 +83,7 @@ export default function SetLevelsScreen() {
             </View>
           ) : (
             <>
-              <View style={styles.diagramCard}>
+              <Card tier="hero" style={styles.diagramCard}>
                 <MuscleSetLevelDiagram levels={levels} height={176} />
 
                 <View style={styles.legendRow}>
@@ -93,11 +94,11 @@ export default function SetLevelsScreen() {
                     </View>
                   ))}
                 </View>
-              </View>
+              </Card>
 
               <View style={styles.sectionList}>
-                {SET_LEVEL_SECTIONS.map((section) => (
-                  <View key={section} style={styles.sectionRow}>
+                {SET_LEVEL_SECTIONS.map((section, idx) => (
+                  <View key={section} style={[styles.sectionRow, idx > 0 && styles.sectionRowDivider]}>
                     <Text style={styles.sectionLabel}>{SECTION_LABELS[section]}</Text>
                     <View style={styles.sectionMeta}>
                       <Text style={styles.sectionSets}>{levels[section].weeklySets} sets/wk</Text>
@@ -185,9 +186,6 @@ const styles = StyleSheet.create({
   diagramCard: {
     marginTop: Spacing.lg,
     borderRadius: Radius.lg,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
     padding: Spacing.lg,
     alignItems: "center",
   },
@@ -195,18 +193,22 @@ const styles = StyleSheet.create({
   legendItem: { flexDirection: "row", alignItems: "center", gap: 6 },
   legendDot: { width: 10, height: 10, borderRadius: Radius.pill, backgroundColor: Color.accentData },
   legendText: { fontSize: 10, color: Color.textMuted },
-  sectionList: { marginTop: Spacing.md, gap: Spacing.xs },
-  sectionRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+  sectionList: {
+    marginTop: Spacing.lg,
     borderRadius: Radius.md,
     borderWidth: 1,
     borderColor: Color.borderSubtle,
     backgroundColor: Color.surface1,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
+    overflow: "hidden",
   },
+  sectionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.md,
+  },
+  sectionRowDivider: { borderTopWidth: 1, borderTopColor: Color.borderSubtle },
   sectionLabel: { fontSize: 13, fontWeight: "500", color: Color.textPrimary },
   sectionMeta: { flexDirection: "row", alignItems: "center", gap: Spacing.sm },
   sectionSets: { fontSize: 11, color: Color.textMuted, fontVariant: ["tabular-nums"] },

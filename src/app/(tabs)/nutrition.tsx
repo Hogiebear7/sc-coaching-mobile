@@ -703,7 +703,7 @@ const styles = StyleSheet.create({
   dateNavRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: Spacing.lg, marginBottom: Spacing.md },
   dateArrow: { padding: 4 },
   dateLabel: { fontSize: 14, fontWeight: "600", color: Color.textPrimary, minWidth: 100, textAlign: "center" },
-  targetCard: { padding: Spacing.md, marginBottom: Spacing.lg },
+  targetCard: { padding: Spacing.lg, marginBottom: Spacing.lg },
   targetHeaderRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: Spacing.xs },
   fuelDayLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.5, textTransform: "uppercase", color: Color.gold },
   viewWeekRow: { flexDirection: "row", alignItems: "center", gap: 2 },

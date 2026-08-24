@@ -59,7 +59,7 @@ const styles = StyleSheet.create({
   compact: {
     backgroundColor: Color.surface1,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.08)",
+    borderColor: "rgba(255,255,255,0.06)",
   },
   quiet: {
     backgroundColor: "rgba(255,255,255,0.03)",

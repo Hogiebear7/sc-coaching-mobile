@@ -8,6 +8,8 @@ import {
   Text,
   UIManager,
   View,
+  type StyleProp,
+  type ViewStyle,
 } from "react-native";
 
 import { Color, Spacing } from "@/constants/theme";
@@ -25,11 +27,13 @@ export function Collapsible({
   summary,
   defaultExpanded = false,
   children,
+  style,
 }: {
   title: string;
   summary?: string;
   defaultExpanded?: boolean;
   children: ReactNode;
+  style?: StyleProp<ViewStyle>;
 }) {
   const [expanded, setExpanded] = useState(defaultExpanded);
 
@@ -39,7 +43,7 @@ export function Collapsible({
   }
 
   return (
-    <View>
+    <View style={style}>
       <Pressable
         onPress={toggle}
         style={styles.header}

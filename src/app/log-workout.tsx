@@ -1587,6 +1587,7 @@ export default function LogWorkoutScreen() {
               </View>
 
               <Collapsible
+                style={styles.moreOptions}
                 title="More options"
                 summary={
                   [
@@ -1839,7 +1840,15 @@ const styles = StyleSheet.create({
   lastTimeValue: { color: Color.textSecondary, fontWeight: "600" },
   demoLink: { flexDirection: "row", alignItems: "center", gap: 4, alignSelf: "flex-start" },
   demoLinkText: { fontSize: 12, fontWeight: "600", color: Color.gold },
-  exerciseInfoRow: { flexDirection: "row", alignItems: "flex-start", gap: Spacing.sm, marginTop: 8 },
+  exerciseInfoRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: Spacing.sm,
+    marginTop: Spacing.sm,
+    padding: Spacing.sm,
+    borderRadius: Radius.md,
+    backgroundColor: "rgba(255,255,255,0.03)",
+  },
   exerciseThumb: { width: 40, height: 40, borderRadius: Radius.md, backgroundColor: Color.surface2 },
   exerciseInfoText: { flex: 1, gap: 4 },
   motivationText: { fontSize: 11, color: Color.gold, fontStyle: "italic" },
@@ -1851,9 +1860,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Color.goldBorder,
     backgroundColor: Color.goldWeak,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    marginBottom: Spacing.md,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    marginTop: Spacing.md,
+    marginBottom: Spacing.lg,
   },
   timerLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted },
   timerClock: { fontSize: 24, fontWeight: "700", color: Color.gold, fontVariant: ["tabular-nums"], marginTop: 2 },
@@ -1932,6 +1942,7 @@ const styles = StyleSheet.create({
   },
   setCheckDone: { backgroundColor: Color.success, borderColor: Color.success },
   setRowActions: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: Spacing.sm },
+  moreOptions: { marginTop: Spacing.md, paddingTop: Spacing.sm, borderTopWidth: 1, borderTopColor: Color.borderSubtle },
   supersetRow: { flexDirection: "row", alignItems: "center", gap: Spacing.xs, marginBottom: Spacing.sm },
   supersetText: { fontSize: 12, color: Color.textMuted },
   supersetTextActive: { color: Color.gold, fontWeight: "600" },

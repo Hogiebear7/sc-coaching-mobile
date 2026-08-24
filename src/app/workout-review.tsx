@@ -7,7 +7,33 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { StatCard } from "@/components/ui/StatCard";
 import { Color, Spacing } from "@/constants/theme";
-import { useWorkoutReview } from "@/lib/queries/workouts";
+import { useWorkoutReview, type WorkoutScoreBreakdown } from "@/lib/queries/workouts";
+
+function bandLabel(band: WorkoutScoreBreakdown["band"]): string {
+  switch (band) {
+    case "excellent":
+      return "Excellent";
+    case "solid":
+      return "Solid";
+    case "fair":
+      return "Fair";
+    case "low":
+      return "Low";
+  }
+}
+
+function bandColor(band: WorkoutScoreBreakdown["band"]): string {
+  switch (band) {
+    case "excellent":
+      return Color.success;
+    case "solid":
+      return Color.gold;
+    case "fair":
+      return Color.warning;
+    case "low":
+      return Color.danger;
+  }
+}
 
 function deltaLabel(current: number | null, recentAvg: number | null, unit: string): string | null {
   if (current === null || recentAvg === null || recentAvg === 0) return null;
@@ -47,6 +73,33 @@ export default function WorkoutReviewScreen() {
             <Text style={styles.reviewLabel}>YOUR REVIEW</Text>
             <Text style={styles.reviewText}>{data.reviewText}</Text>
           </Card>
+
+          {data.score ? (
+            <>
+              <Text style={styles.sectionLabel}>SESSION SCORE</Text>
+              <Card style={styles.detailCard}>
+                <View style={styles.scoreHeader}>
+                  <Text style={[styles.scoreTotal, { color: bandColor(data.score.band) }]}>{data.score.total}</Text>
+                  <Text style={styles.scoreOutOf}>/100</Text>
+                  <Text style={[styles.scoreBand, { color: bandColor(data.score.band) }]}>{bandLabel(data.score.band)}</Text>
+                </View>
+                {data.score.components.map((c, i) => (
+                  <View
+                    key={c.label}
+                    style={[styles.detailRow, i < data.score!.components.length - 1 && styles.detailRowDivider]}
+                  >
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.detailLabel}>{c.label}</Text>
+                      <Text style={styles.scoreDetail}>{c.detail}</Text>
+                    </View>
+                    <Text style={styles.detailValue}>
+                      {c.points}/{c.maxPoints}
+                    </Text>
+                  </View>
+                ))}
+              </Card>
+            </>
+          ) : null}
 
           <Text style={styles.sectionLabel}>THIS SESSION VS. RECENT</Text>
           <View style={styles.statsGrid}>
@@ -193,4 +246,17 @@ const styles = StyleSheet.create({
   detailRowDivider: { borderBottomWidth: 1, borderBottomColor: Color.borderSubtle },
   detailLabel: { fontSize: 13, color: Color.textMuted },
   detailValue: { fontSize: 13, fontWeight: "600", color: Color.textPrimary },
+  scoreHeader: {
+    flexDirection: "row",
+    alignItems: "baseline",
+    justifyContent: "center",
+    gap: 4,
+    paddingVertical: Spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: Color.borderSubtle,
+  },
+  scoreTotal: { fontSize: 40, fontWeight: "800" },
+  scoreOutOf: { fontSize: 16, color: Color.textFaint, marginRight: Spacing.sm },
+  scoreBand: { fontSize: 13, fontWeight: "700", letterSpacing: 0.4, textTransform: "uppercase" },
+  scoreDetail: { fontSize: 11, color: Color.textFaint, marginTop: 2 },
 });

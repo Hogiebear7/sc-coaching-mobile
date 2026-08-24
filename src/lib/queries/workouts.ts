@@ -242,6 +242,22 @@ export interface WorkoutReviewPregnancy {
   content: { label: string; summary: string } | null;
 }
 
+export interface WorkoutScoreComponent {
+  label: string;
+  points: number;
+  maxPoints: number;
+  detail: string;
+}
+
+// Mirrors WorkoutScoreBreakdown in lib/workout-score.ts. Only present when
+// the server-side WORKOUT_SCORE_ENABLED flag is on — absent (not zero)
+// otherwise, so the UI below renders nothing rather than a misleading 0.
+export interface WorkoutScoreBreakdown {
+  total: number;
+  band: "excellent" | "solid" | "fair" | "low";
+  components: WorkoutScoreComponent[];
+}
+
 export interface WorkoutReviewData {
   comparison: WorkoutReviewComparison;
   recovery: WorkoutReviewRecovery | null;
@@ -250,6 +266,7 @@ export interface WorkoutReviewData {
   nutrition: WorkoutReviewNutrition | null;
   hydration: WorkoutReviewHydration | null;
   reviewText: string;
+  score?: WorkoutScoreBreakdown;
 }
 
 // Generated once server-side and cached on the session record — safe to

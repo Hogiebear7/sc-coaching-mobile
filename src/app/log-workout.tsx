@@ -533,7 +533,18 @@ function HowDidYouFeelModal({
 
 export default function LogWorkoutScreen() {
   const router = useRouter();
-  const { programId, dayId, title: initialTitle, date: initialDate, templateId, addExerciseName, generatedExercises: generatedExercisesParam } = useLocalSearchParams<{
+  const {
+    programId,
+    dayId,
+    title: initialTitle,
+    date: initialDate,
+    templateId,
+    addExerciseName,
+    generatedExercises: generatedExercisesParam,
+    prefillRunTitle,
+    prefillRunDurationMins,
+    prefillRunDistanceKm,
+  } = useLocalSearchParams<{
     programId?: string;
     dayId?: string;
     title?: string;
@@ -547,6 +558,12 @@ export default function LogWorkoutScreen() {
      *  fresh-seed source alongside programId/templateId below, not merged
      *  with addExerciseName's append-to-in-progress behavior. */
     generatedExercises?: string;
+    /** From Import from Tracker (tracker-import.tsx) — a fresh-seed source
+     *  like programId/templateId, adding one prefilled run row rather than
+     *  exercise rows. */
+    prefillRunTitle?: string;
+    prefillRunDurationMins?: string;
+    prefillRunDistanceKm?: string;
   }>();
   const { data } = useWorkouts();
   const { data: profile } = useProfile();
@@ -643,6 +660,20 @@ export default function LogWorkoutScreen() {
     update({ exerciseRows: [...exerciseRows, { ...newExerciseRow(), name: addExerciseName }] });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [addExerciseName]);
+
+  // Import from Tracker (tracker-import.tsx) — a fresh-seed source like
+  // programId/templateId above, but for a single run row instead of
+  // exercise rows. Only fires for a genuinely empty runs list, same
+  // once-only spirit as the exercise-seeding effect.
+  useEffect(() => {
+    if (!hydrated || runRows.length > 0) return;
+    if (!prefillRunDurationMins && !prefillRunDistanceKm) return;
+    update({
+      runRows: [{ ...newRunRow(), duration: prefillRunDurationMins ?? "", distance: prefillRunDistanceKm ?? "" }],
+      title: title.trim() ? title : prefillRunTitle ?? title,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hydrated, prefillRunTitle, prefillRunDurationMins, prefillRunDistanceKm, runRows.length]);
 
   const weightInputRefs = useRef<Record<string, TextInput | null>>({});
 

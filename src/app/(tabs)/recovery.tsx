@@ -1,3 +1,4 @@
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -24,14 +25,19 @@ function CheckInForm({
   date,
   existingLog,
   isToday,
+  initialSleepHours,
   onDone,
 }: {
   date: string;
   existingLog: RecoveryLogSummary | null;
   isToday: boolean;
+  /** From Import from Tracker (tracker-import.tsx) — a sleep-hours reading
+   *  pulled from a photo of the member's own tracker app, offered as a
+   *  starting point they can still adjust before saving. */
+  initialSleepHours?: number;
   onDone?: () => void;
 }) {
-  const [sleepHours, setSleepHours] = useState(existingLog?.sleepHours ?? 7);
+  const [sleepHours, setSleepHours] = useState(initialSleepHours ?? existingLog?.sleepHours ?? 7);
   const [sleepQuality, setSleepQuality] = useState(existingLog?.sleepQuality ?? 5);
   const [soreness, setSoreness] = useState(existingLog?.soreness ?? 5);
   const [fatigue, setFatigue] = useState(existingLog?.fatigue ?? 3);
@@ -110,6 +116,9 @@ function CheckInForm({
 }
 
 export default function RecoveryScreen() {
+  const router = useRouter();
+  const { prefillSleepHours } = useLocalSearchParams<{ prefillSleepHours?: string }>();
+  const parsedPrefillSleepHours = prefillSleepHours ? Number(prefillSleepHours) : NaN;
   const { data, isLoading, isError, refetch, isRefetching } = useRecovery();
   const [editingDate, setEditingDate] = useState<string | null>(null);
 
@@ -174,7 +183,17 @@ export default function RecoveryScreen() {
         </Card>
 
         {editingDate === null ? (
-          <CheckInForm date={data.todayISO} existingLog={todayLog} isToday />
+          <>
+            <Pressable onPress={() => router.push("/tracker-import")} style={styles.importLink}>
+              <Text style={styles.importLinkText}>Import sleep from your tracker</Text>
+            </Pressable>
+            <CheckInForm
+              date={data.todayISO}
+              existingLog={todayLog}
+              isToday
+              initialSleepHours={Number.isFinite(parsedPrefillSleepHours) ? parsedPrefillSleepHours : undefined}
+            />
+          </>
         ) : (
           <CheckInForm date={editingDate} existingLog={editingLog} isToday={editingDate === data.todayISO} onDone={() => setEditingDate(null)} />
         )}
@@ -266,6 +285,8 @@ const styles = StyleSheet.create({
   loadLabel: { fontSize: 11, color: Color.textMuted, fontWeight: "600" },
   loadValue: { fontSize: 16, fontWeight: "700", color: Color.textPrimary, fontVariant: ["tabular-nums"] },
   scoreHelp: { fontSize: 11, color: Color.textFaint, lineHeight: 15, marginTop: Spacing.sm },
+  importLink: { alignSelf: "flex-end", paddingVertical: Spacing.xs, paddingHorizontal: 2 },
+  importLinkText: { fontSize: 12, fontWeight: "600", color: Color.gold },
   formCard: { padding: Spacing.md, marginBottom: Spacing.lg },
   formHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: Spacing.md },
   formTitle: { fontSize: 15, fontWeight: "600", color: Color.textPrimary },

@@ -319,6 +319,12 @@ export default function WorkoutsScreen() {
                 <Text style={styles.toolCardText}>Generate</Text>
               </Pressable>
             </Card>
+            <Card tier="compact" style={styles.toolCard}>
+              <Pressable onPress={() => router.push("/tracker-import")} style={styles.toolCardInner}>
+                <Ionicons name="watch-outline" size={18} color={Color.gold} />
+                <Text style={styles.toolCardText}>Import</Text>
+              </Pressable>
+            </Card>
           </View>
         </View>
 
@@ -614,8 +620,8 @@ const styles = StyleSheet.create({
   muscleTagChipText: { fontSize: 10, fontWeight: "600", color: Color.gold },
   skipRow: { alignItems: "center", marginTop: Spacing.sm, paddingVertical: 6 },
   skipText: { fontSize: 12, color: Color.textFaint },
-  toolsRow: { flexDirection: "row", gap: Spacing.sm },
-  toolCard: { flex: 1 },
+  toolsRow: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.sm },
+  toolCard: { flexGrow: 1, flexBasis: "47%" },
   toolCardInner: {
     flexDirection: "row",
     alignItems: "center",

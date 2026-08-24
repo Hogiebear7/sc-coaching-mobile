@@ -12,8 +12,10 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Color, Radius, Spacing } from "@/constants/theme";
 import { ApiError } from "@/lib/api-client";
+import { useAuth } from "@/lib/auth-context";
 import { isBatteryOptimizationRelevant, openBatteryOptimizationSettings } from "@/lib/battery-optimization";
 import { getLastRejection, type CrashRecord } from "@/lib/crash-log";
+import { useTour } from "@/lib/tour-context";
 import {
   useProfile,
   useRequestPasswordReset,
@@ -71,6 +73,8 @@ function Row({
 
 export default function SettingsScreen() {
   const router = useRouter();
+  const { user } = useAuth();
+  const { restartTour } = useTour();
   const { data, isLoading } = useProfile();
   const setPush = useSetPushNotifications();
   const setEmail = useSetEmailNotifications();
@@ -422,6 +426,20 @@ export default function SettingsScreen() {
               ) : null}
             </View>
           </Card>
+
+          {user?.role === "member" ? (
+            <>
+              <SectionLabel>HELP</SectionLabel>
+              <Card style={styles.settingsCard}>
+                <Row
+                  icon="compass-outline"
+                  title="Take app tour"
+                  sub="Revisit the walkthrough for each tab"
+                  onPress={restartTour}
+                />
+              </Card>
+            </>
+          ) : null}
 
           {/* Lets a build be identified from a screenshot alone — critical
               when diagnosing "is this actually the build I sent you" during

@@ -6,11 +6,13 @@ import { ActivityIndicator, ScrollView, StatusBar, StyleSheet, Text, View } from
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
+import { TourHost } from "@/components/ui/TourOverlay";
 import { Color, Radius, Spacing } from "@/constants/theme";
 import { AuthProvider, useAuth } from "@/lib/auth-context";
 import { clearLastCrash, getLastCrash, installGlobalCrashHandler, type CrashRecord } from "@/lib/crash-log";
 import { addNotificationTapListener, mapLinkHrefToRoute } from "@/lib/push-notifications";
 import { RestTimerProvider } from "@/lib/rest-timer";
+import { TourProvider } from "@/lib/tour-context";
 import { WorkoutDraftProvider } from "@/lib/workout-draft";
 
 SplashScreen.preventAutoHideAsync();
@@ -167,14 +169,17 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
-          <WorkoutDraftProvider>
-            <RestTimerProvider>
-              <StatusBar barStyle="light-content" backgroundColor={Color.bg0} />
-              <View style={styles.root}>
-                <AuthGate />
-              </View>
-            </RestTimerProvider>
-          </WorkoutDraftProvider>
+          <TourProvider>
+            <WorkoutDraftProvider>
+              <RestTimerProvider>
+                <StatusBar barStyle="light-content" backgroundColor={Color.bg0} />
+                <View style={styles.root}>
+                  <AuthGate />
+                  <TourHost />
+                </View>
+              </RestTimerProvider>
+            </WorkoutDraftProvider>
+          </TourProvider>
         </AuthProvider>
       </QueryClientProvider>
     </SafeAreaProvider>

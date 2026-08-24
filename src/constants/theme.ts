@@ -39,6 +39,16 @@ export const Color = {
   dangerWeak: "rgba(230,43,52,0.12)",
 } as const;
 
+// Macro-nutrient color coding — protein/carbs/fat — deliberately distinct
+// from Color.danger/success/gold so a macro chip never reads as an error
+// state or blends into the gold accent everywhere else on screen. Shared
+// across the nutrition pie chart, the macro legend, and diary entry rows.
+export const MacroColor = {
+  protein: "#d9635c",
+  carbs: "#7fb98f",
+  fat: "#e0924f",
+} as const;
+
 // Editorial, slightly-sharp corners — the web app deliberately uses 4px
 // radii on cards (surface-card), not the generic rounded-2xl look.
 export const Radius = {

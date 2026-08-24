@@ -21,6 +21,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { BodyWeightCard } from "@/components/ui/BodyWeightCard";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { InfoModal } from "@/components/ui/InfoModal";
+import { MacroLegendRow, MacroPieChart, type MacroKind } from "@/components/ui/MacroPieChart";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Color, Radius, Spacing } from "@/constants/theme";
 import { ApiError } from "@/lib/auth-context";
@@ -67,25 +69,23 @@ function defaultMealTypeForNow(): MealType {
   return "snack";
 }
 
-function MacroBar({ label, consumed, target }: { label: string; consumed: number; target: number | null }) {
-  const pct = target && target > 0 ? Math.min(100, Math.round((consumed / target) * 100)) : 0;
-  return (
-    <View style={styles.macroRow}>
-      <View style={styles.macroLabelRow}>
-        <Text style={styles.macroLabel}>{label}</Text>
-        <Text style={styles.macroValue}>
-          {consumed}
-          {target ? `/${target}g` : "g"}
-        </Text>
-      </View>
-      {target ? (
-        <View style={styles.macroTrack}>
-          <View style={[styles.macroFill, { width: `${pct}%` }]} />
-        </View>
-      ) : null}
-    </View>
-  );
-}
+const MACRO_INFO: Record<MacroKind, { title: string; body: string }> = {
+  protein: {
+    title: "Protein",
+    body:
+      "The raw material for repairing and building muscle after training. Spread it across the day — chicken, fish, eggs, dairy, tofu, legumes — rather than one big serving, since your body can only put so much to use at once. It's also the most filling of the three macros.",
+  },
+  carbs: {
+    title: "Carbs",
+    body:
+      "Your body's preferred fuel for training, especially anything above a light walk. They refill the glycogen your muscles burn through during a session. Time more of them around training, and lean on wholegrain, fruit, and vegetable sources for fibre and steadier energy the rest of the day.",
+  },
+  fat: {
+    title: "Fat",
+    body:
+      "Essential for hormone production and absorbing vitamins A, D, E and K. At roughly double the calories per gram of protein or carbs, it's easy to under- or overshoot without noticing. Favour unsaturated sources — olive oil, nuts, avocado, oily fish — over heavily processed fats.",
+  },
+};
 
 const WATER_QUICK_ADDS = [250, 500, 750];
 const WATER_RECOMMENDED_ML = 500;
@@ -387,6 +387,7 @@ export default function NutritionScreen() {
   const router = useRouter();
   const today = todayDateString();
   const [selectedDate, setSelectedDate] = useState(today);
+  const [macroInfo, setMacroInfo] = useState<MacroKind | null>(null);
   // The coach chat's input sits near the bottom of a long scroll view —
   // KeyboardAvoidingView alone doesn't scroll a *specific* field into view,
   // it only resizes/pads the container, so the keyboard can still end up
@@ -505,9 +506,35 @@ export default function NutritionScreen() {
                       : `${(diary?.totals.calories ?? 0) - target.calories} kcal over`}
                   </Text>
                   <View style={styles.macroBlock}>
-                    <MacroBar label="Protein" consumed={diary?.totals.proteinG ?? 0} target={target.proteinG} />
-                    <MacroBar label="Carbs" consumed={diary?.totals.carbsG ?? 0} target={target.carbsG} />
-                    <MacroBar label="Fat" consumed={diary?.totals.fatG ?? 0} target={target.fatG} />
+                    <MacroPieChart
+                      proteinG={diary?.totals.proteinG ?? 0}
+                      carbsG={diary?.totals.carbsG ?? 0}
+                      fatG={diary?.totals.fatG ?? 0}
+                      onSlicePress={setMacroInfo}
+                    />
+                    <View style={styles.macroLegend}>
+                      <MacroLegendRow
+                        kind="protein"
+                        label="Protein"
+                        consumed={diary?.totals.proteinG ?? 0}
+                        target={target.proteinG}
+                        onPress={() => setMacroInfo("protein")}
+                      />
+                      <MacroLegendRow
+                        kind="carbs"
+                        label="Carbs"
+                        consumed={diary?.totals.carbsG ?? 0}
+                        target={target.carbsG}
+                        onPress={() => setMacroInfo("carbs")}
+                      />
+                      <MacroLegendRow
+                        kind="fat"
+                        label="Fat"
+                        consumed={diary?.totals.fatG ?? 0}
+                        target={target.fatG}
+                        onPress={() => setMacroInfo("fat")}
+                      />
+                    </View>
                   </View>
                 </>
               ) : (
@@ -677,6 +704,13 @@ export default function NutritionScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <InfoModal
+        visible={macroInfo !== null}
+        onClose={() => setMacroInfo(null)}
+        title={macroInfo ? MACRO_INFO[macroInfo].title : ""}
+        body={macroInfo ? MACRO_INFO[macroInfo].body : ""}
+      />
     </SafeAreaView>
   );
 }
@@ -701,13 +735,8 @@ const styles = StyleSheet.create({
   calorieTarget: { fontSize: 14, color: Color.textMuted },
   calorieRemaining: { fontSize: 12, color: Color.textMuted, marginTop: 2 },
   noTargetText: { fontSize: 12, color: Color.textMuted, marginTop: Spacing.xs },
-  macroBlock: { marginTop: Spacing.md, gap: Spacing.sm },
-  macroRow: {},
-  macroLabelRow: { flexDirection: "row", justifyContent: "space-between", marginBottom: 4 },
-  macroLabel: { fontSize: 12, fontWeight: "600", color: Color.textSecondary },
-  macroValue: { fontSize: 11, color: Color.textMuted, fontVariant: ["tabular-nums"] },
-  macroTrack: { height: 6, borderRadius: 3, backgroundColor: Color.surface2, overflow: "hidden" },
-  macroFill: { height: "100%", backgroundColor: Color.gold, borderRadius: 3 },
+  macroBlock: { flexDirection: "row", alignItems: "center", gap: Spacing.lg, marginTop: Spacing.md },
+  macroLegend: { flex: 1 },
   section: { marginBottom: Spacing.xl },
   quickAddChip: {
     borderRadius: Radius.md,

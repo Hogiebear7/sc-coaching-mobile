@@ -43,10 +43,15 @@ export interface MacroPieChartProps {
 }
 
 // Three target-sized wedges (protein/carbs/fat, by calorie share of the
-// day's plan) that each fill from the centre point outward as the member
-// logs food — the wedge's own outline never moves, only how much of it is
-// filled in, so "how much of today's plan is this macro" and "how much of
-// that have I actually eaten" read as two different things at a glance.
+// day's plan). Each wedge is always fully filled with a faded tint of its
+// colour — so the day's planned split is legible even before anything's
+// logged, unlike a progress fill that would be a near-invisible sliver at
+// low intake — and a second, fully-saturated fill grows from the centre
+// point outward on top of that as the member logs food toward that
+// macro's target. The wedge's own outline never moves, only how much of
+// it reads as "eaten" vs "still faded," so "how much of today's plan is
+// this macro" and "how much of that have I actually eaten" read as two
+// different things at a glance.
 export function MacroPieChart({
   proteinG,
   carbsG,
@@ -83,15 +88,43 @@ export function MacroPieChart({
 
     const g = targetG[kind];
     const progress = g && g > 0 ? Math.min(1, consumed[kind] / g) : consumed[kind] > 0 ? 1 : 0;
+    // A logged amount under ~7% of target rounds to a sub-pixel radius —
+    // technically "filled from the centre" but invisible in practice.
+    // Floor it to a small dot so any nonzero intake reads as visibly
+    // started, without changing how the fill scales above that point.
+    const fillRadius = progress > 0 ? Math.max(4, RADIUS * progress) : 0;
 
-    return { kind, startDeg, endDeg, fillRadius: RADIUS * progress, color: MacroColor[kind] };
+    return { kind, startDeg, endDeg, fillRadius, color: MacroColor[kind] };
   });
 
   return (
     <Svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`}>
+      {/* Faded backdrop — always the full target-sized wedge, so the
+          day's planned split reads clearly even at zero intake. */}
       {wedges.map((w) => (
         <Path
-          key={w.kind}
+          key={`${w.kind}-backdrop`}
+          d={wedgePath(CENTER, CENTER, RADIUS, w.startDeg, w.endDeg)}
+          fill={w.color}
+          fillOpacity={0.28}
+          onPress={() => onSlicePress(w.kind)}
+        />
+      ))}
+      {/* Progress fill — fully saturated, grows from the centre point
+          outward as intake approaches the target. */}
+      {wedges
+        .filter((w) => w.fillRadius > 0)
+        .map((w) => (
+          <Path
+            key={`${w.kind}-fill`}
+            d={wedgePath(CENTER, CENTER, w.fillRadius, w.startDeg, w.endDeg)}
+            fill={w.color}
+            onPress={() => onSlicePress(w.kind)}
+          />
+        ))}
+      {wedges.map((w) => (
+        <Path
+          key={`${w.kind}-outline`}
           d={wedgePath(CENTER, CENTER, RADIUS, w.startDeg, w.endDeg)}
           fill="none"
           stroke={w.color}
@@ -100,17 +133,6 @@ export function MacroPieChart({
           onPress={() => onSlicePress(w.kind)}
         />
       ))}
-      {wedges
-        .filter((w) => w.fillRadius > 0)
-        .map((w) => (
-          <Path
-            key={`${w.kind}-fill`}
-            d={wedgePath(CENTER, CENTER, w.fillRadius, w.startDeg, w.endDeg)}
-            fill={w.color}
-            fillOpacity={0.32}
-            onPress={() => onSlicePress(w.kind)}
-          />
-        ))}
     </Svg>
   );
 }

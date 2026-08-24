@@ -54,6 +54,9 @@ const DAY_ORDER: TrainingDayOfWeek[] = [1, 2, 3, 4, 5, 6, 0];
 const DAY_LABEL: Record<TrainingDayOfWeek, string> = {
   0: "Sunday", 1: "Monday", 2: "Tuesday", 3: "Wednesday", 4: "Thursday", 5: "Friday", 6: "Saturday",
 };
+const DAY_ABBR: Record<TrainingDayOfWeek, string> = {
+  0: "Sun", 1: "Mon", 2: "Tue", 3: "Wed", 4: "Thu", 5: "Fri", 6: "Sat",
+};
 
 const ACTIVITY_OPTIONS: { value: TrainingActivityType; label: string }[] = [
   { value: "gym", label: "Gym" },
@@ -98,6 +101,8 @@ export default function WeeklyTrainingScreen() {
   const [sessions, setSessions] = useState<WeeklyTrainingSession[]>([]);
   const [hydrated, setHydrated] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [view, setView] = useState<"list" | "week">("week");
+  const [selectedDay, setSelectedDay] = useState<TrainingDayOfWeek>(1);
 
   // Each session card has several chip rows below its label input — on a
   // shorter screen the keyboard can cover all of them once it opens, and
@@ -178,8 +183,45 @@ export default function WeeklyTrainingScreen() {
             </Text>
           </View>
 
+          <View style={styles.viewToggle}>
+            <Pressable onPress={() => setView("week")} style={[styles.viewToggleBtn, view === "week" && styles.viewToggleBtnActive]}>
+              <Text style={[styles.viewToggleText, view === "week" && styles.viewToggleTextActive]}>Week</Text>
+            </Pressable>
+            <Pressable onPress={() => setView("list")} style={[styles.viewToggleBtn, view === "list" && styles.viewToggleBtnActive]}>
+              <Text style={[styles.viewToggleText, view === "list" && styles.viewToggleTextActive]}>List</Text>
+            </Pressable>
+          </View>
+
+          {view === "week" ? (
+            <View style={styles.weekGrid}>
+              {DAY_ORDER.map((day) => {
+                const count = sessions.filter((s) => s.dayOfWeek === day).length;
+                const isSelected = day === selectedDay;
+                return (
+                  <Pressable
+                    key={day}
+                    onPress={() => {
+                      tapFeedback();
+                      setSelectedDay(day);
+                    }}
+                    style={[styles.weekCell, isSelected && styles.weekCellSelected]}
+                  >
+                    <Text style={[styles.weekCellDay, isSelected && styles.weekCellDaySelected]}>{DAY_ABBR[day]}</Text>
+                    {count > 0 ? (
+                      <View style={styles.weekCellBadge}>
+                        <Text style={styles.weekCellBadgeText}>{count}</Text>
+                      </View>
+                    ) : (
+                      <View style={styles.weekCellBadgeEmpty} />
+                    )}
+                  </Pressable>
+                );
+              })}
+            </View>
+          ) : null}
+
           <ScrollView ref={scrollRef} contentContainerStyle={styles.scroll}>
-            {DAY_ORDER.map((day) => {
+            {(view === "week" ? [selectedDay] : DAY_ORDER).map((day) => {
               const daySessions = sessions.filter((s) => s.dayOfWeek === day);
               return (
                 <View key={day} style={styles.daySection}>
@@ -284,6 +326,49 @@ const styles = StyleSheet.create({
   centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
   introBlock: { paddingHorizontal: Spacing.lg, marginBottom: Spacing.md },
   introText: { fontSize: 12, color: Color.textMuted, lineHeight: 17 },
+  viewToggle: {
+    flexDirection: "row",
+    marginHorizontal: Spacing.lg,
+    marginBottom: Spacing.md,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: Color.borderSubtle,
+    padding: 3,
+  },
+  viewToggleBtn: { flex: 1, alignItems: "center", paddingVertical: 8, borderRadius: Radius.sm },
+  viewToggleBtnActive: { backgroundColor: Color.goldWeak },
+  viewToggleText: { fontSize: 13, fontWeight: "600", color: Color.textMuted },
+  viewToggleTextActive: { color: Color.gold },
+  weekGrid: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginHorizontal: Spacing.lg,
+    marginBottom: Spacing.lg,
+    gap: 6,
+  },
+  weekCell: {
+    flex: 1,
+    alignItems: "center",
+    paddingVertical: Spacing.sm,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: Color.borderSubtle,
+    gap: 6,
+  },
+  weekCellSelected: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
+  weekCellDay: { fontSize: 11, fontWeight: "700", color: Color.textMuted },
+  weekCellDaySelected: { color: Color.gold },
+  weekCellBadge: {
+    minWidth: 16,
+    height: 16,
+    borderRadius: Radius.pill,
+    backgroundColor: Color.gold,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 3,
+  },
+  weekCellBadgeText: { fontSize: 9, fontWeight: "700", color: Color.goldForeground },
+  weekCellBadgeEmpty: { width: 16, height: 16 },
   scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
   daySection: { marginBottom: Spacing.lg },
   dayHeaderRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: Spacing.sm },

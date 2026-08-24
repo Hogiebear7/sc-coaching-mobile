@@ -95,6 +95,18 @@ export default function WorkoutReviewScreen() {
             </>
           ) : null}
 
+          {data.pregnancy?.content ? (
+            <>
+              <Text style={styles.sectionLabel}>PREGNANCY STAGE THAT DAY</Text>
+              <Card style={styles.detailCard}>
+                <DetailRow label="Stage" value={data.pregnancy.content.label} last={data.pregnancy.weeksPregnant === null} />
+                {data.pregnancy.weeksPregnant !== null ? (
+                  <DetailRow label="Week" value={String(data.pregnancy.weeksPregnant)} last />
+                ) : null}
+              </Card>
+            </>
+          ) : null}
+
           {data.nutrition ? (
             <>
               <Text style={styles.sectionLabel}>FUELING THAT DAY</Text>

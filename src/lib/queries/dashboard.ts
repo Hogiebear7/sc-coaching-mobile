@@ -27,6 +27,7 @@ export interface DashboardData {
     hasTrend: boolean;
     delta: number | null;
     phaseNote: string | null;
+    pregnancyNote: string | null;
   };
   kpis: {
     sevenDaySum: number;

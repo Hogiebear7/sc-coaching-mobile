@@ -98,28 +98,30 @@ export function formatRun(run: WorkoutRunEntry): string {
   return parts.join(" · ");
 }
 
-// Compact display for an exercise entry: per-set detail when present,
-// otherwise the shared sets×reps @ weight form.
-export function formatExerciseLoad(ex: WorkoutExerciseEntry): string {
+// One label per logged set, e.g. ["85kg ×10", "85kg ×10 (Drop)"] — the
+// building block behind formatExerciseLoad's joined string, also used
+// standalone by session-detail.tsx to render each set as its own chip
+// instead of a single run-on comma string, so a pyramid/dropset with
+// varying weights or reps is easy to scan set-by-set rather than parsed
+// out of dense text.
+export function formatExerciseSetLabels(ex: WorkoutExerciseEntry): string[] {
   const perSideSuffix = ex.perSide ? "/side" : "";
   if (ex.setDetails && ex.setDetails.length > 0) {
-    return ex.setDetails
-      .map((s) => {
-        const repsLabel =
-          s.repsRight !== null && s.repsRight !== undefined && s.repsLeft !== null && s.repsLeft !== undefined
-            ? `R${s.repsRight}/L${s.repsLeft}`
-            : s.reps !== null
-              ? `×${s.reps}${perSideSuffix}`
-              : null;
-        const load = s.weight && repsLabel
-          ? `${s.weight}${repsLabel.startsWith("R") ? " " : ""}${repsLabel}`
-          : s.weight
-            ? s.weight
-            : (repsLabel ?? "—");
-        const typeLabel = s.setType ? SET_TYPE_LABEL[s.setType] : "";
-        return typeLabel ? `${load} (${typeLabel})` : load;
-      })
-      .join(", ");
+    return ex.setDetails.map((s) => {
+      const repsLabel =
+        s.repsRight !== null && s.repsRight !== undefined && s.repsLeft !== null && s.repsLeft !== undefined
+          ? `R${s.repsRight}/L${s.repsLeft}`
+          : s.reps !== null
+            ? `×${s.reps}${perSideSuffix}`
+            : null;
+      const load = s.weight && repsLabel
+        ? `${s.weight}${repsLabel.startsWith("R") ? " " : ""}${repsLabel}`
+        : s.weight
+          ? s.weight
+          : (repsLabel ?? "—");
+      const typeLabel = s.setType ? SET_TYPE_LABEL[s.setType] : "";
+      return typeLabel ? `${load} (${typeLabel})` : load;
+    });
   }
   const parts: string[] = [];
   if (ex.sets !== null && ex.reps !== null) parts.push(`${ex.sets}×${ex.reps}${perSideSuffix}`);
@@ -128,7 +130,13 @@ export function formatExerciseLoad(ex: WorkoutExerciseEntry): string {
   if (ex.weight) parts.push(`@ ${ex.weight}`);
   if (ex.rir != null) parts.push(`RIR ${ex.rir}`);
   if (ex.setType && SET_TYPE_LABEL[ex.setType]) parts.push(`(${SET_TYPE_LABEL[ex.setType]})`);
-  return parts.join(" ");
+  return parts.length > 0 ? [parts.join(" ")] : [];
+}
+
+// Compact display for an exercise entry: per-set detail when present,
+// otherwise the shared sets×reps @ weight form.
+export function formatExerciseLoad(ex: WorkoutExerciseEntry): string {
+  return formatExerciseSetLabels(ex).join(", ");
 }
 
 export interface ExerciseTrendPoint {

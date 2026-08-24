@@ -21,6 +21,8 @@ import { TextField } from "@/components/ui/TextField";
 import { Color, Radius, Spacing } from "@/constants/theme";
 import { ApiError } from "@/lib/api-client";
 import { useProfile } from "@/lib/queries/profile";
+import { COACH_SHARE_UNLOCK_WEEKS, usePregnancyData, useSavePregnancyStatus } from "@/lib/queries/pregnancy";
+import { todayDateString } from "@/lib/workout-formatters";
 import {
   useCycleData,
   useSaveCyclePrivacy,
@@ -67,6 +69,21 @@ function GuidanceRow({ label, value }: { label: string; value: string }) {
   );
 }
 
+function BulletList({ label, items }: { label: string; items: string[] }) {
+  if (items.length === 0) return null;
+  return (
+    <View style={{ marginTop: Spacing.sm }}>
+      <Text style={styles.bulletLabel}>{label}</Text>
+      {items.map((item, i) => (
+        <View key={i} style={styles.bulletRow}>
+          <View style={styles.bulletDot} />
+          <Text style={styles.bulletText}>{item}</Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
 function MenopauseSection({ title, body }: { title: string; body: string }) {
   return (
     <View style={{ marginBottom: Spacing.md }}>
@@ -101,6 +118,23 @@ export default function CycleTrackingScreen() {
   const [privacyError, setPrivacyError] = useState<string | null>(null);
   const [privacySaved, setPrivacySaved] = useState(false);
 
+  const { data: pregnancy } = usePregnancyData(eligible);
+  const savePregnancy = useSavePregnancyStatus();
+  const [pregnantToggle, setPregnantToggle] = useState(false);
+  const [weeksAlongInput, setWeeksAlongInput] = useState("");
+  const [pregnancyError, setPregnancyError] = useState<string | null>(null);
+  const [pregnancySaved, setPregnancySaved] = useState(false);
+  const [weeksHydrated, setWeeksHydrated] = useState(false);
+
+  useEffect(() => {
+    if (!pregnancy || weeksHydrated) return;
+    setPregnantToggle(pregnancy.isPregnant);
+    if (pregnancy.isPregnant && pregnancy.estimate.weeksPregnant !== null) {
+      setWeeksAlongInput(String(pregnancy.estimate.weeksPregnant));
+    }
+    setWeeksHydrated(true);
+  }, [pregnancy, weeksHydrated]);
+
   useEffect(() => {
     if (!data || hydrated) return;
     setLastPeriodStartDate(data.settings?.lastPeriodStartDate ?? "");
@@ -131,6 +165,31 @@ export default function CycleTrackingScreen() {
     }
   }
 
+  // Quick reset for a cycle that ran shorter or longer than the estimate
+  // predicted — one tap logs today as day 1, without walking back through
+  // the full settings form. Reuses whatever's currently in the other
+  // fields (cycle length, period length, regularity, notes) rather than
+  // resetting them, since only the start date actually changed.
+  const [beginDayError, setBeginDayError] = useState<string | null>(null);
+  async function handleBeginDayOne() {
+    setBeginDayError(null);
+    setSettingsSaved(false);
+    const today = todayDateString();
+    try {
+      await saveSettings.mutateAsync({
+        lastPeriodStartDate: today,
+        averageCycleLengthDays,
+        periodLengthDays,
+        regularity,
+        privateNotes,
+      });
+      setLastPeriodStartDate(today);
+      setSettingsSaved(true);
+    } catch (e) {
+      setBeginDayError(e instanceof ApiError ? e.message : "Could not log day 1.");
+    }
+  }
+
   async function handleSavePrivacy() {
     setPrivacyError(null);
     setPrivacySaved(false);
@@ -139,6 +198,55 @@ export default function CycleTrackingScreen() {
       setPrivacySaved(true);
     } catch (e) {
       setPrivacyError(e instanceof ApiError ? e.message : "Could not save sharing preferences.");
+    }
+  }
+
+  async function handleTogglePregnant(next: boolean) {
+    setPregnantToggle(next);
+    setPregnancyError(null);
+    setPregnancySaved(false);
+    if (!next) {
+      // Turning off clears the estimate server-side too (route treats
+      // isPregnant:false as "clear dueDate/sharing"), so there's nothing
+      // stale left behind if they turn it back on later with new numbers.
+      try {
+        await savePregnancy.mutateAsync({ isPregnant: false, shareWithCoach: false });
+        setWeeksAlongInput("");
+      } catch (e) {
+        setPregnancyError(e instanceof ApiError ? e.message : "Could not update.");
+      }
+      return;
+    }
+    // Switching on alone doesn't save yet — needs a weeks-along value first
+    // (the form below appears and the member enters it, then taps Save).
+  }
+
+  async function handleSaveWeeksAlong() {
+    setPregnancyError(null);
+    setPregnancySaved(false);
+    const weeks = parseInt(weeksAlongInput, 10);
+    if (!Number.isFinite(weeks) || weeks < 0 || weeks > 45) {
+      setPregnancyError("Enter a valid number of weeks.");
+      return;
+    }
+    try {
+      await savePregnancy.mutateAsync({
+        isPregnant: true,
+        weeksAlong: weeks,
+        shareWithCoach: pregnancy?.shareWithCoach ?? false,
+      });
+      setPregnancySaved(true);
+    } catch (e) {
+      setPregnancyError(e instanceof ApiError ? e.message : "Could not save.");
+    }
+  }
+
+  async function handleToggleShareWithCoach(next: boolean) {
+    setPregnancyError(null);
+    try {
+      await savePregnancy.mutateAsync({ isPregnant: true, shareWithCoach: next });
+    } catch (e) {
+      setPregnancyError(e instanceof ApiError ? e.message : "Could not update sharing.");
     }
   }
 
@@ -181,6 +289,25 @@ export default function CycleTrackingScreen() {
                 shared without your explicit permission below.
               </Text>
             </View>
+
+            <Card style={styles.beginDayCard}>
+              <View style={styles.beginDayRow}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.beginDayTitle}>Cycle running early or late?</Text>
+                  <Text style={styles.beginDaySub}>
+                    If your period starts before or after the estimate above, log today as day 1 to
+                    reset it — no need to edit the form below.
+                  </Text>
+                </View>
+                <Button
+                  title="Begin day 1"
+                  onPress={handleBeginDayOne}
+                  loading={saveSettings.isPending}
+                  style={styles.beginDayButton}
+                />
+              </View>
+              {beginDayError ? <Text style={styles.error}>{beginDayError}</Text> : null}
+            </Card>
 
             {hasPhase ? (
               <Card style={styles.phaseCard}>
@@ -330,6 +457,90 @@ export default function CycleTrackingScreen() {
               <Button title="Save sharing preferences" onPress={handleSavePrivacy} loading={savePrivacy.isPending} style={{ marginTop: Spacing.sm }} />
             </Card>
 
+            <Text style={styles.sectionLabel}>PREGNANCY</Text>
+            <Card style={styles.formCard}>
+              <View style={styles.settingRow}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.settingTitle}>I&apos;m currently pregnant</Text>
+                  <Text style={styles.settingSub}>
+                    Private by default. Turning this on adjusts general training, nutrition, and
+                    recovery guidance across the app for your stage of pregnancy.
+                  </Text>
+                </View>
+                <Switch
+                  value={pregnantToggle}
+                  onValueChange={handleTogglePregnant}
+                  trackColor={{ false: Color.surface3, true: Color.gold }}
+                  thumbColor={Color.textPrimary}
+                  disabled={savePregnancy.isPending}
+                />
+              </View>
+
+              {pregnantToggle ? (
+                <View style={{ marginTop: Spacing.lg }}>
+                  <TextField
+                    label="How many weeks along are you?"
+                    value={weeksAlongInput}
+                    onChangeText={setWeeksAlongInput}
+                    placeholder="e.g. 8"
+                    keyboardType="number-pad"
+                  />
+                  {pregnancyError ? <Text style={styles.error}>{pregnancyError}</Text> : null}
+                  {pregnancySaved && !pregnancyError ? <Text style={styles.saved}>Saved.</Text> : null}
+                  <Button
+                    title={pregnancy?.isPregnant ? "Update" : "Save"}
+                    onPress={handleSaveWeeksAlong}
+                    loading={savePregnancy.isPending}
+                    style={{ marginTop: Spacing.sm }}
+                  />
+
+                  {pregnancy?.isPregnant && pregnancy.estimate.content ? (
+                    <View style={styles.pregnancyGuidanceBox}>
+                      <View style={styles.phaseHeaderRow}>
+                        <Text style={styles.phaseTitle}>{pregnancy.estimate.content.label}</Text>
+                        {pregnancy.estimate.weeksPregnant !== null ? (
+                          <Text style={styles.phaseDayText}>Week {pregnancy.estimate.weeksPregnant}</Text>
+                        ) : null}
+                      </View>
+                      <Text style={styles.phaseExplanation}>{pregnancy.estimate.content.summary}</Text>
+
+                      <BulletList label="TRAINING — GENERALLY FINE" items={pregnancy.estimate.content.trainingDo} />
+                      <BulletList label="TRAINING — AVOID" items={pregnancy.estimate.content.trainingAvoid} />
+                      <BulletList label="NUTRITION — PRIORITISE" items={pregnancy.estimate.content.nutritionDo} />
+                      <BulletList label="NUTRITION — AVOID" items={pregnancy.estimate.content.nutritionAvoid} />
+                      <BulletList label="RECOVERY" items={pregnancy.estimate.content.recoveryDo} />
+
+                      <Text style={styles.disclaimer}>{pregnancy.estimate.disclaimer}</Text>
+                    </View>
+                  ) : null}
+
+                  {pregnancy?.isPregnant && (pregnancy.estimate.weeksPregnant ?? 0) >= COACH_SHARE_UNLOCK_WEEKS ? (
+                    <View style={[styles.settingRow, { paddingHorizontal: 0, marginTop: Spacing.lg }]}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.settingTitle}>Let your coach know</Text>
+                        <Text style={styles.settingSub}>
+                          Shares only that you&apos;re pregnant and your approximate stage — no dates,
+                          no other details.
+                        </Text>
+                      </View>
+                      <Switch
+                        value={pregnancy.shareWithCoach}
+                        onValueChange={handleToggleShareWithCoach}
+                        trackColor={{ false: Color.surface3, true: Color.gold }}
+                        thumbColor={Color.textPrimary}
+                        disabled={savePregnancy.isPending}
+                      />
+                    </View>
+                  ) : pregnancy?.isPregnant ? (
+                    <Text style={styles.formHint}>
+                      Once you&apos;re {COACH_SHARE_UNLOCK_WEEKS} weeks along, you&apos;ll be able to
+                      choose whether to let your coach know.
+                    </Text>
+                  ) : null}
+                </View>
+              ) : null}
+            </Card>
+
             <Text style={styles.sectionLabel}>PREFERENCES</Text>
             <Card style={styles.settingsCard}>
               <View style={styles.settingRow}>
@@ -380,6 +591,11 @@ const styles = StyleSheet.create({
     padding: Spacing.md,
   },
   wellText: { fontSize: 12, color: Color.textMuted, lineHeight: 17 },
+  beginDayCard: { padding: Spacing.md, marginTop: Spacing.md, borderColor: Color.goldBorder, backgroundColor: Color.goldWeak },
+  beginDayRow: { flexDirection: "row", alignItems: "center", gap: Spacing.md },
+  beginDayTitle: { fontSize: 13, fontWeight: "700", color: Color.textPrimary },
+  beginDaySub: { fontSize: 11, color: Color.textMuted, marginTop: 2, lineHeight: 15 },
+  beginDayButton: { flexShrink: 0 },
   phaseCard: { padding: Spacing.lg, marginTop: Spacing.lg },
   phaseHeaderRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap", gap: 4 },
   phaseTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
@@ -431,4 +647,14 @@ const styles = StyleSheet.create({
   settingRow: { flexDirection: "row", alignItems: "center", padding: Spacing.md, gap: Spacing.sm },
   settingTitle: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
   settingSub: { fontSize: 11, color: Color.textMuted, marginTop: 2, lineHeight: 15 },
+  pregnancyGuidanceBox: {
+    marginTop: Spacing.lg,
+    borderTopWidth: 1,
+    borderTopColor: Color.borderSubtle,
+    paddingTop: Spacing.md,
+  },
+  bulletLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.5, color: Color.textMuted },
+  bulletRow: { flexDirection: "row", alignItems: "flex-start", gap: 6, marginTop: 4 },
+  bulletDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: Color.gold, marginTop: 7 },
+  bulletText: { flex: 1, fontSize: 12, color: Color.textSecondary, lineHeight: 17 },
 });

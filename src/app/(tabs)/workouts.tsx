@@ -117,7 +117,16 @@ export default function WorkoutsScreen() {
       .sort((a, b) => b.date.localeCompare(a.date));
   }, [data]);
 
-  const activeTrendExercise = trendExercise ?? trendCandidates[0]?.name ?? null;
+  // Member-curated quick-view chips (see progression-exercises-edit.tsx),
+  // capped at 3. Falls back to the top 3 auto-derived candidates until the
+  // member has pinned anything, so the row is never empty on first use.
+  const progressionChips = useMemo(() => {
+    const pinned = data?.pinnedProgressionExercises ?? [];
+    if (pinned.length > 0) return pinned.map((name) => ({ key: name.toLowerCase(), name }));
+    return trendCandidates.slice(0, 3);
+  }, [data, trendCandidates]);
+
+  const activeTrendExercise = trendExercise ?? progressionChips[0]?.name ?? trendCandidates[0]?.name ?? null;
 
   const [trendMetric, setTrendMetric] = useState<ExerciseMetricKey | null>(null);
   // Default to whichever of weight/reps/time actually has data for the
@@ -420,9 +429,12 @@ export default function WorkoutsScreen() {
 
         {trendCandidates.length > 0 && activeTrendExercise ? (
           <View style={styles.section}>
-            <SectionHeader label="PROGRESSION" />
+            <SectionHeader
+              label="PROGRESSION"
+              action={{ label: "Edit", onPress: () => router.push("/progression-exercises-edit") }}
+            />
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.trendPicker} contentContainerStyle={{ gap: Spacing.xs }}>
-              {trendCandidates.slice(0, 10).map((c) => (
+              {progressionChips.map((c) => (
                 <Pressable
                   key={c.key}
                   onPress={() => {
@@ -434,6 +446,10 @@ export default function WorkoutsScreen() {
                   <Text style={[styles.trendChipText, activeTrendExercise === c.name && styles.trendChipTextActive]}>{c.name}</Text>
                 </Pressable>
               ))}
+              <Pressable onPress={() => router.push("/progression-exercises-edit")} style={[styles.trendChip, styles.trendChipSearch]}>
+                <Ionicons name="search" size={12} color={Color.gold} />
+                <Text style={[styles.trendChipText, { color: Color.gold }]}>Search</Text>
+              </Pressable>
             </ScrollView>
             {availableMetrics.length > 1 ? (
               <View style={styles.metricRow}>
@@ -613,6 +629,7 @@ const styles = StyleSheet.create({
   trendChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
   trendChipText: { fontSize: 11, fontWeight: "500", color: Color.textMuted },
   trendChipTextActive: { color: Color.gold },
+  trendChipSearch: { flexDirection: "row", alignItems: "center", gap: 4, borderColor: Color.goldBorder, borderStyle: "dashed" },
   metricRow: { flexDirection: "row", gap: 6, marginBottom: Spacing.sm },
   metricChip: { flex: 1, alignItems: "center", borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingVertical: 6 },
   metricChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },

@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Image, type ImageStyle } from "expo-image";
 import { useRouter } from "expo-router";
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -17,6 +17,7 @@ import { BrandMark } from "@/components/ui/BrandMark";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { InfoModal } from "@/components/ui/InfoModal";
 import { ReadinessRing } from "@/components/ui/ReadinessRing";
 import { ReadinessSparkline } from "@/components/ui/ReadinessSparkline";
 import { SectionHeader } from "@/components/ui/SectionHeader";
@@ -54,6 +55,7 @@ export default function DashboardScreen() {
   const { data: notifications } = useNotifications();
   const unreadCount = notifications?.filter((n) => n.readAt === null).length ?? 0;
   const { data: profile } = useProfile();
+  const [infoModal, setInfoModal] = useState<"load" | "sleep" | null>(null);
 
   const onRefresh = useCallback(() => {
     refetch();
@@ -215,6 +217,9 @@ export default function DashboardScreen() {
                     {readiness.phaseNote ? (
                       <Text style={styles.readinessGuidance}>{readiness.phaseNote}</Text>
                     ) : null}
+                    {readiness.pregnancyNote ? (
+                      <Text style={styles.readinessGuidance}>{readiness.pregnancyNote}</Text>
+                    ) : null}
                   </View>
                 </View>
 
@@ -242,16 +247,31 @@ export default function DashboardScreen() {
               label="7-Day Load"
               value={data.kpis.sevenDaySum > 0 ? String(data.kpis.sevenDaySum) : "—"}
               subtext={data.kpis.daysWithLoad > 0 ? data.kpis.loadBandLabel : "log duration & RPE"}
+              onInfoPress={() => setInfoModal("load")}
             />
             <StatCard
               label="Sleep"
               value={data.kpis.sleepHours != null ? String(data.kpis.sleepHours) : "—"}
               unit={data.kpis.sleepHours != null ? "h" : undefined}
               subtext={data.kpis.sleepQuality != null ? `quality ${data.kpis.sleepQuality}/5` : "last check-in"}
+              onInfoPress={() => setInfoModal("sleep")}
             />
             <StatCard label="Sessions" value={String(data.kpis.sessionsLast7)} subtext="7 days" />
           </View>
         </View>
+
+        <InfoModal
+          visible={infoModal === "load"}
+          onClose={() => setInfoModal(null)}
+          title="7-Day Load"
+          body="Training duration × RPE, added up over a rolling 7-day window ending today. Days you don't log a session simply add nothing — a quiet week, a rest day, or a brand-new account all show a lower number rather than a broken one. It resets naturally as old days roll out of the window, so you're always seeing your most recent week, not a running total."
+        />
+        <InfoModal
+          visible={infoModal === "sleep"}
+          onClose={() => setInfoModal(null)}
+          title="Sleep"
+          body="Your most recent recovery check-in's sleep hours and quality rating. Log a check-in on the Recovery tab any morning to update it — it always shows your latest entry, not an average."
+        />
 
         {/* Nutrition */}
         <View style={styles.section}>

@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { BodyWeightCard } from "@/components/ui/BodyWeightCard";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { DateField } from "@/components/ui/DateField";
@@ -209,7 +210,10 @@ export default function ProfileScreen() {
               </Card>
             </View>
 
-            <Text style={styles.sectionLabel}>YOUR DETAILS</Text>
+            <Text style={styles.sectionLabel}>BODY WEIGHT</Text>
+            <BodyWeightCard />
+
+            <Text style={[styles.sectionLabel, styles.sectionLabelSpaced]}>YOUR DETAILS</Text>
             <TextField label="Full name" value={fullName} onChangeText={setFullName} placeholder="Your full name" />
             <TextField label="Phone" value={phone} onChangeText={setPhone} keyboardType="phone-pad" placeholder="+353 83 123 4567" />
             <DateField

@@ -3,7 +3,6 @@ import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  AccessibilityInfo,
   ActivityIndicator,
   Animated,
   Easing,
@@ -19,14 +18,14 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { BodyWeightCard } from "@/components/ui/BodyWeightCard";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { SectionHeader } from "@/components/ui/SectionHeader";
-import { WeightTrendChart } from "@/components/ui/WeightTrendChart";
 import { Color, Radius, Spacing } from "@/constants/theme";
 import { ApiError } from "@/lib/auth-context";
 import { tapFeedback } from "@/lib/haptics";
-import { useBodyWeightLogs, useLogBodyWeight } from "@/lib/queries/body-weight";
+import { useReduceMotionPref } from "@/lib/use-reduce-motion";
 import {
   MEAL_TYPE_OPTIONS,
   useCreateFoodEntry,
@@ -93,26 +92,6 @@ const WATER_RECOMMENDED_ML = 500;
 // Generous sanity cap on manual entry — catches the realistic typo (typing
 // "15" meaning "1.5") rather than trying to guess a "real" hydration max.
 const MANUAL_MAX_ML = 15_000;
-
-// Mirrors the OS-level "reduce motion" accessibility setting so the bottle
-// fill can skip its transition for members who've asked for that — nothing
-// else in this file animates, so this stays local rather than becoming a
-// shared hook.
-function useReduceMotionPref(): boolean {
-  const [reduceMotion, setReduceMotion] = useState(false);
-  useEffect(() => {
-    let mounted = true;
-    AccessibilityInfo.isReduceMotionEnabled().then((v) => {
-      if (mounted) setReduceMotion(v);
-    });
-    const sub = AccessibilityInfo.addEventListener("reduceMotionChanged", setReduceMotion);
-    return () => {
-      mounted = false;
-      sub.remove();
-    };
-  }, []);
-  return reduceMotion;
-}
 
 // Target is 1ml water per kcal in the daily calorie target above (same
 // number, so it can't disagree) — 2805 kcal target means 2.8L. Falls back to
@@ -422,12 +401,6 @@ export default function NutritionScreen() {
   const createEntry = useCreateFoodEntry();
   const deleteEntry = useDeleteFoodEntry();
 
-  const { data: weightLogs } = useBodyWeightLogs();
-  const logWeight = useLogBodyWeight();
-  const [loggingWeight, setLoggingWeight] = useState(false);
-  const [weightInput, setWeightInput] = useState("");
-  const latestWeight = useMemo(() => (weightLogs && weightLogs.length > 0 ? [...weightLogs].sort((a, b) => b.date.localeCompare(a.date))[0] : null), [weightLogs]);
-
   function handleQuickAdd(food: NonNullable<typeof recentFoods>[number]) {
     tapFeedback();
     createEntry.mutate({
@@ -439,15 +412,6 @@ export default function NutritionScreen() {
       carbsG: food.carbsG,
       fatG: food.fatG,
     });
-  }
-
-  async function handleSaveWeight() {
-    const kg = parseFloat(weightInput);
-    if (!Number.isFinite(kg) || kg <= 0) return;
-    await logWeight.mutateAsync({ date: today, weightKg: kg });
-    tapFeedback();
-    setWeightInput("");
-    setLoggingWeight(false);
   }
 
   if (isLoading) {
@@ -628,36 +592,7 @@ export default function NutritionScreen() {
 
           <View style={styles.section}>
             <SectionHeader label="WEIGHT CHECK-IN" />
-            <Card style={styles.weightCard}>
-              <View style={styles.weightHeaderRow}>
-                <View>
-                  <Text style={styles.weightValue}>{latestWeight ? `${latestWeight.weightKg} kg` : "—"}</Text>
-                  <Text style={styles.weightSub}>{latestWeight ? `Last logged ${latestWeight.date}` : "No check-ins yet"}</Text>
-                </View>
-                {!loggingWeight ? (
-                  <Button title="Log weight" variant="secondary" onPress={() => setLoggingWeight(true)} />
-                ) : null}
-              </View>
-              {loggingWeight ? (
-                <View style={styles.weightInputRow}>
-                  <TextInput
-                    value={weightInput}
-                    onChangeText={setWeightInput}
-                    keyboardType="decimal-pad"
-                    placeholder="kg"
-                    placeholderTextColor={Color.textFaint}
-                    style={styles.weightInput}
-                    autoFocus
-                  />
-                  <Button title="Save" onPress={handleSaveWeight} loading={logWeight.isPending} style={{ flex: 1 }} />
-                </View>
-              ) : null}
-              {weightLogs && weightLogs.length >= 2 ? (
-                <View style={{ marginTop: Spacing.md }}>
-                  <WeightTrendChart logs={weightLogs} />
-                </View>
-              ) : null}
-            </Card>
+            <BodyWeightCard compact />
           </View>
 
           <View style={styles.section}>
@@ -802,22 +737,6 @@ const styles = StyleSheet.create({
   },
   entryName: { fontSize: 13, fontWeight: "500", color: Color.textPrimary },
   entryMacros: { fontSize: 10, color: Color.textMuted, marginTop: 2 },
-  weightCard: { padding: Spacing.md },
-  weightHeaderRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  weightValue: { fontSize: 20, fontWeight: "700", color: Color.textPrimary, fontVariant: ["tabular-nums"] },
-  weightSub: { fontSize: 11, color: Color.textMuted, marginTop: 2 },
-  weightInputRow: { flexDirection: "row", gap: Spacing.sm, marginTop: Spacing.md },
-  weightInput: {
-    width: 90,
-    height: 44,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-    paddingHorizontal: Spacing.sm,
-    fontSize: 14,
-    color: Color.textPrimary,
-  },
   hydrationCard: { padding: Spacing.md },
   hydrationLabelRow: { flexDirection: "row", alignItems: "center", gap: 5, marginBottom: 2 },
   hydrationLabel: { fontSize: 11, fontWeight: "600", color: Color.textMuted, letterSpacing: 0.2 },

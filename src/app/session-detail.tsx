@@ -7,10 +7,10 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { StatCard } from "@/components/ui/StatCard";
-import { Color, Spacing } from "@/constants/theme";
+import { Color, Radius, Spacing } from "@/constants/theme";
 import { tapFeedback } from "@/lib/haptics";
 import { useDeleteWorkoutSession, useWorkouts } from "@/lib/queries/workouts";
-import { computeExerciseSetTotals, computeSessionTotals, formatExerciseLoad, formatRun } from "@/lib/workout-formatters";
+import { computeExerciseSetTotals, computeSessionTotals, formatExerciseSetLabels, formatRun } from "@/lib/workout-formatters";
 
 function formatLongDate(dateISO: string): string {
   return new Date(`${dateISO}T00:00:00`).toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long", year: "numeric" });
@@ -102,6 +102,7 @@ export default function SessionDetailScreen() {
               <Card style={styles.list}>
                 {session.exercises.map((ex, idx) => {
                   const exTotals = computeExerciseSetTotals(ex);
+                  const setLabels = formatExerciseSetLabels(ex);
                   return (
                     <Pressable
                       key={idx}
@@ -109,7 +110,7 @@ export default function SessionDetailScreen() {
                       style={[styles.row, idx > 0 && styles.rowDivider]}
                     >
                       <View style={{ flex: 1 }}>
-                        <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                        <View style={styles.exerciseTitleRow}>
                           {ex.supersetGroup ? (
                             <View style={styles.supersetBadge}>
                               <Text style={styles.supersetBadgeText}>{ex.supersetGroup}</Text>
@@ -117,7 +118,17 @@ export default function SessionDetailScreen() {
                           ) : null}
                           <Text style={styles.rowTitle}>{ex.name}</Text>
                         </View>
-                        <Text style={styles.rowSummary}>{formatExerciseLoad(ex) || "—"}</Text>
+                        {setLabels.length > 0 ? (
+                          <View style={styles.setChipRow}>
+                            {setLabels.map((label, i) => (
+                              <View key={i} style={styles.setChip}>
+                                <Text style={styles.setChipText}>{label}</Text>
+                              </View>
+                            ))}
+                          </View>
+                        ) : (
+                          <Text style={styles.rowSummary}>—</Text>
+                        )}
                       </View>
                       <View style={styles.rowMeta}>
                         <Text style={styles.rowMetaText}>{exTotals.sets} sets</Text>
@@ -183,9 +194,20 @@ const styles = StyleSheet.create({
   row: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", padding: Spacing.md, gap: Spacing.sm },
   rowDivider: { borderTopWidth: 1, borderTopColor: Color.borderSubtle },
   rowTitle: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
+  exerciseTitleRow: { flexDirection: "row", alignItems: "center", gap: 6 },
   supersetBadge: { borderRadius: 999, backgroundColor: Color.gold + "26", paddingHorizontal: 6, paddingVertical: 1 },
   supersetBadgeText: { fontSize: 10, fontWeight: "700", color: Color.gold },
   rowSummary: { fontSize: 12, color: Color.textMuted, marginTop: 2 },
+  setChipRow: { flexDirection: "row", flexWrap: "wrap", gap: 4, marginTop: 6 },
+  setChip: {
+    borderRadius: Radius.sm,
+    borderWidth: 1,
+    borderColor: Color.borderSubtle,
+    backgroundColor: Color.surface2,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+  },
+  setChipText: { fontSize: 11, fontWeight: "500", color: Color.textSecondary, fontVariant: ["tabular-nums"] },
   rowMeta: { flexDirection: "row", alignItems: "center", gap: 4 },
   rowMetaText: { fontSize: 11, color: Color.textFaint },
   notesCard: { padding: Spacing.md },

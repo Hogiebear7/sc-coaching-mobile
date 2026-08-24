@@ -80,6 +80,7 @@ export interface WorkoutsData {
   personalBests: PersonalBest[];
   exerciseLibrary: ExerciseLibraryEntry[];
   pinnedExercises: string[];
+  pinnedProgressionExercises: string[];
 }
 
 interface WorkoutsResponse {
@@ -236,10 +237,16 @@ export interface WorkoutReviewHydration {
   loggedMl: number;
 }
 
+export interface WorkoutReviewPregnancy {
+  weeksPregnant: number | null;
+  content: { label: string; summary: string } | null;
+}
+
 export interface WorkoutReviewData {
   comparison: WorkoutReviewComparison;
   recovery: WorkoutReviewRecovery | null;
   cyclePhase: WorkoutReviewCyclePhase | null;
+  pregnancy: WorkoutReviewPregnancy | null;
   nutrition: WorkoutReviewNutrition | null;
   hydration: WorkoutReviewHydration | null;
   reviewText: string;

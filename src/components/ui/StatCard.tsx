@@ -1,4 +1,5 @@
-import { StyleSheet, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { Color, Spacing } from "@/constants/theme";
 import { Card } from "./Card";
@@ -7,7 +8,10 @@ import { ProgressBar } from "./ProgressBar";
 // The recurring "label / subtext / big value / thin bar" card seen
 // throughout the reference app's Nutrition and Body Metrics screens —
 // e.g. "Protein — Today — 0g [====----]". `progressPct` is optional: some
-// stat cards (KPI strips) just show a number with no bar.
+// stat cards (KPI strips) just show a number with no bar. `onInfoPress` is
+// optional too: a small (i) affordance for stats whose meaning isn't
+// self-evident (e.g. "7-Day Load"), opening an InfoModal — most stat cards
+// don't need it.
 export function StatCard({
   label,
   subtext,
@@ -15,6 +19,7 @@ export function StatCard({
   unit,
   progressPct,
   progressColor,
+  onInfoPress,
 }: {
   label: string;
   subtext?: string;
@@ -22,10 +27,18 @@ export function StatCard({
   unit?: string;
   progressPct?: number;
   progressColor?: string;
+  onInfoPress?: () => void;
 }) {
   return (
     <Card style={styles.card}>
-      <Text style={styles.label}>{label}</Text>
+      <View style={styles.labelRow}>
+        <Text style={styles.label}>{label}</Text>
+        {onInfoPress ? (
+          <Pressable onPress={onInfoPress} hitSlop={10} style={styles.infoButton}>
+            <Ionicons name="information-circle-outline" size={14} color={Color.textFaint} />
+          </Pressable>
+        ) : null}
+      </View>
       {subtext ? <Text style={styles.subtext}>{subtext}</Text> : null}
       <View style={styles.valueRow}>
         <Text style={styles.value}>{value}</Text>
@@ -45,6 +58,7 @@ const styles = StyleSheet.create({
     padding: Spacing.md,
     flex: 1,
   },
+  labelRow: { flexDirection: "row", alignItems: "center", gap: 4 },
   label: {
     fontSize: 11,
     fontWeight: "600",
@@ -52,6 +66,7 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
     color: Color.textMuted,
   },
+  infoButton: { padding: 1 },
   subtext: {
     fontSize: 11,
     color: Color.textFaint,

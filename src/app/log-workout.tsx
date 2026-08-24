@@ -21,6 +21,7 @@ import { Card } from "@/components/ui/Card";
 import { Collapsible } from "@/components/ui/Collapsible";
 import { DateField } from "@/components/ui/DateField";
 import { ExerciseAutocomplete } from "@/components/ui/ExerciseAutocomplete";
+import { LogWorkoutTour } from "@/components/ui/LogWorkoutTour";
 import { SupersetChips } from "@/components/ui/SupersetChips";
 import { TextField } from "@/components/ui/TextField";
 import { Color, Radius, Spacing } from "@/constants/theme";
@@ -159,23 +160,6 @@ function groupExerciseRowsBySuperset(rows: ExerciseRow[]): { group: string | nul
     }
   }
   return groups;
-}
-
-// Chip row for the exercise's default set type, applied to newly added sets.
-function SetTypeChips({ value, onChange }: { value: WorkoutSetType; onChange: (v: WorkoutSetType) => void }) {
-  return (
-    <View style={styles.setTypeRow}>
-      {SET_TYPE_OPTIONS.map((opt) => (
-        <Pressable
-          key={opt.value}
-          onPress={() => onChange(opt.value)}
-          style={[styles.setTypeChip, value === opt.value && styles.setTypeChipActive]}
-        >
-          <Text style={[styles.setTypeChipText, value === opt.value && styles.setTypeChipTextActive]}>{opt.label}</Text>
-        </Pressable>
-      ))}
-    </View>
-  );
 }
 
 function newRunRow(): RunRow {
@@ -1013,6 +997,7 @@ export default function LogWorkoutScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
+      <LogWorkoutTour />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
         <View style={styles.header}>
           <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backButton}>
@@ -1544,9 +1529,6 @@ export default function LogWorkoutScreen() {
                   onChange={(v) => updateRow(row.key, { supersetGroup: v })}
                 />
 
-                <Text style={[styles.fieldLabel, { marginTop: Spacing.sm }]}>Default set type (for new sets)</Text>
-                <SetTypeChips value={row.defaultSetType} onChange={(v) => updateRow(row.key, { defaultSetType: v })} />
-
                 <NumberField label="RIR (opt.)" value={row.rir} onChangeText={(v) => updateRow(row.key, { rir: v })} placeholder="e.g. 2" />
 
                 <Pressable
@@ -1869,11 +1851,6 @@ const styles = StyleSheet.create({
   supersetRow: { flexDirection: "row", alignItems: "center", gap: Spacing.xs, marginBottom: Spacing.sm },
   supersetText: { fontSize: 12, color: Color.textMuted },
   supersetTextActive: { color: Color.gold, fontWeight: "600" },
-  setTypeRow: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 4 },
-  setTypeChip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.sm, paddingVertical: 6 },
-  setTypeChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
-  setTypeChipText: { fontSize: 11, fontWeight: "500", color: Color.textMuted },
-  setTypeChipTextActive: { color: Color.gold },
   unitSwitch: { width: 48, alignItems: "center", justifyContent: "center", borderRadius: Radius.md, borderWidth: 1, borderColor: Color.borderSubtle, backgroundColor: Color.surface2 },
   unitSwitchText: { fontSize: 12, fontWeight: "600", color: Color.textSecondary },
   paceText: { fontSize: 11, color: Color.textMuted, marginTop: Spacing.xs },

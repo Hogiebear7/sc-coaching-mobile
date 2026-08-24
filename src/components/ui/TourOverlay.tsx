@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
+import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { Color, Radius, Spacing } from "@/constants/theme";
 import { tapFeedback } from "@/lib/haptics";
@@ -42,20 +42,22 @@ export function TourHost() {
       <Modal visible={!!activePage} transparent animationType="fade" statusBarTranslucent>
         {activePage ? (
           <View style={styles.backdrop}>
-            <View style={styles.card}>
+            <View style={[styles.card, styles.cardCapped]}>
               <View style={styles.promptIcon}>
                 <Ionicons name={activePage.icon} size={22} color={Color.gold} />
               </View>
               <Text style={styles.title}>{activePage.title}</Text>
               <Text style={styles.description}>{activePage.description}</Text>
-              <View style={styles.tipList}>
-                {activePage.tips.map((tip, i) => (
-                  <View key={i} style={styles.tipRow}>
-                    <View style={styles.tipBullet} />
-                    <Text style={styles.tipText}>{tip}</Text>
-                  </View>
-                ))}
-              </View>
+              <ScrollView style={styles.tipScroll} showsVerticalScrollIndicator={false}>
+                <View style={styles.tipList}>
+                  {activePage.tips.map((tip, i) => (
+                    <View key={i} style={styles.tipRow}>
+                      <View style={styles.tipBullet} />
+                      <Text style={styles.tipText}>{tip}</Text>
+                    </View>
+                  ))}
+                </View>
+              </ScrollView>
               <Button title="Got it" onPress={dismissPage} style={styles.primaryButton} />
               <Pressable
                 onPress={() => {
@@ -112,7 +114,9 @@ const styles = StyleSheet.create({
     marginTop: Spacing.sm,
     lineHeight: 19,
   },
-  tipList: { width: "100%", marginTop: Spacing.lg, gap: Spacing.sm },
+  cardCapped: { maxHeight: "86%" },
+  tipScroll: { width: "100%", flexShrink: 1, marginTop: Spacing.lg },
+  tipList: { width: "100%", gap: Spacing.sm },
   tipRow: { flexDirection: "row", alignItems: "flex-start", gap: Spacing.sm },
   tipBullet: {
     width: 5,

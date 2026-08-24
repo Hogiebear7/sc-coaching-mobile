@@ -62,11 +62,15 @@ export const TOUR_PAGES: TourPage[] = [
     key: "nutrition",
     icon: "nutrition-outline",
     title: "Nutrition",
-    description: "Track today's food and water against your targets.",
+    description: "Track today's food and water against your targets — probably the tab you'll use most.",
     tips: [
-      "Log meals by search, barcode scan, or a photo of your plate.",
+      "Tap the calorie card up top for your full Day/Week breakdown.",
+      "Tap the macro ring, or Protein/Carbs/Fat below it, to see what each one is and why it matters.",
+      "Add food per meal by search, barcode scan, or a photo of your plate.",
+      "Tap the × next to a logged item to remove it.",
+      "Log water with the quick-add buttons, or type a total manually.",
       "“What Can I Make?” turns a photo or list of ingredients into meal ideas.",
-      "Your shopping list and saved recipes are under More Tools.",
+      "Ask the coach at the bottom anything — meal timing, swaps, eating out.",
     ],
   },
 ];

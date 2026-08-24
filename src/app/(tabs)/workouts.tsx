@@ -562,13 +562,13 @@ export default function WorkoutsScreen() {
               </View>
               <Ionicons name="chevron-forward" size={18} color={Color.textFaint} />
             </Pressable>
-            <Pressable onPress={() => router.push("/workout-archive")} style={[styles.moreRow, styles.moreRowDivider]}>
+            <Pressable onPress={() => router.push("/set-levels")} style={[styles.moreRow, styles.moreRowDivider]}>
               <View style={styles.moreRowIcon}>
-                <Ionicons name="archive-outline" size={18} color={Color.gold} />
+                <Ionicons name="body-outline" size={18} color={Color.gold} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.moreRowTitle}>Archive</Text>
-                <Text style={styles.moreRowSub}>Past programs and retired templates</Text>
+                <Text style={styles.moreRowTitle}>Set Levels</Text>
+                <Text style={styles.moreRowSub}>Weekly sets by muscle group</Text>
               </View>
               <Ionicons name="chevron-forward" size={18} color={Color.textFaint} />
             </Pressable>

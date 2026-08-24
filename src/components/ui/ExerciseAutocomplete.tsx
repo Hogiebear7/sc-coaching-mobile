@@ -4,7 +4,7 @@ import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { Color, Radius, Spacing } from "@/constants/theme";
 import type { ExerciseLibraryEntry } from "@/lib/queries/workouts";
 
-const SECTION_LABELS: Record<string, string> = {
+export const SECTION_LABELS: Record<string, string> = {
   upper_push: "Upper — Push",
   upper_pull: "Upper — Pull",
   lower_push: "Lower — Push",

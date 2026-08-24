@@ -246,7 +246,7 @@ export default function DashboardScreen() {
             <StatCard
               label="7-Day Load"
               value={data.kpis.sevenDaySum > 0 ? String(data.kpis.sevenDaySum) : "—"}
-              subtext={data.kpis.daysWithLoad > 0 ? data.kpis.loadBandLabel : "log duration & RPE"}
+              subtext={data.kpis.daysWithLoad > 0 ? data.kpis.loadBandLabel : "log a workout or check-in"}
               onInfoPress={() => setInfoModal("load")}
             />
             <StatCard
@@ -264,7 +264,7 @@ export default function DashboardScreen() {
           visible={infoModal === "load"}
           onClose={() => setInfoModal(null)}
           title="7-Day Load"
-          body="Training duration × RPE, added up over a rolling 7-day window ending today. Days you don't log a session simply add nothing — a quiet week, a rest day, or a brand-new account all show a lower number rather than a broken one. It resets naturally as old days roll out of the window, so you're always seeing your most recent week, not a running total."
+          body="Training duration × RPE, added up over a rolling 7-day window ending today. Pulled from your logged workouts (duration and how-did-that-feel RPE), or your recovery check-in's own numbers if you filled those in instead. Days you don't log anything simply add nothing — a quiet week, a rest day, or a brand-new account all show a lower number rather than a broken one. It resets naturally as old days roll out of the window, so you're always seeing your most recent week, not a running total."
         />
         <InfoModal
           visible={infoModal === "sleep"}

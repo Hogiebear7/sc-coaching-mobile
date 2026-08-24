@@ -85,7 +85,8 @@ export function WeightTrendChart({ logs }: { logs: BodyWeightLog[] }) {
 
   return (
     <AnimatedSvg
-      width="100%"
+      width={CHART_W}
+      height={CHART_H}
       viewBox={`0 0 ${CHART_W} ${CHART_H}`}
       style={{
         opacity: anim,

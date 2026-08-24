@@ -49,7 +49,7 @@ export function TrendChart({ points }: { points: TrendPoint[] }) {
   const labelStep = Math.max(1, Math.ceil(points.length / 5));
 
   return (
-    <Svg width="100%" viewBox={`0 0 ${CHART_W} ${CHART_H}`}>
+    <Svg width={CHART_W} height={CHART_H} viewBox={`0 0 ${CHART_W} ${CHART_H}`}>
       <Line x1={PAD.left} y1={PAD.top} x2={PAD.left} y2={PAD.top + innerH} stroke={Color.textMuted} strokeOpacity={0.2} strokeWidth={1} />
       <Line
         x1={PAD.left}

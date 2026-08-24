@@ -232,10 +232,22 @@ export function getLastSetForIndex(last: LastPerformance | null, index: number):
 // setDetails when present, otherwise one synthetic set per the shared
 // weight/reps/sets fields (same fallback the backend's weeklyWorkoutStats
 // and computePersonalBests use, kept consistent here).
+//
+// A per-side set stores repsRight/repsLeft instead of reps (reps is null),
+// so it collapses to a combined total here — matching how "R10/L10" already
+// reads as 10 reps per side, 20 total, everywhere else in the app. Without
+// this, every rep/volume/1RM stat downstream (total reps, total volume,
+// best set volume, estimated 1RM, the trend chart) silently skipped every
+// per-side set entirely, since a raw null `reps` looks like "no reps
+// logged" rather than "logged per side."
 function synthesizeSets(ex: WorkoutExerciseEntry): { weight: string | null; reps: number | null }[] {
-  return ex.setDetails && ex.setDetails.length > 0
-    ? ex.setDetails
-    : Array.from({ length: ex.sets ?? 1 }, () => ({ weight: ex.weight, reps: ex.reps }));
+  if (ex.setDetails && ex.setDetails.length > 0) {
+    return ex.setDetails.map((s) => ({
+      weight: s.weight,
+      reps: s.reps ?? (s.repsRight != null && s.repsLeft != null ? s.repsRight + s.repsLeft : null),
+    }));
+  }
+  return Array.from({ length: ex.sets ?? 1 }, () => ({ weight: ex.weight, reps: ex.reps }));
 }
 
 export function computeExerciseSetTotals(ex: WorkoutExerciseEntry): { sets: number; volume: number } {

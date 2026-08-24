@@ -65,11 +65,11 @@
     },
     "extra": {
       "router": {},
+      "buildLabel": "2026-08-21-splash-bigger-v7",
       "eas": {
-        "projectId": "b628245b-4347-4792-a061-b315e69c1a27"
-      },
-      "buildLabel": "2026-08-21-splash-bigger-v7"
+        "projectId": "2faecb2b-5acf-493c-97a5-4060ccc606b2"
+      }
     },
-    "owner": "hogiebear777"
+    "owner": "sandcmail"
   }
 }

@@ -1,107 +1,121 @@
-import { View } from "react-native";
-import Svg, { Circle, Path, Rect } from "react-native-svg";
+import { useState } from "react";
+import { Pressable, StyleSheet, Text, useWindowDimensions, View } from "react-native";
+import Body, { type ExtendedBodyPart, type Slug } from "react-native-body-highlighter";
 
-import { Color } from "@/constants/theme";
+import { Color, Radius, Spacing } from "@/constants/theme";
 import type { SetLevelTier, StrengthSection } from "@/lib/workout-set-levels";
 
-// RN port of the web app's components/graphics/MuscleSetLevels.tsx — same
-// geometry as MuscleMap.tsx (the per-exercise single-zone indicator), but
-// every zone renders simultaneously at a graded intensity instead of one
-// zone being on/off. Rendered in the accent-data blue, not gold: this is
-// an analytical/informational surface (weekly training volume), not a
-// brand-action moment.
-
-type Zone = "front-upper" | "front-core" | "front-legs" | "back-upper" | "back-lower";
-
-const ZONE_BY_SECTION: Record<StrengthSection, Zone> = {
-  upper_push: "front-upper",
-  core: "front-core",
-  lower_push: "front-legs",
-  upper_pull: "back-upper",
-  lower_pull: "back-lower",
+// Real anatomical silhouette (react-native-body-highlighter) — the same
+// package and figure BodyDiagram.tsx uses for the workout generator's
+// muscle picker — instead of the earlier hand-drawn geometric-block pair.
+// Coarser than that picker's 9 filterable zones: here every real slug maps
+// onto one of the five tracked StrengthSections so the whole figure can be
+// graded by training-volume tier rather than tapped in/out.
+const SECTION_FOR_SLUG: Partial<Record<Slug, StrengthSection>> = {
+  // Upper push — chest/shoulder/triceps-dominant pressing
+  chest: "upper_push",
+  deltoids: "upper_push",
+  triceps: "upper_push",
+  // Upper pull — back/biceps-dominant pulling
+  trapezius: "upper_pull",
+  "upper-back": "upper_pull",
+  "lower-back": "upper_pull",
+  biceps: "upper_pull",
+  forearm: "upper_pull",
+  // Lower push — quad/calf-dominant, anterior chain
+  quadriceps: "lower_push",
+  calves: "lower_push",
+  // Lower pull — hamstring/glute-dominant, posterior chain / hip hinge
+  hamstring: "lower_pull",
+  gluteal: "lower_pull",
+  adductors: "lower_pull",
+  // Core
+  abs: "core",
+  obliques: "core",
+  // tibialis, neck, and the decorative parts (hair/head/hands/feet/ankles/
+  // knees) are left unmapped — always rendered at the muted default fill,
+  // same as BodyDiagram's decorative parts.
 };
 
-const MUTED = "rgba(255,255,255,0.14)";
-const MUTED_STROKE = "rgba(255,255,255,0.22)";
-
-const TIER_OPACITY: Record<Exclude<SetLevelTier, "none">, number> = {
-  low: 0.38,
-  moderate: 0.68,
-  high: 1,
+const TIER_ALPHA_HEX: Record<Exclude<SetLevelTier, "none">, string> = {
+  low: "61", // ~0.38
+  moderate: "ad", // ~0.68
+  high: "", // full opacity — no suffix needed
 };
 
-function fillFor(zone: Zone, byZone: Partial<Record<Zone, SetLevelTier>>): { fill: string; fillOpacity: number } {
-  const tier = byZone[zone] ?? "none";
-  if (tier === "none") return { fill: MUTED, fillOpacity: 1 };
-  return { fill: Color.accentData, fillOpacity: TIER_OPACITY[tier] };
-}
+const MUTED_FILL = Color.surface2;
 
-function FrontBody({ byZone }: { byZone: Partial<Record<Zone, SetLevelTier>> }) {
-  const upper = fillFor("front-upper", byZone);
-  const core = fillFor("front-core", byZone);
-  const legs = fillFor("front-legs", byZone);
-  return (
-    <Svg viewBox="0 0 100 200" width="100%" height="100%">
-      <Circle cx={50} cy={16} r={12} fill={MUTED} stroke={MUTED_STROKE} strokeWidth={1} />
-      <Rect x={12} y={34} width={12} height={52} rx={6} fill={upper.fill} fillOpacity={upper.fillOpacity} />
-      <Rect x={76} y={34} width={12} height={52} rx={6} fill={upper.fill} fillOpacity={upper.fillOpacity} />
-      <Rect x={26} y={30} width={48} height={36} rx={14} fill={upper.fill} fillOpacity={upper.fillOpacity} />
-      <Rect x={32} y={64} width={36} height={34} rx={10} fill={core.fill} fillOpacity={core.fillOpacity} />
-      <Rect x={30} y={96} width={40} height={18} rx={9} fill={MUTED} />
-      <Rect x={32} y={112} width={16} height={48} rx={7} fill={legs.fill} fillOpacity={legs.fillOpacity} />
-      <Rect x={52} y={112} width={16} height={48} rx={7} fill={legs.fill} fillOpacity={legs.fillOpacity} />
-      <Rect x={33} y={162} width={14} height={34} rx={6} fill={MUTED} />
-      <Rect x={53} y={162} width={14} height={34} rx={6} fill={MUTED} />
-    </Svg>
-  );
-}
+// Same width-driven scale as BodyDiagram.tsx, capped a little lower since
+// this figure sits inside a card with a legend and section list below it
+// rather than owning the full screen.
+const NATIVE_W = 200;
+const HORIZONTAL_INSET = 64;
 
-function BackBody({ byZone }: { byZone: Partial<Record<Zone, SetLevelTier>> }) {
-  const upper = fillFor("back-upper", byZone);
-  const lower = fillFor("back-lower", byZone);
-  return (
-    <Svg viewBox="0 0 100 200" width="100%" height="100%">
-      <Circle cx={50} cy={16} r={12} fill={MUTED} stroke={MUTED_STROKE} strokeWidth={1} />
-      <Rect x={12} y={34} width={12} height={52} rx={6} fill={upper.fill} fillOpacity={upper.fillOpacity} />
-      <Rect x={76} y={34} width={12} height={52} rx={6} fill={upper.fill} fillOpacity={upper.fillOpacity} />
-      <Path
-        d="M26 30 h48 a14 14 0 0 1 14 14 v6 a34 34 0 0 1 -76 0 v-6 a14 14 0 0 1 14 -14 z"
-        fill={upper.fill}
-        fillOpacity={upper.fillOpacity}
-      />
-      <Rect x={34} y={66} width={32} height={30} rx={9} fill={MUTED} />
-      <Rect x={30} y={96} width={40} height={22} rx={11} fill={lower.fill} fillOpacity={lower.fillOpacity} />
-      <Rect x={32} y={118} width={16} height={42} rx={7} fill={lower.fill} fillOpacity={lower.fillOpacity} />
-      <Rect x={52} y={118} width={16} height={42} rx={7} fill={lower.fill} fillOpacity={lower.fillOpacity} />
-      <Rect x={33} y={160} width={14} height={36} rx={6} fill={MUTED} />
-      <Rect x={53} y={160} width={14} height={36} rx={6} fill={MUTED} />
-    </Svg>
-  );
-}
-
-// Front + back pair, always shown together — the five tracked sections
-// span both views (upper_pull/lower_pull only ever show on the back), so
-// a front-only diagram would silently hide two-fifths of the picture.
 export function MuscleSetLevelDiagram({
   levels,
-  height = 176,
+  sex = "male",
 }: {
   levels: Record<StrengthSection, { tier: SetLevelTier }>;
-  height?: number;
+  sex?: "male" | "female";
 }) {
-  const byZone: Partial<Record<Zone, SetLevelTier>> = {};
-  (Object.keys(levels) as StrengthSection[]).forEach((section) => {
-    byZone[ZONE_BY_SECTION[section]] = levels[section].tier;
+  const [view, setView] = useState<"front" | "back">("front");
+  const { width } = useWindowDimensions();
+  const scale = Math.min(Math.max((width - HORIZONTAL_INSET) / NATIVE_W, 1.2), 1.9);
+
+  const data: ExtendedBodyPart[] = (Object.keys(SECTION_FOR_SLUG) as Slug[]).map((slug) => {
+    const section = SECTION_FOR_SLUG[slug]!;
+    const tier = levels[section].tier;
+    const color = tier === "none" ? MUTED_FILL : `${Color.accentData}${TIER_ALPHA_HEX[tier]}`;
+    return { slug, color };
   });
 
   return (
-    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 24 }}>
-      <View style={{ height, width: Math.min(height * 0.625, 110) }}>
-        <FrontBody byZone={byZone} />
+    <View style={{ alignItems: "center" }}>
+      <View style={styles.segmentGroup} accessibilityRole="tablist" accessibilityLabel="Body view">
+        <Pressable
+          onPress={() => setView("front")}
+          style={[styles.segment, view === "front" && styles.segmentActive]}
+          accessibilityRole="tab"
+          accessibilityState={{ selected: view === "front" }}
+          accessibilityLabel="Show front of body"
+        >
+          <Text style={[styles.segmentText, view === "front" && styles.segmentTextActive]}>Front</Text>
+        </Pressable>
+        <Pressable
+          onPress={() => setView("back")}
+          style={[styles.segment, view === "back" && styles.segmentActive]}
+          accessibilityRole="tab"
+          accessibilityState={{ selected: view === "back" }}
+          accessibilityLabel="Show back of body"
+        >
+          <Text style={[styles.segmentText, view === "back" && styles.segmentTextActive]}>Back</Text>
+        </Pressable>
       </View>
-      <View style={{ height, width: Math.min(height * 0.625, 110) }}>
-        <BackBody byZone={byZone} />
+
+      <View
+        style={{ marginTop: Spacing.md }}
+        accessible
+        accessibilityRole="image"
+        accessibilityLabel={`Muscle set-level diagram, ${view} view.`}
+      >
+        <Body data={data} gender={sex} side={view} scale={scale} border={Color.borderSubtle} defaultFill={MUTED_FILL} />
       </View>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  segmentGroup: {
+    flexDirection: "row",
+    gap: 4,
+    padding: 4,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: Color.borderSubtle,
+    backgroundColor: Color.bg0,
+  },
+  segment: { minWidth: 64, alignItems: "center", paddingHorizontal: Spacing.md, paddingVertical: 8, borderRadius: Radius.sm },
+  segmentActive: { backgroundColor: Color.surface2 },
+  segmentText: { fontSize: 12, fontWeight: "600", color: Color.textMuted },
+  segmentTextActive: { color: Color.textPrimary },
+});

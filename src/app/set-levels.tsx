@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/Card";
 import { SECTION_LABELS } from "@/components/ui/ExerciseAutocomplete";
 import { MuscleSetLevelDiagram } from "@/components/ui/MuscleSetLevels";
 import { Color, Radius, Spacing } from "@/constants/theme";
+import { useProfile } from "@/lib/queries/profile";
 import { useWorkouts } from "@/lib/queries/workouts";
 import { todayDateString } from "@/lib/workout-formatters";
 import { computeMuscleSetLevels, SET_LEVEL_SECTIONS, type SetLevelTier } from "@/lib/workout-set-levels";
@@ -23,7 +24,9 @@ const TIER_DOT_OPACITY: Record<Exclude<SetLevelTier, "none">, number> = { low: 0
 export default function SetLevelsScreen() {
   const router = useRouter();
   const { data, isLoading } = useWorkouts();
+  const { data: profileData } = useProfile();
   const [windowDays, setWindowDays] = useState(7);
+  const diagramSex: "male" | "female" = profileData?.gender === "Female" ? "female" : "male";
 
   const sectionByExerciseId = useMemo(
     () => new Map((data?.exerciseLibrary ?? []).map((e) => [e.id, e.section])),
@@ -84,7 +87,7 @@ export default function SetLevelsScreen() {
           ) : (
             <>
               <Card tier="hero" style={styles.diagramCard}>
-                <MuscleSetLevelDiagram levels={levels} height={176} />
+                <MuscleSetLevelDiagram levels={levels} sex={diagramSex} />
 
                 <View style={styles.legendRow}>
                   {(["low", "moderate", "high"] as const).map((tier) => (

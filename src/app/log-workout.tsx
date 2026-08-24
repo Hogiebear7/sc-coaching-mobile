@@ -3,6 +3,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
   Alert,
+  Image,
   Keyboard,
   KeyboardAvoidingView,
   Modal,
@@ -28,7 +29,7 @@ import { Color, Radius, Spacing } from "@/constants/theme";
 import { successFeedback, tapFeedback } from "@/lib/haptics";
 import { ApiError } from "@/lib/api-client";
 import { useAdvanceProgram, useMyProgram, type PrescribedExercise } from "@/lib/queries/programs";
-import { useExerciseLibraryNameIndex } from "@/lib/queries/exercise-library";
+import { pickHeroMedia, useExerciseLibraryDetail, useExerciseLibraryNameIndex } from "@/lib/queries/exercise-library";
 import { useProfile } from "@/lib/queries/profile";
 import { useRestTimer } from "@/lib/rest-timer";
 import { useWorkoutTemplates } from "@/lib/queries/workout-templates";
@@ -164,6 +165,39 @@ function groupExerciseRowsBySuperset(rows: ExerciseRow[]): { group: string | nul
 
 function newRunRow(): RunRow {
   return { key: nextKey(), distance: "", distanceUnit: "km", duration: "", reps: "", sets: "", notes: "", splits: [] };
+}
+
+// Small demo-image thumbnail beside an exercise row, sourced from the same
+// exercise library media the "View demonstration" link and library detail
+// screen already use — no separate photo system needed. Renders nothing
+// while a name has no library match or its media hasn't loaded, so the row
+// layout doesn't jump once it resolves.
+function ExerciseThumbnail({ slug }: { slug: string | undefined }) {
+  const { data } = useExerciseLibraryDetail(slug ?? "");
+  if (!slug) return null;
+  const media = data ? pickHeroMedia(data.media) : null;
+  if (!media) return null;
+  return <Image source={{ uri: media.url }} style={styles.exerciseThumb} resizeMode="cover" />;
+}
+
+// A short, encouraging line to sit beside the exercise thumbnail — picked
+// deterministically per exercise name (not random on every render) so it
+// stays put rather than flickering between re-renders of the same row.
+const NEW_EXERCISE_TIPS = [
+  "First time logging this — nice work adding it in.",
+  "New to this one? Start conservative and build from here.",
+  "First time on this exercise — focus on clean form today.",
+];
+const REPEAT_EXERCISE_TIPS = [
+  "Try to match or beat that today.",
+  "See if you can add a rep or a little weight this time.",
+  "Aim to feel just as strong as last time, or stronger.",
+  "A small step up from last time still counts as progress.",
+];
+function pickTip(list: string[], seed: string): string {
+  let hash = 0;
+  for (let i = 0; i < seed.length; i++) hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
+  return list[hash % list.length];
 }
 
 function NumberField({ label, value, onChangeText, placeholder }: { label: string; value: string; onChangeText: (v: string) => void; placeholder?: string }) {
@@ -1401,23 +1435,33 @@ export default function LogWorkoutScreen() {
               />
 
               {(() => {
+                if (!row.name.trim()) return null;
                 const slug = libraryIndex?.get(row.name.trim().toLowerCase());
-                return slug ? (
-                  <Pressable
-                    onPress={() => router.push({ pathname: "/exercise-library-detail", params: { slug } })}
-                    style={styles.demoLink}
-                  >
-                    <Ionicons name="play-circle-outline" size={13} color={Color.gold} />
-                    <Text style={styles.demoLinkText}>View demonstration</Text>
-                  </Pressable>
-                ) : null;
+                return (
+                  <View style={styles.exerciseInfoRow}>
+                    {slug ? <ExerciseThumbnail slug={slug} /> : null}
+                    <View style={styles.exerciseInfoText}>
+                      {slug ? (
+                        <Pressable
+                          onPress={() => router.push({ pathname: "/exercise-library-detail", params: { slug } })}
+                          style={styles.demoLink}
+                        >
+                          <Ionicons name="play-circle-outline" size={13} color={Color.gold} />
+                          <Text style={styles.demoLinkText}>View demonstration</Text>
+                        </Pressable>
+                      ) : null}
+                      {last ? (
+                        <Text style={styles.lastTimeText}>
+                          Last time ({last.date}): <Text style={styles.lastTimeValue}>{last.summary}</Text>
+                        </Text>
+                      ) : null}
+                      <Text style={styles.motivationText}>
+                        {last ? pickTip(REPEAT_EXERCISE_TIPS, row.name) : pickTip(NEW_EXERCISE_TIPS, row.name)}
+                      </Text>
+                    </View>
+                  </View>
+                );
               })()}
-
-              {last ? (
-                <Text style={styles.lastTimeText}>
-                  Last time ({last.date}): <Text style={styles.lastTimeValue}>{last.summary}</Text>
-                </Text>
-              ) : null}
 
               <View style={styles.unitToggleRow}>
                 <Text style={styles.fieldLabel}>{unitModeLabel(row.unitMode)}</Text>
@@ -1788,8 +1832,12 @@ const styles = StyleSheet.create({
   removeText: { fontSize: 12, color: Color.danger },
   lastTimeText: { fontSize: 11, color: Color.textMuted, marginTop: 4 },
   lastTimeValue: { color: Color.textSecondary, fontWeight: "600" },
-  demoLink: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 6, alignSelf: "flex-start" },
+  demoLink: { flexDirection: "row", alignItems: "center", gap: 4, alignSelf: "flex-start" },
   demoLinkText: { fontSize: 12, fontWeight: "600", color: Color.gold },
+  exerciseInfoRow: { flexDirection: "row", alignItems: "flex-start", gap: Spacing.sm, marginTop: 8 },
+  exerciseThumb: { width: 40, height: 40, borderRadius: Radius.md, backgroundColor: Color.surface2 },
+  exerciseInfoText: { flex: 1, gap: 4 },
+  motivationText: { fontSize: 11, color: Color.gold, fontStyle: "italic" },
   timerCard: {
     flexDirection: "row",
     alignItems: "center",

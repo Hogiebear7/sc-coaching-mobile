@@ -1,5 +1,5 @@
-import { useEffect, useRef } from "react";
-import { Animated, StyleSheet, Text, View } from "react-native";
+import { useEffect, useRef, useState } from "react";
+import { Animated, StyleSheet, Text, View, type LayoutChangeEvent } from "react-native";
 import Svg, { Circle, G, Line, Polygon, Text as SvgText } from "react-native-svg";
 
 import { Color } from "@/constants/theme";
@@ -8,7 +8,11 @@ import { useReduceMotionPref } from "@/lib/use-reduce-motion";
 
 const AnimatedSvg = Animated.createAnimatedComponent(Svg);
 
-const CHART_W = 340;
+// A hardcoded width clipped on narrower phones — the card's actual available
+// width varies by device, so the chart now measures it via onLayout instead.
+// This default is only what shows for the first frame before that measurement
+// lands.
+const DEFAULT_CHART_W = 300;
 const CHART_H = 130;
 const PAD = { top: 20, right: 12, bottom: 22, left: 28 };
 
@@ -37,6 +41,7 @@ export function WeightTrendChart({ logs }: { logs: BodyWeightLog[] }) {
   const anim = useRef(new Animated.Value(0)).current;
   const sorted = [...logs].sort((a, b) => a.date.localeCompare(b.date));
   const dataKey = sorted.map((l) => `${l.date}:${l.weightKg}`).join("|");
+  const [chartW, setChartW] = useState(DEFAULT_CHART_W);
 
   useEffect(() => {
     anim.setValue(0);
@@ -47,6 +52,11 @@ export function WeightTrendChart({ logs }: { logs: BodyWeightLog[] }) {
     }).start();
   }, [dataKey, reduceMotion, anim]);
 
+  function onLayout(e: LayoutChangeEvent) {
+    const w = Math.round(e.nativeEvent.layout.width);
+    if (w > 0 && w !== chartW) setChartW(w);
+  }
+
   if (sorted.length < 2) {
     return (
       <View style={styles.emptyWrap}>
@@ -55,7 +65,7 @@ export function WeightTrendChart({ logs }: { logs: BodyWeightLog[] }) {
     );
   }
 
-  const innerW = CHART_W - PAD.left - PAD.right;
+  const innerW = chartW - PAD.left - PAD.right;
   const innerH = CHART_H - PAD.top - PAD.bottom;
 
   const weights = sorted.map((l) => l.weightKg);
@@ -84,10 +94,11 @@ export function WeightTrendChart({ logs }: { logs: BodyWeightLog[] }) {
   ].join(" ");
 
   return (
+    <View style={styles.chartWrap} onLayout={onLayout}>
     <AnimatedSvg
-      width={CHART_W}
+      width={chartW}
       height={CHART_H}
-      viewBox={`0 0 ${CHART_W} ${CHART_H}`}
+      viewBox={`0 0 ${chartW} ${CHART_H}`}
       style={{
         opacity: anim,
         transform: [{ translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [8, 0] }) }],
@@ -130,10 +141,12 @@ export function WeightTrendChart({ logs }: { logs: BodyWeightLog[] }) {
         {minY.toFixed(1)}
       </SvgText>
     </AnimatedSvg>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   emptyWrap: { paddingVertical: 20, alignItems: "center" },
   emptyText: { fontSize: 12, color: Color.textMuted },
+  chartWrap: { width: "100%", alignItems: "center" },
 });

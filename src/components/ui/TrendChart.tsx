@@ -1,10 +1,15 @@
-import { StyleSheet, Text, View } from "react-native";
+import { useState } from "react";
+import { StyleSheet, Text, View, type LayoutChangeEvent } from "react-native";
 import Svg, { Circle, G, Line, Polyline, Text as SvgText } from "react-native-svg";
 
 import { Color } from "@/constants/theme";
 import type { TrendPoint } from "@/lib/workout-formatters";
 
-const CHART_W = 340;
+// A hardcoded width clipped on narrower phones — the card's actual available
+// width varies by device, so the chart now measures it via onLayout instead.
+// This default is only what shows for the first frame before that measurement
+// lands.
+const DEFAULT_CHART_W = 300;
 const CHART_H = 130;
 const PAD = { top: 20, right: 12, bottom: 26, left: 30 };
 
@@ -20,6 +25,13 @@ function shortDate(iso: string): string {
 // screen). Metric-agnostic: callers pick what `value`/`label` mean per
 // point (weight, reps, volume, sets, 1RM, ...).
 export function TrendChart({ points }: { points: TrendPoint[] }) {
+  const [chartW, setChartW] = useState(DEFAULT_CHART_W);
+
+  function onLayout(e: LayoutChangeEvent) {
+    const w = Math.round(e.nativeEvent.layout.width);
+    if (w > 0 && w !== chartW) setChartW(w);
+  }
+
   if (points.length < 2) {
     return (
       <View style={styles.emptyWrap}>
@@ -28,7 +40,7 @@ export function TrendChart({ points }: { points: TrendPoint[] }) {
     );
   }
 
-  const innerW = CHART_W - PAD.left - PAD.right;
+  const innerW = chartW - PAD.left - PAD.right;
   const innerH = CHART_H - PAD.top - PAD.bottom;
 
   const yVals = points.map((p) => p.value);
@@ -49,7 +61,8 @@ export function TrendChart({ points }: { points: TrendPoint[] }) {
   const labelStep = Math.max(1, Math.ceil(points.length / 5));
 
   return (
-    <Svg width={CHART_W} height={CHART_H} viewBox={`0 0 ${CHART_W} ${CHART_H}`}>
+    <View style={styles.chartWrap} onLayout={onLayout}>
+    <Svg width={chartW} height={CHART_H} viewBox={`0 0 ${chartW} ${CHART_H}`}>
       <Line x1={PAD.left} y1={PAD.top} x2={PAD.left} y2={PAD.top + innerH} stroke={Color.textMuted} strokeOpacity={0.2} strokeWidth={1} />
       <Line
         x1={PAD.left}
@@ -88,10 +101,12 @@ export function TrendChart({ points }: { points: TrendPoint[] }) {
         {minY}
       </SvgText>
     </Svg>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   emptyWrap: { paddingVertical: 24, alignItems: "center" },
   emptyText: { fontSize: 12, color: Color.textMuted },
+  chartWrap: { width: "100%", alignItems: "center" },
 });

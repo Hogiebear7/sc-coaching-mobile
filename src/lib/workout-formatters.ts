@@ -329,7 +329,12 @@ export interface ExerciseStats {
   heaviestWeight: { value: number; weightStr: string; date: string; reps: number | null } | null;
   bestSetReps: { reps: number; date: string } | null;
   bestSetVolume: { value: number; date: string } | null;
+  /** All-time best estimated 1RM, whichever session it happened in. */
   estimatedOneRepMax: { value: number; date: string } | null;
+  /** Estimated 1RM from only the most recent logged session for this
+      exercise — where the lifter stands NOW, distinct from their all-time
+      peak above (which may have been months ago). */
+  currentOneRepMax: { value: number; date: string } | null;
   bestHold: { secs: number; date: string } | null;
   history: ExerciseHistoryEntry[];
 }
@@ -349,6 +354,7 @@ export function getExerciseStats(sessions: WorkoutSessionSummary[], exerciseName
     bestSetReps: null,
     bestSetVolume: null,
     estimatedOneRepMax: null,
+    currentOneRepMax: null,
     bestHold: null,
     history: [],
   };
@@ -359,6 +365,9 @@ export function getExerciseStats(sessions: WorkoutSessionSummary[], exerciseName
     if (!ex) continue;
 
     stats.sessionCount += 1;
+    // Sessions come back newest-first (findWorkoutSessionsByUserId sorts
+    // descending), so the first match is the most recent logged session.
+    const isMostRecentSession = stats.sessionCount === 1;
     stats.history.push({ date: session.date, summary: formatExerciseLoad(ex), sessionId: session.id });
 
     for (const set of synthesizeSets(ex)) {
@@ -389,6 +398,9 @@ export function getExerciseStats(sessions: WorkoutSessionSummary[], exerciseName
       const oneRm = w * (1 + set.reps / 30);
       if (!stats.estimatedOneRepMax || oneRm > stats.estimatedOneRepMax.value) {
         stats.estimatedOneRepMax = { value: Math.round(oneRm * 10) / 10, date: session.date };
+      }
+      if (isMostRecentSession && (!stats.currentOneRepMax || oneRm > stats.currentOneRepMax.value)) {
+        stats.currentOneRepMax = { value: Math.round(oneRm * 10) / 10, date: session.date };
       }
     }
   }

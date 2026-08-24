@@ -99,8 +99,8 @@ export default function ExerciseDetailScreen() {
             </View>
             <View style={styles.secondaryDivider} />
             <View style={styles.secondaryStat}>
-              <Text style={styles.secondaryValue}>{stats.bestSetReps ? stats.bestSetReps.reps : "—"}</Text>
-              <Text style={styles.secondaryLabel}>best set reps</Text>
+              <Text style={styles.secondaryValue}>{stats.currentOneRepMax ? `${stats.currentOneRepMax.value} kg` : "—"}</Text>
+              <Text style={styles.secondaryLabel}>current 1RM</Text>
             </View>
           </Card>
 

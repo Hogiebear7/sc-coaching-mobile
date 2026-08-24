@@ -492,8 +492,11 @@ export type ExerciseMetricKey =
   | "totalSets"
   | "bestTimeSecs";
 
+// Est. 1RM is deliberately not a chartable trend metric here — it's shown
+// as a single current-best figure in the stats row instead (see
+// exercise-detail.tsx), since a derived/estimated value reads better as
+// "here's your number" than as its own noisy trend line.
 export const EXERCISE_METRICS: { key: ExerciseMetricKey; label: string; unit: string }[] = [
-  { key: "estimatedOneRepMax", label: "Est. 1RM", unit: "kg" },
   { key: "heaviestWeight", label: "Heaviest", unit: "kg" },
   { key: "totalVolume", label: "Volume", unit: "kg" },
   { key: "bestSetVolume", label: "Best Set Vol.", unit: "kg" },

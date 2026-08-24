@@ -27,7 +27,7 @@ import {
 } from "@/lib/workout-formatters";
 
 // A deliberately narrow slice of the full EXERCISE_METRICS list (which also
-// has Est. 1RM/Volume/Best Set Vol./Sets) — this compact widget covers just
+// has Volume/Best Set Vol./Sets) — this compact widget covers just
 // the three axes a member actually thinks in day-to-day ("how heavy, how
 // many, how long"), matching how log-workout's own weight/time/band toggle
 // frames a set. The full switcher is one tap away via "View history."

@@ -1,82 +1,122 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import Svg, { Circle } from "react-native-svg";
+import Svg, { Path } from "react-native-svg";
 
 import { Color, MacroColor, Spacing } from "@/constants/theme";
 
-const SIZE = 116;
-const STROKE = 16;
-const RADIUS = (SIZE - STROKE) / 2;
-const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
+const SIZE = 124;
 const CENTER = SIZE / 2;
+const RADIUS = CENTER - 4;
+const GAP_DEG = 3;
 
-// Calories per gram — proportions are drawn by calorie contribution, not raw
-// grams, since a gram of fat (9 kcal) isn't the same "slice" of the day as a
-// gram of protein or carbs (4 kcal each). Grams are what's shown in the
-// legend and labels; calories are only used to size the arcs correctly.
+// Calories per gram — wedge angles are sized by calorie contribution, not
+// raw grams, since a gram of fat (9 kcal) isn't the same "slice" of the
+// day's energy as a gram of protein or carbs (4 kcal each).
 const KCAL_PER_G = { protein: 4, carbs: 4, fat: 9 } as const;
 
 export type MacroKind = "protein" | "carbs" | "fat";
+
+function polar(cx: number, cy: number, r: number, deg: number) {
+  const rad = ((deg - 90) * Math.PI) / 180;
+  return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
+}
+
+// Pie-wedge path (not a ring segment) from startDeg to endDeg at the given
+// radius, so a smaller radius draws a smaller copy of the same wedge
+// rather than a thinner ring — that's what lets the fill grow from the
+// centre point outward as progress increases.
+function wedgePath(cx: number, cy: number, r: number, startDeg: number, endDeg: number): string {
+  if (r <= 0) return "";
+  const start = polar(cx, cy, r, startDeg);
+  const end = polar(cx, cy, r, endDeg);
+  const largeArc = endDeg - startDeg > 180 ? 1 : 0;
+  return `M ${cx} ${cy} L ${start.x} ${start.y} A ${r} ${r} 0 ${largeArc} 1 ${end.x} ${end.y} Z`;
+}
 
 export interface MacroPieChartProps {
   proteinG: number;
   carbsG: number;
   fatG: number;
+  targetProteinG: number | null;
+  targetCarbsG: number | null;
+  targetFatG: number | null;
   onSlicePress: (macro: MacroKind) => void;
 }
 
-// Donut chart for the day's logged protein/carbs/fat split, colour-coded and
-// tappable per slice (matches the legend below it, which shares the same
-// onSlicePress handler for anyone who taps the text instead of the ring).
-// Calories stay in the existing text above this in the hero card — this
-// component is purely the macro split, not a second place showing the total.
-export function MacroPieChart({ proteinG, carbsG, fatG, onSlicePress }: MacroPieChartProps) {
-  const proteinKcal = proteinG * KCAL_PER_G.protein;
-  const carbsKcal = carbsG * KCAL_PER_G.carbs;
-  const fatKcal = fatG * KCAL_PER_G.fat;
-  const totalKcal = proteinKcal + carbsKcal + fatKcal;
+// Three target-sized wedges (protein/carbs/fat, by calorie share of the
+// day's plan) that each fill from the centre point outward as the member
+// logs food — the wedge's own outline never moves, only how much of it is
+// filled in, so "how much of today's plan is this macro" and "how much of
+// that have I actually eaten" read as two different things at a glance.
+export function MacroPieChart({
+  proteinG,
+  carbsG,
+  fatG,
+  targetProteinG,
+  targetCarbsG,
+  targetFatG,
+  onSlicePress,
+}: MacroPieChartProps) {
+  const targets = {
+    protein: (targetProteinG ?? 0) * KCAL_PER_G.protein,
+    carbs: (targetCarbsG ?? 0) * KCAL_PER_G.carbs,
+    fat: (targetFatG ?? 0) * KCAL_PER_G.fat,
+  };
+  const totalTargetKcal = targets.protein + targets.carbs + targets.fat;
+  // No macro targets set at all (only an overall calorie goal) — fall back
+  // to an even three-way split so the chart still has something to show
+  // rather than collapsing to nothing.
+  const shares =
+    totalTargetKcal > 0
+      ? { protein: targets.protein / totalTargetKcal, carbs: targets.carbs / totalTargetKcal, fat: targets.fat / totalTargetKcal }
+      : { protein: 1 / 3, carbs: 1 / 3, fat: 1 / 3 };
 
-  const hasData = totalKcal > 0;
-  const segments: { kind: MacroKind; kcal: number; color: string }[] = [
-    { kind: "protein", kcal: proteinKcal, color: MacroColor.protein },
-    { kind: "carbs", kcal: carbsKcal, color: MacroColor.carbs },
-    { kind: "fat", kcal: fatKcal, color: MacroColor.fat },
-  ];
+  const consumed = { protein: proteinG, carbs: carbsG, fat: fatG };
+  const targetG = { protein: targetProteinG, carbs: targetCarbsG, fat: targetFatG };
 
-  let cumulative = 0;
+  const order: MacroKind[] = ["protein", "carbs", "fat"];
+  let cursor = 0;
+  const wedges = order.map((kind) => {
+    const spanDeg = shares[kind] * 360;
+    const startDeg = cursor + GAP_DEG / 2;
+    const endDeg = cursor + spanDeg - GAP_DEG / 2;
+    cursor += spanDeg;
+
+    const g = targetG[kind];
+    const progress = g && g > 0 ? Math.min(1, consumed[kind] / g) : consumed[kind] > 0 ? 1 : 0;
+
+    return { kind, startDeg, endDeg, fillRadius: RADIUS * progress, color: MacroColor[kind] };
+  });
 
   return (
-    <Svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`} style={{ transform: [{ rotate: "-90deg" }] }}>
-      <Circle cx={CENTER} cy={CENTER} r={RADIUS} fill="none" stroke={Color.surface2} strokeWidth={STROKE} />
-      {hasData
-        ? segments.map((s) => {
-            if (s.kcal <= 0) return null;
-            const fraction = s.kcal / totalKcal;
-            const dash = fraction * CIRCUMFERENCE;
-            const offset = -cumulative * CIRCUMFERENCE;
-            cumulative += fraction;
-            return (
-              <Circle
-                key={s.kind}
-                cx={CENTER}
-                cy={CENTER}
-                r={RADIUS}
-                fill="none"
-                stroke={s.color}
-                strokeWidth={STROKE}
-                strokeDasharray={`${dash} ${CIRCUMFERENCE - dash}`}
-                strokeDashoffset={offset}
-                strokeLinecap="butt"
-                onPress={() => onSlicePress(s.kind)}
-              />
-            );
-          })
-        : null}
+    <Svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`}>
+      {wedges.map((w) => (
+        <Path
+          key={w.kind}
+          d={wedgePath(CENTER, CENTER, RADIUS, w.startDeg, w.endDeg)}
+          fill="none"
+          stroke={w.color}
+          strokeWidth={1.5}
+          strokeLinejoin="round"
+          onPress={() => onSlicePress(w.kind)}
+        />
+      ))}
+      {wedges
+        .filter((w) => w.fillRadius > 0)
+        .map((w) => (
+          <Path
+            key={`${w.kind}-fill`}
+            d={wedgePath(CENTER, CENTER, w.fillRadius, w.startDeg, w.endDeg)}
+            fill={w.color}
+            fillOpacity={0.32}
+            onPress={() => onSlicePress(w.kind)}
+          />
+        ))}
     </Svg>
   );
 }
 
 // Colour-coded legend rows shown beside/below the pie — same tap target as
-// the ring itself, plus the exact gram numbers a pie alone can't show.
+// the wedge itself, plus the exact gram numbers a pie alone can't show.
 export function MacroLegendRow({
   kind,
   label,

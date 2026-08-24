@@ -138,12 +138,18 @@ function HydrationBottle({ remainingPct, reduceMotion }: { remainingPct: number;
   );
 }
 
+const HYDRATION_INFO_BODY =
+  "Every calorie your body burns costs roughly 1ml of water to process — so your target tracks your energy needs, " +
+  "not a flat \"drink 2 litres\" rule. Food counts toward it too: fruit, vegetables, dairy, and most cooked meals are " +
+  "60–90% water, so a good chunk of today's target is already covered before you've had a sip.";
+
 function HydrationCard({ date }: { date: string }) {
   const { data: hydration } = useHydration(date);
   const logWater = useLogWater();
   const reduceMotion = useReduceMotionPref();
   const [manualEntry, setManualEntry] = useState("");
   const [manualError, setManualError] = useState<string | null>(null);
+  const [showInfo, setShowInfo] = useState(false);
 
   const target = hydration?.targetMl ?? null;
   const logged = hydration?.loggedMl ?? 0;
@@ -186,6 +192,9 @@ function HydrationCard({ date }: { date: string }) {
       <View style={styles.hydrationLabelRow}>
         <Ionicons name="water-outline" size={13} color={Color.textMuted} />
         <Text style={styles.hydrationLabel}>Hydration</Text>
+        <Pressable onPress={() => setShowInfo(true)} hitSlop={10} style={styles.hydrationInfoButton}>
+          <Ionicons name="information-circle-outline" size={14} color={Color.textFaint} />
+        </Pressable>
       </View>
 
       <Text style={styles.hydrationMetricValue}>
@@ -260,6 +269,8 @@ function HydrationCard({ date }: { date: string }) {
         </Pressable>
       </View>
       {manualError ? <Text style={styles.hydrationManualError}>{manualError}</Text> : null}
+
+      <InfoModal visible={showInfo} onClose={() => setShowInfo(false)} title="Hydration" body={HYDRATION_INFO_BODY} />
     </Card>
   );
 }
@@ -485,6 +496,9 @@ export default function NutritionScreen() {
                       proteinG={diary?.totals.proteinG ?? 0}
                       carbsG={diary?.totals.carbsG ?? 0}
                       fatG={diary?.totals.fatG ?? 0}
+                      targetProteinG={target.proteinG}
+                      targetCarbsG={target.carbsG}
+                      targetFatG={target.fatG}
                       onSlicePress={setMacroInfo}
                     />
                     <View style={styles.macroLegend}>
@@ -733,6 +747,7 @@ const styles = StyleSheet.create({
   hydrationCard: { padding: Spacing.md },
   hydrationLabelRow: { flexDirection: "row", alignItems: "center", gap: 5, marginBottom: 2 },
   hydrationLabel: { fontSize: 11, fontWeight: "600", color: Color.textMuted, letterSpacing: 0.2 },
+  hydrationInfoButton: { padding: 1 },
   hydrationMetricValue: {
     fontSize: 26,
     fontWeight: "700",

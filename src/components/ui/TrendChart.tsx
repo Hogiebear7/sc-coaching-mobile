@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from "react-native";
-import Svg, { Circle, Line, Polyline, Text as SvgText } from "react-native-svg";
+import Svg, { Circle, G, Line, Polyline, Text as SvgText } from "react-native-svg";
 
 import { Color } from "@/constants/theme";
 import type { TrendPoint } from "@/lib/workout-formatters";
@@ -69,7 +69,7 @@ export function TrendChart({ points }: { points: TrendPoint[] }) {
         strokeLinecap="round"
       />
       {plotted.map((p, i) => (
-        <View key={i}>
+        <G key={i}>
           <Circle cx={p.x} cy={p.y} r={3.5} fill={Color.gold} />
           <SvgText x={p.x} y={p.y - 8} fontSize={8} fill={Color.textSecondary} textAnchor="middle">
             {p.label}
@@ -79,7 +79,7 @@ export function TrendChart({ points }: { points: TrendPoint[] }) {
               {shortDate(p.date)}
             </SvgText>
           ) : null}
-        </View>
+        </G>
       ))}
       <SvgText x={PAD.left - 4} y={PAD.top + 3} fontSize={8} fill={Color.textFaint} textAnchor="end">
         {maxY}

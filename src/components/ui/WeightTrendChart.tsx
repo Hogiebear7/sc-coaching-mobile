@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { Animated, StyleSheet, Text, View } from "react-native";
-import Svg, { Circle, Line, Polygon, Text as SvgText } from "react-native-svg";
+import Svg, { Circle, G, Line, Polygon, Text as SvgText } from "react-native-svg";
 
 import { Color } from "@/constants/theme";
 import type { BodyWeightLog } from "@/lib/queries/body-weight";
@@ -110,7 +110,7 @@ export function WeightTrendChart({ logs }: { logs: BodyWeightLog[] }) {
         />
       ))}
       {plotted.map((p, i) => (
-        <View key={i}>
+        <G key={i}>
           <Circle cx={p.x} cy={p.y} r={3} fill={Color.gold} />
           <SvgText x={p.x} y={p.y - 8} fontSize={8} fill={Color.textMuted} textAnchor="middle">
             {p.val}
@@ -120,7 +120,7 @@ export function WeightTrendChart({ logs }: { logs: BodyWeightLog[] }) {
               {shortDate(p.date)}
             </SvgText>
           ) : null}
-        </View>
+        </G>
       ))}
       <SvgText x={PAD.left - 4} y={PAD.top + 3} fontSize={8} fill={Color.textFaint} textAnchor="end">
         {maxY.toFixed(1)}

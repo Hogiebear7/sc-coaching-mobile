@@ -29,7 +29,12 @@ import { Color, Radius, Spacing } from "@/constants/theme";
 import { successFeedback, tapFeedback } from "@/lib/haptics";
 import { ApiError } from "@/lib/api-client";
 import { useAdvanceProgram, useMyProgram, type PrescribedExercise } from "@/lib/queries/programs";
-import { pickHeroMedia, useExerciseLibraryDetail, useExerciseLibraryNameIndex } from "@/lib/queries/exercise-library";
+import {
+  findExerciseLibrarySlug,
+  pickHeroMedia,
+  useExerciseLibraryDetail,
+  useExerciseLibraryNameIndex,
+} from "@/lib/queries/exercise-library";
 import { useProfile } from "@/lib/queries/profile";
 import { useRestTimer } from "@/lib/rest-timer";
 import { useWorkoutTemplates } from "@/lib/queries/workout-templates";
@@ -1436,7 +1441,7 @@ export default function LogWorkoutScreen() {
 
               {(() => {
                 if (!row.name.trim()) return null;
-                const slug = libraryIndex?.get(row.name.trim().toLowerCase());
+                const slug = libraryIndex ? findExerciseLibrarySlug(row.name, libraryIndex) : null;
                 return (
                   <View style={styles.exerciseInfoRow}>
                     {slug ? <ExerciseThumbnail slug={slug} /> : null}

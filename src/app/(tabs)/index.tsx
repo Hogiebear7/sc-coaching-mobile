@@ -264,7 +264,21 @@ export default function DashboardScreen() {
           visible={infoModal === "load"}
           onClose={() => setInfoModal(null)}
           title="7-Day Load"
-          body="Training duration × RPE, added up over a rolling 7-day window ending today. Pulled from your logged workouts (duration and how-did-that-feel RPE), or your recovery check-in's own numbers if you filled those in instead. Days you don't log anything simply add nothing — a quiet week, a rest day, or a brand-new account all show a lower number rather than a broken one. It resets naturally as old days roll out of the window, so you're always seeing your most recent week, not a running total."
+          body={
+            "Training duration × RPE, added up over a rolling 7-day window ending today. Pulled from your logged " +
+            "workouts (duration and how-did-that-feel RPE), or your recovery check-in's own numbers if you filled " +
+            "those in instead. Days you don't log anything simply add nothing — a quiet week, a rest day, or a " +
+            "brand-new account all show a lower number rather than a broken one. It resets naturally as old days " +
+            "roll out of the window, so you're always seeing your most recent week, not a running total.\n\n" +
+            "Where you land:\n" +
+            "· Under 1,000 — Light. A couple of easy sessions or a deload week.\n" +
+            "· 1,000–2,399 — Moderate. A normal, sustainable training week.\n" +
+            "· 2,400+ — High. Roughly five hard hour-long sessions — a big week.\n\n" +
+            "A high number isn't automatically a bad thing — it just means you've accumulated a lot of work. What " +
+            "matters is how it sits against your readiness: a high load paired with low readiness is the combination " +
+            "the app watches for and trims your next session down for, since that's when the injury/burnout risk " +
+            "actually shows up."
+          }
         />
         <InfoModal
           visible={infoModal === "sleep"}

@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Modal, Pressable, StyleSheet, Text } from "react-native";
+import { Modal, Pressable, ScrollView, StyleSheet, Text } from "react-native";
 
 import { Color, Radius, Spacing } from "@/constants/theme";
 
@@ -23,7 +23,9 @@ export function InfoModal({
       <Pressable style={styles.backdrop} onPress={onClose}>
         <Pressable style={styles.card} onPress={(e) => e.stopPropagation()}>
           <Text style={styles.title}>{title}</Text>
-          <Text style={styles.body}>{body}</Text>
+          <ScrollView style={styles.bodyScroll} showsVerticalScrollIndicator={false}>
+            <Text style={styles.body}>{body}</Text>
+          </ScrollView>
           <Pressable onPress={onClose} hitSlop={8} style={styles.closeButton}>
             <Ionicons name="close" size={16} color={Color.textMuted} />
           </Pressable>
@@ -44,6 +46,7 @@ const styles = StyleSheet.create({
   card: {
     width: "100%",
     maxWidth: 340,
+    maxHeight: "86%",
     borderRadius: Radius.lg,
     borderWidth: 1,
     borderColor: Color.borderDefault,
@@ -52,6 +55,7 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.xl,
   },
   title: { fontSize: 15, fontWeight: "700", color: Color.textPrimary },
+  bodyScroll: { flexShrink: 1 },
   body: { fontSize: 13, color: Color.textSecondary, lineHeight: 19, marginTop: Spacing.sm },
   closeButton: { position: "absolute", top: Spacing.md, right: Spacing.md, padding: 4 },
 });

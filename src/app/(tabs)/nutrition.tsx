@@ -264,29 +264,6 @@ function HydrationCard({ date }: { date: string }) {
   );
 }
 
-// Previously a plain View — looked tappable (chip shape, in a grid) but
-// did nothing on tap. There's no catalog id/nutrition data on a
-// recommendation item to log directly, so tapping seeds a food search
-// with that name instead, which is the one honest thing a chip like this
-// can actually do.
-function FoodChip({ item, date }: { item: FoodItem; date: string }) {
-  const router = useRouter();
-  return (
-    <Pressable
-      onPress={() => {
-        tapFeedback();
-        router.push({
-          pathname: "/log-food",
-          params: { date, mealType: defaultMealTypeForNow(), query: item.name },
-        });
-      }}
-      style={styles.foodChip}
-    >
-      <Text style={styles.foodChipText}>{item.name}</Text>
-    </Pressable>
-  );
-}
-
 function EmphasisRow({ icon, tone, title, text }: { icon: keyof typeof Ionicons.glyphMap; tone: "neutral" | "gold" | "success"; title: string; text: string }) {
   const toneColor = tone === "gold" ? Color.gold : tone === "success" ? Color.success : Color.textSecondary;
   const toneBorder = tone === "gold" ? Color.goldBorder : tone === "success" ? Color.success : Color.borderSubtle;
@@ -435,8 +412,6 @@ export default function NutritionScreen() {
       </SafeAreaView>
     );
   }
-
-  const allFoods = [...data.foodRecommendations.protein, ...data.foodRecommendations.carb, ...data.foodRecommendations.snack];
 
   // Readiness-aware hydration line (Recovery data → messaging) — mirrors
   // the web Nutrition tab's "Today's emphasis" copy verbatim.
@@ -618,11 +593,6 @@ export default function NutritionScreen() {
           </View>
 
           <View style={styles.section}>
-            <SectionHeader label="WEIGHT CHECK-IN" />
-            <BodyWeightCard compact />
-          </View>
-
-          <View style={styles.section}>
             <SectionHeader label="MORE TOOLS" />
             <Card tier="quiet">
               <Pressable onPress={() => router.push("/drink-calculator")} style={styles.moreRow}>
@@ -669,14 +639,8 @@ export default function NutritionScreen() {
           </View>
 
           <View style={styles.section}>
-            <SectionHeader label="FOOD IDEAS" />
-            <Card tier="quiet" style={{ padding: Spacing.md }}>
-              <View style={styles.foodGrid}>
-                {allFoods.slice(0, 18).map((f) => (
-                  <FoodChip key={f.name} item={f} date={selectedDate} />
-                ))}
-              </View>
-            </Card>
+            <SectionHeader label="WEIGHT CHECK-IN" />
+            <BodyWeightCard compact />
           </View>
 
           <View style={styles.section}>
@@ -867,16 +831,6 @@ const styles = StyleSheet.create({
   },
   drinkCardTitle: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
   drinkCardSub: { fontSize: 11, color: Color.textMuted, marginTop: 2 },
-  foodGrid: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.xs },
-  foodChip: {
-    borderRadius: Radius.pill,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 6,
-  },
-  foodChipText: { fontSize: 11, color: Color.textSecondary },
   chatCard: { padding: Spacing.md },
   chatTitle: { fontSize: 15, fontWeight: "600", color: Color.textPrimary, marginBottom: Spacing.sm },
   chatUnavailable: { fontSize: 12, color: Color.textMuted },

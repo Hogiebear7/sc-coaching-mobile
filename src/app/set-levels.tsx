@@ -86,7 +86,7 @@ export default function SetLevelsScreen() {
             </View>
           ) : (
             <>
-              <Card tier="hero" style={styles.diagramCard}>
+              <Card style={styles.diagramCard}>
                 <MuscleSetLevelDiagram levels={levels} sex={diagramSex} />
 
                 <View style={styles.legendRow}>

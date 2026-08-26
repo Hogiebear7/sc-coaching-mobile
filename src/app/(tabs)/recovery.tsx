@@ -179,8 +179,24 @@ export default function RecoveryScreen() {
           </View>
           <Collapsible title="How your score works">
             <Text style={styles.scoreHelp}>
-              We blend last night&apos;s sleep, how sore and fatigued you&apos;re feeling into a score out of
-              100 — the higher it sits, the more ready your body is to push today.
+              Four inputs from today&apos;s check-in, each worth up to 25 points: last night&apos;s sleep
+              duration (more is better, up to 8h), sleep quality, soreness, and fatigue (both lower is
+              better) — added up into a score out of 100.
+            </Text>
+            <Text style={[styles.scoreHelp, styles.scoreHelpSpaced]}>Where you land:</Text>
+            <Text style={styles.scoreHelp}>
+              · 80–100 — Well recovered. A good day to push intensity if your programme calls for it.
+            </Text>
+            <Text style={styles.scoreHelp}>
+              · 60–79 — Solid. Train as planned and pay attention to how you feel as you warm up.
+            </Text>
+            <Text style={styles.scoreHelp}>
+              · 40–59 — Mixed. Consider an easier session or extra warm-up, especially if soreness or
+              fatigue is high.
+            </Text>
+            <Text style={styles.scoreHelp}>
+              · Under 40 — Low. Prioritise rest, mobility, or a light session — pushing hard now adds
+              risk without much benefit.
             </Text>
           </Collapsible>
         </Card>
@@ -290,6 +306,7 @@ const styles = StyleSheet.create({
   loadLabel: { fontSize: 11, color: Color.textMuted, fontWeight: "600" },
   loadValue: { fontSize: 16, fontWeight: "700", color: Color.textPrimary, fontVariant: ["tabular-nums"] },
   scoreHelp: { fontSize: 11, color: Color.textFaint, lineHeight: 15, marginTop: Spacing.sm },
+  scoreHelpSpaced: { marginTop: Spacing.md, fontWeight: "700", color: Color.textSecondary },
   importLink: { alignSelf: "flex-end", paddingVertical: Spacing.xs, paddingHorizontal: 2 },
   importLinkText: { fontSize: 12, fontWeight: "600", color: Color.gold },
   formCard: { padding: Spacing.md, marginBottom: Spacing.lg },

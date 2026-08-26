@@ -14,6 +14,7 @@ import {
   EXERCISE_METRICS,
   TREND_RANGES,
   filterPointsByRange,
+  formatDuration,
   getExerciseMetricTrend,
   getExerciseStats,
   todayDateString,
@@ -52,6 +53,8 @@ export default function ExerciseDetailScreen() {
     () => filterPointsByRange(trendPoints, trendRange, today),
     [trendPoints, trendRange, today]
   );
+  const activeMetricUnit = EXERCISE_METRICS.find((m) => m.key === activeMetric)?.unit ?? "";
+  const formatTrendValue = (v: number) => (activeMetricUnit === "time" ? formatDuration(Math.round(v)) : `${v} ${activeMetricUnit}`);
 
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
@@ -128,7 +131,7 @@ export default function ExerciseDetailScreen() {
             ))}
           </View>
           <Card style={styles.trendCard}>
-            <TrendChart points={filteredTrendPoints} />
+            <TrendChart points={filteredTrendPoints} formatValue={formatTrendValue} />
           </Card>
 
           <Text style={styles.sectionLabel}>HISTORY</Text>

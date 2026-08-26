@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { WeightChangeInsights } from "@/components/ui/WeightChangeInsights";
 import { WeightTrendChart } from "@/components/ui/WeightTrendChart";
 import { Color, Radius, Spacing } from "@/constants/theme";
 import { tapFeedback } from "@/lib/haptics";
@@ -122,6 +123,7 @@ export function BodyWeightCard({ compact = false }: { compact?: boolean }) {
           {(compact ? weightLogs : filtered).length >= 2 ? (
             <View style={{ marginTop: compact ? 0 : Spacing.sm }}>
               <WeightTrendChart logs={compact ? weightLogs : filtered} />
+              {!compact ? <WeightChangeInsights logs={weightLogs} /> : null}
             </View>
           ) : !compact ? (
             <Text style={styles.emptyRange}>

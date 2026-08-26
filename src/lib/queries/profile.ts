@@ -32,6 +32,7 @@ export interface ProfileData {
   emergencyContact2Name: string | null;
   emergencyContact2Phone: string | null;
   currentWeightKg: number | null;
+  heightCm: number | null;
   dietaryPreference: DietaryPreference;
   allergies: string[];
   intolerancesOrMedical: string[];
@@ -75,6 +76,7 @@ export interface ProfileUpdateInput {
   gender: Gender;
   primaryGoal: PrimaryGoal;
   sportPlayed?: string;
+  heightCm?: string;
   additionalInfo?: string;
   emergencyContactName?: string;
   emergencyContactPhone?: string;

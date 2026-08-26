@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { TrendChart } from "@/components/ui/TrendChart";
+import { WeightChangeInsights } from "@/components/ui/WeightChangeInsights";
 import { WeightTrendChart } from "@/components/ui/WeightTrendChart";
 import { Color, Radius, Spacing } from "@/constants/theme";
 import { useBodyWeightLogs } from "@/lib/queries/body-weight";
@@ -137,6 +138,7 @@ export default function WorkoutTrendsScreen() {
               {weightChangeSummary ? <Text style={styles.chartCaption}>{weightChangeSummary}</Text> : null}
               <Card style={styles.trendCard}>
                 <WeightTrendChart logs={filteredWeightLogs} />
+                <WeightChangeInsights logs={sortedWeightLogs} />
               </Card>
             </>
           )}
@@ -184,7 +186,10 @@ export default function WorkoutTrendsScreen() {
           </View>
 
           <Card style={styles.trendCard}>
-            <TrendChart points={chartPoints} />
+            <TrendChart
+              points={chartPoints}
+              formatValue={(v) => (metric === "volume" ? `${Math.round(v).toLocaleString()} kg` : `${Math.round(v)} sets`)}
+            />
           </Card>
           <Text style={styles.chartCaption}>Weekly {metric === "volume" ? "volume (kg)" : "sets"}, week starting shown</Text>
 
@@ -236,6 +241,7 @@ export default function WorkoutTrendsScreen() {
               {weightChangeSummary ? <Text style={styles.chartCaption}>{weightChangeSummary}</Text> : null}
               <Card style={styles.trendCard}>
                 <WeightTrendChart logs={filteredWeightLogs} />
+                <WeightChangeInsights logs={sortedWeightLogs} />
               </Card>
             </>
           )}

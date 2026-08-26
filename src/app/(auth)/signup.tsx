@@ -65,6 +65,7 @@ interface FormValues {
   primaryGoal: PrimaryGoal | null;
   sportPlayed: string;
   currentWeightKg: string;
+  heightCm: string;
   additionalInfo: string;
   emergencyContactName: string;
   emergencyContactPhone: string;
@@ -97,6 +98,7 @@ const INITIAL_VALUES: FormValues = {
   primaryGoal: null,
   sportPlayed: "",
   currentWeightKg: "",
+  heightCm: "",
   additionalInfo: "",
   emergencyContactName: "",
   emergencyContactPhone: "",
@@ -328,6 +330,7 @@ export default function SignupScreen() {
           primaryGoal: values.primaryGoal,
           sportPlayed: values.sportPlayed.trim() || undefined,
           currentWeightKg: values.currentWeightKg.trim() || undefined,
+          heightCm: values.heightCm.trim() || undefined,
           additionalInfo: values.additionalInfo.trim() || undefined,
           emergencyContactName: values.emergencyContactName.trim(),
           emergencyContactPhone: values.emergencyContactPhone.trim(),
@@ -529,6 +532,15 @@ export default function SignupScreen() {
                 />
 
                 <TextField
+                  label="Height (cm) — optional"
+                  value={values.heightCm}
+                  onChangeText={(v) => update("heightCm", v)}
+                  keyboardType="decimal-pad"
+                  placeholder="e.g. 178"
+                  style={{ marginTop: Spacing.md }}
+                />
+
+                <TextField
                   label="Additional information — optional"
                   value={values.additionalInfo}
                   onChangeText={(v) => update("additionalInfo", v)}
@@ -708,6 +720,7 @@ export default function SignupScreen() {
                   <ReviewRow label="Primary goal" value={values.primaryGoal ?? "—"} />
                   <ReviewRow label="Sport played" value={sportVisible ? values.sportPlayed || "—" : "Not applicable"} />
                   <ReviewRow label="Current weight" value={values.currentWeightKg || "—"} />
+                  <ReviewRow label="Height" value={values.heightCm || "—"} />
                   <ReviewRow label="Additional info" value={values.additionalInfo || "—"} />
                   <ReviewRow
                     label="Emergency contact"

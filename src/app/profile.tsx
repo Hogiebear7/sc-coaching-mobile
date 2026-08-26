@@ -72,6 +72,7 @@ export default function ProfileScreen() {
   const [gender, setGender] = useState<Gender | null>(null);
   const [primaryGoal, setPrimaryGoal] = useState<PrimaryGoal | null>(null);
   const [sportPlayed, setSportPlayed] = useState("");
+  const [heightCm, setHeightCm] = useState("");
   const [additionalInfo, setAdditionalInfo] = useState("");
   const [emergencyContactName, setEmergencyContactName] = useState("");
   const [emergencyContactPhone, setEmergencyContactPhone] = useState("");
@@ -93,6 +94,7 @@ export default function ProfileScreen() {
     setGender(data.gender);
     setPrimaryGoal(data.primaryGoal);
     setSportPlayed(data.sportPlayed ?? "");
+    setHeightCm(data.heightCm !== null ? String(data.heightCm) : "");
     setAdditionalInfo(data.additionalInfo ?? "");
     setEmergencyContactName(data.emergencyContactName ?? "");
     setEmergencyContactPhone(data.emergencyContactPhone ?? "");
@@ -155,6 +157,7 @@ export default function ProfileScreen() {
         gender,
         primaryGoal,
         sportPlayed: sportPlayed.trim() || undefined,
+        heightCm: heightCm.trim() || undefined,
         additionalInfo: additionalInfo.trim() || undefined,
         emergencyContactName: emergencyContactName.trim() || undefined,
         emergencyContactPhone: emergencyContactPhone.trim() || undefined,
@@ -212,6 +215,14 @@ export default function ProfileScreen() {
 
             <Text style={styles.sectionLabel}>BODY WEIGHT</Text>
             <BodyWeightCard />
+            <TextField
+              label="Height (cm) — optional"
+              value={heightCm}
+              onChangeText={setHeightCm}
+              keyboardType="decimal-pad"
+              placeholder="e.g. 178"
+              style={{ marginTop: Spacing.md }}
+            />
 
             <Text style={[styles.sectionLabel, styles.sectionLabelSpaced]}>YOUR DETAILS</Text>
             <TextField label="Full name" value={fullName} onChangeText={setFullName} placeholder="Your full name" />

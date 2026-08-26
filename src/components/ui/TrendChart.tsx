@@ -3,7 +3,7 @@ import { StyleSheet, Text, View, type LayoutChangeEvent } from "react-native";
 import Svg, { Circle, G, Line, Polyline, Text as SvgText } from "react-native-svg";
 
 import { Color } from "@/constants/theme";
-import type { TrendPoint } from "@/lib/workout-formatters";
+import { computeTrendStats, type TrendPoint } from "@/lib/workout-formatters";
 
 // A hardcoded width clipped on narrower phones — the card's actual available
 // width varies by device, so the chart now measures it via onLayout instead.
@@ -12,6 +12,7 @@ import type { TrendPoint } from "@/lib/workout-formatters";
 const DEFAULT_CHART_W = 300;
 const CHART_H = 130;
 const PAD = { top: 20, right: 12, bottom: 26, left: 30 };
+const GRIDLINE_COUNT = 4;
 
 function shortDate(iso: string): string {
   const [, m, d] = iso.split("-").map(Number);
@@ -23,8 +24,9 @@ function shortDate(iso: string): string {
 // drawn immediately rather than animating in on scroll (no
 // IntersectionObserver equivalent worth building for a single chart per
 // screen). Metric-agnostic: callers pick what `value`/`label` mean per
-// point (weight, reps, volume, sets, 1RM, ...).
-export function TrendChart({ points }: { points: TrendPoint[] }) {
+// point (weight, reps, volume, sets, 1RM, ...) and how a raw number should
+// read in the Average/Difference header via `formatValue`.
+export function TrendChart({ points, formatValue = (v: number) => String(v) }: { points: TrendPoint[]; formatValue?: (v: number) => string }) {
   const [chartW, setChartW] = useState(DEFAULT_CHART_W);
 
   function onLayout(e: LayoutChangeEvent) {
@@ -59,18 +61,37 @@ export function TrendChart({ points }: { points: TrendPoint[] }) {
   }));
 
   const labelStep = Math.max(1, Math.ceil(points.length / 5));
+  const stats = computeTrendStats(points);
+  const gridlines = Array.from({ length: GRIDLINE_COUNT + 1 }, (_, i) => PAD.top + (innerH / GRIDLINE_COUNT) * i);
 
   return (
+    <View style={styles.wrap}>
+      {stats ? (
+        <View style={styles.statsRow}>
+          <View>
+            <Text style={styles.statLabel}>Average</Text>
+            <Text style={styles.statValue}>{formatValue(stats.average)}</Text>
+          </View>
+          <View style={styles.statRight}>
+            <Text style={styles.statLabel}>Difference</Text>
+            <Text style={styles.statValue}>
+              {stats.difference === 0 ? "No change" : `${stats.difference > 0 ? "+" : "-"}${formatValue(Math.abs(stats.difference))}`}
+            </Text>
+          </View>
+        </View>
+      ) : null}
     <View style={styles.chartWrap} onLayout={onLayout}>
     <Svg width={chartW} height={CHART_H} viewBox={`0 0 ${chartW} ${CHART_H}`}>
-      <Line x1={PAD.left} y1={PAD.top} x2={PAD.left} y2={PAD.top + innerH} stroke={Color.textMuted} strokeOpacity={0.2} strokeWidth={1} />
+      {gridlines.map((y, i) => (
+        <Line key={i} x1={PAD.left} y1={y} x2={PAD.left + innerW} y2={y} stroke={Color.textFaint} strokeOpacity={0.25} strokeWidth={1} strokeDasharray="2 4" />
+      ))}
       <Line
         x1={PAD.left}
         y1={PAD.top + innerH}
         x2={PAD.left + innerW}
         y2={PAD.top + innerH}
         stroke={Color.textMuted}
-        strokeOpacity={0.2}
+        strokeOpacity={0.25}
         strokeWidth={1}
       />
       <Polyline
@@ -102,11 +123,17 @@ export function TrendChart({ points }: { points: TrendPoint[] }) {
       </SvgText>
     </Svg>
     </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   emptyWrap: { paddingVertical: 24, alignItems: "center" },
   emptyText: { fontSize: 12, color: Color.textMuted },
-  chartWrap: { width: "100%", alignItems: "center" },
+  wrap: { width: "100%" },
+  statsRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
+  statRight: { alignItems: "flex-end" },
+  statLabel: { fontSize: 10, fontWeight: "600", color: Color.textMuted, textTransform: "uppercase", letterSpacing: 0.4 },
+  statValue: { fontSize: 16, fontWeight: "700", color: Color.textPrimary, marginTop: 2, fontVariant: ["tabular-nums"] },
+  chartWrap: { width: "100%", alignItems: "center", marginTop: 6 },
 });

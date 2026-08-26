@@ -315,7 +315,7 @@ export const TREND_RANGES: { key: string; days: number | null }[] = [
   { key: "All", days: null },
 ];
 
-function cutoffDateString(daysBack: number, todayISO: string): string {
+export function cutoffDateString(daysBack: number, todayISO: string): string {
   const [y, m, d] = todayISO.split("-").map(Number);
   return new Date(Date.UTC(y, m - 1, d - (daysBack - 1))).toISOString().slice(0, 10);
 }
@@ -325,6 +325,62 @@ export function filterPointsByRange<T extends { date: string }>(points: T[], ran
   if (!range || range.days === null) return points;
   const cutoff = cutoffDateString(range.days, todayISO);
   return points.filter((p) => p.date >= cutoff);
+}
+
+export interface TrendStats {
+  average: number;
+  difference: number;
+}
+
+// Header stats for a trend chart — "Average" (mean of every value in the
+// currently filtered range) and "Difference" (latest minus earliest in that
+// same range), matching the two-stat header on the reference weight-trend
+// design.
+export function computeTrendStats(points: TrendPoint[]): TrendStats | null {
+  if (points.length === 0) return null;
+  const average = points.reduce((sum, p) => sum + p.value, 0) / points.length;
+  const difference = points[points.length - 1].value - points[0].value;
+  return { average: Math.round(average * 100) / 100, difference: Math.round(difference * 100) / 100 };
+}
+
+// Centered simple-moving-average smoothing — the bold "Trend" line drawn
+// alongside the raw/thin series so single-day noise doesn't read as the
+// trend itself. Window shrinks near the edges rather than padding with
+// fabricated values.
+export function movingAverageTrend(points: TrendPoint[], windowSize = 7): TrendPoint[] {
+  return points.map((p, i) => {
+    const start = Math.max(0, i - Math.floor(windowSize / 2));
+    const end = Math.min(points.length, i + Math.ceil(windowSize / 2));
+    const slice = points.slice(start, end);
+    const avg = slice.reduce((sum, q) => sum + q.value, 0) / slice.length;
+    return { date: p.date, value: Math.round(avg * 100) / 100 };
+  });
+}
+
+// Change from the most recent point back to the closest point at or before
+// `daysBack` days earlier — the data behind an "N-day change" insight row.
+// Independent of whatever date-range chip is active elsewhere on screen, so
+// it always answers "how much in the last N days," not "in the last N days
+// within whatever window happens to be selected." Returns null when there's
+// no point old enough to compare against.
+export function changeOverDays(points: TrendPoint[], daysBack: number): { deltaValue: number; fromDate: string; toDate: string } | null {
+  if (points.length < 2) return null;
+  const sorted = [...points].sort((a, b) => a.date.localeCompare(b.date));
+  const latest = sorted[sorted.length - 1];
+  const targetDate = cutoffDateString(daysBack + 1, latest.date);
+
+  let comparison: TrendPoint | null = null;
+  for (const p of sorted) {
+    if (p.date <= targetDate) comparison = p;
+    else break;
+  }
+  if (!comparison || comparison.date === latest.date) return null;
+
+  return {
+    deltaValue: Math.round((latest.value - comparison.value) * 100) / 100,
+    fromDate: comparison.date,
+    toDate: latest.date,
+  };
 }
 
 export interface ExerciseHistoryEntry {

@@ -200,10 +200,18 @@ export default function LabelScanScreen() {
       }
       tapFeedback();
       router.back();
+      // No state update after this point on success: the screen is
+      // already being dismissed as a fullScreenModal, and re-rendering
+      // (e.g. flipping `logging` back off, which swaps the Button's
+      // ActivityIndicator back to text) while that native dismiss
+      // transition is in flight is what was crashing the app — the
+      // entries were already saved by this point, so there's nothing
+      // left for this screen to reflect anyway. Only the error path
+      // below needs to reset `logging`, since that's the one case the
+      // screen stays mounted and the button must become tappable again.
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "Could not log this food. Please try again.");
-    } finally {
       setLogging(false);
+      setError(e instanceof ApiError ? e.message : "Could not log this food. Please try again.");
     }
   }
 

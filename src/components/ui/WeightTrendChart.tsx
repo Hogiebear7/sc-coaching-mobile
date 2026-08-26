@@ -1,8 +1,15 @@
 import { useEffect, useRef, useState } from "react";
-import { Animated, StyleSheet, Text, View, type LayoutChangeEvent } from "react-native";
+import {
+  Animated,
+  StyleSheet,
+  Text,
+  View,
+  type GestureResponderEvent,
+  type LayoutChangeEvent,
+} from "react-native";
 import Svg, { Circle, G, Line, Polyline, Text as SvgText } from "react-native-svg";
 
-import { Color } from "@/constants/theme";
+import { Color, Radius } from "@/constants/theme";
 import type { BodyWeightLog } from "@/lib/queries/body-weight";
 import { computeTrendStats, movingAverageTrend, type TrendPoint } from "@/lib/workout-formatters";
 import { useReduceMotionPref } from "@/lib/use-reduce-motion";
@@ -17,6 +24,7 @@ const DEFAULT_CHART_W = 300;
 const CHART_H = 160;
 const PAD = { top: 16, right: 12, bottom: 22, left: 30 };
 const GRIDLINE_COUNT = 4;
+const TOOLTIP_W = 92;
 
 // Consecutive entries more than this far apart get a dashed connector so a
 // long logging gap reads as a gap, not a steady trend — mirrors the web
@@ -38,13 +46,15 @@ function daysBetween(a: string, b: string): number {
 // doesn't read as the trend itself. Fades and rises in on mount/data-change
 // (respecting reduce-motion) so it reads as a live chart rather than a
 // static image, matching the animated feel the rest of the app's data views
-// use.
+// use. Touching/dragging over the plot area reveals the exact scale weight
+// logged on that date.
 export function WeightTrendChart({ logs }: { logs: BodyWeightLog[] }) {
   const reduceMotion = useReduceMotionPref();
   const anim = useRef(new Animated.Value(0)).current;
   const sorted = [...logs].sort((a, b) => a.date.localeCompare(b.date));
   const dataKey = sorted.map((l) => `${l.date}:${l.weightKg}`).join("|");
   const [chartW, setChartW] = useState(DEFAULT_CHART_W);
+  const [activeIndex, setActiveIndex] = useState<number | null>(null);
 
   useEffect(() => {
     anim.setValue(0);
@@ -54,6 +64,10 @@ export function WeightTrendChart({ logs }: { logs: BodyWeightLog[] }) {
       useNativeDriver: true,
     }).start();
   }, [dataKey, reduceMotion, anim]);
+
+  useEffect(() => {
+    setActiveIndex(null);
+  }, [dataKey]);
 
   function onLayout(e: LayoutChangeEvent) {
     const w = Math.round(e.nativeEvent.layout.width);
@@ -83,7 +97,7 @@ export function WeightTrendChart({ logs }: { logs: BodyWeightLog[] }) {
   const toX = (i: number) => PAD.left + (sorted.length === 1 ? innerW / 2 : (i / (sorted.length - 1)) * innerW);
   const toY = (val: number) => PAD.top + innerH - ((val - minY) / yRange) * innerH;
 
-  const rawPlotted = rawPoints.map((p, i) => ({ x: toX(i), y: toY(p.value), date: p.date }));
+  const rawPlotted = rawPoints.map((p, i) => ({ x: toX(i), y: toY(p.value), val: p.value, date: p.date }));
   const trendPlotted = trendPoints.map((p, i) => ({ x: toX(i), y: toY(p.value), val: p.value, date: p.date }));
   const labelStep = Math.max(1, Math.ceil(sorted.length / 5));
   const markerStep = Math.max(1, Math.ceil(sorted.length / 8));
@@ -97,6 +111,26 @@ export function WeightTrendChart({ logs }: { logs: BodyWeightLog[] }) {
   }));
 
   const gridlines = Array.from({ length: GRIDLINE_COUNT + 1 }, (_, i) => PAD.top + (innerH / GRIDLINE_COUNT) * i);
+
+  // Skips a date label that would repeat the previous one shown — several
+  // check-ins logged on the same day otherwise print that date two or three
+  // times in a row along the axis.
+  let lastLabelDate: string | null = null;
+
+  function indexFromTouchX(touchX: number): number {
+    const clamped = Math.max(PAD.left, Math.min(PAD.left + innerW, touchX));
+    const ratio = innerW === 0 ? 0 : (clamped - PAD.left) / innerW;
+    const idx = Math.round(ratio * (sorted.length - 1));
+    return Math.max(0, Math.min(sorted.length - 1, idx));
+  }
+
+  function handleTouch(e: GestureResponderEvent) {
+    setActiveIndex(indexFromTouchX(e.nativeEvent.locationX));
+  }
+
+  const activePoint = activeIndex !== null ? rawPlotted[activeIndex] : null;
+  const tooltipLeft = activePoint ? Math.max(0, Math.min(chartW - TOOLTIP_W, activePoint.x - TOOLTIP_W / 2)) : 0;
+  const tooltipAbove = activePoint ? activePoint.y - PAD.top > 34 : true;
 
   return (
     <View style={styles.wrap}>
@@ -126,7 +160,14 @@ export function WeightTrendChart({ logs }: { logs: BodyWeightLog[] }) {
         </View>
       </View>
 
-      <View style={styles.chartWrap} onLayout={onLayout}>
+      <View
+        style={styles.chartWrap}
+        onLayout={onLayout}
+        onStartShouldSetResponder={() => true}
+        onMoveShouldSetResponder={() => true}
+        onResponderGrant={handleTouch}
+        onResponderMove={handleTouch}
+      >
       <AnimatedSvg
         width={chartW}
         height={CHART_H}
@@ -173,25 +214,50 @@ export function WeightTrendChart({ logs }: { logs: BodyWeightLog[] }) {
           strokeLinejoin="round"
           strokeLinecap="round"
         />
-        {trendPlotted.map((p, i) =>
-          i % markerStep === 0 || i === trendPlotted.length - 1 ? (
+        {trendPlotted.map((p, i) => {
+          const showLabel = i % labelStep === 0 && p.date !== lastLabelDate;
+          if (showLabel) lastLabelDate = p.date;
+          return i % markerStep === 0 || i === trendPlotted.length - 1 ? (
             <G key={i}>
               <Circle cx={p.x} cy={p.y} r={3.5} fill={Color.gold} />
-              {i % labelStep === 0 ? (
+              {showLabel ? (
                 <SvgText x={p.x} y={PAD.top + innerH + 14} fontSize={8} fill={Color.textFaint} textAnchor="middle">
                   {shortDate(p.date)}
                 </SvgText>
               ) : null}
             </G>
-          ) : null
-        )}
+          ) : null;
+        })}
         <SvgText x={PAD.left - 4} y={PAD.top + 3} fontSize={8} fill={Color.textFaint} textAnchor="end">
           {maxY.toFixed(1)}
         </SvgText>
         <SvgText x={PAD.left - 4} y={PAD.top + innerH + 3} fontSize={8} fill={Color.textFaint} textAnchor="end">
           {minY.toFixed(1)}
         </SvgText>
+
+        {activePoint ? (
+          <G>
+            <Line x1={activePoint.x} y1={PAD.top} x2={activePoint.x} y2={PAD.top + innerH} stroke={Color.textPrimary} strokeOpacity={0.3} strokeWidth={1} />
+            <Circle cx={activePoint.x} cy={activePoint.y} r={4.5} fill={Color.bg0} stroke={Color.textPrimary} strokeWidth={2} />
+          </G>
+        ) : null}
       </AnimatedSvg>
+
+      {activePoint ? (
+        <View
+          pointerEvents="none"
+          style={[
+            styles.tooltip,
+            {
+              left: tooltipLeft,
+              top: tooltipAbove ? activePoint.y - 46 : activePoint.y + 10,
+            },
+          ]}
+        >
+          <Text style={styles.tooltipValue}>{activePoint.val.toFixed(1)} kg</Text>
+          <Text style={styles.tooltipDate}>{shortDate(activePoint.date)}</Text>
+        </View>
+      ) : null}
       </View>
     </View>
   );
@@ -210,4 +276,17 @@ const styles = StyleSheet.create({
   legendSwatch: { width: 8, height: 8, borderRadius: 4 },
   legendText: { fontSize: 10, color: Color.textMuted },
   chartWrap: { width: "100%", alignItems: "center", marginTop: 6 },
+  tooltip: {
+    position: "absolute",
+    width: TOOLTIP_W,
+    alignItems: "center",
+    paddingVertical: 5,
+    paddingHorizontal: 8,
+    borderRadius: Radius.sm,
+    borderWidth: 1,
+    borderColor: Color.borderDefault,
+    backgroundColor: Color.surface2,
+  },
+  tooltipValue: { fontSize: 12, fontWeight: "700", color: Color.textPrimary, fontVariant: ["tabular-nums"] },
+  tooltipDate: { fontSize: 9, color: Color.textMuted, marginTop: 1 },
 });

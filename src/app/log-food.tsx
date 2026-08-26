@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
@@ -10,6 +10,7 @@ import { Stepper } from "@/components/ui/Stepper";
 import { Color, Radius, Spacing } from "@/constants/theme";
 import { ApiError } from "@/lib/api-client";
 import { trackEvent } from "@/lib/analytics";
+import { iconForFood } from "@/lib/food-icons";
 import {
   gramsForServing,
   nutritionForGrams,
@@ -37,9 +38,25 @@ const SEARCH_GROUPS: { key: keyof import("@/lib/queries/food-catalog").FoodSearc
   { key: "branded", label: "Branded" },
 ];
 
+// A real product photo (Open Food Facts, branded domain only) beats an
+// icon whenever we have one; every Common/Custom food, and any Branded
+// food OFF has no photo for, falls back to a keyword-matched emoji tile —
+// still colour and food-specific, just not a literal photo of the item.
+function FoodResultThumb({ food }: { food: FoodRecord }) {
+  if (food.imageUrl) {
+    return <Image source={{ uri: food.imageUrl }} style={styles.resultThumb} resizeMode="cover" />;
+  }
+  return (
+    <View style={styles.resultIconTile}>
+      <Text style={styles.resultIconText}>{iconForFood(food.name)}</Text>
+    </View>
+  );
+}
+
 function FoodResultRow({ food, onPress }: { food: FoodRecord; onPress: () => void }) {
   return (
     <Pressable onPress={onPress} style={styles.resultRow}>
+      <FoodResultThumb food={food} />
       <View style={{ flex: 1 }}>
         <Text style={styles.resultName} numberOfLines={1}>
           {food.brandName ? `${food.brandName} — ${food.name}` : food.name}
@@ -434,6 +451,16 @@ const styles = StyleSheet.create({
   },
   resultName: { fontSize: 13, fontWeight: "600", color: Color.textPrimary },
   resultSub: { fontSize: 11, color: Color.textMuted, marginTop: 2 },
+  resultThumb: { width: 36, height: 36, borderRadius: Radius.pill, backgroundColor: Color.surface2 },
+  resultIconTile: {
+    width: 36,
+    height: 36,
+    borderRadius: Radius.pill,
+    backgroundColor: Color.surface2,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  resultIconText: { fontSize: 18 },
   closeSearchRow: { alignItems: "center", marginTop: Spacing.xs, paddingVertical: 6 },
   closeSearchText: { fontSize: 12, color: Color.textFaint },
   servingCard: { padding: Spacing.md, marginTop: Spacing.md, backgroundColor: Color.surface2 },

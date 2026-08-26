@@ -29,6 +29,7 @@ export interface FoodRecord {
   name: string;
   brandName: string | null;
   barcode: string | null;
+  imageUrl: string | null;
   nutrition100g: FoodNutrition100g;
   defaultServing: FoodServing;
   servings: FoodServing[];

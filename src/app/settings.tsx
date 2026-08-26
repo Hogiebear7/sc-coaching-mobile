@@ -10,13 +10,16 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { UpsellCard, UpsellRow } from "@/components/ui/Upsell";
 import { Color, Radius, Spacing } from "@/constants/theme";
 import { ApiError } from "@/lib/api-client";
 import { useAuth } from "@/lib/auth-context";
 import { isBatteryOptimizationRelevant, openBatteryOptimizationSettings } from "@/lib/battery-optimization";
 import { getLastRejection, type CrashRecord } from "@/lib/crash-log";
+import { hasAccess } from "@/lib/member-access";
 import { useTour } from "@/lib/tour-context";
 import {
+  useMemberTier,
   useProfile,
   useRequestPasswordReset,
   useSetAvatar,
@@ -75,6 +78,9 @@ export default function SettingsScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const { restartTour } = useTour();
+  const tier = useMemberTier();
+  const canUseNotifications = hasAccess(tier, "notifications");
+  const canUseGymProfiles = hasAccess(tier, "gymProfiles");
   const { data, isLoading } = useProfile();
   const setPush = useSetPushNotifications();
   const setEmail = useSetEmailNotifications();
@@ -261,15 +267,19 @@ export default function SettingsScreen() {
             />
           </Card>
 
-          <SectionLabel>TRAINING</SectionLabel>
-          <Card style={styles.settingsCard}>
-            <Row
-              icon="barbell-outline"
-              title="Gym profiles"
-              sub="Equipment available — filters the exercise library"
-              onPress={() => router.push("/gym-profiles")}
-            />
-          </Card>
+          {canUseGymProfiles ? (
+            <>
+              <SectionLabel>TRAINING</SectionLabel>
+              <Card style={styles.settingsCard}>
+                <Row
+                  icon="barbell-outline"
+                  title="Gym profiles"
+                  sub="Equipment available — filters the exercise library"
+                  onPress={() => router.push("/gym-profiles")}
+                />
+              </Card>
+            </>
+          ) : null}
 
           <SectionLabel>PREFERENCES</SectionLabel>
           <Card style={styles.settingsCard}>
@@ -323,31 +333,41 @@ export default function SettingsScreen() {
 
           <SectionLabel>NOTIFICATIONS</SectionLabel>
           <Card style={styles.settingsCard}>
-            <View style={styles.row}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.rowTitle}>Push notifications</Text>
-                <Text style={styles.rowSub}>Class reminders, coach messages, and offers</Text>
-              </View>
-              <Switch
-                value={data.pushNotificationsEnabled}
-                onValueChange={(v) => setPush.mutate(v)}
-                trackColor={{ false: Color.surface3, true: Color.gold }}
-                thumbColor={Color.textPrimary}
-              />
-            </View>
-            <View style={styles.divider} />
-            <View style={styles.row}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.rowTitle}>Email notifications</Text>
-                <Text style={styles.rowSub}>Booking confirmations and account updates</Text>
-              </View>
-              <Switch
-                value={data.emailNotificationsEnabled}
-                onValueChange={(v) => setEmail.mutate(v)}
-                trackColor={{ false: Color.surface3, true: Color.gold }}
-                thumbColor={Color.textPrimary}
-              />
-            </View>
+            {canUseNotifications ? (
+              <>
+                <View style={styles.row}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.rowTitle}>Push notifications</Text>
+                    <Text style={styles.rowSub}>Class reminders, coach messages, and offers</Text>
+                  </View>
+                  <Switch
+                    value={data.pushNotificationsEnabled}
+                    onValueChange={(v) => setPush.mutate(v)}
+                    trackColor={{ false: Color.surface3, true: Color.gold }}
+                    thumbColor={Color.textPrimary}
+                  />
+                </View>
+                <View style={styles.divider} />
+                <View style={styles.row}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.rowTitle}>Email notifications</Text>
+                    <Text style={styles.rowSub}>Booking confirmations and account updates</Text>
+                  </View>
+                  <Switch
+                    value={data.emailNotificationsEnabled}
+                    onValueChange={(v) => setEmail.mutate(v)}
+                    trackColor={{ false: Color.surface3, true: Color.gold }}
+                    thumbColor={Color.textPrimary}
+                  />
+                </View>
+              </>
+            ) : (
+              <>
+                <UpsellRow icon="notifications-outline" title="Push notifications" />
+                <View style={styles.divider} />
+                <UpsellRow icon="mail-outline" title="Email notifications" />
+              </>
+            )}
             {isBatteryOptimizationRelevant() ? (
               <>
                 <View style={styles.divider} />
@@ -365,6 +385,11 @@ export default function SettingsScreen() {
             ) : null}
           </Card>
 
+          {!canUseNotifications ? (
+            <View style={{ marginTop: Spacing.sm }}>
+              <UpsellCard icon="alarm-outline" title="Class reminders" body="Get notified before your booked classes" />
+            </View>
+          ) : (
           <Card style={[styles.settingsCard, { marginTop: Spacing.sm, padding: Spacing.md }]}>
             <Text style={styles.rowTitle}>Class reminders</Text>
             <Text style={[styles.rowSub, { marginBottom: Spacing.sm }]}>
@@ -426,6 +451,7 @@ export default function SettingsScreen() {
               ) : null}
             </View>
           </Card>
+          )}
 
           {user?.role === "member" ? (
             <>

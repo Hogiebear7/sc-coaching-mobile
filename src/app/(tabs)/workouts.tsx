@@ -11,9 +11,12 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { SessionCard } from "@/components/ui/SessionCard";
 import { TrendChart } from "@/components/ui/TrendChart";
+import { UpsellTile } from "@/components/ui/Upsell";
 import { Color, Radius, Spacing } from "@/constants/theme";
 import { tapFeedback } from "@/lib/haptics";
+import { hasAccess } from "@/lib/member-access";
 import { useAdvanceProgram, useMyProgram } from "@/lib/queries/programs";
+import { useMemberTier } from "@/lib/queries/profile";
 import { useRestTimer } from "@/lib/rest-timer";
 import { type PersonalBest, useWorkouts } from "@/lib/queries/workouts";
 import {
@@ -73,6 +76,7 @@ function formatShortDate(dateISO: string): string {
 export default function WorkoutsScreen() {
   const router = useRouter();
   const restTimer = useRestTimer();
+  const tier = useMemberTier();
   const { data, isLoading, isError, refetch, isRefetching } = useWorkouts();
   const { data: program } = useMyProgram();
   const advanceProgram = useAdvanceProgram();
@@ -318,18 +322,26 @@ export default function WorkoutsScreen() {
                 <Text style={styles.toolCardText}>Rest Timer</Text>
               </Pressable>
             </Card>
-            <Card tier="compact" style={styles.toolCard}>
-              <Pressable onPress={() => router.push("/workout-generator")} style={styles.toolCardInner}>
-                <Ionicons name="sparkles-outline" size={18} color={Color.gold} />
-                <Text style={styles.toolCardText}>Generate</Text>
-              </Pressable>
-            </Card>
-            <Card tier="compact" style={styles.toolCard}>
-              <Pressable onPress={() => router.push("/tracker-import")} style={styles.toolCardInner}>
-                <Ionicons name="watch-outline" size={18} color={Color.gold} />
-                <Text style={styles.toolCardText}>Import</Text>
-              </Pressable>
-            </Card>
+            {hasAccess(tier, "workoutGenerate") ? (
+              <Card tier="compact" style={styles.toolCard}>
+                <Pressable onPress={() => router.push("/workout-generator")} style={styles.toolCardInner}>
+                  <Ionicons name="sparkles-outline" size={18} color={Color.gold} />
+                  <Text style={styles.toolCardText}>Generate</Text>
+                </Pressable>
+              </Card>
+            ) : (
+              <UpsellTile title="Generate" style={styles.toolCard} />
+            )}
+            {hasAccess(tier, "trackerImport") ? (
+              <Card tier="compact" style={styles.toolCard}>
+                <Pressable onPress={() => router.push("/tracker-import")} style={styles.toolCardInner}>
+                  <Ionicons name="watch-outline" size={18} color={Color.gold} />
+                  <Text style={styles.toolCardText}>Import</Text>
+                </Pressable>
+              </Card>
+            ) : (
+              <UpsellTile title="Import" style={styles.toolCard} />
+            )}
           </View>
         </View>
 

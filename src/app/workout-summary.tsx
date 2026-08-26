@@ -7,7 +7,10 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { StatCard } from "@/components/ui/StatCard";
+import { UpsellCard } from "@/components/ui/Upsell";
 import { Color, Radius, Spacing } from "@/constants/theme";
+import { hasAccess } from "@/lib/member-access";
+import { useMemberTier } from "@/lib/queries/profile";
 import { takePendingWorkoutSummary } from "@/lib/workout-summary-handoff";
 
 // Built entirely from the payload the logging screen just submitted, plus
@@ -28,6 +31,7 @@ export interface WorkoutSummaryData {
 
 export default function WorkoutSummaryScreen() {
   const router = useRouter();
+  const tier = useMemberTier();
   // Lazy initializer so this read-once handoff is only taken on the first
   // render of this screen instance, not on every re-render.
   const [summary] = useState<WorkoutSummaryData | null>(() => takePendingWorkoutSummary());
@@ -103,11 +107,17 @@ export default function WorkoutSummaryScreen() {
           </>
         ) : null}
 
-        <Button
-          title="View your session review"
-          onPress={() => router.push({ pathname: "/workout-review", params: { id: summary.id } })}
-          style={{ marginTop: Spacing.xl }}
-        />
+        {hasAccess(tier, "workoutReview") ? (
+          <Button
+            title="View your session review"
+            onPress={() => router.push({ pathname: "/workout-review", params: { id: summary.id } })}
+            style={{ marginTop: Spacing.xl }}
+          />
+        ) : (
+          <View style={{ marginTop: Spacing.xl }}>
+            <UpsellCard icon="analytics-outline" title="Session review" body="Available on App Subscription and above" />
+          </View>
+        )}
         <Button title="Done" variant="secondary" onPress={() => router.replace("/workouts")} style={{ marginTop: Spacing.sm }} />
         <Button
           title="View full history"

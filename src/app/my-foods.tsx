@@ -4,13 +4,18 @@ import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from "
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Color, Radius, Spacing } from "@/constants/theme";
+import { FREE_CUSTOM_FOOD_LIMIT, hasAccess } from "@/lib/member-access";
 import { getFoodSubmissionEligibility, useMyCustomFoods, useMySubmissions, type FoodRecord } from "@/lib/queries/food-catalog";
+import { useMemberTier } from "@/lib/queries/profile";
 import { SUBMISSION_STATUS_COPY } from "@/lib/submission-status";
 
 export default function MyFoodsScreen() {
   const router = useRouter();
+  const tier = useMemberTier();
   const { data: foods, isLoading } = useMyCustomFoods();
   const { data: submissions } = useMySubmissions();
+  const unlimitedFoods = hasAccess(tier, "unlimitedCustomFoods");
+  const atFreeLimit = !unlimitedFoods && (foods?.length ?? 0) >= FREE_CUSTOM_FOOD_LIMIT;
 
   function renderItem({ item }: { item: FoodRecord }) {
     const submission = submissions?.find((s) => s.customFoodId === item.id);
@@ -52,10 +57,19 @@ export default function MyFoodsScreen() {
           <Ionicons name="chevron-back" size={22} color={Color.textPrimary} />
         </Pressable>
         <Text style={styles.headerTitle}>My Custom Foods</Text>
-        <Pressable onPress={() => router.push("/custom-food")} hitSlop={12}>
-          <Ionicons name="add" size={24} color={Color.gold} />
+        <Pressable onPress={() => router.push(atFreeLimit ? "/membership" : "/custom-food")} hitSlop={12}>
+          <Ionicons name={atFreeLimit ? "lock-closed-outline" : "add"} size={22} color={Color.gold} />
         </Pressable>
       </View>
+
+      {!unlimitedFoods ? (
+        <View style={styles.limitBanner}>
+          <Text style={styles.limitBannerText}>
+            {(foods?.length ?? 0)}/{FREE_CUSTOM_FOOD_LIMIT} saved on the Free tier
+            {atFreeLimit ? " — upgrade for unlimited." : "."}
+          </Text>
+        </View>
+      ) : null}
 
       {isLoading ? (
         <View style={styles.centerFill}>
@@ -90,6 +104,8 @@ const styles = StyleSheet.create({
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md },
   backButton: { padding: 4 },
   headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
+  limitBanner: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.sm },
+  limitBannerText: { fontSize: 12, color: Color.textFaint },
   centerFill: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: Spacing.xl },
   emptyTitle: { fontSize: 15, fontWeight: "700", color: Color.textPrimary, marginTop: Spacing.md },
   emptyText: { fontSize: 13, color: Color.textMuted, textAlign: "center", marginTop: 6, lineHeight: 19 },

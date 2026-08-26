@@ -24,9 +24,12 @@ import { Card } from "@/components/ui/Card";
 import { InfoModal } from "@/components/ui/InfoModal";
 import { MacroLegendRow, MacroPieChart, type MacroKind } from "@/components/ui/MacroPieChart";
 import { SectionHeader } from "@/components/ui/SectionHeader";
+import { UpsellCard } from "@/components/ui/Upsell";
 import { Color, Radius, Spacing } from "@/constants/theme";
 import { ApiError } from "@/lib/auth-context";
 import { tapFeedback } from "@/lib/haptics";
+import { hasAccess } from "@/lib/member-access";
+import { useMemberTier } from "@/lib/queries/profile";
 import { useReduceMotionPref } from "@/lib/use-reduce-motion";
 import {
   MEAL_TYPE_OPTIONS,
@@ -373,6 +376,7 @@ function CoachChat({
 
 export default function NutritionScreen() {
   const router = useRouter();
+  const tier = useMemberTier();
   const today = todayDateString();
   const [selectedDate, setSelectedDate] = useState(today);
   const [macroInfo, setMacroInfo] = useState<MacroKind | null>(null);
@@ -608,48 +612,56 @@ export default function NutritionScreen() {
 
           <View style={styles.section}>
             <SectionHeader label="MORE TOOLS" />
-            <Card tier="quiet">
-              <Pressable onPress={() => router.push("/drink-calculator")} style={styles.moreRow}>
-                <View style={styles.drinkCardIcon}>
-                  <Ionicons name="water-outline" size={18} color={Color.gold} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.drinkCardTitle}>Sports Drink Calculator</Text>
-                  <Text style={styles.drinkCardSub}>Sport, sweat rate, and conditions — tailored to you</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={18} color={Color.textFaint} />
-              </Pressable>
-              <Pressable onPress={() => router.push("/weekly-training")} style={[styles.moreRow, styles.moreRowDivider]}>
-                <View style={styles.drinkCardIcon}>
-                  <Ionicons name="calendar-outline" size={18} color={Color.gold} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.drinkCardTitle}>Weekly Training</Text>
-                  <Text style={styles.drinkCardSub}>Your typical week — gym, sport, anything else</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={18} color={Color.textFaint} />
-              </Pressable>
-              <Pressable onPress={() => router.push("/meal-suggest")} style={[styles.moreRow, styles.moreRowDivider]}>
-                <View style={styles.drinkCardIcon}>
-                  <Ionicons name="camera-outline" size={18} color={Color.gold} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.drinkCardTitle}>What Can I Make?</Text>
-                  <Text style={styles.drinkCardSub}>Photo or list your ingredients for meal ideas</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={18} color={Color.textFaint} />
-              </Pressable>
-              <Pressable onPress={() => router.push("/shopping-list")} style={[styles.moreRow, styles.moreRowDivider]}>
-                <View style={styles.drinkCardIcon}>
-                  <Ionicons name="cart-outline" size={18} color={Color.gold} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.drinkCardTitle}>Shopping List</Text>
-                  <Text style={styles.drinkCardSub}>Your list, plus ingredients from saved recipes</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={18} color={Color.textFaint} />
-              </Pressable>
-            </Card>
+            {hasAccess(tier, "nutritionMoreTools") ? (
+              <Card tier="quiet">
+                <Pressable onPress={() => router.push("/drink-calculator")} style={styles.moreRow}>
+                  <View style={styles.drinkCardIcon}>
+                    <Ionicons name="water-outline" size={18} color={Color.gold} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.drinkCardTitle}>Sports Drink Calculator</Text>
+                    <Text style={styles.drinkCardSub}>Sport, sweat rate, and conditions — tailored to you</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={18} color={Color.textFaint} />
+                </Pressable>
+                <Pressable onPress={() => router.push("/weekly-training")} style={[styles.moreRow, styles.moreRowDivider]}>
+                  <View style={styles.drinkCardIcon}>
+                    <Ionicons name="calendar-outline" size={18} color={Color.gold} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.drinkCardTitle}>Weekly Training</Text>
+                    <Text style={styles.drinkCardSub}>Your typical week — gym, sport, anything else</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={18} color={Color.textFaint} />
+                </Pressable>
+                <Pressable onPress={() => router.push("/meal-suggest")} style={[styles.moreRow, styles.moreRowDivider]}>
+                  <View style={styles.drinkCardIcon}>
+                    <Ionicons name="camera-outline" size={18} color={Color.gold} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.drinkCardTitle}>What Can I Make?</Text>
+                    <Text style={styles.drinkCardSub}>Photo or list your ingredients for meal ideas</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={18} color={Color.textFaint} />
+                </Pressable>
+                <Pressable onPress={() => router.push("/shopping-list")} style={[styles.moreRow, styles.moreRowDivider]}>
+                  <View style={styles.drinkCardIcon}>
+                    <Ionicons name="cart-outline" size={18} color={Color.gold} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.drinkCardTitle}>Shopping List</Text>
+                    <Text style={styles.drinkCardSub}>Your list, plus ingredients from saved recipes</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={18} color={Color.textFaint} />
+                </Pressable>
+              </Card>
+            ) : (
+              <UpsellCard
+                icon="construct-outline"
+                title="More Tools"
+                body="Sports drink calculator, weekly training, meal ideas, and shopping list"
+              />
+            )}
           </View>
 
           <View style={styles.section}>

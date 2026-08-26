@@ -20,7 +20,9 @@ import {
   type FoodRecord,
 } from "@/lib/queries/food-catalog";
 import { tapFeedback } from "@/lib/haptics";
+import { hasAccess } from "@/lib/member-access";
 import { MEAL_TYPE_OPTIONS, useCreateFoodEntry, useRecentFoods, type MealType } from "@/lib/queries/nutrition-diary";
+import { useMemberTier } from "@/lib/queries/profile";
 import { todayDateString } from "@/lib/workout-formatters";
 
 function defaultMealTypeForNow(): MealType {
@@ -73,6 +75,8 @@ function FoodResultRow({ food, onPress }: { food: FoodRecord; onPress: () => voi
 
 export default function LogFoodScreen() {
   const router = useRouter();
+  const tier = useMemberTier();
+  const canSearch = hasAccess(tier, "foodSearch");
   const { date: dateParam, mealType: mealTypeParam, foodJson, query: queryParam } = useLocalSearchParams<{ date?: string; mealType?: string; foodJson?: string; query?: string }>();
   const { data: recentFoods } = useRecentFoods();
   const createEntry = useCreateFoodEntry();
@@ -241,20 +245,24 @@ export default function LogFoodScreen() {
             <Ionicons name="chevron-back" size={22} color={Color.textPrimary} />
           </Pressable>
           <Text style={styles.headerTitle}>Log Food</Text>
-          <View style={styles.headerActions}>
-            <Pressable
-              onPress={() => router.push({ pathname: "/label-scan", params: { date, mealType } })}
-              hitSlop={12}
-            >
-              <Ionicons name="camera-outline" size={22} color={Color.gold} />
-            </Pressable>
-            <Pressable
-              onPress={() => router.push({ pathname: "/barcode-scan", params: { date, mealType } })}
-              hitSlop={12}
-            >
-              <Ionicons name="barcode-outline" size={22} color={Color.gold} />
-            </Pressable>
-          </View>
+          {canSearch ? (
+            <View style={styles.headerActions}>
+              <Pressable
+                onPress={() => router.push({ pathname: "/label-scan", params: { date, mealType } })}
+                hitSlop={12}
+              >
+                <Ionicons name="camera-outline" size={22} color={Color.gold} />
+              </Pressable>
+              <Pressable
+                onPress={() => router.push({ pathname: "/barcode-scan", params: { date, mealType } })}
+                hitSlop={12}
+              >
+                <Ionicons name="barcode-outline" size={22} color={Color.gold} />
+              </Pressable>
+            </View>
+          ) : (
+            <View style={styles.headerActions} />
+          )}
         </View>
 
         <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
@@ -267,23 +275,27 @@ export default function LogFoodScreen() {
             ))}
           </View>
 
-          <Text style={[styles.fieldLabel, { marginTop: Spacing.md }]}>Search foods</Text>
-          <View style={styles.searchRow}>
-            <Ionicons name="search-outline" size={16} color={Color.textFaint} />
-            <TextInput
-              value={query}
-              onChangeText={(v) => {
-                setQuery(v);
-                setSearchOpen(true);
-              }}
-              onFocus={() => setSearchOpen(true)}
-              placeholder="Search your foods, common foods, brands…"
-              placeholderTextColor={Color.textFaint}
-              style={styles.searchInput}
-              autoCapitalize="none"
-            />
-            {isSearching ? <ActivityIndicator size="small" color={Color.textFaint} /> : null}
-          </View>
+          {canSearch ? (
+            <>
+              <Text style={[styles.fieldLabel, { marginTop: Spacing.md }]}>Search foods</Text>
+              <View style={styles.searchRow}>
+                <Ionicons name="search-outline" size={16} color={Color.textFaint} />
+                <TextInput
+                  value={query}
+                  onChangeText={(v) => {
+                    setQuery(v);
+                    setSearchOpen(true);
+                  }}
+                  onFocus={() => setSearchOpen(true)}
+                  placeholder="Search your foods, common foods, brands…"
+                  placeholderTextColor={Color.textFaint}
+                  style={styles.searchInput}
+                  autoCapitalize="none"
+                />
+                {isSearching ? <ActivityIndicator size="small" color={Color.textFaint} /> : null}
+              </View>
+            </>
+          ) : null}
 
           <View style={styles.quickLinksRow}>
             <Pressable onPress={() => router.push({ pathname: "/custom-food", params: { date, mealType } })} style={styles.quickLink}>
@@ -296,7 +308,7 @@ export default function LogFoodScreen() {
             </Pressable>
           </View>
 
-          {searchOpen ? (
+          {canSearch && searchOpen ? (
             <Card style={styles.resultsCard}>
               {!hasResults ? (
                 <>

@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { apiFetch } from "@/lib/api-client";
+import type { MemberTier } from "@/lib/member-access";
 
 export type Gender = "Male" | "Female" | "Other";
 export type PrimaryGoal =
@@ -43,6 +44,7 @@ export interface ProfileData {
   avatarDataUrl: string | null;
   cycleTrackingEligible: boolean;
   allTimeStats: { classesCompleted: number; totalWeightKg: number; totalDistanceKm: number };
+  memberTier: MemberTier;
 }
 
 interface ProfileResponse {
@@ -55,6 +57,15 @@ export function useProfile() {
     queryKey: ["profile"],
     queryFn: () => apiFetch<ProfileResponse>("/api/mobile/profile").then((r) => r.data),
   });
+}
+
+// Reads tier off the same profile fetch every screen already makes rather
+// than a dedicated round-trip. Defaults to "free" while loading/erroring —
+// gated UI stays hidden rather than briefly flashing a feature that then
+// gets pulled away once the real tier loads.
+export function useMemberTier(): MemberTier {
+  const { data } = useProfile();
+  return data?.memberTier ?? "free";
 }
 
 export interface ProfileUpdateInput {

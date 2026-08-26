@@ -12,6 +12,8 @@ import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Stepper } from "@/components/ui/Stepper";
 import { Color, Spacing } from "@/constants/theme";
 import { ApiError } from "@/lib/auth-context";
+import { hasAccess } from "@/lib/member-access";
+import { useMemberTier } from "@/lib/queries/profile";
 import { useLogRecovery, useRecovery, type RecoveryLogSummary } from "@/lib/queries/recovery";
 
 function formatDate(dateISO: string): string {
@@ -117,6 +119,7 @@ function CheckInForm({
 
 export default function RecoveryScreen() {
   const router = useRouter();
+  const tier = useMemberTier();
   const { prefillSleepHours } = useLocalSearchParams<{ prefillSleepHours?: string }>();
   const parsedPrefillSleepHours = prefillSleepHours ? Number(prefillSleepHours) : NaN;
   const { data, isLoading, isError, refetch, isRefetching } = useRecovery();
@@ -184,9 +187,11 @@ export default function RecoveryScreen() {
 
         {editingDate === null ? (
           <>
-            <Pressable onPress={() => router.push("/tracker-import")} style={styles.importLink}>
-              <Text style={styles.importLinkText}>Import sleep from your tracker</Text>
-            </Pressable>
+            {hasAccess(tier, "trackerImport") ? (
+              <Pressable onPress={() => router.push("/tracker-import")} style={styles.importLink}>
+                <Text style={styles.importLinkText}>Import sleep from your tracker</Text>
+              </Pressable>
+            ) : null}
             <CheckInForm
               date={data.todayISO}
               existingLog={todayLog}

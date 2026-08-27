@@ -3,13 +3,15 @@ import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { WeightChangeInsights } from "@/components/ui/WeightChangeInsights";
 import { WeightTrendChart } from "@/components/ui/WeightTrendChart";
 import { Color, Radius, Spacing } from "@/constants/theme";
 import { tapFeedback } from "@/lib/haptics";
-import { useBodyWeightLogs, useLogBodyWeight, type BodyWeightLog } from "@/lib/queries/body-weight";
+import { useBodyFatLogs, useLogBodyFat, type BodyFatLog } from "@/lib/queries/body-fat";
 import { todayDateString } from "@/lib/workout-formatters";
 
+// Mirrors BodyWeightCard.tsx exactly — same range-filter/change-summary/
+// chart trio, applied to BodyFatLogRecord instead. See that file for the
+// `compact` prop's rationale.
 type RangeFilter = "month" | "3months" | "6months" | "year" | "all";
 
 const RANGE_LABELS: { value: RangeFilter; label: string }[] = [
@@ -20,7 +22,7 @@ const RANGE_LABELS: { value: RangeFilter; label: string }[] = [
   { value: "all", label: "All time" },
 ];
 
-function applyRangeFilter(logs: BodyWeightLog[], filter: RangeFilter): BodyWeightLog[] {
+function applyRangeFilter(logs: BodyFatLog[], filter: RangeFilter): BodyFatLog[] {
   const sorted = [...logs].sort((a, b) => a.date.localeCompare(b.date));
   if (filter === "all") return sorted;
   const cutoff = new Date();
@@ -32,48 +34,40 @@ function applyRangeFilter(logs: BodyWeightLog[], filter: RangeFilter): BodyWeigh
   return sorted.filter((l) => l.date >= cutoffStr);
 }
 
-// Mirrors the web profile page's weightChangeSummary — always compares
-// against full history (not the active range filter), so it reads as
-// "since you started tracking" rather than "since the start of this window".
-function changeSummary(logs: BodyWeightLog[]): string | null {
+function changeSummary(logs: BodyFatLog[]): string | null {
   if (logs.length < 2) return null;
   const sorted = [...logs].sort((a, b) => a.date.localeCompare(b.date));
   const first = sorted[0];
   const latest = sorted[sorted.length - 1];
-  const delta = Math.round((latest.weightKg - first.weightKg) * 10) / 10;
+  const delta = Math.round((latest.bodyFatPct - first.bodyFatPct) * 10) / 10;
   const since = new Date(`${first.date}T00:00:00`).toLocaleDateString("en-GB", {
     day: "numeric",
     month: "short",
     year: "numeric",
   });
   if (delta === 0) return `No change since your first entry (${since}).`;
-  return `${delta > 0 ? "Up" : "Down"} ${Math.abs(delta)} kg since your first entry (${since}).`;
+  return `${delta > 0 ? "Up" : "Down"} ${Math.abs(delta)} pts since your first entry (${since}).`;
 }
 
-// Shared between the Nutrition tab's "Weight check-in" section and the
-// Profile screen's "Body weight" section — same log-form + chart, reused
-// rather than duplicated, matching the web app's single body-weight tool.
-// `compact` skips the range chips/change-summary for the smaller Nutrition
-// placement, since that spot's job is quick logging, not trend review.
-export function BodyWeightCard({ compact = false }: { compact?: boolean }) {
-  const { data: weightLogs } = useBodyWeightLogs();
-  const logWeight = useLogBodyWeight();
+export function BodyFatCard({ compact = false }: { compact?: boolean }) {
+  const { data: fatLogs } = useBodyFatLogs();
+  const logFat = useLogBodyFat();
   const [logging, setLogging] = useState(false);
-  const [weightInput, setWeightInput] = useState("");
+  const [pctInput, setPctInput] = useState("");
   const [range, setRange] = useState<RangeFilter>("3months");
 
   const latest = useMemo(
-    () => (weightLogs && weightLogs.length > 0 ? [...weightLogs].sort((a, b) => b.date.localeCompare(a.date))[0] : null),
-    [weightLogs],
+    () => (fatLogs && fatLogs.length > 0 ? [...fatLogs].sort((a, b) => b.date.localeCompare(a.date))[0] : null),
+    [fatLogs],
   );
-  const filtered = useMemo(() => applyRangeFilter(weightLogs ?? [], range), [weightLogs, range]);
+  const filtered = useMemo(() => applyRangeFilter(fatLogs ?? [], range), [fatLogs, range]);
 
   async function handleSave() {
-    const kg = parseFloat(weightInput);
-    if (!Number.isFinite(kg) || kg <= 0) return;
-    await logWeight.mutateAsync({ date: todayDateString(), weightKg: kg });
+    const pct = parseFloat(pctInput);
+    if (!Number.isFinite(pct) || pct <= 0 || pct > 75) return;
+    await logFat.mutateAsync({ date: todayDateString(), bodyFatPct: pct });
     tapFeedback();
-    setWeightInput("");
+    setPctInput("");
     setLogging(false);
   }
 
@@ -81,28 +75,36 @@ export function BodyWeightCard({ compact = false }: { compact?: boolean }) {
     <Card style={styles.card}>
       <View style={styles.headerRow}>
         <View>
-          <Text style={styles.value}>{latest ? `${latest.weightKg} kg` : "—"}</Text>
-          <Text style={styles.sub}>{latest ? `Last logged ${latest.date}` : "No check-ins yet"}</Text>
+          <Text style={styles.value}>{latest ? `${latest.bodyFatPct}%` : "—"}</Text>
+          <Text style={styles.sub}>{latest ? `Last logged ${latest.date}` : "No readings yet"}</Text>
         </View>
-        {!logging ? <Button title="Log weight" variant="secondary" onPress={() => setLogging(true)} /> : null}
+        {!logging ? <Button title="Log body fat" variant="secondary" onPress={() => setLogging(true)} /> : null}
       </View>
+
+      {!compact && !latest ? (
+        <Text style={styles.explainer}>
+          Optional — weight alone can't tell muscle gain from fat loss. Logging body fat %
+          (calipers, a smart scale, or a DEXA/InBody scan) lets your plan track body
+          composition directly.
+        </Text>
+      ) : null}
 
       {logging ? (
         <View style={styles.inputRow}>
           <TextInput
-            value={weightInput}
-            onChangeText={setWeightInput}
+            value={pctInput}
+            onChangeText={setPctInput}
             keyboardType="decimal-pad"
-            placeholder="kg"
+            placeholder="%"
             placeholderTextColor={Color.textFaint}
             style={styles.input}
             autoFocus
           />
-          <Button title="Save" onPress={handleSave} loading={logWeight.isPending} style={{ flex: 1 }} />
+          <Button title="Save" onPress={handleSave} loading={logFat.isPending} style={{ flex: 1 }} />
         </View>
       ) : null}
 
-      {weightLogs && weightLogs.length > 0 ? (
+      {fatLogs && fatLogs.length > 0 ? (
         <View style={{ marginTop: Spacing.md }}>
           {!compact ? (
             <View style={styles.rangeRow}>
@@ -118,12 +120,16 @@ export function BodyWeightCard({ compact = false }: { compact?: boolean }) {
             </View>
           ) : null}
 
-          {!compact && changeSummary(weightLogs) ? <Text style={styles.summary}>{changeSummary(weightLogs)}</Text> : null}
+          {!compact && changeSummary(fatLogs) ? <Text style={styles.summary}>{changeSummary(fatLogs)}</Text> : null}
 
-          {(compact ? weightLogs : filtered).length >= 2 ? (
+          {(compact ? fatLogs : filtered).length >= 2 ? (
             <View style={{ marginTop: compact ? 0 : Spacing.sm }}>
-              <WeightTrendChart logs={(compact ? weightLogs : filtered).map((l) => ({ date: l.date, value: l.weightKg }))} />
-              {!compact ? <WeightChangeInsights logs={weightLogs} /> : null}
+              <WeightTrendChart
+                logs={(compact ? fatLogs : filtered).map((l) => ({ date: l.date, value: l.bodyFatPct }))}
+                unit="%"
+                rawLabel="Reading"
+                trendLabel="Trend"
+              />
             </View>
           ) : !compact ? (
             <Text style={styles.emptyRange}>
@@ -141,6 +147,7 @@ const styles = StyleSheet.create({
   headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   value: { fontSize: 20, fontWeight: "700", color: Color.textPrimary, fontVariant: ["tabular-nums"] },
   sub: { fontSize: 11, color: Color.textMuted, marginTop: 2 },
+  explainer: { fontSize: 11, color: Color.textMuted, marginTop: Spacing.sm, lineHeight: 16 },
   inputRow: { flexDirection: "row", gap: Spacing.sm, marginTop: Spacing.md },
   input: {
     width: 90,

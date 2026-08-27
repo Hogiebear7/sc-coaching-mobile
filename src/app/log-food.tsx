@@ -248,6 +248,12 @@ export default function LogFoodScreen() {
           {canSearch ? (
             <View style={styles.headerActions}>
               <Pressable
+                onPress={() => router.push({ pathname: "/describe-food", params: { date, mealType } })}
+                hitSlop={12}
+              >
+                <Ionicons name="chatbubble-ellipses-outline" size={22} color={Color.gold} />
+              </Pressable>
+              <Pressable
                 onPress={() => router.push({ pathname: "/label-scan", params: { date, mealType } })}
                 hitSlop={12}
               >

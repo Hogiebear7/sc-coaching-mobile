@@ -33,6 +33,10 @@ export interface ProfileData {
   emergencyContact2Phone: string | null;
   currentWeightKg: number | null;
   heightCm: number | null;
+  // ISO 3166-1 alpha-2 (e.g. "IE") — nudges food-search ranking toward
+  // locally-relevant results server-side (see the main repo's
+  // lib/food-catalog.ts country boost). null = no boost, not an error.
+  country: string | null;
   dietaryPreference: DietaryPreference;
   allergies: string[];
   intolerancesOrMedical: string[];
@@ -77,6 +81,7 @@ export interface ProfileUpdateInput {
   primaryGoal: PrimaryGoal;
   sportPlayed?: string;
   heightCm?: string;
+  country?: string;
   additionalInfo?: string;
   emergencyContactName?: string;
   emergencyContactPhone?: string;

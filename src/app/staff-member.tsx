@@ -208,7 +208,11 @@ export default function StaffMemberScreen() {
                     <Text style={styles.rowLabel}>{WEEKDAY_LABEL[day]}</Text>
                     <Text style={styles.rowValue}>
                       {sessions
-                        .map((s) => [s.label, s.timeOfDay, s.intensity].filter(Boolean).join(" · "))
+                        .map((s) =>
+                          [s.label, s.timeOfDay, s.intensity, s.estimatedDurationMins ? `${s.estimatedDurationMins}m` : null]
+                            .filter(Boolean)
+                            .join(" · ")
+                        )
                         .join(", ")}
                     </Text>
                   </View>

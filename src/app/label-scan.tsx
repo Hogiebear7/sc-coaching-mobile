@@ -13,7 +13,7 @@ import { Color, Radius, Spacing } from "@/constants/theme";
 import { ApiError } from "@/lib/api-client";
 import { trackEvent } from "@/lib/analytics";
 import { tapFeedback } from "@/lib/haptics";
-import { usePhotoFoodScan, type IdentifiedFoodItem } from "@/lib/queries/food-catalog";
+import { useDescribeFoodText, usePhotoFoodScan, useSaveFoodIdentificationOverride, type IdentifiedFoodItem } from "@/lib/queries/food-catalog";
 import { useCreateFoodEntry, type MealType } from "@/lib/queries/nutrition-diary";
 import { todayDateString } from "@/lib/workout-formatters";
 
@@ -22,6 +22,12 @@ type Stage = "camera" | "scanning" | "reviewing";
 interface ReviewItem extends IdentifiedFoodItem {
   id: string;
   included: boolean;
+  /** The AI's own identified name at scan time, before any edits — the
+      match key an "Always use this instead" save trigger on, since the
+      point is "next time the AI says this again", not "next time I type
+      whatever I edited it to". */
+  originalName: string;
+  overrideSaved: boolean;
 }
 
 function defaultMealTypeForNow(): MealType {
@@ -51,6 +57,11 @@ export default function LabelScanScreen() {
   const [scanError, setScanError] = useState<string | null>(null);
   const photoScan = usePhotoFoodScan();
   const createEntry = useCreateFoodEntry();
+  const saveOverride = useSaveFoodIdentificationOverride();
+  const describeFood = useDescribeFoodText();
+  const [correctingId, setCorrectingId] = useState<string | null>(null);
+  const [correctionText, setCorrectionText] = useState("");
+  const [correctionError, setCorrectionError] = useState<string | null>(null);
 
   const effectiveDate = date || todayDateString();
   const effectiveMealType = (mealType as MealType) || defaultMealTypeForNow();
@@ -134,7 +145,7 @@ export default function LabelScanScreen() {
       }
 
       trackEvent("label_scan_items_identified", { count: res.items.length, hasBarcode: !!barcode });
-      setItems(res.items.map((item, i) => ({ ...item, id: `item-${i}`, included: true })));
+      setItems(res.items.map((item, i) => ({ ...item, id: `item-${i}`, included: true, originalName: item.name, overrideSaved: false })));
       setStage("reviewing");
     } catch (e) {
       // A real failure — not configured, rate-limited, network error, or a
@@ -161,6 +172,62 @@ export default function LabelScanScreen() {
   function removeItem(id: string) {
     tapFeedback();
     setItems((prev) => prev.filter((it) => it.id !== id));
+  }
+
+  async function handleAlwaysUseThis(item: ReviewItem) {
+    tapFeedback();
+    try {
+      await saveOverride.mutateAsync({
+        triggerLabel: item.originalName,
+        preferredFood: {
+          name: item.name,
+          calories: item.calories,
+          proteinG: item.proteinG,
+          carbsG: item.carbsG,
+          fatG: item.fatG,
+          servingDescription: item.servingDescription,
+        },
+      });
+      setItems((prev) => prev.map((it) => (it.id === item.id ? { ...it, overrideSaved: true } : it)));
+    } catch {
+      // Non-critical — the item can still be logged normally either way, so
+      // a failed save here shouldn't block the review flow with an error.
+    }
+  }
+
+  async function handleSubmitCorrection(item: ReviewItem) {
+    if (!correctionText.trim()) return;
+    tapFeedback();
+    setCorrectionError(null);
+    try {
+      const res = await describeFood.mutateAsync({
+        descriptionText: correctionText.trim(),
+        existingItem: {
+          name: item.name,
+          calories: item.calories,
+          proteinG: item.proteinG,
+          carbsG: item.carbsG,
+          fatG: item.fatG,
+          servingDescription: item.servingDescription,
+        },
+      });
+      const corrected = res.items[0];
+      if (!corrected) {
+        setCorrectionError("Couldn't apply that correction — try describing it differently.");
+        return;
+      }
+      setItems((prev) =>
+        prev.map((it) =>
+          it.id === item.id
+            ? { ...it, name: corrected.name, calories: corrected.calories, proteinG: corrected.proteinG, carbsG: corrected.carbsG, fatG: corrected.fatG, servingDescription: corrected.servingDescription }
+            : it
+        )
+      );
+      setCorrectingId(null);
+      setCorrectionText("");
+    } catch (e) {
+      setCorrectionError(e instanceof ApiError ? e.message : "Couldn't reach the server. Check your connection and try again.");
+    }
   }
 
   function saveAsCustomFood(item: ReviewItem) {
@@ -301,10 +368,17 @@ export default function LabelScanScreen() {
 
               <View style={styles.itemMetaRow}>
                 <Text style={styles.servingText}>{item.servingDescription || "Serving not specified"}</Text>
-                <View style={[styles.sourceBadge, item.source === "label" && styles.sourceBadgeLabel]}>
-                  <Text style={[styles.sourceBadgeText, item.source === "label" && styles.sourceBadgeTextLabel]}>
-                    {item.source === "label" ? "From label" : "Estimated"}
-                  </Text>
+                <View style={styles.badgeGroup}>
+                  {item.overridden ? (
+                    <View style={[styles.sourceBadge, styles.sourceBadgeLabel]}>
+                      <Text style={[styles.sourceBadgeText, styles.sourceBadgeTextLabel]}>Using your correction</Text>
+                    </View>
+                  ) : null}
+                  <View style={[styles.sourceBadge, item.source === "label" && styles.sourceBadgeLabel]}>
+                    <Text style={[styles.sourceBadgeText, item.source === "label" && styles.sourceBadgeTextLabel]}>
+                      {item.source === "label" ? "From label" : "Estimated"}
+                    </Text>
+                  </View>
                 </View>
               </View>
 
@@ -348,6 +422,61 @@ export default function LabelScanScreen() {
                   />
                 </View>
               </View>
+
+              <Pressable
+                onPress={() => handleAlwaysUseThis(item)}
+                disabled={item.overrideSaved || saveOverride.isPending}
+                style={styles.saveCustomLink}
+              >
+                <Text style={styles.saveCustomLinkText}>
+                  {item.overrideSaved ? "Saved — the AI will use this next time" : `Always use this instead of "${item.originalName}"`}
+                </Text>
+              </Pressable>
+
+              {correctingId === item.id ? (
+                <View style={styles.correctionWrap}>
+                  <TextInput
+                    value={correctionText}
+                    onChangeText={setCorrectionText}
+                    placeholder={`e.g. "actually it's oat milk" or "make it 2 slices"`}
+                    placeholderTextColor={Color.textFaint}
+                    style={styles.correctionInput}
+                    autoFocus
+                  />
+                  {correctionError ? <Text style={styles.error}>{correctionError}</Text> : null}
+                  <View style={styles.correctionActions}>
+                    <Pressable
+                      onPress={() => {
+                        setCorrectingId(null);
+                        setCorrectionText("");
+                        setCorrectionError(null);
+                      }}
+                      style={styles.correctionCancel}
+                    >
+                      <Text style={styles.saveCustomLinkText}>Cancel</Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={() => handleSubmitCorrection(item)}
+                      disabled={!correctionText.trim() || describeFood.isPending}
+                      style={styles.correctionSubmit}
+                    >
+                      <Text style={styles.correctionSubmitText}>{describeFood.isPending ? "Applying…" : "Apply"}</Text>
+                    </Pressable>
+                  </View>
+                </View>
+              ) : (
+                <Pressable
+                  onPress={() => {
+                    tapFeedback();
+                    setCorrectingId(item.id);
+                    setCorrectionText("");
+                    setCorrectionError(null);
+                  }}
+                  style={styles.saveCustomLink}
+                >
+                  <Text style={styles.saveCustomLinkText}>Describe a correction</Text>
+                </Pressable>
+              )}
 
               {barcode ? (
                 <Pressable onPress={() => saveAsCustomFood(item)} style={styles.saveCustomLink}>
@@ -434,6 +563,7 @@ const styles = StyleSheet.create({
   checkbox: { padding: 2 },
   nameInput: { flex: 1, fontSize: 14, fontWeight: "700", color: Color.textPrimary, paddingVertical: 4 },
   itemMetaRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  badgeGroup: { flexDirection: "row", gap: 6 },
   servingText: { fontSize: 12, color: Color.textMuted },
   sourceBadge: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.sm, paddingVertical: 2 },
   sourceBadgeLabel: { borderColor: Color.gold },
@@ -454,6 +584,21 @@ const styles = StyleSheet.create({
   },
   saveCustomLink: { alignItems: "flex-start", marginTop: 2 },
   saveCustomLinkText: { fontSize: 12, fontWeight: "600", color: Color.gold },
+  correctionWrap: { marginTop: 2, gap: Spacing.xs },
+  correctionInput: {
+    height: 40,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: Color.borderSubtle,
+    backgroundColor: Color.surface1,
+    paddingHorizontal: Spacing.sm,
+    fontSize: 13,
+    color: Color.textPrimary,
+  },
+  correctionActions: { flexDirection: "row", justifyContent: "flex-end", gap: Spacing.md, alignItems: "center" },
+  correctionCancel: { paddingVertical: 4 },
+  correctionSubmit: { paddingVertical: 4, paddingHorizontal: Spacing.sm, borderRadius: Radius.pill, backgroundColor: Color.gold },
+  correctionSubmitText: { fontSize: 12, fontWeight: "700", color: Color.goldForeground },
   emptyText: { fontSize: 13, color: Color.textMuted, textAlign: "center", marginTop: Spacing.xl },
   error: { fontSize: 12, color: Color.danger, marginTop: Spacing.sm, textAlign: "center" },
 });

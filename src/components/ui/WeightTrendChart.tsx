@@ -10,9 +10,16 @@ import {
 import Svg, { Circle, G, Line, Polyline, Text as SvgText } from "react-native-svg";
 
 import { Color, Radius } from "@/constants/theme";
-import type { BodyWeightLog } from "@/lib/queries/body-weight";
 import { computeTrendStats, movingAverageTrend, type TrendPoint } from "@/lib/workout-formatters";
 import { useReduceMotionPref } from "@/lib/use-reduce-motion";
+
+// A single dated reading — deliberately the same shape as TrendPoint, so any
+// date+value metric (body weight, body fat %) can drive this chart without a
+// per-metric chart component. See BodyFatCard.tsx for the body-fat caller.
+export interface DatedMetricPoint {
+  date: string;
+  value: number;
+}
 
 const AnimatedSvg = Animated.createAnimatedComponent(Svg);
 
@@ -48,11 +55,23 @@ function daysBetween(a: string, b: string): number {
 // static image, matching the animated feel the rest of the app's data views
 // use. Touching/dragging over the plot area reveals the exact scale weight
 // logged on that date.
-export function WeightTrendChart({ logs }: { logs: BodyWeightLog[] }) {
+export function WeightTrendChart({
+  logs,
+  unit = " kg",
+  rawLabel = "Scale Weight",
+  trendLabel = "Trend Weight",
+}: {
+  logs: DatedMetricPoint[];
+  /** Appended to displayed values (stats, axis min/max, tooltip). Default
+      "kg" matches the original body-weight-only behavior. */
+  unit?: string;
+  rawLabel?: string;
+  trendLabel?: string;
+}) {
   const reduceMotion = useReduceMotionPref();
   const anim = useRef(new Animated.Value(0)).current;
   const sorted = [...logs].sort((a, b) => a.date.localeCompare(b.date));
-  const dataKey = sorted.map((l) => `${l.date}:${l.weightKg}`).join("|");
+  const dataKey = sorted.map((l) => `${l.date}:${l.value}`).join("|");
   const [chartW, setChartW] = useState(DEFAULT_CHART_W);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
 
@@ -82,7 +101,7 @@ export function WeightTrendChart({ logs }: { logs: BodyWeightLog[] }) {
     );
   }
 
-  const rawPoints: TrendPoint[] = sorted.map((l) => ({ date: l.date, value: l.weightKg }));
+  const rawPoints: TrendPoint[] = sorted.map((l) => ({ date: l.date, value: l.value }));
   const trendPoints = movingAverageTrend(rawPoints, 7);
   const stats = computeTrendStats(rawPoints);
 
@@ -138,12 +157,12 @@ export function WeightTrendChart({ logs }: { logs: BodyWeightLog[] }) {
         <View style={styles.statsRow}>
           <View>
             <Text style={styles.statLabel}>Average</Text>
-            <Text style={styles.statValue}>{stats.average.toFixed(1)} kg</Text>
+            <Text style={styles.statValue}>{stats.average.toFixed(1)}{unit}</Text>
           </View>
           <View style={styles.statRight}>
             <Text style={styles.statLabel}>Difference</Text>
             <Text style={styles.statValue}>
-              {stats.difference === 0 ? "No change" : `${stats.difference > 0 ? "+" : ""}${stats.difference.toFixed(1)} kg`}
+              {stats.difference === 0 ? "No change" : `${stats.difference > 0 ? "+" : ""}${stats.difference.toFixed(1)}${unit}`}
             </Text>
           </View>
         </View>
@@ -152,11 +171,11 @@ export function WeightTrendChart({ logs }: { logs: BodyWeightLog[] }) {
       <View style={styles.legendRow}>
         <View style={styles.legendItem}>
           <View style={[styles.legendSwatch, { backgroundColor: Color.textFaint }]} />
-          <Text style={styles.legendText}>Scale Weight</Text>
+          <Text style={styles.legendText}>{rawLabel}</Text>
         </View>
         <View style={styles.legendItem}>
           <View style={[styles.legendSwatch, { backgroundColor: Color.gold }]} />
-          <Text style={styles.legendText}>Trend Weight</Text>
+          <Text style={styles.legendText}>{trendLabel}</Text>
         </View>
       </View>
 
@@ -254,7 +273,7 @@ export function WeightTrendChart({ logs }: { logs: BodyWeightLog[] }) {
             },
           ]}
         >
-          <Text style={styles.tooltipValue}>{activePoint.val.toFixed(1)} kg</Text>
+          <Text style={styles.tooltipValue}>{activePoint.val.toFixed(1)}{unit}</Text>
           <Text style={styles.tooltipDate}>{shortDate(activePoint.date)}</Text>
         </View>
       ) : null}

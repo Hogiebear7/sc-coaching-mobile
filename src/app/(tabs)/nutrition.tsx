@@ -42,7 +42,14 @@ import {
   useRecentFoods,
   type MealType,
 } from "@/lib/queries/nutrition-diary";
-import { useNutrition, useSendNutritionCoachMessage, type FoodItem, type NutritionAiMessage } from "@/lib/queries/nutrition";
+import {
+  useApplyNutritionTargetOverride,
+  useNutrition,
+  useSendNutritionCoachMessage,
+  type FoodItem,
+  type NutritionAiMessage,
+} from "@/lib/queries/nutrition";
+import { extractTargetProposal, type TargetProposal } from "@/lib/nutrition-target-proposal";
 import { classifyLoad, LOAD_BAND_LABEL } from "@/lib/nutrition-calc";
 import { todayDateString } from "@/lib/workout-formatters";
 
@@ -307,8 +314,24 @@ function CoachChat({
   const [messages, setMessages] = useState<NutritionAiMessage[]>(initialMessages);
   const [input, setInput] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [applyingMsgId, setApplyingMsgId] = useState<string | null>(null);
+  const [appliedMsgIds, setAppliedMsgIds] = useState<Set<string>>(new Set());
   const send = useSendNutritionCoachMessage();
+  const applyOverride = useApplyNutritionTargetOverride();
   const seeded = useRef(false);
+
+  async function handleApplyProposal(msgId: string, proposal: TargetProposal) {
+    setApplyingMsgId(msgId);
+    setError(null);
+    try {
+      await applyOverride.mutateAsync(proposal);
+      setAppliedMsgIds((prev) => new Set(prev).add(msgId));
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "Could not apply that target. Please try again.");
+    } finally {
+      setApplyingMsgId(null);
+    }
+  }
 
   useEffect(() => {
     if (!seeded.current && initialMessages.length > 0) {
@@ -346,11 +369,31 @@ function CoachChat({
         {messages.length === 0 ? (
           <Text style={styles.chatEmpty}>Ask about meal timing, fuelling for a session, or your macros — grounded in your own training and recovery data.</Text>
         ) : (
-          messages.slice(-12).map((m) => (
-            <View key={m.id} style={[styles.bubble, m.role === "user" ? styles.bubbleUser : styles.bubbleAssistant]}>
-              <Text style={m.role === "user" ? styles.bubbleUserText : styles.bubbleAssistantText}>{m.content}</Text>
-            </View>
-          ))
+          messages.slice(-12).map((m) => {
+            const { cleanText, proposal } = m.role === "assistant" ? extractTargetProposal(m.content) : { cleanText: m.content, proposal: null };
+            const applied = appliedMsgIds.has(m.id);
+            return (
+              <View key={m.id} style={[styles.bubble, m.role === "user" ? styles.bubbleUser : styles.bubbleAssistant]}>
+                <Text style={m.role === "user" ? styles.bubbleUserText : styles.bubbleAssistantText}>{cleanText}</Text>
+                {proposal ? (
+                  <View style={styles.proposalBlock}>
+                    <Text style={styles.proposalSummary}>
+                      {proposal.calories} kcal · {proposal.proteinG}g protein · {proposal.carbsG}g carbs · {proposal.fatG}g fat
+                    </Text>
+                    <Pressable
+                      onPress={() => handleApplyProposal(m.id, proposal)}
+                      disabled={applied || applyingMsgId === m.id}
+                      style={[styles.applyButton, (applied || applyingMsgId === m.id) && styles.applyButtonDisabled]}
+                    >
+                      <Text style={styles.applyButtonText}>
+                        {applied ? "Target applied" : applyingMsgId === m.id ? "Applying…" : "Apply this target"}
+                      </Text>
+                    </Pressable>
+                  </View>
+                ) : null}
+              </View>
+            );
+          })
         )}
         {send.isPending ? <ActivityIndicator color={Color.gold} style={{ marginTop: Spacing.sm }} /> : null}
       </View>
@@ -868,6 +911,20 @@ const styles = StyleSheet.create({
   bubbleAssistant: { alignSelf: "flex-start", backgroundColor: Color.surface2 },
   bubbleUserText: { fontSize: 13, color: Color.gold },
   bubbleAssistantText: { fontSize: 13, color: Color.textSecondary },
+  proposalBlock: { marginTop: Spacing.sm, paddingTop: Spacing.sm, borderTopWidth: 1, borderTopColor: Color.borderSubtle },
+  proposalSummary: { fontSize: 11, color: Color.textMuted },
+  applyButton: {
+    marginTop: Spacing.xs,
+    alignSelf: "flex-start",
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: Color.goldBorder,
+    backgroundColor: Color.goldWeak,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 6,
+  },
+  applyButtonDisabled: { opacity: 0.7 },
+  applyButtonText: { fontSize: 12, fontWeight: "600", color: Color.gold },
   error: { fontSize: 11, color: Color.danger, marginBottom: Spacing.xs },
   chatInputRow: { flexDirection: "row", gap: Spacing.sm, alignItems: "flex-end" },
   chatInput: {

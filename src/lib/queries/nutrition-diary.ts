@@ -49,6 +49,15 @@ export interface ResolvedNutritionTarget {
   source: "adaptive" | "estimated" | "manual" | null;
   notes: string | null;
   bodyWeightKg: number | null;
+  /** Member-facing "why this number" lines — see lib/nutrition-target.ts's
+      buildTargetRationale in the main repo. Null when there's nothing to
+      explain (disabled/no weight on file). */
+  rationale: string[] | null;
+  /** True when mode is "manual" and the member set it themselves (via the
+      AI Nutrition Coach's "Apply this target"), not a coach. Always false
+      for auto/disabled. Mirrors ResolvedNutritionTarget in the main repo's
+      lib/nutrition-target-data.ts. */
+  setByMember: boolean;
 }
 
 export interface ResolvedNutritionWeek {

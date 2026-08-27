@@ -13,13 +13,18 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { BodyFatCard } from "@/components/ui/BodyFatCard";
 import { BodyWeightCard } from "@/components/ui/BodyWeightCard";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { CyclePhaseChart } from "@/components/ui/CyclePhaseChart";
 import { DateField } from "@/components/ui/DateField";
+import { GoalTimelineCard } from "@/components/ui/GoalTimelineCard";
 import { TextField } from "@/components/ui/TextField";
 import { Color, Radius, Spacing } from "@/constants/theme";
 import { ApiError, useAuth } from "@/lib/auth-context";
+import { COUNTRIES } from "@/lib/country-options";
+import { useCycleData } from "@/lib/queries/cycle";
 import { ALLERGENS, DIETARY_PREFERENCES, INTOLERANCES } from "@/lib/dietary-options";
 import {
   useProfile,
@@ -65,6 +70,7 @@ export default function ProfileScreen() {
   const isStaffRole = !!user && user.role !== "member";
   const { data, isLoading, isError, refetch } = useProfile();
   const update = useUpdateProfile();
+  const { data: cycleData } = useCycleData(!!data?.cycleTrackingEligible);
 
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
@@ -73,6 +79,7 @@ export default function ProfileScreen() {
   const [primaryGoal, setPrimaryGoal] = useState<PrimaryGoal | null>(null);
   const [sportPlayed, setSportPlayed] = useState("");
   const [heightCm, setHeightCm] = useState("");
+  const [country, setCountry] = useState("");
   const [additionalInfo, setAdditionalInfo] = useState("");
   const [emergencyContactName, setEmergencyContactName] = useState("");
   const [emergencyContactPhone, setEmergencyContactPhone] = useState("");
@@ -95,6 +102,7 @@ export default function ProfileScreen() {
     setPrimaryGoal(data.primaryGoal);
     setSportPlayed(data.sportPlayed ?? "");
     setHeightCm(data.heightCm !== null ? String(data.heightCm) : "");
+    setCountry(data.country ?? "");
     setAdditionalInfo(data.additionalInfo ?? "");
     setEmergencyContactName(data.emergencyContactName ?? "");
     setEmergencyContactPhone(data.emergencyContactPhone ?? "");
@@ -158,6 +166,11 @@ export default function ProfileScreen() {
         primaryGoal,
         sportPlayed: sportPlayed.trim() || undefined,
         heightCm: heightCm.trim() || undefined,
+        // Always sent (even "") so picking "Not set" actually clears a
+        // previously-set country — unlike the optional-omit fields above,
+        // this app always renders the picker, so there's no "older client
+        // that's never heard of this field" case to protect with omission.
+        country,
         additionalInfo: additionalInfo.trim() || undefined,
         emergencyContactName: emergencyContactName.trim() || undefined,
         emergencyContactPhone: emergencyContactPhone.trim() || undefined,
@@ -223,6 +236,22 @@ export default function ProfileScreen() {
               placeholder="e.g. 178"
               style={{ marginTop: Spacing.md }}
             />
+
+            <Text style={[styles.label, styles.labelSpaced]}>
+              Country — optional, improves food search results
+            </Text>
+            <View style={styles.chipRow}>
+              <Chip label="Not set" active={country === ""} onPress={() => setCountry("")} />
+              {COUNTRIES.map((c) => (
+                <Chip key={c.value} label={c.label} active={country === c.value} onPress={() => setCountry(c.value)} />
+              ))}
+            </View>
+
+            <Text style={[styles.sectionLabel, styles.sectionLabelSpaced]}>BODY FAT %</Text>
+            <BodyFatCard />
+
+            <Text style={[styles.sectionLabel, styles.sectionLabelSpaced]}>GOAL TIMELINE</Text>
+            <GoalTimelineCard />
 
             <Text style={[styles.sectionLabel, styles.sectionLabelSpaced]}>YOUR DETAILS</Text>
             <TextField label="Full name" value={fullName} onChangeText={setFullName} placeholder="Your full name" />
@@ -367,16 +396,36 @@ export default function ProfileScreen() {
             </Pressable>
 
             {data.cycleTrackingEligible ? (
-              <Pressable onPress={() => router.push("/cycle-tracking")} style={[styles.cycleRow, { marginTop: Spacing.sm }]}>
-                <View style={styles.cycleRowIcon}>
-                  <Ionicons name="moon-outline" size={18} color={Color.gold} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.settingTitle}>Cycle Tracking</Text>
-                  <Text style={styles.settingSub}>Private cycle info, phase estimate, and coach sharing</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={18} color={Color.textFaint} />
-              </Pressable>
+              <>
+                <Pressable onPress={() => router.push("/cycle-tracking")} style={[styles.cycleRow, { marginTop: Spacing.sm }]}>
+                  <View style={styles.cycleRowIcon}>
+                    <Ionicons name="moon-outline" size={18} color={Color.gold} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.settingTitle}>Cycle Tracking</Text>
+                    <Text style={styles.settingSub}>Private cycle info, phase estimate, and coach sharing</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={18} color={Color.textFaint} />
+                </Pressable>
+
+                {cycleData?.enabled &&
+                cycleData.phaseEstimate.phase !== "Unknown" &&
+                cycleData.phaseEstimate.cycleDay !== null &&
+                cycleData.phaseEstimate.cycleLength !== null ? (
+                  <Pressable onPress={() => router.push("/cycle-tracking")} style={styles.phasePreview}>
+                    <Text style={styles.phasePreviewLabel}>
+                      Estimated phase: {cycleData.phaseEstimate.phaseLabel} — day {cycleData.phaseEstimate.cycleDay} of{" "}
+                      {cycleData.phaseEstimate.cycleLength}
+                    </Text>
+                    <CyclePhaseChart
+                      cycleDay={cycleData.phaseEstimate.cycleDay}
+                      cycleLength={cycleData.phaseEstimate.cycleLength}
+                      periodLengthDays={cycleData.settings?.periodLengthDays ?? null}
+                      currentPhase={cycleData.phaseEstimate.phase}
+                    />
+                  </Pressable>
+                ) : null}
+              </>
             ) : null}
 
             {isStaffRole ? (
@@ -455,6 +504,15 @@ const styles = StyleSheet.create({
   },
   settingTitle: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
   settingSub: { fontSize: 11, color: Color.textMuted, marginTop: 2 },
+  phasePreview: {
+    marginTop: Spacing.sm,
+    padding: Spacing.md,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: Color.borderSubtle,
+    backgroundColor: Color.surface1,
+  },
+  phasePreviewLabel: { fontSize: 12, fontWeight: "600", color: Color.textPrimary, marginBottom: Spacing.sm },
   dietaryCard: { padding: Spacing.md },
   dietaryHint: { fontSize: 12, color: Color.textMuted, marginBottom: Spacing.md },
 });

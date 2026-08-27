@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   findNodeHandle,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -42,6 +43,7 @@ function newSession(dayOfWeek: TrainingDayOfWeek): WeeklyTrainingSession {
     activityType: "gym",
     timeOfDay: null,
     intensity: null,
+    estimatedDurationMins: null,
     notes: null,
     recurring: true,
     weekOf: null,
@@ -80,6 +82,17 @@ const INTENSITY_OPTIONS: { value: TrainingIntensity | null; label: string }[] = 
   { value: "heavy", label: "Heavy" },
 ];
 
+// Same preset values as workout-generator.tsx's TIME_PRESETS — a familiar
+// scale members already see elsewhere in the app.
+const DURATION_OPTIONS: { value: number | null; label: string }[] = [
+  { value: null, label: "—" },
+  { value: 15, label: "15m" },
+  { value: 30, label: "30m" },
+  { value: 45, label: "45m" },
+  { value: 60, label: "60m" },
+  { value: 90, label: "90m" },
+];
+
 function Chip({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
   return (
     <Pressable onPress={onPress} style={[styles.chip, active && styles.chipActive]}>
@@ -112,6 +125,10 @@ export default function WeeklyTrainingScreen() {
   const cardRefs = useRef<Record<string, View | null>>({});
 
   function scrollCardIntoView(id: string) {
+    // findNodeHandle isn't supported on web (no on-screen keyboard to dodge
+    // there anyway, which is the only reason this scroll exists — see the
+    // comment above scrollRef).
+    if (Platform.OS === "web") return;
     const card = cardRefs.current[id];
     const scrollNode = scrollRef.current;
     if (!card || !scrollNode) return;
@@ -280,6 +297,16 @@ export default function WeeklyTrainingScreen() {
                               label={opt.label}
                               active={s.intensity === opt.value}
                               onPress={() => updateSession(s.id, { intensity: opt.value })}
+                            />
+                          ))}
+                        </View>
+                        <View style={styles.chipRow}>
+                          {DURATION_OPTIONS.map((opt) => (
+                            <Chip
+                              key={opt.label}
+                              label={opt.label}
+                              active={(s.estimatedDurationMins ?? null) === opt.value}
+                              onPress={() => updateSession(s.id, { estimatedDurationMins: opt.value })}
                             />
                           ))}
                         </View>

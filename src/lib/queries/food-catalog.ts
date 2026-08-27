@@ -155,6 +155,9 @@ export interface IdentifiedFoodItem {
   carbsG: number;
   fatG: number;
   source: "label" | "estimate";
+  /** true when a saved "Always use this instead" override swapped this
+      item's fields in server-side, rather than a fresh vision-model read. */
+  overridden: boolean;
 }
 
 export function usePhotoFoodScan() {
@@ -163,6 +166,59 @@ export function usePhotoFoodScan() {
       apiFetch<{ success: true; configured: true; items: IdentifiedFoodItem[] }>("/api/mobile/nutrition/food/label-scan", {
         method: "POST",
         body: { imageBase64 },
+      }),
+  });
+}
+
+// "Always use this instead" — a standing per-member correction for the photo
+// tool: next time it identifies triggerLabel again, swap in preferredFood
+// automatically (see the main repo's lib/food-identification-override.ts).
+export interface SaveFoodIdentificationOverrideInput {
+  triggerLabel: string;
+  preferredFood: {
+    name: string;
+    calories: number;
+    proteinG: number;
+    carbsG: number;
+    fatG: number;
+    servingDescription: string;
+  };
+}
+
+export function useSaveFoodIdentificationOverride() {
+  return useMutation({
+    mutationFn: (input: SaveFoodIdentificationOverrideInput) =>
+      apiFetch<{ success: true }>("/api/mobile/nutrition/food/identification-override", {
+        method: "POST",
+        body: input,
+      }),
+  });
+}
+
+// ── Free-text food description (AI) ──────────────────────────────────────
+// Sibling to usePhotoFoodScan for the member who'd rather type than
+// photograph, or who wants to correct an already-identified item in words.
+// Returns the same IdentifiedFoodItem[] shape so both paths feed the same
+// review-before-save UI.
+
+export interface DescribeFoodTextInput {
+  descriptionText: string;
+  existingItem?: {
+    name: string;
+    calories: number;
+    proteinG: number;
+    carbsG: number;
+    fatG: number;
+    servingDescription: string;
+  } | null;
+}
+
+export function useDescribeFoodText() {
+  return useMutation({
+    mutationFn: (input: DescribeFoodTextInput) =>
+      apiFetch<{ success: true; configured: true; items: IdentifiedFoodItem[] }>("/api/mobile/nutrition/food/describe", {
+        method: "POST",
+        body: input,
       }),
   });
 }

@@ -137,7 +137,7 @@ export default function WorkoutTrendsScreen() {
               </View>
               {weightChangeSummary ? <Text style={styles.chartCaption}>{weightChangeSummary}</Text> : null}
               <Card style={styles.trendCard}>
-                <WeightTrendChart logs={filteredWeightLogs} />
+                <WeightTrendChart logs={filteredWeightLogs.map((l) => ({ date: l.date, value: l.weightKg }))} />
                 <WeightChangeInsights logs={sortedWeightLogs} />
               </Card>
             </>
@@ -240,7 +240,7 @@ export default function WorkoutTrendsScreen() {
               </View>
               {weightChangeSummary ? <Text style={styles.chartCaption}>{weightChangeSummary}</Text> : null}
               <Card style={styles.trendCard}>
-                <WeightTrendChart logs={filteredWeightLogs} />
+                <WeightTrendChart logs={filteredWeightLogs.map((l) => ({ date: l.date, value: l.weightKg }))} />
                 <WeightChangeInsights logs={sortedWeightLogs} />
               </Card>
             </>

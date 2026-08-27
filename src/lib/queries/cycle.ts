@@ -39,6 +39,40 @@ export interface PhaseEstimate {
   readinessNote: string;
 }
 
+// Mirrors lib/cycle-phase.ts's phaseSegments() — same day-range boundaries
+// estimatePhase() uses server-side, kept here so the chart can never drift
+// from the phase label/guidance the API already returned. A phase is
+// omitted if the cycle is short enough to leave it no days.
+export interface PhaseSegment {
+  phase: Exclude<PhaseName, "Unknown">;
+  label: string;
+  startDay: number;
+  endDay: number;
+  dayCount: number;
+}
+
+export function phaseSegments(cycleLength: number, periodLengthDays: number | null): PhaseSegment[] {
+  const periodLength = periodLengthDays ?? 5;
+  const midCycle = Math.round(cycleLength / 2);
+
+  const raw: { phase: Exclude<PhaseName, "Unknown">; start: number; end: number }[] = [
+    { phase: "Menstrual", start: 1, end: periodLength },
+    { phase: "Follicular", start: periodLength + 1, end: midCycle - 2 },
+    { phase: "Ovulatory", start: midCycle - 1, end: midCycle + 1 },
+    { phase: "Luteal", start: midCycle + 2, end: cycleLength },
+  ];
+
+  return raw
+    .map(({ phase, start, end }) => ({
+      phase,
+      label: phase as string,
+      startDay: Math.max(1, start),
+      endDay: Math.min(cycleLength, end),
+    }))
+    .filter((seg) => seg.endDay >= seg.startDay)
+    .map((seg) => ({ ...seg, dayCount: seg.endDay - seg.startDay + 1 }));
+}
+
 export interface CycleData {
   enabled: boolean;
   menopauseSupportEnabled: boolean;

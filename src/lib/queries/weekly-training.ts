@@ -15,6 +15,10 @@ export interface WeeklyTrainingSession {
   activityType: TrainingActivityType;
   timeOfDay: TrainingTimeOfDay | null;
   intensity: TrainingIntensity | null;
+  /** Self-reported plan value, not a logged actual. Optional/nullable for
+      pre-existing sessions (see normalizeSessions in the main repo's
+      app/api/mobile/weekly-training/route.ts). */
+  estimatedDurationMins?: number | null;
   notes: string | null;
   /** true = repeats every week. false = a one-off for this week only — the
       server drops it once the week is over, no action needed here. */

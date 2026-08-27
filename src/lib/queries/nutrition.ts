@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { apiFetch, apiFetchText } from "@/lib/api-client";
 import type { DrinkSettings } from "@/lib/drink-settings";
+import type { TargetProposal } from "@/lib/nutrition-target-proposal";
 
 // Mirrors NutritionData in the main repo's lib/nutrition-data.ts.
 export interface FoodItem {
@@ -55,6 +56,25 @@ export function useSendNutritionCoachMessage() {
     mutationFn: (content: string) =>
       apiFetchText("/api/ai/nutrition-coach", { body: { content, tomorrow: "medium" } }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["nutrition"] }),
+  });
+}
+
+// Applies a target the AI Nutrition Coach proposed in chat (see the "Apply
+// this target" button in CoachChat, nutrition.tsx) — mirrors the web app's
+// NutritionAiCoach.tsx call to the same endpoint.
+export function useApplyNutritionTargetOverride() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (proposal: TargetProposal) =>
+      apiFetch<{ success: true; message: string }>("/api/mobile/nutrition/target/member-override", {
+        method: "POST",
+        body: proposal,
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["my-nutrition-target"] });
+      qc.invalidateQueries({ queryKey: ["weekly-nutrition-targets"] });
+      qc.invalidateQueries({ queryKey: ["nutrition"] });
+    },
   });
 }
 

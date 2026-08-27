@@ -6,6 +6,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import Svg, { Circle } from "react-native-svg";
 
 import { Card } from "@/components/ui/Card";
+import { Collapsible } from "@/components/ui/Collapsible";
 import { Color, Radius, Spacing } from "@/constants/theme";
 import { useNutritionDiary, useMyNutritionTarget, useWeeklyNutritionTargets, type ResolvedNutritionTarget } from "@/lib/queries/nutrition-diary";
 import { todayDateString } from "@/lib/workout-formatters";
@@ -93,7 +94,7 @@ function MacroBar({ label, consumed, target, tone }: { label: string; consumed: 
 }
 
 function sourceLine(target: ResolvedNutritionTarget): string {
-  if (target.mode === "manual") return "Set by your coach.";
+  if (target.mode === "manual") return target.setByMember ? "Set by you via the AI Nutrition Coach." : "Set by your coach.";
   if (target.source === "adaptive") return "Learned from your logged weight and food trend.";
   return "Estimated from your weight and training load — sharpens as you log more.";
 }
@@ -171,6 +172,15 @@ export default function NutritionTargetsScreen() {
                           <MacroBar label="Fat" consumed={diary?.totals.fatG ?? 0} target={dayTarget.fatG} tone={Color.success} />
                         </View>
                         {dayTarget.notes ? <Text style={styles.notesText}>Coach&apos;s note: {dayTarget.notes}</Text> : null}
+                        {dayTarget.rationale && dayTarget.rationale.length > 0 ? (
+                          <Collapsible title="Why this number" style={styles.rationaleBlock}>
+                            {dayTarget.rationale.map((line, i) => (
+                              <Text key={i} style={styles.rationaleLine}>
+                                · {line}
+                              </Text>
+                            ))}
+                          </Collapsible>
+                        ) : null}
                       </>
                     ) : (
                       <Text style={styles.emptyText}>Add your weight in Profile so we can calculate a target.</Text>
@@ -187,7 +197,7 @@ export default function NutritionTargetsScreen() {
             {weekTotal !== null && (
               <Text style={styles.weekAvgText}>
                 ~{weekTotal} kcal/day average this week
-                {week.days[0]?.mode === "manual" ? " (set by your coach)" : ""}
+                {week.days[0]?.mode === "manual" ? (week.days[0]?.setByMember ? " (set by you)" : " (set by your coach)") : ""}
               </Text>
             )}
             <View style={styles.weekStrip}>
@@ -270,6 +280,8 @@ const styles = StyleSheet.create({
   macroTrack: { height: 6, borderRadius: 3, backgroundColor: Color.surface1, overflow: "hidden" },
   macroFill: { height: "100%", borderRadius: 3 },
   notesText: { fontSize: 12, color: Color.textMuted, marginTop: Spacing.md, textAlign: "center", fontStyle: "italic" },
+  rationaleBlock: { width: "100%", marginTop: Spacing.lg, borderTopWidth: 1, borderTopColor: Color.borderSubtle, paddingTop: Spacing.sm },
+  rationaleLine: { fontSize: 12, color: Color.textMuted, lineHeight: 17, marginTop: 4 },
   emptyText: { fontSize: 13, color: Color.textMuted, textAlign: "center" },
   weekAvgText: { fontSize: 12, color: Color.textMuted, textAlign: "center", marginBottom: Spacing.md },
   weekStrip: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.sm, justifyContent: "center" },

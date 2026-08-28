@@ -23,7 +23,6 @@ import { ReadinessSparkline } from "@/components/ui/ReadinessSparkline";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { StatCard } from "@/components/ui/StatCard";
 import { Color, Spacing } from "@/constants/theme";
-import { useAuth } from "@/lib/auth-context";
 import { useDashboard } from "@/lib/queries/dashboard";
 import { useNotifications } from "@/lib/queries/notifications";
 import { useProfile } from "@/lib/queries/profile";
@@ -49,7 +48,6 @@ function formatClassDate(dateISO: string): string {
 }
 
 export default function DashboardScreen() {
-  const { user, logout } = useAuth();
   const router = useRouter();
   const { data, isLoading, isError, refetch, isRefetching } = useDashboard();
   const { data: notifications } = useNotifications();
@@ -120,13 +118,6 @@ export default function DashboardScreen() {
                   <Ionicons name="person-circle-outline" size={24} color={Color.textMuted} />
                 )}
               </Pressable>
-              <Ionicons
-                name="log-out-outline"
-                size={22}
-                color={Color.textMuted}
-                onPress={logout}
-                suppressHighlighting
-              />
             </View>
           </View>
           <Text style={styles.subGreeting}>Ready when you are.</Text>
@@ -405,8 +396,6 @@ export default function DashboardScreen() {
             </Pressable>
           </Card>
         </View>
-
-        <Text style={styles.signedInAs}>Signed in as {user?.email}</Text>
       </ScrollView>
     </SafeAreaView>
   );
@@ -666,11 +655,5 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: Color.textMuted,
     marginTop: 2,
-  },
-  signedInAs: {
-    fontSize: 11,
-    color: Color.textFaint,
-    textAlign: "center",
-    marginTop: Spacing.md,
   },
 });

@@ -117,6 +117,21 @@ export default function LogFoodScreen() {
   const [fatG, setFatG] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [justLogged, setJustLogged] = useState(false);
+  // Manual entry (typed name + macros from scratch) is the lowest-frequency
+  // path on this screen — search and quick-add cover the common case, so
+  // this stays collapsed behind a link rather than always-visible form
+  // weight. Not needed once a food is selected: that flow shows the same
+  // fields as a review step, not a from-scratch entry.
+  const [manualOpen, setManualOpen] = useState(false);
+
+  function cancelManualEntry() {
+    setManualOpen(false);
+    setName("");
+    setCalories("");
+    setProteinG("");
+    setCarbsG("");
+    setFatG("");
+  }
 
   function applyRecent(f: NonNullable<typeof recentFoods>[number]) {
     tapFeedback();
@@ -245,30 +260,7 @@ export default function LogFoodScreen() {
             <Ionicons name="chevron-back" size={22} color={Color.textPrimary} />
           </Pressable>
           <Text style={styles.headerTitle}>Log Food</Text>
-          {canSearch ? (
-            <View style={styles.headerActions}>
-              <Pressable
-                onPress={() => router.push({ pathname: "/describe-food", params: { date, mealType } })}
-                hitSlop={12}
-              >
-                <Ionicons name="chatbubble-ellipses-outline" size={22} color={Color.gold} />
-              </Pressable>
-              <Pressable
-                onPress={() => router.push({ pathname: "/label-scan", params: { date, mealType } })}
-                hitSlop={12}
-              >
-                <Ionicons name="camera-outline" size={22} color={Color.gold} />
-              </Pressable>
-              <Pressable
-                onPress={() => router.push({ pathname: "/barcode-scan", params: { date, mealType } })}
-                hitSlop={12}
-              >
-                <Ionicons name="barcode-outline" size={22} color={Color.gold} />
-              </Pressable>
-            </View>
-          ) : (
-            <View style={styles.headerActions} />
-          )}
+          <View style={{ width: 22 }} />
         </View>
 
         <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
@@ -300,25 +292,45 @@ export default function LogFoodScreen() {
                 />
                 {isSearching ? <ActivityIndicator size="small" color={Color.textFaint} /> : null}
               </View>
+
+              {/* Alternate logging methods — deliberately quiet relative to
+                  the search bar above, since search + recent is the primary
+                  path. Living here (not in the header) ties them to "if
+                  search doesn't find it" rather than reading as a row of
+                  detached, equal-weight nav icons. */}
+              <View style={styles.methodsRow}>
+                <Pressable
+                  onPress={() => router.push({ pathname: "/describe-food", params: { date, mealType } })}
+                  style={styles.methodChip}
+                >
+                  <Ionicons name="chatbubble-ellipses-outline" size={15} color={Color.textSecondary} />
+                  <Text style={styles.methodChipText}>Describe</Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => router.push({ pathname: "/label-scan", params: { date, mealType } })}
+                  style={styles.methodChip}
+                >
+                  <Ionicons name="camera-outline" size={15} color={Color.textSecondary} />
+                  <Text style={styles.methodChipText}>Photo</Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => router.push({ pathname: "/barcode-scan", params: { date, mealType } })}
+                  style={styles.methodChip}
+                >
+                  <Ionicons name="barcode-outline" size={15} color={Color.textSecondary} />
+                  <Text style={styles.methodChipText}>Barcode</Text>
+                </Pressable>
+              </View>
             </>
           ) : null}
-
-          <View style={styles.quickLinksRow}>
-            <Pressable onPress={() => router.push({ pathname: "/custom-food", params: { date, mealType } })} style={styles.quickLink}>
-              <Ionicons name="add-circle-outline" size={14} color={Color.gold} />
-              <Text style={styles.quickLinkText}>Add custom food</Text>
-            </Pressable>
-            <Pressable onPress={() => router.push("/my-foods")} style={styles.quickLink}>
-              <Ionicons name="list-outline" size={14} color={Color.textMuted} />
-              <Text style={[styles.quickLinkText, { color: Color.textMuted }]}>Manage custom foods</Text>
-            </Pressable>
-          </View>
 
           {canSearch && searchOpen ? (
             <Card style={styles.resultsCard}>
               {!hasResults ? (
                 <>
-                  <Text style={styles.noResultsText}>{query.trim() ? "No matches. Try scanning a barcode or add it manually below." : "Type to search, or browse your recent history."}</Text>
+                  <Text style={styles.noResultsText}>
+                    {query.trim() ? "No matches. Try Barcode or Photo above, or log it manually below." : "Type to search, or browse your recent history."}
+                  </Text>
                   {query.trim() ? (
                     <Pressable onPress={handleReportMissing} style={styles.reportMissingLink}>
                       <Text style={styles.reportMissingLinkText}>{reportMissing.isSuccess ? "Reported — thanks!" : "Let us know this food is missing"}</Text>
@@ -357,8 +369,9 @@ export default function LogFoodScreen() {
                 <Text style={styles.servingFoodName} numberOfLines={1}>
                   {selectedFood.food.name}
                 </Text>
-                <Pressable onPress={clearSelection} hitSlop={8}>
-                  <Ionicons name="close-circle" size={18} color={Color.textFaint} />
+                <Pressable onPress={clearSelection} hitSlop={8} style={styles.clearSelectionButton}>
+                  <Ionicons name="close" size={14} color={Color.textFaint} />
+                  <Text style={styles.clearSelectionText}>Change</Text>
                 </Pressable>
               </View>
               <Text style={styles.fieldLabel}>Serving</Text>
@@ -376,44 +389,104 @@ export default function LogFoodScreen() {
               <Stepper label="Quantity" value={quantity} onChange={setQuantity} min={0.5} max={20} step={0.5} suffix="× serving" />
               <Text style={styles.gramsTotal}>= {Math.round(gramsForServing(selectedFood.food, servingLabel, quantity))}g total</Text>
             </Card>
-          ) : recentFoods && recentFoods.length > 0 ? (
+          ) : !searchOpen && recentFoods && recentFoods.length > 0 ? (
             <>
               <Text style={[styles.fieldLabel, { marginTop: Spacing.md }]}>Quick add from recent</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: Spacing.xs, paddingBottom: Spacing.sm }}>
                 {recentFoods.map((f) => (
                   <Pressable key={f.id} onPress={() => applyRecent(f)} style={styles.recentChip}>
-                    <Text style={styles.recentChipText}>{f.name}</Text>
-                    <Text style={styles.recentChipSub}>{f.calories} kcal</Text>
+                    <Text style={styles.recentChipIcon}>{iconForFood(f.name)}</Text>
+                    <Text style={styles.recentChipText} numberOfLines={1}>
+                      {f.name}
+                    </Text>
+                    <Text style={styles.recentChipSub} numberOfLines={1}>
+                      {f.calories} kcal
+                    </Text>
                   </Pressable>
                 ))}
               </ScrollView>
             </>
           ) : null}
 
-          <Text style={styles.sectionLabel}>{selectedFood ? "REVIEW BEFORE LOGGING" : "OR LOG MANUALLY"}</Text>
-          <Text style={styles.fieldLabel}>Food name</Text>
-          <TextInput value={name} onChangeText={setName} placeholder="e.g. Chicken and rice" placeholderTextColor={Color.textFaint} style={styles.input} />
+          {selectedFood ? (
+            <>
+              <Text style={styles.sectionLabel}>REVIEW BEFORE LOGGING</Text>
+              <Text style={styles.fieldLabel}>Food name</Text>
+              <TextInput value={name} onChangeText={setName} placeholder="e.g. Chicken and rice" placeholderTextColor={Color.textFaint} style={styles.input} />
 
-          <View style={styles.gridRow}>
-            <View style={styles.numberField}>
-              <Text style={styles.fieldLabel}>Calories</Text>
-              <TextInput value={calories} onChangeText={setCalories} keyboardType="number-pad" placeholder="e.g. 450" placeholderTextColor={Color.textFaint} style={styles.input} />
+              <View style={styles.gridRow}>
+                <View style={styles.numberField}>
+                  <Text style={styles.fieldLabel}>Calories</Text>
+                  <TextInput value={calories} onChangeText={setCalories} keyboardType="number-pad" placeholder="e.g. 450" placeholderTextColor={Color.textFaint} style={styles.input} />
+                </View>
+                <View style={styles.numberField}>
+                  <Text style={styles.fieldLabel}>Protein (g)</Text>
+                  <TextInput value={proteinG} onChangeText={setProteinG} keyboardType="number-pad" placeholder="e.g. 40" placeholderTextColor={Color.textFaint} style={styles.input} />
+                </View>
+              </View>
+              <View style={styles.gridRow}>
+                <View style={styles.numberField}>
+                  <Text style={styles.fieldLabel}>Carbs (g)</Text>
+                  <TextInput value={carbsG} onChangeText={setCarbsG} keyboardType="number-pad" placeholder="e.g. 50" placeholderTextColor={Color.textFaint} style={styles.input} />
+                </View>
+                <View style={styles.numberField}>
+                  <Text style={styles.fieldLabel}>Fat (g)</Text>
+                  <TextInput value={fatG} onChangeText={setFatG} keyboardType="number-pad" placeholder="e.g. 12" placeholderTextColor={Color.textFaint} style={styles.input} />
+                </View>
+              </View>
+            </>
+          ) : (
+            <View style={styles.fallbackSection}>
+              <Text style={styles.sectionLabel}>CAN&apos;T FIND YOUR FOOD?</Text>
+
+              {manualOpen ? (
+                <>
+                  <Text style={styles.fieldLabel}>Food name</Text>
+                  <TextInput value={name} onChangeText={setName} placeholder="e.g. Chicken and rice" placeholderTextColor={Color.textFaint} style={styles.input} />
+
+                  <View style={styles.gridRow}>
+                    <View style={styles.numberField}>
+                      <Text style={styles.fieldLabel}>Calories</Text>
+                      <TextInput value={calories} onChangeText={setCalories} keyboardType="number-pad" placeholder="e.g. 450" placeholderTextColor={Color.textFaint} style={styles.input} />
+                    </View>
+                    <View style={styles.numberField}>
+                      <Text style={styles.fieldLabel}>Protein (g)</Text>
+                      <TextInput value={proteinG} onChangeText={setProteinG} keyboardType="number-pad" placeholder="e.g. 40" placeholderTextColor={Color.textFaint} style={styles.input} />
+                    </View>
+                  </View>
+                  <View style={styles.gridRow}>
+                    <View style={styles.numberField}>
+                      <Text style={styles.fieldLabel}>Carbs (g)</Text>
+                      <TextInput value={carbsG} onChangeText={setCarbsG} keyboardType="number-pad" placeholder="e.g. 50" placeholderTextColor={Color.textFaint} style={styles.input} />
+                    </View>
+                    <View style={styles.numberField}>
+                      <Text style={styles.fieldLabel}>Fat (g)</Text>
+                      <TextInput value={fatG} onChangeText={setFatG} keyboardType="number-pad" placeholder="e.g. 12" placeholderTextColor={Color.textFaint} style={styles.input} />
+                    </View>
+                  </View>
+
+                  <Pressable onPress={cancelManualEntry} style={styles.closeSearchRow}>
+                    <Text style={styles.closeSearchText}>Cancel manual entry</Text>
+                  </Pressable>
+                </>
+              ) : (
+                <Pressable onPress={() => setManualOpen(true)} style={styles.fallbackLink}>
+                  <Text style={styles.fallbackLinkText}>Log it manually</Text>
+                </Pressable>
+              )}
+
+              <View style={styles.customFoodRow}>
+                <Pressable onPress={() => router.push({ pathname: "/custom-food", params: { date, mealType } })} style={styles.quickLink}>
+                  <Ionicons name="add-circle-outline" size={13} color={Color.textMuted} />
+                  <Text style={styles.quickLinkText}>Add as a custom food</Text>
+                </Pressable>
+                <Pressable onPress={() => router.push("/my-foods")} style={styles.quickLink}>
+                  <Ionicons name="list-outline" size={13} color={Color.textMuted} />
+                  <Text style={styles.quickLinkText}>Manage custom foods</Text>
+                </Pressable>
+              </View>
             </View>
-            <View style={styles.numberField}>
-              <Text style={styles.fieldLabel}>Protein (g)</Text>
-              <TextInput value={proteinG} onChangeText={setProteinG} keyboardType="number-pad" placeholder="e.g. 40" placeholderTextColor={Color.textFaint} style={styles.input} />
-            </View>
-          </View>
-          <View style={styles.gridRow}>
-            <View style={styles.numberField}>
-              <Text style={styles.fieldLabel}>Carbs (g)</Text>
-              <TextInput value={carbsG} onChangeText={setCarbsG} keyboardType="number-pad" placeholder="e.g. 50" placeholderTextColor={Color.textFaint} style={styles.input} />
-            </View>
-            <View style={styles.numberField}>
-              <Text style={styles.fieldLabel}>Fat (g)</Text>
-              <TextInput value={fatG} onChangeText={setFatG} keyboardType="number-pad" placeholder="e.g. 12" placeholderTextColor={Color.textFaint} style={styles.input} />
-            </View>
-          </View>
+          )}
 
           {error ? <Text style={styles.error}>{error}</Text> : null}
 
@@ -427,7 +500,6 @@ export default function LogFoodScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: Color.bg0 },
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md },
-  headerActions: { flexDirection: "row", alignItems: "center", gap: Spacing.md },
   backButton: { padding: 4 },
   headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
   scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
@@ -449,10 +521,26 @@ const styles = StyleSheet.create({
     backgroundColor: Color.surface1,
   },
   searchInput: { flex: 1, color: Color.textPrimary, fontSize: 14 },
+  methodsRow: { flexDirection: "row", gap: Spacing.xs, marginTop: Spacing.sm },
+  methodChip: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    height: 36,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: Color.borderSubtle,
+  },
+  methodChipText: { fontSize: 12, fontWeight: "600", color: Color.textSecondary },
   sectionLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginTop: Spacing.lg, marginBottom: Spacing.sm },
-  quickLinksRow: { flexDirection: "row", gap: Spacing.lg, marginTop: Spacing.sm },
+  fallbackSection: { marginTop: Spacing.sm },
+  fallbackLink: { paddingVertical: 6 },
+  fallbackLinkText: { fontSize: 13, fontWeight: "600", color: Color.textMuted },
+  customFoodRow: { flexDirection: "row", gap: Spacing.lg, marginTop: Spacing.md },
   quickLink: { flexDirection: "row", alignItems: "center", gap: 4 },
-  quickLinkText: { fontSize: 12, fontWeight: "600", color: Color.gold },
+  quickLinkText: { fontSize: 11, fontWeight: "600", color: Color.textFaint },
   resultsCard: { marginTop: Spacing.sm, padding: Spacing.md },
   noResultsText: { fontSize: 12, color: Color.textMuted },
   reportMissingLink: { marginTop: Spacing.sm },
@@ -486,16 +574,19 @@ const styles = StyleSheet.create({
   foundBannerText: { fontSize: 12, fontWeight: "600", color: Color.success },
   servingHeaderRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: Spacing.sm },
   servingFoodName: { fontSize: 14, fontWeight: "700", color: Color.textPrimary, flex: 1 },
+  clearSelectionButton: { flexDirection: "row", alignItems: "center", gap: 2, paddingVertical: 2, paddingLeft: Spacing.sm },
+  clearSelectionText: { fontSize: 12, fontWeight: "600", color: Color.textFaint },
   gramsTotal: { fontSize: 12, color: Color.textMuted, textAlign: "right", marginTop: -Spacing.sm },
   recentChip: {
+    width: 112,
     borderRadius: Radius.md,
     borderWidth: 1,
     borderColor: Color.borderSubtle,
     backgroundColor: Color.surface1,
     paddingHorizontal: Spacing.sm,
-    paddingVertical: 8,
-    minWidth: 100,
+    paddingVertical: Spacing.sm,
   },
+  recentChipIcon: { fontSize: 16, marginBottom: 4 },
   recentChipText: { fontSize: 12, fontWeight: "600", color: Color.textPrimary },
   recentChipSub: { fontSize: 10, color: Color.textMuted, marginTop: 2 },
   input: {

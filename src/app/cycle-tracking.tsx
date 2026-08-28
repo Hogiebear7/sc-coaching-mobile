@@ -16,6 +16,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { CyclePhaseChart } from "@/components/ui/CyclePhaseChart";
 import { DateField } from "@/components/ui/DateField";
 import { TextField } from "@/components/ui/TextField";
 import { Color, Radius, Spacing } from "@/constants/theme";
@@ -251,7 +252,6 @@ export default function CycleTrackingScreen() {
   }
 
   const phase = data?.phaseEstimate;
-  const hasPhase = phase && phase.phase !== "Unknown";
 
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
@@ -279,6 +279,53 @@ export default function CycleTrackingScreen() {
           </View>
         ) : (
           <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+            {phase && phase.phase !== "Unknown" ? (
+              <Card style={[styles.phaseCard, { marginTop: 0 }]}>
+                <View style={styles.phaseHeaderRow}>
+                  <Text style={styles.phaseTitle}>Estimated phase: {phase.phaseLabel}</Text>
+                  {phase.cycleDay !== null && phase.cycleLength !== null ? (
+                    <Text style={styles.phaseDayText}>
+                      Day {phase.cycleDay} of {phase.cycleLength}
+                    </Text>
+                  ) : null}
+                </View>
+                {phase.cycleDay !== null && phase.cycleLength !== null ? (
+                  <CyclePhaseChart
+                    cycleDay={phase.cycleDay}
+                    cycleLength={phase.cycleLength}
+                    periodLengthDays={data.settings?.periodLengthDays ?? null}
+                    currentPhase={phase.phase}
+                  />
+                ) : null}
+                <Text style={styles.phaseExplanation}>{phase.explanation}</Text>
+                {phase.confidence === "low" ? (
+                  <View style={styles.warningBox}>
+                    <Text style={styles.warningText}>
+                      Your cycle regularity is set to irregular or unsure — treat this estimate as a
+                      rough reference only. Individual experience varies significantly.
+                    </Text>
+                  </View>
+                ) : null}
+                <View style={styles.guidanceWrap}>
+                  <GuidanceRow label="TRAINING" value={phase.trainingGuidance} />
+                  <GuidanceRow label="INTENSITY" value={phase.intensityGuidance} />
+                  <GuidanceRow label="RECOVERY" value={phase.recoveryGuidance} />
+                </View>
+                <Text style={styles.disclaimer}>
+                  Educational guidance only — not medical advice. This estimate is based on the cycle
+                  information you have entered and may not reflect your individual experience.
+                </Text>
+              </Card>
+            ) : (
+              <Card style={[styles.phaseCard, { marginTop: 0 }]}>
+                <Text style={styles.phaseTitle}>Estimated phase</Text>
+                <Text style={styles.phaseExplanation}>
+                  Add your cycle information below to see a phase estimate. All information is
+                  private to you.
+                </Text>
+              </Card>
+            )}
+
             <Text style={styles.intro}>
               Add your cycle information below. Everything is private by default — you choose what,
               if anything, to share with your coach.
@@ -308,45 +355,6 @@ export default function CycleTrackingScreen() {
               </View>
               {beginDayError ? <Text style={styles.error}>{beginDayError}</Text> : null}
             </Card>
-
-            {hasPhase ? (
-              <Card style={styles.phaseCard}>
-                <View style={styles.phaseHeaderRow}>
-                  <Text style={styles.phaseTitle}>Estimated phase: {phase.phaseLabel}</Text>
-                  {phase.cycleDay !== null && phase.cycleLength !== null ? (
-                    <Text style={styles.phaseDayText}>
-                      Day {phase.cycleDay} of {phase.cycleLength}
-                    </Text>
-                  ) : null}
-                </View>
-                <Text style={styles.phaseExplanation}>{phase.explanation}</Text>
-                {phase.confidence === "low" ? (
-                  <View style={styles.warningBox}>
-                    <Text style={styles.warningText}>
-                      Your cycle regularity is set to irregular or unsure — treat this estimate as a
-                      rough reference only. Individual experience varies significantly.
-                    </Text>
-                  </View>
-                ) : null}
-                <View style={styles.guidanceWrap}>
-                  <GuidanceRow label="TRAINING" value={phase.trainingGuidance} />
-                  <GuidanceRow label="INTENSITY" value={phase.intensityGuidance} />
-                  <GuidanceRow label="RECOVERY" value={phase.recoveryGuidance} />
-                </View>
-                <Text style={styles.disclaimer}>
-                  Educational guidance only — not medical advice. This estimate is based on the cycle
-                  information you have entered and may not reflect your individual experience.
-                </Text>
-              </Card>
-            ) : (
-              <Card style={styles.phaseCard}>
-                <Text style={styles.phaseTitle}>Estimated phase</Text>
-                <Text style={styles.phaseExplanation}>
-                  Add your cycle information below to see a phase estimate. All information is
-                  private to you.
-                </Text>
-              </Card>
-            )}
 
             {data.menopauseSupportEnabled ? (
               <Card style={styles.menopauseCard}>

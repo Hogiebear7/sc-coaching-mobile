@@ -14,7 +14,16 @@ export type PrimaryGoal =
   | "Improve Fitness"
   | "Improve Mobility";
 
-export type DietaryPreference = "standard" | "vegetarian" | "pescetarian" | "vegan";
+export type DietaryPreference =
+  | "standard"
+  | "vegetarian"
+  | "pescetarian"
+  | "vegan"
+  | "low_carb"
+  | "keto"
+  | "paleo"
+  | "mediterranean"
+  | "intermittent_fasting";
 export type MeasurementUnits = "metric" | "imperial";
 
 // Mirrors ProfileData in the main repo's lib/profile-data.ts.
@@ -25,6 +34,7 @@ export interface ProfileData {
   dateOfBirth: string | null;
   gender: Gender;
   primaryGoal: PrimaryGoal;
+  secondaryGoal: PrimaryGoal | null;
   sportPlayed: string | null;
   additionalInfo: string | null;
   emergencyContactName: string | null;
@@ -79,6 +89,7 @@ export interface ProfileUpdateInput {
   dateOfBirth: string;
   gender: Gender;
   primaryGoal: PrimaryGoal;
+  secondaryGoal?: string;
   sportPlayed?: string;
   heightCm?: string;
   country?: string;
@@ -202,5 +213,32 @@ export function useRequestPasswordReset() {
         method: "POST",
         body: { email },
       }),
+  });
+}
+
+// Sends a confirmation link to newEmail — the account's email only actually
+// changes once that link is opened and confirmed (see useConfirmEmailChange
+// and gym-app's /api/profile/change-email/confirm).
+export function useRequestEmailChange() {
+  return useMutation({
+    mutationFn: (newEmail: string) =>
+      apiFetch<{ success: true; message: string }>("/api/profile/change-email/request", {
+        method: "POST",
+        body: { newEmail },
+      }),
+  });
+}
+
+export function useConfirmEmailChange() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (token: string) =>
+      apiFetch<{ success: true; email: string }>("/api/profile/change-email/confirm", {
+        method: "POST",
+        body: { token },
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["profile"] });
+    },
   });
 }

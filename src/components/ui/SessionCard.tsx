@@ -10,6 +10,11 @@ function formatDate(dateISO: string): string {
   return new Date(dateISO).toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" });
 }
 
+// A session with 8+ exercises used to print 8+ faint grey lines — useful
+// for exhaustiveness, useless for scanning. Cap the preview and roll the
+// rest into one "+N more" line; the full list is one tap away via onPress.
+const MAX_PREVIEW_LINES = 3;
+
 // Shared compact session summary — used on the Workouts tab (day detail +
 // recent list) and the full History screen so the three don't drift.
 // Optional onPress makes the whole card a drill-down into session-detail;
@@ -28,6 +33,11 @@ export function SessionCard({
       without the muscle-map icon per line. */
   sectionByExerciseId?: Map<string, ExerciseSection>;
 }) {
+  const previewExercises = session.exercises.slice(0, MAX_PREVIEW_LINES);
+  const remainingSlots = Math.max(0, MAX_PREVIEW_LINES - previewExercises.length);
+  const previewRuns = session.runs.slice(0, remainingSlots);
+  const hiddenCount = session.exercises.length + session.runs.length - previewExercises.length - previewRuns.length;
+
   const content = (
     <Card style={styles.card}>
       <View style={styles.header}>
@@ -38,7 +48,7 @@ export function SessionCard({
         {session.exercises.length} exercise{session.exercises.length === 1 ? "" : "s"}
         {session.durationMins ? ` · ${session.durationMins} min` : ""}
       </Text>
-      {session.exercises.map((ex, i) => {
+      {previewExercises.map((ex, i) => {
         const section = ex.exerciseId ? sectionByExerciseId?.get(ex.exerciseId) : undefined;
         return (
           <View key={i} style={styles.lineRow}>
@@ -50,11 +60,12 @@ export function SessionCard({
           </View>
         );
       })}
-      {session.runs.map((run, i) => (
+      {previewRuns.map((run, i) => (
         <Text key={i} style={styles.line} numberOfLines={1}>
           Run — {formatRun(run)}
         </Text>
       ))}
+      {hiddenCount > 0 ? <Text style={styles.moreLine}>+{hiddenCount} more</Text> : null}
     </Card>
   );
 
@@ -74,5 +85,6 @@ const styles = StyleSheet.create({
   meta: { fontSize: 11, color: Color.textMuted, marginTop: 2 },
   lineRow: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 4 },
   line: { flex: 1, fontSize: 11, color: Color.textFaint },
+  moreLine: { fontSize: 11, color: Color.textMuted, fontWeight: "600", marginTop: 4 },
   pressed: { opacity: 0.7 },
 });

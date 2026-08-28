@@ -9,6 +9,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { CameraPermissionDenied } from "@/components/nutrition/CameraPermissionGate";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { Stepper } from "@/components/ui/Stepper";
 import { Color, Radius, Spacing } from "@/constants/theme";
 import { ApiError } from "@/lib/api-client";
 import { trackEvent } from "@/lib/analytics";
@@ -28,6 +29,16 @@ interface ReviewItem extends IdentifiedFoodItem {
       whatever I edited it to". */
   originalName: string;
   overrideSaved: boolean;
+  /** The multiplier applied to base* below — quantity is the most common
+      correction, so it gets its own structured control rather than living
+      only in the free-text fallback. Resets to 1 whenever a macro field is
+      hand-edited directly (see updateItem), so stepping quantity afterward
+      scales from the value the member actually typed, not a stale AI read. */
+  quantity: number;
+  baseCalories: number;
+  baseProteinG: number;
+  baseCarbsG: number;
+  baseFatG: number;
 }
 
 function defaultMealTypeForNow(): MealType {
@@ -145,7 +156,20 @@ export default function LabelScanScreen() {
       }
 
       trackEvent("label_scan_items_identified", { count: res.items.length, hasBarcode: !!barcode });
-      setItems(res.items.map((item, i) => ({ ...item, id: `item-${i}`, included: true, originalName: item.name, overrideSaved: false })));
+      setItems(
+        res.items.map((item, i) => ({
+          ...item,
+          id: `item-${i}`,
+          included: true,
+          originalName: item.name,
+          overrideSaved: false,
+          quantity: 1,
+          baseCalories: item.calories,
+          baseProteinG: item.proteinG,
+          baseCarbsG: item.carbsG,
+          baseFatG: item.fatG,
+        }))
+      );
       setStage("reviewing");
     } catch (e) {
       // A real failure — not configured, rate-limited, network error, or a
@@ -161,7 +185,41 @@ export default function LabelScanScreen() {
   }
 
   function updateItem(id: string, patch: Partial<Pick<ReviewItem, "name" | "calories" | "proteinG" | "carbsG" | "fatG">>) {
-    setItems((prev) => prev.map((it) => (it.id === id ? { ...it, ...patch } : it)));
+    setItems((prev) =>
+      prev.map((it) => {
+        if (it.id !== id) return it;
+        const next = { ...it, ...patch };
+        // A hand-typed macro value is a fresh source of truth — reset the
+        // quantity multiplier to 1× against it so the stepper scales from
+        // what the member actually typed, not the original AI read.
+        const macroEdited = "calories" in patch || "proteinG" in patch || "carbsG" in patch || "fatG" in patch;
+        if (macroEdited) {
+          next.baseCalories = next.calories;
+          next.baseProteinG = next.proteinG;
+          next.baseCarbsG = next.carbsG;
+          next.baseFatG = next.fatG;
+          next.quantity = 1;
+        }
+        return next;
+      })
+    );
+  }
+
+  function updateQuantity(id: string, quantity: number) {
+    setItems((prev) =>
+      prev.map((it) =>
+        it.id === id
+          ? {
+              ...it,
+              quantity,
+              calories: Math.round(it.baseCalories * quantity),
+              proteinG: Math.round(it.baseProteinG * quantity),
+              carbsG: Math.round(it.baseCarbsG * quantity),
+              fatG: Math.round(it.baseFatG * quantity),
+            }
+          : it
+      )
+    );
   }
 
   function toggleItem(id: string) {
@@ -219,7 +277,22 @@ export default function LabelScanScreen() {
       setItems((prev) =>
         prev.map((it) =>
           it.id === item.id
-            ? { ...it, name: corrected.name, calories: corrected.calories, proteinG: corrected.proteinG, carbsG: corrected.carbsG, fatG: corrected.fatG, servingDescription: corrected.servingDescription }
+            ? {
+                ...it,
+                name: corrected.name,
+                calories: corrected.calories,
+                proteinG: corrected.proteinG,
+                carbsG: corrected.carbsG,
+                fatG: corrected.fatG,
+                servingDescription: corrected.servingDescription,
+                // The correction is the new 1× baseline — same reasoning as
+                // a hand-typed macro edit in updateItem.
+                baseCalories: corrected.calories,
+                baseProteinG: corrected.proteinG,
+                baseCarbsG: corrected.carbsG,
+                baseFatG: corrected.fatG,
+                quantity: 1,
+              }
             : it
         )
       );
@@ -361,8 +434,8 @@ export default function LabelScanScreen() {
                   style={styles.nameInput}
                   placeholderTextColor={Color.textFaint}
                 />
-                <Pressable onPress={() => removeItem(item.id)} hitSlop={8}>
-                  <Ionicons name="close-circle" size={18} color={Color.textFaint} />
+                <Pressable onPress={() => removeItem(item.id)} hitSlop={8} accessibilityLabel="Remove this item">
+                  <Ionicons name="trash-outline" size={17} color={Color.textFaint} />
                 </Pressable>
               </View>
 
@@ -381,6 +454,16 @@ export default function LabelScanScreen() {
                   </View>
                 </View>
               </View>
+
+              <Stepper
+                label="Quantity"
+                value={item.quantity}
+                onChange={(v) => updateQuantity(item.id, v)}
+                min={0.25}
+                max={10}
+                step={0.25}
+                suffix="× serving"
+              />
 
               <View style={styles.gridRow}>
                 <View style={styles.numberField}>
@@ -423,66 +506,78 @@ export default function LabelScanScreen() {
                 </View>
               </View>
 
-              <Pressable
-                onPress={() => handleAlwaysUseThis(item)}
-                disabled={item.overrideSaved || saveOverride.isPending}
-                style={styles.saveCustomLink}
-              >
-                <Text style={styles.saveCustomLinkText}>
-                  {item.overrideSaved ? "Saved — the AI will use this next time" : `Always use this instead of "${item.originalName}"`}
-                </Text>
-              </Pressable>
-
-              {correctingId === item.id ? (
-                <View style={styles.correctionWrap}>
-                  <TextInput
-                    value={correctionText}
-                    onChangeText={setCorrectionText}
-                    placeholder={`e.g. "actually it's oat milk" or "make it 2 slices"`}
-                    placeholderTextColor={Color.textFaint}
-                    style={styles.correctionInput}
-                    autoFocus
-                  />
-                  {correctionError ? <Text style={styles.error}>{correctionError}</Text> : null}
-                  <View style={styles.correctionActions}>
-                    <Pressable
-                      onPress={() => {
-                        setCorrectingId(null);
-                        setCorrectionText("");
-                        setCorrectionError(null);
-                      }}
-                      style={styles.correctionCancel}
-                    >
-                      <Text style={styles.saveCustomLinkText}>Cancel</Text>
-                    </Pressable>
-                    <Pressable
-                      onPress={() => handleSubmitCorrection(item)}
-                      disabled={!correctionText.trim() || describeFood.isPending}
-                      style={styles.correctionSubmit}
-                    >
-                      <Text style={styles.correctionSubmitText}>{describeFood.isPending ? "Applying…" : "Apply"}</Text>
-                    </Pressable>
+              {/* One reveal level, one job: quantity and direct macro edits
+                  above cover the common fixes, so this footer is purely the
+                  fallback + lower-frequency actions — visually separated
+                  and quieter than the review content above it. */}
+              <View style={styles.itemFooter}>
+                {correctingId === item.id ? (
+                  <View style={styles.correctionWrap}>
+                    <View style={styles.correctionHeaderRow}>
+                      <Ionicons name="sparkles-outline" size={13} color={Color.gold} />
+                      <Text style={styles.correctionHeaderText}>Describe the fix</Text>
+                    </View>
+                    <TextInput
+                      value={correctionText}
+                      onChangeText={setCorrectionText}
+                      placeholder={`e.g. "it's oat milk, not cow's milk" or "no cheese"`}
+                      placeholderTextColor={Color.textFaint}
+                      style={styles.correctionInput}
+                      autoFocus
+                    />
+                    {correctionError ? <Text style={styles.error}>{correctionError}</Text> : null}
+                    <View style={styles.correctionActions}>
+                      <Pressable
+                        onPress={() => {
+                          setCorrectingId(null);
+                          setCorrectionText("");
+                          setCorrectionError(null);
+                        }}
+                        style={styles.correctionCancel}
+                      >
+                        <Text style={styles.footerLinkText}>Cancel</Text>
+                      </Pressable>
+                      <Pressable
+                        onPress={() => handleSubmitCorrection(item)}
+                        disabled={!correctionText.trim() || describeFood.isPending}
+                        style={styles.correctionSubmit}
+                      >
+                        <Text style={styles.correctionSubmitText}>{describeFood.isPending ? "Applying…" : "Apply"}</Text>
+                      </Pressable>
+                    </View>
                   </View>
-                </View>
-              ) : (
-                <Pressable
-                  onPress={() => {
-                    tapFeedback();
-                    setCorrectingId(item.id);
-                    setCorrectionText("");
-                    setCorrectionError(null);
-                  }}
-                  style={styles.saveCustomLink}
-                >
-                  <Text style={styles.saveCustomLinkText}>Describe a correction</Text>
-                </Pressable>
-              )}
+                ) : (
+                  <Pressable
+                    onPress={() => {
+                      tapFeedback();
+                      setCorrectingId(item.id);
+                      setCorrectionText("");
+                      setCorrectionError(null);
+                    }}
+                    style={styles.footerLink}
+                  >
+                    <Text style={styles.footerLinkText}>Fix something else</Text>
+                  </Pressable>
+                )}
 
-              {barcode ? (
-                <Pressable onPress={() => saveAsCustomFood(item)} style={styles.saveCustomLink}>
-                  <Text style={styles.saveCustomLinkText}>Save as a reusable food instead</Text>
+                <Pressable
+                  onPress={() => handleAlwaysUseThis(item)}
+                  disabled={item.overrideSaved || saveOverride.isPending}
+                  style={styles.footerLinkQuiet}
+                >
+                  <Text style={styles.footerLinkQuietText}>
+                    {item.overrideSaved
+                      ? "Saved — we'll recognize this next time you scan it."
+                      : `Always use this instead of "${item.originalName}"`}
+                  </Text>
                 </Pressable>
-              ) : null}
+
+                {barcode ? (
+                  <Pressable onPress={() => saveAsCustomFood(item)} style={styles.footerLinkQuiet}>
+                    <Text style={styles.footerLinkQuietText}>Save as a reusable food instead</Text>
+                  </Pressable>
+                ) : null}
+              </View>
             </Card>
           ))}
 
@@ -499,11 +594,12 @@ export default function LabelScanScreen() {
             disabled={items.filter((i) => i.included).length === 0}
             style={{ marginTop: Spacing.lg }}
           />
-          <Pressable onPress={() => setStage("camera")} style={styles.manualLink}>
-            <Text style={styles.manualLinkText}>Retake photo</Text>
+          <Pressable onPress={() => setStage("camera")} style={styles.retakeLink}>
+            <Ionicons name="camera-reverse-outline" size={15} color={Color.gold} />
+            <Text style={styles.retakeLinkText}>Retake photo</Text>
           </Pressable>
-          <Pressable onPress={() => goToManualForm("label_scan_skipped")} style={styles.manualLink}>
-            <Text style={styles.manualLinkText}>Enter a food manually instead</Text>
+          <Pressable onPress={() => goToManualForm("label_scan_skipped")} style={styles.manualLinkQuiet}>
+            <Text style={styles.manualLinkQuietText}>Enter a food manually instead</Text>
           </Pressable>
         </ScrollView>
       </SafeAreaView>
@@ -582,15 +678,34 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: Color.textPrimary,
   },
-  saveCustomLink: { alignItems: "flex-start", marginTop: 2 },
-  saveCustomLinkText: { fontSize: 12, fontWeight: "600", color: Color.gold },
-  correctionWrap: { marginTop: 2, gap: Spacing.xs },
+  itemFooter: {
+    marginTop: 2,
+    paddingTop: Spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: Color.borderSubtle,
+    gap: 6,
+  },
+  footerLink: { alignItems: "flex-start" },
+  footerLinkText: { fontSize: 12, fontWeight: "600", color: Color.gold },
+  footerLinkQuiet: { alignItems: "flex-start" },
+  footerLinkQuietText: { fontSize: 11, fontWeight: "500", color: Color.textFaint },
+  correctionWrap: {
+    marginTop: 2,
+    padding: Spacing.sm,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: Color.borderSubtle,
+    backgroundColor: Color.surface1,
+    gap: Spacing.xs,
+  },
+  correctionHeaderRow: { flexDirection: "row", alignItems: "center", gap: 4 },
+  correctionHeaderText: { fontSize: 11, fontWeight: "700", color: Color.gold },
   correctionInput: {
     height: 40,
     borderRadius: Radius.md,
     borderWidth: 1,
     borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
+    backgroundColor: Color.surface2,
     paddingHorizontal: Spacing.sm,
     fontSize: 13,
     color: Color.textPrimary,
@@ -599,6 +714,10 @@ const styles = StyleSheet.create({
   correctionCancel: { paddingVertical: 4 },
   correctionSubmit: { paddingVertical: 4, paddingHorizontal: Spacing.sm, borderRadius: Radius.pill, backgroundColor: Color.gold },
   correctionSubmitText: { fontSize: 12, fontWeight: "700", color: Color.goldForeground },
+  retakeLink: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: Spacing.md },
+  retakeLinkText: { fontSize: 13, fontWeight: "600", color: Color.gold },
+  manualLinkQuiet: { alignItems: "center", paddingVertical: Spacing.sm },
+  manualLinkQuietText: { fontSize: 12, fontWeight: "500", color: Color.textFaint },
   emptyText: { fontSize: 13, color: Color.textMuted, textAlign: "center", marginTop: Spacing.xl },
   error: { fontSize: 12, color: Color.danger, marginTop: Spacing.sm, textAlign: "center" },
 });

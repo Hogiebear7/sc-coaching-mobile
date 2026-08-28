@@ -64,13 +64,6 @@ function formatDateLabel(dateISO: string, today: string): string {
   return new Date(`${dateISO}T00:00:00`).toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" });
 }
 
-const MEAL_EMPTY_COPY: Record<MealType, string> = {
-  breakfast: "Nothing logged — tap + to add what you had this morning.",
-  lunch: "Nothing logged — tap + to log lunch and keep today on track.",
-  dinner: "Nothing logged — tap + to add dinner when you're ready.",
-  snack: "Nothing logged — snacks count too, tap + to add one.",
-};
-
 function defaultMealTypeForNow(): MealType {
   const hour = new Date().getHours();
   if (hour < 11) return "breakfast";
@@ -302,6 +295,29 @@ function EmphasisRow({ icon, tone, title, text }: { icon: keyof typeof Ionicons.
   );
 }
 
+// Long assistant replies land as a wall of text otherwise — clamp to a
+// short takeaway with a single "Show more" reveal, one level deep, rather
+// than dumping the full generated response at once.
+const ASSISTANT_CLAMP_CHARS = 220;
+
+function AssistantMessageText({ text }: { text: string }) {
+  const [expanded, setExpanded] = useState(false);
+  const isLong = text.length > ASSISTANT_CLAMP_CHARS;
+
+  return (
+    <>
+      <Text style={styles.bubbleAssistantText} numberOfLines={isLong && !expanded ? 3 : undefined}>
+        {text}
+      </Text>
+      {isLong ? (
+        <Pressable onPress={() => setExpanded((v) => !v)} hitSlop={6} style={{ marginTop: 4 }}>
+          <Text style={styles.showMoreText}>{expanded ? "Show less" : "Show more"}</Text>
+        </Pressable>
+      ) : null}
+    </>
+  );
+}
+
 function CoachChat({
   configured,
   initialMessages,
@@ -319,6 +335,7 @@ function CoachChat({
   const send = useSendNutritionCoachMessage();
   const applyOverride = useApplyNutritionTargetOverride();
   const seeded = useRef(false);
+  const tier = useMemberTier();
 
   async function handleApplyProposal(msgId: string, proposal: TargetProposal) {
     setApplyingMsgId(msgId);
@@ -354,6 +371,16 @@ function CoachChat({
     }
   }
 
+  if (!hasAccess(tier, "aiNutritionCoachChat")) {
+    return (
+      <UpsellCard
+        icon="chatbubble-ellipses-outline"
+        title="AI Nutrition Coach"
+        body="Chat with the AI Nutrition Coach — available on App Subscription and above."
+      />
+    );
+  }
+
   if (!configured) {
     return (
       <Card style={styles.chatCard}>
@@ -374,7 +401,11 @@ function CoachChat({
             const applied = appliedMsgIds.has(m.id);
             return (
               <View key={m.id} style={[styles.bubble, m.role === "user" ? styles.bubbleUser : styles.bubbleAssistant]}>
-                <Text style={m.role === "user" ? styles.bubbleUserText : styles.bubbleAssistantText}>{cleanText}</Text>
+                {m.role === "user" ? (
+                  <Text style={styles.bubbleUserText}>{cleanText}</Text>
+                ) : (
+                  <AssistantMessageText text={cleanText} />
+                )}
                 {proposal ? (
                   <View style={styles.proposalBlock}>
                     <Text style={styles.proposalSummary}>
@@ -600,7 +631,9 @@ export default function NutritionScreen() {
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: Spacing.xs }}>
                 {recentFoods.slice(0, 10).map((f) => (
                   <Pressable key={f.id} onPress={() => handleQuickAdd(f)} style={styles.quickAddChip}>
-                    <Text style={styles.quickAddChipText}>{f.name}</Text>
+                    <Text style={styles.quickAddChipText} numberOfLines={1} ellipsizeMode="tail">
+                      {f.name}
+                    </Text>
                     <Text style={styles.quickAddChipSub}>{f.calories} kcal</Text>
                   </Pressable>
                 ))}
@@ -614,27 +647,27 @@ export default function NutritionScreen() {
               action={{ label: "+ Add food", onPress: () => router.push({ pathname: "/log-food", params: { date: selectedDate } }) }}
             />
 
-            {MEAL_TYPE_OPTIONS.map((meal) => {
-              const mealEntries = (diary?.entries ?? []).filter((e) => e.mealType === meal.value);
-              const mealCals = mealEntries.reduce((s, e) => s + e.calories, 0);
-              return (
-                <Card key={meal.value} style={styles.mealCard}>
-                  <Pressable
-                    onPress={() => router.push({ pathname: "/log-food", params: { date: selectedDate, mealType: meal.value } })}
-                    style={styles.mealHeader}
-                  >
-                    <Text style={styles.mealTitle}>{meal.label}</Text>
-                    <View style={styles.mealHeaderRight}>
-                      {mealCals > 0 ? <Text style={styles.mealCals}>{mealCals} kcal</Text> : null}
-                      <Ionicons name="add-circle-outline" size={18} color={Color.gold} />
-                    </View>
-                  </Pressable>
-                  {mealEntries.length === 0 ? (
-                    <Pressable onPress={() => router.push({ pathname: "/log-food", params: { date: selectedDate, mealType: meal.value } })}>
-                      <Text style={styles.mealEmpty}>{MEAL_EMPTY_COPY[meal.value]}</Text>
+            <Card style={styles.diaryCard}>
+              {MEAL_TYPE_OPTIONS.map((meal, mealIdx) => {
+                const mealEntries = (diary?.entries ?? []).filter((e) => e.mealType === meal.value);
+                const mealCals = mealEntries.reduce((s, e) => s + e.calories, 0);
+                return (
+                  <View key={meal.value} style={[styles.mealBlock, mealIdx > 0 && styles.mealBlockDivider]}>
+                    <Pressable
+                      onPress={() => router.push({ pathname: "/log-food", params: { date: selectedDate, mealType: meal.value } })}
+                      style={styles.mealHeader}
+                    >
+                      <Text style={styles.mealTitle}>{meal.label}</Text>
+                      <View style={styles.mealHeaderRight}>
+                        {mealCals > 0 ? (
+                          <Text style={styles.mealCals}>{mealCals} kcal</Text>
+                        ) : (
+                          <Text style={styles.mealAddHint}>Add</Text>
+                        )}
+                        <Ionicons name={mealCals > 0 ? "chevron-forward" : "add-circle-outline"} size={16} color={mealCals > 0 ? Color.textFaint : Color.gold} />
+                      </View>
                     </Pressable>
-                  ) : (
-                    mealEntries.map((e) => (
+                    {mealEntries.map((e) => (
                       <View key={e.id} style={styles.entryRow}>
                         <View style={{ flex: 1 }}>
                           <Text style={styles.entryName}>{e.name}</Text>
@@ -643,14 +676,14 @@ export default function NutritionScreen() {
                           </Text>
                         </View>
                         <Pressable onPress={() => deleteEntry.mutate({ id: e.id, date: selectedDate })} hitSlop={8}>
-                          <Ionicons name="close-circle-outline" size={18} color={Color.textFaint} />
+                          <Ionicons name="close-circle-outline" size={16} color={Color.textFaint} />
                         </Pressable>
                       </View>
-                    ))
-                  )}
-                </Card>
-              );
-            })}
+                    ))}
+                  </View>
+                );
+              })}
+            </Card>
           </View>
 
           <View style={styles.section}>
@@ -778,16 +811,18 @@ const styles = StyleSheet.create({
     backgroundColor: Color.surface1,
     paddingHorizontal: Spacing.sm,
     paddingVertical: 8,
-    minWidth: 100,
+    width: 116,
   },
   quickAddChipText: { fontSize: 12, fontWeight: "600", color: Color.textPrimary },
   quickAddChipSub: { fontSize: 10, color: Color.textMuted, marginTop: 2 },
-  mealCard: { padding: Spacing.md, marginBottom: Spacing.sm },
+  diaryCard: { padding: 0 },
+  mealBlock: { padding: Spacing.md },
+  mealBlockDivider: { borderTopWidth: 1, borderTopColor: Color.borderSubtle },
   mealHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   mealTitle: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
-  mealHeaderRight: { flexDirection: "row", alignItems: "center", gap: Spacing.xs },
+  mealHeaderRight: { flexDirection: "row", alignItems: "center", gap: 6 },
   mealCals: { fontSize: 11, color: Color.textMuted },
-  mealEmpty: { fontSize: 11, color: Color.textFaint, marginTop: Spacing.xs },
+  mealAddHint: { fontSize: 11, color: Color.gold, fontWeight: "600" },
   entryRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -910,7 +945,8 @@ const styles = StyleSheet.create({
   bubbleUser: { alignSelf: "flex-end", backgroundColor: Color.goldWeak },
   bubbleAssistant: { alignSelf: "flex-start", backgroundColor: Color.surface2 },
   bubbleUserText: { fontSize: 13, color: Color.gold },
-  bubbleAssistantText: { fontSize: 13, color: Color.textSecondary },
+  bubbleAssistantText: { fontSize: 13, color: Color.textSecondary, lineHeight: 18 },
+  showMoreText: { fontSize: 11, fontWeight: "700", color: Color.gold },
   proposalBlock: { marginTop: Spacing.sm, paddingTop: Spacing.sm, borderTopWidth: 1, borderTopColor: Color.borderSubtle },
   proposalSummary: { fontSize: 11, color: Color.textMuted },
   applyButton: {

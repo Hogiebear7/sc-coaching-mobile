@@ -163,8 +163,8 @@ export default function DescribeFoodScreen() {
                   style={styles.nameInput}
                   placeholderTextColor={Color.textFaint}
                 />
-                <Pressable onPress={() => removeItem(item.id)} hitSlop={8}>
-                  <Ionicons name="close-circle" size={18} color={Color.textFaint} />
+                <Pressable onPress={() => removeItem(item.id)} hitSlop={8} accessibilityLabel="Remove this item">
+                  <Ionicons name="trash-outline" size={17} color={Color.textFaint} />
                 </Pressable>
               </View>
 
@@ -229,8 +229,11 @@ export default function DescribeFoodScreen() {
           <Pressable onPress={() => setStage("input")} style={styles.manualLink}>
             <Text style={styles.manualLinkText}>Describe it again</Text>
           </Pressable>
-          <Pressable onPress={() => router.replace({ pathname: "/custom-food", params: { date: effectiveDate, mealType: effectiveMealType } })} style={styles.manualLink}>
-            <Text style={styles.manualLinkText}>Enter a food manually instead</Text>
+          <Pressable
+            onPress={() => router.replace({ pathname: "/custom-food", params: { date: effectiveDate, mealType: effectiveMealType } })}
+            style={styles.manualLinkQuiet}
+          >
+            <Text style={styles.manualLinkQuietText}>Enter a food manually instead</Text>
           </Pressable>
         </ScrollView>
       </SafeAreaView>
@@ -298,6 +301,8 @@ const styles = StyleSheet.create({
   },
   manualLink: { alignItems: "center", paddingVertical: Spacing.lg },
   manualLinkText: { fontSize: 13, color: Color.gold, fontWeight: "600" },
+  manualLinkQuiet: { alignItems: "center", paddingVertical: Spacing.sm },
+  manualLinkQuietText: { fontSize: 12, color: Color.textFaint, fontWeight: "500" },
   scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
   itemCard: { padding: Spacing.md, marginBottom: Spacing.md, gap: Spacing.sm },
   itemCardExcluded: { opacity: 0.5 },

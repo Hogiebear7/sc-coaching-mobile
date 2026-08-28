@@ -16,8 +16,10 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { UpsellCard } from "@/components/ui/Upsell";
 import { Color, Radius, Spacing } from "@/constants/theme";
 import { ApiError } from "@/lib/api-client";
+import { hasAccess } from "@/lib/member-access";
 import {
   useMessages,
   useSendAiCoachMessage,
@@ -25,6 +27,7 @@ import {
   type AiMessage,
   type CoachMessage,
 } from "@/lib/queries/messages";
+import { useMemberTier } from "@/lib/queries/profile";
 
 type Tab = "ai" | "coach";
 
@@ -55,6 +58,7 @@ function AiCoachTab({
   const send = useSendAiCoachMessage();
   const seeded = useRef(false);
   const scrollRef = useRef<ScrollView>(null);
+  const tier = useMemberTier();
 
   useEffect(() => {
     if (!seeded.current && initialMessages.length > 0) {
@@ -62,6 +66,14 @@ function AiCoachTab({
       seeded.current = true;
     }
   }, [initialMessages]);
+
+  if (!hasAccess(tier, "aiCoachChat")) {
+    return (
+      <View style={{ margin: Spacing.lg }}>
+        <UpsellCard icon="chatbubble-ellipses-outline" title="AI Coach" body="Chat with the AI Coach — available on App Subscription and above." />
+      </View>
+    );
+  }
 
   async function handleSend() {
     const content = input.trim();

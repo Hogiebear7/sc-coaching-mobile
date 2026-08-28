@@ -10,12 +10,12 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { Collapsible } from "@/components/ui/Collapsible";
 import { UpsellCard, UpsellRow } from "@/components/ui/Upsell";
 import { Color, Radius, Spacing } from "@/constants/theme";
 import { ApiError } from "@/lib/api-client";
 import { useAuth } from "@/lib/auth-context";
 import { isBatteryOptimizationRelevant, openBatteryOptimizationSettings } from "@/lib/battery-optimization";
-import { getLastRejection, type CrashRecord } from "@/lib/crash-log";
 import { hasAccess } from "@/lib/member-access";
 import { useTour } from "@/lib/tour-context";
 import {
@@ -97,21 +97,12 @@ export default function SettingsScreen() {
   const [remindersDirty, setRemindersDirty] = useState(false);
   const [remindersSaved, setRemindersSaved] = useState(false);
   const [avatarError, setAvatarError] = useState<string | null>(null);
-  const [lastRejection, setLastRejection] = useState<CrashRecord | null>(null);
 
   useEffect(() => {
     if (!data || remindersHydrated) return;
     setTimings(data.reminderTimingsMins);
     setRemindersHydrated(true);
   }, [data, remindersHydrated]);
-
-  // Debug-only visibility into the last unhandled promise rejection (see
-  // lib/crash-log.ts) — never blocks or alarms, just something to check
-  // when diagnosing a crash report that a JS-level ErrorUtils handler
-  // never caught.
-  useEffect(() => {
-    getLastRejection().then(setLastRejection);
-  }, []);
 
   function togglePreset(mins: number) {
     setTimings((prev) => {
@@ -198,6 +189,12 @@ export default function SettingsScreen() {
   }
 
   const sortedTimings = [...(timings ?? [])].sort((a, b) => b - a);
+  const remindersSummary =
+    timings === null
+      ? "Using default timings"
+      : timings.length === 0
+        ? "No reminders"
+        : sortedTimings.map((m) => REMINDER_PRESETS.find((p) => p.mins === m)?.label ?? `${m} min before`).join(", ");
 
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
@@ -213,8 +210,7 @@ export default function SettingsScreen() {
         <View style={styles.centerFill} />
       ) : (
         <ScrollView contentContainerStyle={styles.scroll}>
-          <SectionLabel>APPEARANCE</SectionLabel>
-          <Card style={styles.appearanceCard}>
+          <View style={styles.identityRow}>
             {data.avatarDataUrl ? (
               <Image source={{ uri: data.avatarDataUrl }} style={styles.avatar as ImageStyle} contentFit="cover" />
             ) : (
@@ -223,7 +219,8 @@ export default function SettingsScreen() {
               </View>
             )}
             <View style={{ flex: 1 }}>
-              <Text style={styles.rowTitle}>Profile photo</Text>
+              <Text style={styles.identityName}>{data.fullName}</Text>
+              <Text style={styles.identityEmail}>{data.email}</Text>
               <View style={styles.avatarActions}>
                 <Pressable onPress={handlePickAvatar} disabled={setAvatar.isPending}>
                   <Text style={styles.linkText}>Change photo</Text>
@@ -236,12 +233,10 @@ export default function SettingsScreen() {
               </View>
               {avatarError ? <Text style={styles.error}>{avatarError}</Text> : null}
             </View>
-          </Card>
+          </View>
 
           <SectionLabel>ACCOUNT</SectionLabel>
           <Card style={styles.settingsCard}>
-            <Row icon="person-outline" title={data.fullName} sub={data.email} />
-            <View style={styles.divider} />
             <Row
               icon="key-outline"
               title="Reset password"
@@ -375,8 +370,7 @@ export default function SettingsScreen() {
                   <View style={{ flex: 1 }}>
                     <Text style={styles.rowTitle}>Notification reliability</Text>
                     <Text style={styles.rowSub}>
-                      Allow this app to run without battery restrictions — otherwise Android can delay or drop rest
-                      timer and other alerts while it&apos;s in the background.
+                      Prevents Android from delaying rest timer and other alerts in the background.
                     </Text>
                   </View>
                   <Ionicons name="chevron-forward" size={18} color={Color.textFaint} />
@@ -391,10 +385,7 @@ export default function SettingsScreen() {
             </View>
           ) : (
           <Card style={[styles.settingsCard, { marginTop: Spacing.sm, padding: Spacing.md }]}>
-            <Text style={styles.rowTitle}>Class reminders</Text>
-            <Text style={[styles.rowSub, { marginBottom: Spacing.sm }]}>
-              {timings === null ? "Using default timings." : "Get notified before your booked classes."}
-            </Text>
+            <Collapsible title="Class reminders" summary={remindersSummary}>
             <View style={styles.chipRow}>
               {REMINDER_PRESETS.map((p) => (
                 <Pressable
@@ -450,13 +441,14 @@ export default function SettingsScreen() {
                 <Text style={styles.saved}>Saved.</Text>
               ) : null}
             </View>
+            </Collapsible>
           </Card>
           )}
 
           {user?.role === "member" ? (
             <>
               <SectionLabel>HELP</SectionLabel>
-              <Card style={styles.settingsCard}>
+              <Card style={styles.settingsCard} tier="quiet">
                 <Row
                   icon="compass-outline"
                   title="Take app tour"
@@ -473,13 +465,8 @@ export default function SettingsScreen() {
               existing app without any visible confirmation of which
               version ended up on the device. */}
           <Text style={styles.buildInfo}>
-            Build {Constants.expoConfig?.extra?.buildLabel ?? "dev"}
+            Version {Constants.expoConfig?.extra?.buildLabel ?? "dev"}
           </Text>
-          {lastRejection ? (
-            <Text style={styles.buildInfo}>
-              Last unhandled rejection ({new Date(lastRejection.timestamp).toLocaleString()}): {lastRejection.message}
-            </Text>
-          ) : null}
         </ScrollView>
       )}
     </SafeAreaView>
@@ -520,11 +507,18 @@ const styles = StyleSheet.create({
   rowTitle: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
   rowSub: { fontSize: 11, color: Color.textMuted, marginTop: 2 },
   divider: { borderTopWidth: 1, borderTopColor: Color.borderSubtle },
-  appearanceCard: { padding: Spacing.md, flexDirection: "row", alignItems: "center", gap: Spacing.md },
-  avatar: { width: 56, height: 56, borderRadius: Radius.pill },
+  identityRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.md,
+    marginBottom: Spacing.lg,
+  },
+  identityName: { fontSize: 20, fontWeight: "700", fontStyle: "italic", color: Color.textPrimary },
+  identityEmail: { fontSize: 12, color: Color.textMuted, marginTop: 2 },
+  avatar: { width: 60, height: 60, borderRadius: Radius.pill },
   avatarPlaceholder: {
-    width: 56,
-    height: 56,
+    width: 60,
+    height: 60,
     borderRadius: Radius.pill,
     backgroundColor: Color.goldWeak,
     borderWidth: 1,
@@ -532,8 +526,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  avatarInitial: { fontSize: 20, fontWeight: "700", color: Color.gold },
-  avatarActions: { flexDirection: "row", gap: Spacing.md, marginTop: 4 },
+  avatarInitial: { fontSize: 22, fontWeight: "700", color: Color.gold },
+  avatarActions: { flexDirection: "row", gap: Spacing.md, marginTop: 6 },
   linkText: { fontSize: 12, fontWeight: "600", color: Color.gold },
   linkTextDanger: { fontSize: 12, fontWeight: "600", color: Color.danger },
   error: { fontSize: 11, color: Color.danger, marginTop: 4 },

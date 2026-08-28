@@ -6,6 +6,11 @@ export const DIETARY_PREFERENCES = [
   { label: "Vegetarian", value: "vegetarian" },
   { label: "Pescetarian", value: "pescetarian" },
   { label: "Vegan", value: "vegan" },
+  { label: "Low carb", value: "low_carb" },
+  { label: "Keto", value: "keto" },
+  { label: "Paleo", value: "paleo" },
+  { label: "Mediterranean", value: "mediterranean" },
+  { label: "Intermittent fasting", value: "intermittent_fasting" },
 ] as const;
 
 export const ALLERGENS = [

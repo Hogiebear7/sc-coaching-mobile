@@ -7,6 +7,7 @@ import { apiFetch } from "@/lib/api-client";
 // package between the two repos (same convention as every other
 // web/mobile-mirrored type in this app).
 export type GoalDirection = "lose" | "gain" | "maintain";
+export type GoalDifficulty = "comfortable" | "challenging" | "aggressive";
 
 export interface GoalTimelineResult {
   direction: GoalDirection;
@@ -15,12 +16,16 @@ export interface GoalTimelineResult {
   clampedWeeklyRate: number | null;
   isAggressive: boolean;
   projectedDateAtCurrentTrend: string | null;
+  sustainableWeeklyRate: number | null;
+  suggestedDate: string | null;
+  difficulty: GoalDifficulty | null;
 }
 
 export interface GoalTimelineData {
   goalWeightKg: number | null;
   goalBodyFatPct: number | null;
   goalTargetDate: string | null;
+  trainingDaysPerWeek: number | null;
   currentWeightKg: number | null;
   currentBodyFatPct: number | null;
   weightTimeline: GoalTimelineResult | null;
@@ -35,9 +40,10 @@ export function useGoalTimeline() {
 }
 
 export interface SaveGoalInput {
-  goalWeightKg: number | null;
-  goalBodyFatPct: number | null;
-  goalTargetDate: string | null;
+  goalWeightKg?: number | null;
+  goalBodyFatPct?: number | null;
+  goalTargetDate?: string | null;
+  trainingDaysPerWeek?: number | null;
 }
 
 export function useSaveGoal() {

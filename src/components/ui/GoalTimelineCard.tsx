@@ -14,10 +14,32 @@ function shiftDate(iso: string, days: number): string {
   return d.toISOString().slice(0, 10);
 }
 
+// DateField's year picker defaults its upper bound to the current year when
+// no maxDate is given — correct for a backward-looking date (DOB, cycle
+// start) but wrong here, since a goal target date is always in the future.
+// Without this, minDate=today and the missing maxDate both collapse to this
+// year, leaving exactly one selectable year. Five years out is generous for
+// any realistic body-composition goal without making the picker unwieldy.
+function maxGoalDate(): string {
+  const d = new Date();
+  d.setFullYear(d.getFullYear() + 5);
+  return d.toISOString().slice(0, 10);
+}
+
+const DIFFICULTY_COPY: Record<NonNullable<GoalTimelineResult["difficulty"]>, { label: string; color: string }> = {
+  comfortable: { label: "Comfortable", color: Color.success },
+  challenging: { label: "Challenging", color: Color.warning },
+  aggressive: { label: "Aggressive", color: Color.danger },
+};
+
 function TimelineSummary({ label, unit, timeline }: { label: string; unit: string; timeline: GoalTimelineResult }) {
+  const difficulty = timeline.difficulty ? DIFFICULTY_COPY[timeline.difficulty] : null;
   return (
     <View style={styles.summaryBox}>
-      <Text style={styles.summaryLabel}>{label}</Text>
+      <View style={styles.summaryHeaderRow}>
+        <Text style={styles.summaryLabel}>{label}</Text>
+        {difficulty ? <Text style={[styles.difficultyText, { color: difficulty.color }]}>{difficulty.label}</Text> : null}
+      </View>
       {timeline.clampedWeeklyRate !== null ? (
         <Text style={styles.summaryText}>
           Needs about {Math.abs(timeline.clampedWeeklyRate).toFixed(2)}
@@ -28,6 +50,12 @@ function TimelineSummary({ label, unit, timeline }: { label: string; unit: strin
               That's faster than a safe pace — the plan is capped at a safer rate, so your date may slip.
             </Text>
           ) : null}
+        </Text>
+      ) : null}
+      {timeline.suggestedDate ? (
+        <Text style={styles.summaryText}>
+          At a sustainable pace for your training frequency, this goal is realistic by around{" "}
+          {formatDateDisplay(timeline.suggestedDate)}.
         </Text>
       ) : null}
       {timeline.projectedDateAtCurrentTrend ? (
@@ -41,57 +69,114 @@ function TimelineSummary({ label, unit, timeline }: { label: string; unit: strin
   );
 }
 
+const TRAINING_DAYS_OPTIONS = [1, 2, 3, 4, 5, 6, 7];
+
 // Mirrors the web Profile page's GoalTimelineCard — same save form +
 // projection display, against the same /api/profile/goal + /goal-timeline
 // routes.
 export function GoalTimelineCard() {
-  const { data, isLoading } = useGoalTimeline();
+  const { data, isLoading, refetch } = useGoalTimeline();
   const saveGoal = useSaveGoal();
   const [goalWeightKg, setGoalWeightKg] = useState("");
   const [goalBodyFatPct, setGoalBodyFatPct] = useState("");
   const [goalTargetDate, setGoalTargetDate] = useState("");
+  const [trainingDaysPerWeek, setTrainingDaysPerWeek] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [generating, setGenerating] = useState(false);
 
   useEffect(() => {
     if (!data) return;
     setGoalWeightKg(data.goalWeightKg !== null ? String(data.goalWeightKg) : "");
     setGoalBodyFatPct(data.goalBodyFatPct !== null ? String(data.goalBodyFatPct) : "");
     setGoalTargetDate(data.goalTargetDate ?? "");
+    setTrainingDaysPerWeek(data.trainingDaysPerWeek);
   }, [data]);
 
-  async function handleSave() {
-    setError(null);
+  function parsedGoals(): { weightVal: number | null; bodyFatVal: number | null } | null {
     const weightVal = goalWeightKg.trim() ? parseFloat(goalWeightKg) : null;
     const bodyFatVal = goalBodyFatPct.trim() ? parseFloat(goalBodyFatPct) : null;
     if (goalWeightKg.trim() && (!Number.isFinite(weightVal) || (weightVal ?? 0) <= 0)) {
       setError("Goal weight must be a positive number.");
-      return;
+      return null;
     }
     if (goalBodyFatPct.trim() && (!Number.isFinite(bodyFatVal) || (bodyFatVal ?? 0) <= 0 || (bodyFatVal ?? 0) > 75)) {
       setError("Goal body fat must be a percentage between 0 and 75.");
-      return;
+      return null;
     }
+    if (weightVal === null && bodyFatVal === null) {
+      setError("Set a goal weight or body-fat % first.");
+      return null;
+    }
+    return { weightVal, bodyFatVal };
+  }
+
+  async function handleSave() {
+    setError(null);
+    const parsed = parsedGoals();
+    if (!parsed) return;
     try {
       await saveGoal.mutateAsync({
-        goalWeightKg: weightVal,
-        goalBodyFatPct: bodyFatVal,
+        goalWeightKg: parsed.weightVal,
+        goalBodyFatPct: parsed.bodyFatVal,
         goalTargetDate: goalTargetDate || null,
+        trainingDaysPerWeek,
       });
     } catch {
       setError("Could not save your goal. Please try again.");
     }
   }
 
-  function nudgeDate(days: number) {
-    setGoalTargetDate((prev) => shiftDate(prev || todayDateString(), days));
+  // Primary flow: weight/body-fat goal + training frequency in, a realistic
+  // suggested date out — mirrors the web ProfileForm's handleGenerate.
+  async function handleGenerate() {
+    setError(null);
+    const parsed = parsedGoals();
+    if (!parsed) return;
+    if (trainingDaysPerWeek === null) {
+      setError("Choose how many days a week you can train.");
+      return;
+    }
+
+    setGenerating(true);
+    try {
+      await saveGoal.mutateAsync({
+        goalWeightKg: parsed.weightVal,
+        goalBodyFatPct: parsed.bodyFatVal,
+        trainingDaysPerWeek,
+      });
+      const projection = await refetch();
+      const suggested =
+        projection.data?.weightTimeline?.suggestedDate ?? projection.data?.bodyFatTimeline?.suggestedDate ?? null;
+      if (!suggested) {
+        setError("Not enough information yet to suggest a date — check your current weight/body-fat is logged.");
+        return;
+      }
+      setGoalTargetDate(suggested);
+      await saveGoal.mutateAsync({ goalTargetDate: suggested });
+    } catch {
+      setError("Could not generate a timeline. Please try again.");
+    } finally {
+      setGenerating(false);
+    }
+  }
+
+  async function nudgeDate(days: number) {
+    const next = shiftDate(goalTargetDate || todayDateString(), days);
+    setGoalTargetDate(next);
+    setError(null);
+    try {
+      await saveGoal.mutateAsync({ goalTargetDate: next });
+    } catch {
+      setError("Could not update your date. Please try again.");
+    }
   }
 
   return (
     <Card style={styles.card}>
       <Text style={styles.title}>Goal timeline</Text>
       <Text style={styles.explainer}>
-        Optional. Set a target weight and/or body-fat % with a date, and your daily calorie target
-        adjusts to actually aim at it — capped at a safe rate, never chasing an unsafe one.
+        Optional. Set a goal and training days, then generate a timeline — your calorie target
+        adjusts to match it, capped at a safe rate.
       </Text>
 
       <View style={styles.inputRow}>
@@ -119,11 +204,32 @@ export function GoalTimelineCard() {
         </View>
       </View>
 
+      <Text style={[styles.label, { marginTop: Spacing.md }]}>Days per week you can train</Text>
+      <View style={styles.chipRow}>
+        {TRAINING_DAYS_OPTIONS.map((d) => (
+          <Pressable
+            key={d}
+            onPress={() => setTrainingDaysPerWeek(d)}
+            style={[styles.dayChip, trainingDaysPerWeek === d && styles.dayChipActive]}
+          >
+            <Text style={[styles.dayChipText, trainingDaysPerWeek === d && styles.dayChipTextActive]}>{d}</Text>
+          </Pressable>
+        ))}
+      </View>
+
+      <Button
+        title={generating ? "Generating…" : "Generate timeline"}
+        onPress={handleGenerate}
+        loading={generating}
+        style={{ marginTop: Spacing.md }}
+      />
+
       <DateField
         label="Target date"
         value={goalTargetDate}
         onChange={setGoalTargetDate}
         minDate={todayDateString()}
+        maxDate={maxGoalDate()}
         style={{ marginTop: Spacing.sm }}
       />
 
@@ -139,7 +245,11 @@ export function GoalTimelineCard() {
         </View>
       ) : null}
 
-      <Button title="Save goal" onPress={handleSave} loading={saveGoal.isPending} style={{ marginTop: Spacing.md }} />
+      {/* Deliberately a quiet text link, not a Button — Generate timeline is
+          the one action this card wants to read as primary. */}
+      <Pressable onPress={handleSave} disabled={saveGoal.isPending} style={styles.saveLink} hitSlop={8}>
+        <Text style={styles.saveLinkText}>{saveGoal.isPending ? "Saving…" : "Save without generating"}</Text>
+      </Pressable>
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
@@ -186,7 +296,22 @@ const styles = StyleSheet.create({
     borderColor: Color.borderSubtle,
   },
   adjustChipText: { fontSize: 12, color: Color.textMuted },
+  saveLink: { alignItems: "center", marginTop: Spacing.md, paddingVertical: 8 },
+  saveLinkText: { fontSize: 13, fontWeight: "600", color: Color.textMuted },
   error: { fontSize: 12, color: Color.danger, marginTop: Spacing.sm },
+  chipRow: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.xs },
+  dayChip: {
+    width: 36,
+    height: 36,
+    borderRadius: Radius.pill,
+    borderWidth: 1,
+    borderColor: Color.borderSubtle,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  dayChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
+  dayChipText: { fontSize: 13, fontWeight: "600", color: Color.textMuted },
+  dayChipTextActive: { color: Color.gold },
   summaryBox: {
     borderRadius: Radius.md,
     borderWidth: 1,
@@ -194,7 +319,9 @@ const styles = StyleSheet.create({
     backgroundColor: Color.surface1,
     padding: Spacing.sm,
   },
+  summaryHeaderRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: Spacing.sm },
   summaryLabel: { fontSize: 13, fontWeight: "600", color: Color.textPrimary },
+  difficultyText: { fontSize: 12, fontWeight: "700" },
   summaryText: { fontSize: 12, color: Color.textMuted, marginTop: 4, lineHeight: 17 },
   warningText: { color: Color.warning },
 });

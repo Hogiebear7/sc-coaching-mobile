@@ -1,6 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
+import { Image, type ImageStyle } from "expo-image";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
+import type { ReactNode } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -17,17 +19,19 @@ import { BodyFatCard } from "@/components/ui/BodyFatCard";
 import { BodyWeightCard } from "@/components/ui/BodyWeightCard";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { CountryPicker } from "@/components/ui/CountryPicker";
 import { CyclePhaseChart } from "@/components/ui/CyclePhaseChart";
 import { DateField } from "@/components/ui/DateField";
 import { GoalTimelineCard } from "@/components/ui/GoalTimelineCard";
 import { TextField } from "@/components/ui/TextField";
 import { Color, Radius, Spacing } from "@/constants/theme";
 import { ApiError, useAuth } from "@/lib/auth-context";
-import { COUNTRIES } from "@/lib/country-options";
 import { useCycleData } from "@/lib/queries/cycle";
-import { ALLERGENS, DIETARY_PREFERENCES, INTOLERANCES } from "@/lib/dietary-options";
+import { COUNTRIES } from "@/lib/country-options";
+import { ALLERGENS, DIETARY_PREFERENCES, INTOLERANCES, optionLabel } from "@/lib/dietary-options";
 import {
   useProfile,
+  useRequestEmailChange,
   useUpdateProfile,
   type DietaryPreference,
   type Gender,
@@ -46,11 +50,56 @@ const GOALS: PrimaryGoal[] = [
   "Improve Mobility",
 ];
 
-function Chip({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
+function Chip({
+  label,
+  active,
+  onPress,
+  variant = "primary",
+}: {
+  label: string;
+  active: boolean;
+  onPress: () => void;
+  variant?: "primary" | "secondary";
+}) {
+  const activeStyle = variant === "secondary" ? styles.chipActiveSecondary : styles.chipActive;
+  const activeTextStyle = variant === "secondary" ? styles.chipTextActiveSecondary : styles.chipTextActive;
   return (
-    <Pressable onPress={onPress} style={[styles.chip, active && styles.chipActive]}>
-      <Text style={[styles.chipText, active && styles.chipTextActive]}>{label}</Text>
+    <Pressable onPress={onPress} style={[styles.chip, active && activeStyle]}>
+      <Text style={[styles.chipText, active && activeTextStyle]}>{label}</Text>
     </Pressable>
+  );
+}
+
+function truncateSummary(value: string, max: number): string {
+  const trimmed = value.trim();
+  if (!trimmed) return "Not set";
+  return trimmed.length > max ? `${trimmed.slice(0, max).trimEnd()}…` : trimmed;
+}
+
+function CollapsibleSection({ title, summary, children }: { title: string; summary: string; children: ReactNode }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <View>
+      <Pressable onPress={() => setOpen((o) => !o)} style={styles.collapsibleHeader}>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.label}>{title}</Text>
+          {!open ? <Text style={styles.collapsibleSummary}>{summary}</Text> : null}
+        </View>
+        <Ionicons name={open ? "chevron-up" : "chevron-down"} size={16} color={Color.textFaint} />
+      </Pressable>
+      {open ? <View style={{ marginTop: Spacing.sm }}>{children}</View> : null}
+    </View>
+  );
+}
+
+function SummaryRow({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.summaryRow}>
+      <Text style={styles.summaryLabel}>{label}</Text>
+      <Text style={styles.summaryValue} numberOfLines={1}>
+        {value}
+      </Text>
+    </View>
   );
 }
 
@@ -71,12 +120,31 @@ export default function ProfileScreen() {
   const { data, isLoading, isError, refetch } = useProfile();
   const update = useUpdateProfile();
   const { data: cycleData } = useCycleData(!!data?.cycleTrackingEligible);
+  const requestEmailChange = useRequestEmailChange();
+
+  const [isChangingEmail, setIsChangingEmail] = useState(false);
+  const [newEmailInput, setNewEmailInput] = useState("");
+  const [emailChangeMessage, setEmailChangeMessage] = useState<string | null>(null);
+  const [emailChangeError, setEmailChangeError] = useState<string | null>(null);
+
+  async function handleRequestEmailChange() {
+    setEmailChangeError(null);
+    try {
+      const res = await requestEmailChange.mutateAsync(newEmailInput.trim());
+      setEmailChangeMessage(res.message);
+      setNewEmailInput("");
+      setIsChangingEmail(false);
+    } catch (e) {
+      setEmailChangeError(e instanceof ApiError ? e.message : "Could not send confirmation email. Try again.");
+    }
+  }
 
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [dateOfBirth, setDateOfBirth] = useState("");
   const [gender, setGender] = useState<Gender | null>(null);
   const [primaryGoal, setPrimaryGoal] = useState<PrimaryGoal | null>(null);
+  const [secondaryGoal, setSecondaryGoal] = useState<PrimaryGoal | null>(null);
   const [sportPlayed, setSportPlayed] = useState("");
   const [heightCm, setHeightCm] = useState("");
   const [country, setCountry] = useState("");
@@ -92,6 +160,8 @@ export default function ProfileScreen() {
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [hydrated, setHydrated] = useState(false);
+  const [detailsExpanded, setDetailsExpanded] = useState(false);
+  const [emergencyExpanded, setEmergencyExpanded] = useState(false);
 
   useEffect(() => {
     if (!data || hydrated) return;
@@ -100,6 +170,7 @@ export default function ProfileScreen() {
     setDateOfBirth(data.dateOfBirth ?? "");
     setGender(data.gender);
     setPrimaryGoal(data.primaryGoal);
+    setSecondaryGoal(data.secondaryGoal ?? null);
     setSportPlayed(data.sportPlayed ?? "");
     setHeightCm(data.heightCm !== null ? String(data.heightCm) : "");
     setCountry(data.country ?? "");
@@ -164,6 +235,9 @@ export default function ProfileScreen() {
         dateOfBirth: dateOfBirth.trim(),
         gender,
         primaryGoal,
+        // Always sent (even "") so clearing it back to "not set" actually
+        // clears a previously-set value — same reasoning as country below.
+        secondaryGoal: secondaryGoal ?? "",
         sportPlayed: sportPlayed.trim() || undefined,
         heightCm: heightCm.trim() || undefined,
         // Always sent (even "") so picking "Not set" actually clears a
@@ -209,7 +283,58 @@ export default function ProfileScreen() {
           </View>
         ) : (
           <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-            <Text style={styles.email}>{data.email}</Text>
+            <View style={styles.identityRow}>
+              {data.avatarDataUrl ? (
+                <Image source={{ uri: data.avatarDataUrl }} style={styles.avatar as ImageStyle} contentFit="cover" />
+              ) : (
+                <View style={styles.avatarPlaceholder}>
+                  <Text style={styles.avatarInitial}>{(data.fullName || data.email).slice(0, 1).toUpperCase()}</Text>
+                </View>
+              )}
+              <View style={{ flex: 1 }}>
+                <Text style={styles.identityName}>{data.fullName}</Text>
+                <Text style={styles.identityEmail}>{data.email}</Text>
+                {emailChangeMessage ? (
+                  <Text style={styles.savedInline}>{emailChangeMessage}</Text>
+                ) : !isChangingEmail ? (
+                  <Pressable onPress={() => setIsChangingEmail(true)} hitSlop={6}>
+                    <Text style={styles.changeEmailLink}>Change email</Text>
+                  </Pressable>
+                ) : null}
+              </View>
+            </View>
+
+            {!emailChangeMessage && isChangingEmail ? (
+              <View style={styles.changeEmailForm}>
+                <TextField
+                  label="New email address"
+                  value={newEmailInput}
+                  onChangeText={setNewEmailInput}
+                  placeholder="you@example.com"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                />
+                {emailChangeError ? <Text style={styles.errorInline}>{emailChangeError}</Text> : null}
+                <View style={{ flexDirection: "row", gap: Spacing.sm, marginTop: Spacing.sm }}>
+                  <Button
+                    title={requestEmailChange.isPending ? "Sending…" : "Send confirmation link"}
+                    onPress={handleRequestEmailChange}
+                    loading={requestEmailChange.isPending}
+                    variant="secondary"
+                  />
+                  <Pressable
+                    onPress={() => {
+                      setIsChangingEmail(false);
+                      setEmailChangeError(null);
+                      setNewEmailInput("");
+                    }}
+                    style={{ justifyContent: "center", paddingHorizontal: Spacing.sm }}
+                  >
+                    <Text style={styles.cancelText}>Cancel</Text>
+                  </Pressable>
+                </View>
+              </View>
+            ) : null}
 
             <View style={styles.statsRow}>
               <Card style={styles.statCard}>
@@ -226,105 +351,113 @@ export default function ProfileScreen() {
               </Card>
             </View>
 
-            <Text style={styles.sectionLabel}>BODY WEIGHT</Text>
-            <BodyWeightCard />
-            <TextField
-              label="Height (cm) — optional"
-              value={heightCm}
-              onChangeText={setHeightCm}
-              keyboardType="decimal-pad"
-              placeholder="e.g. 178"
-              style={{ marginTop: Spacing.md }}
-            />
+            <Text style={styles.sectionLabel}>PERSONAL DETAILS</Text>
+            <Card style={styles.detailsCard}>
+              {!detailsExpanded ? (
+                <>
+                  <SummaryRow label="Phone" value={phone || "Not set"} />
+                  <SummaryRow label="Date of birth" value={dateOfBirth || "Not set"} />
+                  <SummaryRow label="Height" value={heightCm ? `${heightCm} cm` : "Not set"} />
+                  <SummaryRow label="Country" value={country ? optionLabel(COUNTRIES, country) : "Not set"} />
+                  <SummaryRow label="Gender" value={gender ?? "Not set"} />
+                  <Pressable onPress={() => setDetailsExpanded(true)} style={styles.editRow}>
+                    <Ionicons name="create-outline" size={14} color={Color.gold} />
+                    <Text style={styles.editRowText}>Edit details</Text>
+                  </Pressable>
+                </>
+              ) : (
+                <>
+                  <TextField label="Full name" value={fullName} onChangeText={setFullName} placeholder="Your full name" />
+                  <TextField
+                    label="Phone"
+                    value={phone}
+                    onChangeText={setPhone}
+                    keyboardType="phone-pad"
+                    placeholder="+353 83 123 4567"
+                    style={{ marginTop: Spacing.md }}
+                  />
+                  <DateField
+                    label="Date of birth"
+                    value={dateOfBirth}
+                    onChange={setDateOfBirth}
+                    maxDate={new Date().toISOString().slice(0, 10)}
+                  />
+                  <TextField
+                    label="Height (cm) — optional"
+                    value={heightCm}
+                    onChangeText={setHeightCm}
+                    keyboardType="decimal-pad"
+                    placeholder="e.g. 178"
+                    style={{ marginTop: Spacing.md }}
+                  />
 
-            <Text style={[styles.label, styles.labelSpaced]}>
-              Country — optional, improves food search results
-            </Text>
-            <View style={styles.chipRow}>
-              <Chip label="Not set" active={country === ""} onPress={() => setCountry("")} />
-              {COUNTRIES.map((c) => (
-                <Chip key={c.value} label={c.label} active={country === c.value} onPress={() => setCountry(c.value)} />
-              ))}
-            </View>
+                  <Text style={[styles.label, styles.labelSpaced]}>
+                    Country — optional, improves food search results
+                  </Text>
+                  <CountryPicker value={country} onChange={setCountry} />
 
-            <Text style={[styles.sectionLabel, styles.sectionLabelSpaced]}>BODY FAT %</Text>
-            <BodyFatCard />
+                  <Text style={[styles.label, styles.labelSpaced]}>Gender</Text>
+                  <View style={styles.chipRow}>
+                    {GENDERS.map((g) => (
+                      <Chip key={g} label={g} active={gender === g} onPress={() => setGender(g)} />
+                    ))}
+                  </View>
 
-            <Text style={[styles.sectionLabel, styles.sectionLabelSpaced]}>GOAL TIMELINE</Text>
-            <GoalTimelineCard />
+                  <Pressable onPress={() => setDetailsExpanded(false)} style={styles.doneRow}>
+                    <Text style={styles.doneRowText}>Done editing</Text>
+                  </Pressable>
+                </>
+              )}
+            </Card>
 
-            <Text style={[styles.sectionLabel, styles.sectionLabelSpaced]}>YOUR DETAILS</Text>
-            <TextField label="Full name" value={fullName} onChangeText={setFullName} placeholder="Your full name" />
-            <TextField label="Phone" value={phone} onChangeText={setPhone} keyboardType="phone-pad" placeholder="+353 83 123 4567" />
-            <DateField
-              label="Date of birth"
-              value={dateOfBirth}
-              onChange={setDateOfBirth}
-              maxDate={new Date().toISOString().slice(0, 10)}
-            />
+            <Text style={[styles.sectionLabel, styles.sectionLabelSpaced]}>COACHING GOALS</Text>
+            <Card style={styles.detailsCard}>
+              <Text style={styles.label}>Primary goal</Text>
+              <View style={styles.chipRow}>
+                {GOALS.map((g) => (
+                  <Chip key={g} label={g} active={primaryGoal === g} onPress={() => setPrimaryGoal(g)} />
+                ))}
+              </View>
 
-            <Text style={styles.label}>Gender</Text>
-            <View style={styles.chipRow}>
-              {GENDERS.map((g) => (
-                <Chip key={g} label={g} active={gender === g} onPress={() => setGender(g)} />
-              ))}
-            </View>
+              {primaryGoal === "Sports Performance" ? (
+                <TextField
+                  label="Sport played"
+                  value={sportPlayed}
+                  onChangeText={setSportPlayed}
+                  placeholder="e.g. GAA, Rugby"
+                  style={{ marginTop: Spacing.md }}
+                />
+              ) : null}
 
-            <Text style={[styles.label, styles.labelSpaced]}>Primary goal</Text>
-            <View style={styles.chipRow}>
-              {GOALS.map((g) => (
-                <Chip key={g} label={g} active={primaryGoal === g} onPress={() => setPrimaryGoal(g)} />
-              ))}
-            </View>
+              <View style={styles.labelSpaced}>
+                <CollapsibleSection title="Secondary goal (optional)" summary={secondaryGoal ?? "Not set"}>
+                  <View style={styles.chipRow}>
+                    {GOALS.map((g) => (
+                      <Chip
+                        key={g}
+                        label={g}
+                        active={secondaryGoal === g}
+                        onPress={() => setSecondaryGoal(secondaryGoal === g ? null : g)}
+                        variant="secondary"
+                      />
+                    ))}
+                  </View>
+                </CollapsibleSection>
+              </View>
 
-            {primaryGoal === "Sports Performance" ? (
-              <TextField
-                label="Sport played"
-                value={sportPlayed}
-                onChangeText={setSportPlayed}
-                placeholder="e.g. GAA, Rugby"
-                style={{ marginTop: Spacing.md }}
-              />
-            ) : null}
-
-            <TextField
-              label="Anything else your coach should know?"
-              value={additionalInfo}
-              onChangeText={setAdditionalInfo}
-              placeholder="Injuries, preferences, context…"
-              multiline
-              style={styles.multiline}
-            />
-
-            <Text style={[styles.sectionLabel, styles.sectionLabelSpaced]}>IN CASE OF EMERGENCY</Text>
-            <TextField
-              label="Emergency contact name"
-              value={emergencyContactName}
-              onChangeText={setEmergencyContactName}
-              placeholder="e.g. Jane Smith"
-            />
-            <TextField
-              label="Emergency contact phone"
-              value={emergencyContactPhone}
-              onChangeText={setEmergencyContactPhone}
-              keyboardType="phone-pad"
-              placeholder="+353 83 123 4567"
-            />
-            <TextField
-              label="Second emergency contact name — optional"
-              value={emergencyContact2Name}
-              onChangeText={setEmergencyContact2Name}
-              placeholder="e.g. John Smith"
-            />
-            {emergencyContact2Name.trim() ? (
-              <TextField
-                label="Second emergency contact phone"
-                value={emergencyContact2Phone}
-                onChangeText={setEmergencyContact2Phone}
-                keyboardType="phone-pad"
-                placeholder="+353 83 123 4567"
-              />
-            ) : null}
+              <View style={styles.labelSpaced}>
+                <CollapsibleSection title="Notes for your coach (optional)" summary={truncateSummary(additionalInfo, 40)}>
+                  <TextField
+                    label="Anything else your coach should know?"
+                    value={additionalInfo}
+                    onChangeText={setAdditionalInfo}
+                    placeholder="Injuries, preferences, context…"
+                    multiline
+                    style={styles.multiline}
+                  />
+                </CollapsibleSection>
+              </View>
+            </Card>
 
             <Text style={[styles.sectionLabel, styles.sectionLabelSpaced]}>DIETARY REQUIREMENTS</Text>
             <Card style={styles.dietaryCard}>
@@ -332,40 +465,60 @@ export default function ProfileScreen() {
                 Optional — powers your nutrition suggestions. Change these any time.
               </Text>
 
-              <Text style={styles.label}>Dietary preference</Text>
-              <View style={styles.chipRow}>
-                {DIETARY_PREFERENCES.map((opt) => (
-                  <Chip
-                    key={opt.value}
-                    label={opt.label}
-                    active={dietaryPreference === opt.value}
-                    onPress={() => setDietaryPreference(opt.value)}
-                  />
-                ))}
+              <CollapsibleSection
+                title="Dietary preference"
+                summary={optionLabel(DIETARY_PREFERENCES, dietaryPreference)}
+              >
+                <View style={styles.chipRow}>
+                  {DIETARY_PREFERENCES.map((opt) => (
+                    <Chip
+                      key={opt.value}
+                      label={opt.label}
+                      active={dietaryPreference === opt.value}
+                      onPress={() => setDietaryPreference(opt.value)}
+                    />
+                  ))}
+                </View>
+              </CollapsibleSection>
+
+              <View style={styles.labelSpaced}>
+                <CollapsibleSection
+                  title="Allergies"
+                  summary={allergies.length ? allergies.map((v) => optionLabel(ALLERGENS, v)).join(", ") : "None selected"}
+                >
+                  <View style={styles.chipRow}>
+                    {ALLERGENS.map((opt) => (
+                      <Chip
+                        key={opt.value}
+                        label={opt.label}
+                        active={allergies.includes(opt.value)}
+                        onPress={() => toggleListValue(allergies, setAllergies, opt.value)}
+                      />
+                    ))}
+                  </View>
+                </CollapsibleSection>
               </View>
 
-              <Text style={[styles.label, styles.labelSpaced]}>Allergies</Text>
-              <View style={styles.chipRow}>
-                {ALLERGENS.map((opt) => (
-                  <Chip
-                    key={opt.value}
-                    label={opt.label}
-                    active={allergies.includes(opt.value)}
-                    onPress={() => toggleListValue(allergies, setAllergies, opt.value)}
-                  />
-                ))}
-              </View>
-
-              <Text style={[styles.label, styles.labelSpaced]}>Intolerances / medical</Text>
-              <View style={styles.chipRow}>
-                {INTOLERANCES.map((opt) => (
-                  <Chip
-                    key={opt.value}
-                    label={opt.label}
-                    active={intolerancesOrMedical.includes(opt.value)}
-                    onPress={() => toggleListValue(intolerancesOrMedical, setIntolerancesOrMedical, opt.value)}
-                  />
-                ))}
+              <View style={styles.labelSpaced}>
+                <CollapsibleSection
+                  title="Intolerances / medical"
+                  summary={
+                    intolerancesOrMedical.length
+                      ? intolerancesOrMedical.map((v) => optionLabel(INTOLERANCES, v)).join(", ")
+                      : "None selected"
+                  }
+                >
+                  <View style={styles.chipRow}>
+                    {INTOLERANCES.map((opt) => (
+                      <Chip
+                        key={opt.value}
+                        label={opt.label}
+                        active={intolerancesOrMedical.includes(opt.value)}
+                        onPress={() => toggleListValue(intolerancesOrMedical, setIntolerancesOrMedical, opt.value)}
+                      />
+                    ))}
+                  </View>
+                </CollapsibleSection>
               </View>
 
               <TextField
@@ -378,12 +531,93 @@ export default function ProfileScreen() {
               />
             </Card>
 
+            <Text style={[styles.sectionLabel, styles.sectionLabelSpaced]}>EMERGENCY CONTACT</Text>
+            <Card style={styles.detailsCard}>
+              {!emergencyExpanded ? (
+                <>
+                  <SummaryRow
+                    label="Primary contact"
+                    value={
+                      emergencyContactName
+                        ? `${emergencyContactName}${emergencyContactPhone ? " · " + emergencyContactPhone : ""}`
+                        : "Not set"
+                    }
+                  />
+                  {emergencyContact2Name ? (
+                    <SummaryRow
+                      label="Second contact"
+                      value={`${emergencyContact2Name}${emergencyContact2Phone ? " · " + emergencyContact2Phone : ""}`}
+                    />
+                  ) : null}
+                  <Pressable onPress={() => setEmergencyExpanded(true)} style={styles.editRow}>
+                    <Ionicons name="create-outline" size={14} color={Color.gold} />
+                    <Text style={styles.editRowText}>
+                      {emergencyContactName ? "Edit emergency contact" : "Add emergency contact"}
+                    </Text>
+                  </Pressable>
+                </>
+              ) : (
+                <>
+                  <TextField
+                    label="Emergency contact name"
+                    value={emergencyContactName}
+                    onChangeText={setEmergencyContactName}
+                    placeholder="e.g. Jane Smith"
+                  />
+                  <TextField
+                    label="Emergency contact phone"
+                    value={emergencyContactPhone}
+                    onChangeText={setEmergencyContactPhone}
+                    keyboardType="phone-pad"
+                    placeholder="+353 83 123 4567"
+                    style={{ marginTop: Spacing.md }}
+                  />
+                  <TextField
+                    label="Second emergency contact name — optional"
+                    value={emergencyContact2Name}
+                    onChangeText={setEmergencyContact2Name}
+                    placeholder="e.g. John Smith"
+                    style={{ marginTop: Spacing.md }}
+                  />
+                  {emergencyContact2Name.trim() ? (
+                    <TextField
+                      label="Second emergency contact phone"
+                      value={emergencyContact2Phone}
+                      onChangeText={setEmergencyContact2Phone}
+                      keyboardType="phone-pad"
+                      placeholder="+353 83 123 4567"
+                      style={{ marginTop: Spacing.md }}
+                    />
+                  ) : null}
+
+                  <Pressable onPress={() => setEmergencyExpanded(false)} style={styles.doneRow}>
+                    <Text style={styles.doneRowText}>Done editing</Text>
+                  </Pressable>
+                </>
+              )}
+            </Card>
+
             {error ? <Text style={styles.error}>{error}</Text> : null}
             {saved && !error ? <Text style={styles.saved}>Saved.</Text> : null}
 
-            <Button title="Save changes" onPress={handleSave} loading={update.isPending} style={{ marginTop: Spacing.sm }} />
+            <Button title="Save changes" onPress={handleSave} loading={update.isPending} style={{ marginTop: Spacing.md }} />
 
-            <Text style={[styles.sectionLabel, styles.sectionLabelSpaced]}>MORE</Text>
+            {/* Closes off the editable form before the quieter reference
+                section below, rather than letting Body Metrics run straight
+                on from Save with only a section-label's worth of spacing. */}
+            <View style={styles.closingDivider} />
+
+            <Text style={styles.sectionLabel}>BODY METRICS</Text>
+            <Text style={styles.label}>Body weight</Text>
+            <BodyWeightCard />
+
+            <Text style={[styles.label, styles.labelSpaced]}>Body fat %</Text>
+            <BodyFatCard />
+
+            <Text style={[styles.label, styles.labelSpaced]}>Goal timeline</Text>
+            <GoalTimelineCard />
+
+            <Text style={[styles.sectionLabel, styles.sectionLabelSpaced]}>ACCOUNT</Text>
             <Pressable onPress={() => router.push("/settings")} style={styles.cycleRow}>
               <View style={styles.cycleRowIcon}>
                 <Ionicons name="settings-outline" size={18} color={Color.gold} />
@@ -458,7 +692,26 @@ const styles = StyleSheet.create({
   centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
   errorText: { color: Color.textMuted, fontSize: 14 },
   scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
-  email: { fontSize: 13, color: Color.textMuted, marginBottom: Spacing.md },
+  identityRow: { flexDirection: "row", alignItems: "center", gap: Spacing.md, marginBottom: Spacing.lg },
+  avatar: { width: 60, height: 60, borderRadius: Radius.pill },
+  avatarPlaceholder: {
+    width: 60,
+    height: 60,
+    borderRadius: Radius.pill,
+    backgroundColor: Color.goldWeak,
+    borderWidth: 1,
+    borderColor: Color.goldBorder,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  avatarInitial: { fontSize: 22, fontWeight: "700", color: Color.gold },
+  identityName: { fontSize: 20, fontWeight: "700", fontStyle: "italic", color: Color.textPrimary },
+  identityEmail: { fontSize: 12, color: Color.textMuted, marginTop: 2 },
+  changeEmailForm: { marginTop: -Spacing.sm, marginBottom: Spacing.lg },
+  changeEmailLink: { fontSize: 12, fontWeight: "600", color: Color.gold, marginTop: 4 },
+  cancelText: { fontSize: 13, color: Color.textMuted },
+  errorInline: { color: Color.danger, fontSize: 12, marginTop: 6 },
+  savedInline: { color: Color.success, fontSize: 12, marginTop: 2 },
   statsRow: { flexDirection: "row", gap: Spacing.sm, marginBottom: Spacing.xl },
   statCard: { flex: 1, padding: Spacing.md, alignItems: "center" },
   statValue: { fontSize: 16, fontWeight: "700", color: Color.gold, fontVariant: ["tabular-nums"] },
@@ -478,9 +731,15 @@ const styles = StyleSheet.create({
   chipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
   chipText: { fontSize: 12, fontWeight: "500", color: Color.textMuted },
   chipTextActive: { color: Color.gold },
+  // Same light-blue "secondary selection" language as the secondary
+  // muscle-group picker in workout-generator.tsx — reused here so Secondary
+  // goal reads as a distinct, lower-emphasis choice from Primary's gold.
+  chipActiveSecondary: { borderColor: Color.accentData, backgroundColor: "rgba(85,196,254,0.12)" },
+  chipTextActiveSecondary: { color: Color.accentData },
   multiline: { height: 90, paddingTop: 12, textAlignVertical: "top" },
   error: { color: Color.danger, fontSize: 13, marginTop: Spacing.sm },
   saved: { color: Color.success, fontSize: 13, marginTop: Spacing.sm },
+  closingDivider: { height: 1, backgroundColor: Color.borderSubtle, marginTop: Spacing.xl, marginBottom: Spacing.lg },
   cycleRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -515,4 +774,28 @@ const styles = StyleSheet.create({
   phasePreviewLabel: { fontSize: 12, fontWeight: "600", color: Color.textPrimary, marginBottom: Spacing.sm },
   dietaryCard: { padding: Spacing.md },
   dietaryHint: { fontSize: 12, color: Color.textMuted, marginBottom: Spacing.md },
+  collapsibleHeader: { flexDirection: "row", alignItems: "center", gap: Spacing.sm },
+  collapsibleSummary: { fontSize: 12, color: Color.textMuted, marginTop: 2 },
+  detailsCard: { padding: Spacing.md },
+  summaryRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 7,
+    gap: Spacing.md,
+  },
+  summaryLabel: { fontSize: 12, color: Color.textMuted },
+  summaryValue: { fontSize: 13, fontWeight: "500", color: Color.textPrimary, flexShrink: 1, textAlign: "right" },
+  editRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: Spacing.sm,
+    paddingTop: Spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: Color.borderSubtle,
+  },
+  editRowText: { fontSize: 12, fontWeight: "600", color: Color.gold },
+  doneRow: { alignItems: "center", marginTop: Spacing.md, paddingVertical: 6 },
+  doneRowText: { fontSize: 12, fontWeight: "600", color: Color.textMuted },
 });

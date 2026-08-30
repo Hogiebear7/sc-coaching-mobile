@@ -1,12 +1,18 @@
 import { useEffect, useRef } from "react";
 import { Animated, View } from "react-native";
-import Svg, { Circle, Polyline } from "react-native-svg";
+import Svg, { Circle, G, Polyline } from "react-native-svg";
 
 import { Color } from "@/constants/theme";
 import { sparklineSegments } from "@/lib/readiness-formatters";
 
 const W = 112;
 const H = 40;
+// Plotted points can land exactly on the W/H edges (most recent day's dot
+// sits at cx=W, a 0 or 100 reading sits at cy=H or cy=0), and the endpoint
+// dot's radius extends past that — without padding, the SVG canvas clips
+// it in half. Pad the canvas and shift the plot inward instead of touching
+// sparklineSegments' coordinate math.
+const PAD = 4;
 const AnimatedPolyline = Animated.createAnimatedComponent(Polyline);
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
@@ -50,41 +56,43 @@ export function ReadinessSparkline({ series }: { series: (number | null)[] }) {
 
   return (
     <View>
-      <Svg width={W} height={H} viewBox={`0 0 ${W} ${H}`}>
-        {segments.map((points, i) =>
-          points.includes(" ") ? (
-            <AnimatedPolyline
-              key={i}
-              points={points}
-              strokeDasharray={`${polylineLength(points)}`}
-              strokeDashoffset={draw.interpolate({ inputRange: [0, 1], outputRange: [polylineLength(points), 0] })}
-              fill="none"
-              stroke={Color.accentData}
-              strokeWidth={2}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              opacity={0.85}
+      <Svg width={W + PAD * 2} height={H + PAD * 2} viewBox={`0 0 ${W + PAD * 2} ${H + PAD * 2}`}>
+        <G transform={`translate(${PAD}, ${PAD})`}>
+          {segments.map((points, i) =>
+            points.includes(" ") ? (
+              <AnimatedPolyline
+                key={i}
+                points={points}
+                strokeDasharray={`${polylineLength(points)}`}
+                strokeDashoffset={draw.interpolate({ inputRange: [0, 1], outputRange: [polylineLength(points), 0] })}
+                fill="none"
+                stroke={Color.accentData}
+                strokeWidth={2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                opacity={0.85}
+              />
+            ) : (
+              <Circle
+                key={i}
+                cx={Number(points.split(",")[0])}
+                cy={Number(points.split(",")[1])}
+                r={1.5}
+                fill={Color.accentData}
+                opacity={0.7}
+              />
+            )
+          )}
+          {lastVal !== null ? (
+            <AnimatedCircle
+              cx={lastIdx * stepX}
+              cy={H - (lastVal / 100) * H}
+              r={3}
+              fill={Color.gold}
+              opacity={dotOpacity}
             />
-          ) : (
-            <Circle
-              key={i}
-              cx={Number(points.split(",")[0])}
-              cy={Number(points.split(",")[1])}
-              r={1.5}
-              fill={Color.accentData}
-              opacity={0.7}
-            />
-          )
-        )}
-        {lastVal !== null ? (
-          <AnimatedCircle
-            cx={lastIdx * stepX}
-            cy={H - (lastVal / 100) * H}
-            r={3}
-            fill={Color.gold}
-            opacity={dotOpacity}
-          />
-        ) : null}
+          ) : null}
+        </G>
       </Svg>
     </View>
   );

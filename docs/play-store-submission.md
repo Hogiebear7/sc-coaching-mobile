@@ -15,20 +15,20 @@ action).
 **Short description** (≤80 characters, shown under the app name in search):
 
 ```
-Personal coaching, workouts, nutrition, and recovery — all in one app.
+Training, nutrition, and recovery — plus class booking with your coach.
 ```
-(72 characters)
+(71 characters)
 
 **Full description** (shown on the store listing page):
 
 ```
-S&C Performance Coaching is the member app for S&C Performance Coaching in
-Navan, Co. Meath — built around real coaching, not a generic template.
+S&C Performance Coaching is a complete training, nutrition, and recovery
+app — built for real coaching, not a generic fitness tracker.
 
-Every member's programme starts with their own goals and baseline, coached
-in small groups where every rep gets watched. This app is where that
-coaching continues between sessions: log your training, track your
-nutrition, monitor your recovery, and stay connected with your coach.
+Log every session, track your nutrition, monitor your recovery, and stay
+connected with your coach, all in one place. If you train with S&C
+Performance Coaching in Navan, Co. Meath, you can also book and manage
+your in-person classes directly from the app.
 
 TRAINING
 • Follow programmes your coach builds for you, or log sessions freely
@@ -52,17 +52,24 @@ RECOVERY
   visible only to you unless you choose to share it with your coach
 • 7-day training load and 14-day readiness trends
 
-SCHEDULE & COACHING
-• Browse and book classes, manage your bookings, and see your attendance
-  history
+COACHING & CLASSES
 • Message your coach directly — questions, form checks, and check-ins
   without leaving the app
+• Browse and book in-person classes, manage your bookings, and see your
+  attendance history
 • Manage your membership and see your plan at a glance
 
 Built and coached by a highly qualified coach with 15+ years of hands-on
-experience — this app is the training log and coaching connection for
-members already training with us, not a generic fitness tracker.
+experience.
 ```
+
+(Rewritten 2026-08-30 to lead with the app itself — training/nutrition/
+recovery — rather than opening on "the member app for [gym] in [town]."
+The original framing undersold the product for anyone not already a
+member of that one location, and the business may expand to other
+gyms/coaches using the app for their own class booking in future — this
+copy stays honest about today's single-location booking scope while not
+positioning the whole app as location-exclusive.)
 
 **Category**: Health & Fitness
 

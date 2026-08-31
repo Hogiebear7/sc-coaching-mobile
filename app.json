@@ -57,7 +57,8 @@
           "photosPermission": "S&C Coaching uses your photo library to set a profile picture.",
           "microphonePermission": false
         }
-      ]
+      ],
+      "./plugins/withTransparentSplashIcon.js"
     ],
     "experiments": {
       "typedRoutes": true,

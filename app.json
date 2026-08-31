@@ -54,7 +54,7 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "S&C Coaching uses your photo library to set a profile picture.",
+          "photosPermission": "S&C Coaching uses your photo library to set a profile picture and to identify food from an uploaded photo or screenshot.",
           "microphonePermission": false
         }
       ],

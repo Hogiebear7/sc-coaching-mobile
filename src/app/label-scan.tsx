@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { manipulateAsync, SaveFormat } from "expo-image-manipulator";
-import { launchCameraAsync, useCameraPermissions } from "expo-image-picker";
+import { launchCameraAsync, launchImageLibraryAsync, useCameraPermissions } from "expo-image-picker";
 import { useState, useEffect } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -89,33 +89,12 @@ export default function LabelScanScreen() {
     });
   }
 
-  async function handleCapture() {
-    if (stage !== "camera" || launching) return;
-    tapFeedback();
-    setScanError(null);
-    setLaunching(true);
-
-    // The system camera activity owns the whole capture UI (framing,
-    // retake, confirm) — we only get control back once the member has
-    // confirmed a photo or backed out.
-    let photoUri: string;
-    try {
-      const result = await launchCameraAsync({ quality: 0.9, mediaTypes: ["images"], exif: false });
-      if (result.canceled || !result.assets?.[0]) {
-        // Backed out of the system camera — not a failure, stay put.
-        setLaunching(false);
-        return;
-      }
-      photoUri = result.assets[0].uri;
-    } catch (e) {
-      const reason = e instanceof Error ? e.message : String(e);
-      trackEvent("label_scan_manual_fallback", { reason: `camera_launch_failed: ${reason}` });
-      setScanError(`Couldn't open the camera (${reason}).`);
-      setLaunching(false);
-      return;
-    }
-
-    setLaunching(false);
+  // Shared by both entry points below (live capture and library pick) —
+  // the AI scan endpoint doesn't care where the image came from, and
+  // recipe-app screenshots (a table of nutrition facts, same shape as a
+  // packaged food's label) go through the exact same "read the numbers off
+  // the image" path as a photographed nutrition label.
+  async function processPickedPhoto(photoUri: string) {
     setStage("scanning");
 
     // A resize/encode failure here used to be swallowed silently and
@@ -182,6 +161,66 @@ export default function LabelScanScreen() {
       setScanError(message);
       setStage("camera");
     }
+  }
+
+  async function handleCapture() {
+    if (stage !== "camera" || launching) return;
+    tapFeedback();
+    setScanError(null);
+    setLaunching(true);
+
+    // The system camera activity owns the whole capture UI (framing,
+    // retake, confirm) — we only get control back once the member has
+    // confirmed a photo or backed out.
+    let photoUri: string;
+    try {
+      const result = await launchCameraAsync({ quality: 0.9, mediaTypes: ["images"], exif: false });
+      if (result.canceled || !result.assets?.[0]) {
+        // Backed out of the system camera — not a failure, stay put.
+        setLaunching(false);
+        return;
+      }
+      photoUri = result.assets[0].uri;
+    } catch (e) {
+      const reason = e instanceof Error ? e.message : String(e);
+      trackEvent("label_scan_manual_fallback", { reason: `camera_launch_failed: ${reason}` });
+      setScanError(`Couldn't open the camera (${reason}).`);
+      setLaunching(false);
+      return;
+    }
+
+    setLaunching(false);
+    await processPickedPhoto(photoUri);
+  }
+
+  async function handlePickFromLibrary() {
+    if (stage !== "camera" || launching) return;
+    tapFeedback();
+    setScanError(null);
+    setLaunching(true);
+
+    // expo-image-picker's own system picker (Android's Photo Picker on 13+,
+    // a standard gallery intent on older versions) handles whatever
+    // permission it needs internally — no separate permission-gate UI
+    // needed here the way camera access has one above.
+    let photoUri: string;
+    try {
+      const result = await launchImageLibraryAsync({ quality: 0.9, mediaTypes: ["images"], exif: false });
+      if (result.canceled || !result.assets?.[0]) {
+        setLaunching(false);
+        return;
+      }
+      photoUri = result.assets[0].uri;
+    } catch (e) {
+      const reason = e instanceof Error ? e.message : String(e);
+      trackEvent("label_scan_manual_fallback", { reason: `library_launch_failed: ${reason}` });
+      setScanError(`Couldn't open your photos (${reason}).`);
+      setLaunching(false);
+      return;
+    }
+
+    setLaunching(false);
+    await processPickedPhoto(photoUri);
   }
 
   function updateItem(id: string, patch: Partial<Pick<ReviewItem, "name" | "calories" | "proteinG" | "carbsG" | "fatG">>) {
@@ -624,12 +663,16 @@ export default function LabelScanScreen() {
         <Text style={styles.confirmText}>
           {barcode
             ? "Photograph the food or its nutrition label and we'll identify it."
-            : "A single item, a full plate, or a nutrition label — we'll identify it and estimate the nutrition."}
+            : "A single item, a full plate, a nutrition label, or a screenshot of a recipe's nutrition info — we'll identify it and estimate the nutrition."}
         </Text>
 
-        {scanError ? <Text style={styles.scanErrorText}>{scanError} Tap the button to try again.</Text> : null}
+        {scanError ? <Text style={styles.scanErrorText}>{scanError} Tap a button to try again.</Text> : null}
 
         <Button title="Take Photo" onPress={handleCapture} loading={launching} style={{ marginTop: Spacing.lg, alignSelf: "stretch" }} />
+        <Pressable onPress={handlePickFromLibrary} disabled={launching} style={styles.libraryLink}>
+          <Ionicons name="images-outline" size={15} color={Color.gold} />
+          <Text style={styles.libraryLinkText}>Upload a photo or screenshot instead</Text>
+        </Pressable>
       </View>
 
       <Pressable onPress={() => goToManualForm("label_scan_skipped")} style={styles.manualLink}>
@@ -650,6 +693,8 @@ const styles = StyleSheet.create({
   confirmTitle: { fontSize: 17, fontWeight: "700", color: Color.textPrimary, marginTop: Spacing.md },
   confirmText: { fontSize: 13, color: Color.textMuted, textAlign: "center", marginTop: 6, lineHeight: 19 },
   scanErrorText: { textAlign: "center", fontSize: 12, color: Color.danger, marginTop: Spacing.sm, paddingHorizontal: Spacing.xl },
+  libraryLink: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: Spacing.md },
+  libraryLinkText: { fontSize: 13, fontWeight: "600", color: Color.gold },
   manualLink: { alignItems: "center", paddingVertical: Spacing.lg },
   manualLinkText: { fontSize: 13, color: Color.gold, fontWeight: "600" },
   scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },

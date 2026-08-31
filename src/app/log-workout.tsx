@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   Alert,
   Image,
+  InteractionManager,
   Keyboard,
   KeyboardAvoidingView,
   Modal,
@@ -625,13 +626,19 @@ export default function LogWorkoutScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [draft.startedAtMs, draft.accumulatedSecs]);
 
+  // Set right before a successful submit hands off to workout-summary, so
+  // the seed effect below can never re-fire off the post-discard empty
+  // draft while this screen is still mid-transition (see the
+  // InteractionManager comment in handleSubmit for the full story).
+  const hasSubmittedRef = useRef(false);
+
   // Arriving from the Active Program card, a saved Library template, or the
   // workout generator — all three prefill exercise rows (name, target sets,
   // set type) from a PrescribedExercise[] so the member only has to fill in
   // what they actually did. Only runs for a genuinely fresh draft (seeded
   // guards it).
   useEffect(() => {
-    if (seeded || exerciseRows.length > 0) return;
+    if (hasSubmittedRef.current || seeded || exerciseRows.length > 0) return;
 
     const dayExercises = programId && dayId ? program?.days.find((d) => d.id === dayId)?.exercises : undefined;
     const templateExercises = templateId ? templates?.find((t) => t.id === templateId)?.exercises : undefined;
@@ -1034,9 +1041,18 @@ export default function LogWorkoutScreen() {
       if (programId) await advanceProgram.mutateAsync(programId);
       successFeedback();
       setFeelModalOpen(false);
-      discard();
+      hasSubmittedRef.current = true;
       setPendingWorkoutSummary(summary);
       router.replace("/workout-summary");
+      // Deliberately deferred: discard() resets exerciseRows/runRows/etc to
+      // empty, and this screen is still mounted (mid-transition-out) right
+      // after router.replace fires, so an immediate call here forces a
+      // re-render off the reset state while still on screen — the same
+      // class of low-level Android crash (instant kill, no JS stack trace)
+      // documented in workout-summary-handoff.ts for oversized nav-state
+      // payloads. Waiting for interactions/animations to finish means the
+      // reset lands after log-workout has actually been replaced.
+      InteractionManager.runAfterInteractions(() => discard());
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Could not log workout. Please try again.");
       setFeelModalOpen(false);

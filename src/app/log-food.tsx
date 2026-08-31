@@ -91,9 +91,18 @@ export default function LogFoodScreen() {
   // "From your favourites" / "From recent" confirmation banner so it's
   // obvious a tap actually did something, not just silently filled fields.
   const [appliedFrom, setAppliedFrom] = useState<"favorite" | "recent" | null>(null);
+  const [favoritesBrowserOpen, setFavoritesBrowserOpen] = useState(false);
+  const [favoritesSearch, setFavoritesSearch] = useState("");
 
   const date = dateParam ?? todayDateString();
   const [mealType, setMealType] = useState<MealType>((mealTypeParam as MealType) ?? defaultMealTypeForNow());
+  // Browsing favourites is deliberately independent of the Meal tabs above
+  // (which govern what gets logged) — a favourite saved under Lunch should
+  // still be easy to find and apply while the Meal tabs are set to
+  // Breakfast, so this filter only controls what's shown inside the
+  // favourites panel, never the other way around. Seeded from the active
+  // Meal tab purely as a convenient starting point.
+  const [favoritesFilter, setFavoritesFilter] = useState<MealType>(mealType);
 
   // A Food Ideas chip arrives here as a plain name suggestion (no catalog
   // id/nutrition data to add directly), so it seeds the search box and
@@ -167,6 +176,8 @@ export default function LogFoodScreen() {
     setFatG(String(f.fatG));
     setAppliedFrom("favorite");
     setFavoriteJustSaved(false);
+    setFavoritesBrowserOpen(false);
+    setFavoritesSearch("");
   }
 
   // The meal bucket a favourite is saved under is just which shelf it shows
@@ -452,30 +463,68 @@ export default function LogFoodScreen() {
             </Card>
           ) : !searchOpen ? (
             <>
-              {favorites && favorites.filter((f) => f.mealType === mealType).length > 0 ? (
-                <>
-                  <Text style={[styles.fieldLabel, { marginTop: Spacing.md }]}>Favourites — {mealLabel}</Text>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: Spacing.xs, paddingBottom: Spacing.sm }}>
-                    {favorites
-                      .filter((f) => f.mealType === mealType)
-                      .map((f) => (
-                        <Pressable
-                          key={f.id}
-                          onPress={() => applyFavorite(f)}
-                          onLongPress={() => confirmRemoveFavorite(f)}
-                          style={styles.recentChip}
-                        >
-                          <Ionicons name="star" size={13} color={Color.gold} />
-                          <Text style={styles.recentChipText} numberOfLines={1}>
-                            {f.name}
-                          </Text>
-                          <Text style={styles.recentChipSub} numberOfLines={1}>
-                            {f.calories} kcal
-                          </Text>
-                        </Pressable>
-                      ))}
-                  </ScrollView>
-                </>
+              {favorites && favorites.length > 0 ? (
+                <View style={{ marginTop: Spacing.md }}>
+                  <Pressable onPress={() => setFavoritesBrowserOpen((v) => !v)} style={styles.favoriteToggle}>
+                    <Ionicons name="star" size={14} color={Color.gold} />
+                    <Text style={styles.favoriteToggleText}>Favourites ({favorites.length})</Text>
+                    <Ionicons name={favoritesBrowserOpen ? "chevron-up" : "chevron-down"} size={14} color={Color.gold} />
+                  </Pressable>
+
+                  {favoritesBrowserOpen ? (
+                    <View style={styles.favoritesPanel}>
+                      <View style={styles.mealRow}>
+                        {MEAL_TYPE_OPTIONS.map((opt) => (
+                          <Pressable
+                            key={opt.value}
+                            onPress={() => setFavoritesFilter(opt.value)}
+                            style={[styles.mealChip, favoritesFilter === opt.value && styles.mealChipActive]}
+                          >
+                            <Text style={[styles.mealChipText, favoritesFilter === opt.value && styles.mealChipTextActive]}>{opt.label}</Text>
+                          </Pressable>
+                        ))}
+                      </View>
+
+                      <TextInput
+                        value={favoritesSearch}
+                        onChangeText={setFavoritesSearch}
+                        placeholder="Search favourites…"
+                        placeholderTextColor={Color.textFaint}
+                        style={[styles.input, { marginTop: Spacing.sm, marginBottom: 0, height: 36 }]}
+                        autoCapitalize="none"
+                      />
+
+                      {(() => {
+                        const matches = favorites.filter(
+                          (f) => f.mealType === favoritesFilter && f.name.toLowerCase().includes(favoritesSearch.trim().toLowerCase())
+                        );
+                        if (matches.length === 0) {
+                          return <Text style={styles.noResultsText}>No favourites here yet.</Text>;
+                        }
+                        return (
+                          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: Spacing.xs, paddingTop: Spacing.sm }}>
+                            {matches.map((f) => (
+                              <Pressable
+                                key={f.id}
+                                onPress={() => applyFavorite(f)}
+                                onLongPress={() => confirmRemoveFavorite(f)}
+                                style={styles.recentChip}
+                              >
+                                <Ionicons name="star" size={13} color={Color.gold} />
+                                <Text style={styles.recentChipText} numberOfLines={1}>
+                                  {f.name}
+                                </Text>
+                                <Text style={styles.recentChipSub} numberOfLines={1}>
+                                  {f.calories} kcal
+                                </Text>
+                              </Pressable>
+                            ))}
+                          </ScrollView>
+                        );
+                      })()}
+                    </View>
+                  ) : null}
+                </View>
               ) : null}
 
               {recentFoods && recentFoods.length > 0 ? (
@@ -653,6 +702,14 @@ const styles = StyleSheet.create({
   fallbackLinkText: { fontSize: 13, fontWeight: "600", color: Color.textMuted },
   favoriteToggle: { flexDirection: "row", alignItems: "center", gap: 6, paddingVertical: 6, alignSelf: "flex-start" },
   favoriteToggleText: { fontSize: 13, fontWeight: "600", color: Color.gold },
+  favoritesPanel: {
+    marginTop: Spacing.xs,
+    padding: Spacing.sm,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: Color.borderSubtle,
+    backgroundColor: Color.surface1,
+  },
   customFoodRow: { flexDirection: "row", gap: Spacing.lg, marginTop: Spacing.md },
   quickLink: { flexDirection: "row", alignItems: "center", gap: 4 },
   quickLinkText: { fontSize: 11, fontWeight: "600", color: Color.textFaint },

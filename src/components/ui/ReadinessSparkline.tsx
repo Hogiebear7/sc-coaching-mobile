@@ -16,6 +16,20 @@ const PAD = 4;
 const AnimatedPolyline = Animated.createAnimatedComponent(Polyline);
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
+function pointCoords(point: string): [number, number] {
+  const [x, y] = point.split(",").map(Number);
+  return [x, y];
+}
+
+function firstPoint(segment: string): [number, number] {
+  return pointCoords(segment.split(" ")[0]);
+}
+
+function lastPoint(segment: string): [number, number] {
+  const parts = segment.split(" ");
+  return pointCoords(parts[parts.length - 1]);
+}
+
 // react-native-svg's Polyline doesn't support the SVG2 `pathLength`
 // normalization trick the web version uses, so the dash length has to be
 // the polyline's actual pixel length instead of a fixed 100.
@@ -58,6 +72,27 @@ export function ReadinessSparkline({ series }: { series: (number | null)[] }) {
     <View>
       <Svg width={W + PAD * 2} height={H + PAD * 2} viewBox={`0 0 ${W + PAD * 2} ${H + PAD * 2}`}>
         <G transform={`translate(${PAD}, ${PAD})`}>
+          {/* A missed check-in breaks the data into separate segments (see
+              sparklineSegments) — bridge each break with a faint dashed
+              connector so a missed day reads as "no data here" rather than
+              looking like the chart is simply cut off. Purely decorative,
+              so it doesn't share the draw-in animation real segments get. */}
+          {segments.slice(1).map((segment, i) => {
+            const [x1, y1] = lastPoint(segments[i]);
+            const [x2, y2] = firstPoint(segment);
+            return (
+              <Polyline
+                key={`gap-${i}`}
+                points={`${x1},${y1} ${x2},${y2}`}
+                fill="none"
+                stroke={Color.accentData}
+                strokeWidth={1.5}
+                strokeDasharray="2,3"
+                strokeLinecap="round"
+                opacity={0.35}
+              />
+            );
+          })}
           {segments.map((points, i) =>
             points.includes(" ") ? (
               <AnimatedPolyline

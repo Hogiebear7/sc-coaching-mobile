@@ -16,6 +16,12 @@ import { TourProvider } from "@/lib/tour-context";
 import { WorkoutDraftProvider } from "@/lib/workout-draft";
 
 SplashScreen.preventAutoHideAsync();
+// Some OEM Android skins (Huawei/EMUI confirmed) apply their own, often
+// exaggerated, zoom/scale animation when the native splash's default exit
+// transition runs — it visibly overshoots past the screen edges before our
+// CustomSplashScreen below takes over. Taking the exit transition over
+// ourselves with a plain fade avoids that OEM-specific behavior entirely.
+SplashScreen.setOptions({ duration: 250, fade: true });
 installGlobalCrashHandler();
 
 const queryClient = new QueryClient({

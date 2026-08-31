@@ -65,7 +65,7 @@
     },
     "extra": {
       "router": {},
-      "buildLabel": "2026-08-21-splash-bigger-v7",
+      "buildLabel": "2026-08-31-favourites-crashfix-v8",
       "eas": {
         "projectId": "2faecb2b-5acf-493c-97a5-4060ccc606b2"
       }

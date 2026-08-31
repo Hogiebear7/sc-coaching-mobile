@@ -86,6 +86,11 @@ export default function LogFoodScreen() {
   const createEntry = useCreateFoodEntry();
   const reportMissing = useReportMissingFood();
   const [favoritePickerOpen, setFavoritePickerOpen] = useState(false);
+  const [favoriteJustSaved, setFavoriteJustSaved] = useState(false);
+  // Which shelf (if any) populated the review fields below — drives the
+  // "From your favourites" / "From recent" confirmation banner so it's
+  // obvious a tap actually did something, not just silently filled fields.
+  const [appliedFrom, setAppliedFrom] = useState<"favorite" | "recent" | null>(null);
 
   const date = dateParam ?? todayDateString();
   const [mealType, setMealType] = useState<MealType>((mealTypeParam as MealType) ?? defaultMealTypeForNow());
@@ -136,6 +141,8 @@ export default function LogFoodScreen() {
     setProteinG("");
     setCarbsG("");
     setFatG("");
+    setAppliedFrom(null);
+    setFavoriteJustSaved(false);
   }
 
   function applyRecent(f: NonNullable<typeof recentFoods>[number]) {
@@ -146,6 +153,8 @@ export default function LogFoodScreen() {
     setProteinG(String(f.proteinG));
     setCarbsG(String(f.carbsG));
     setFatG(String(f.fatG));
+    setAppliedFrom("recent");
+    setFavoriteJustSaved(false);
   }
 
   function applyFavorite(f: FoodFavorite) {
@@ -156,6 +165,8 @@ export default function LogFoodScreen() {
     setProteinG(String(f.proteinG));
     setCarbsG(String(f.carbsG));
     setFatG(String(f.fatG));
+    setAppliedFrom("favorite");
+    setFavoriteJustSaved(false);
   }
 
   // The meal bucket a favourite is saved under is just which shelf it shows
@@ -166,16 +177,19 @@ export default function LogFoodScreen() {
   function saveFavorite(targetMealType: MealType) {
     if (!name.trim()) return;
     tapFeedback();
-    addFavorite.mutate({
-      mealType: targetMealType,
-      name: name.trim(),
-      calories: parseInt(calories, 10) || 0,
-      proteinG: proteinG.trim() ? parseInt(proteinG, 10) : 0,
-      carbsG: carbsG.trim() ? parseInt(carbsG, 10) : 0,
-      fatG: fatG.trim() ? parseInt(fatG, 10) : 0,
-      servingLabel: selectedFood ? servingLabel : null,
-      servingGrams: selectedFood ? gramsForServing(selectedFood.food, servingLabel, 1) : null,
-    });
+    addFavorite.mutate(
+      {
+        mealType: targetMealType,
+        name: name.trim(),
+        calories: parseInt(calories, 10) || 0,
+        proteinG: proteinG.trim() ? parseInt(proteinG, 10) : 0,
+        carbsG: carbsG.trim() ? parseInt(carbsG, 10) : 0,
+        fatG: fatG.trim() ? parseInt(fatG, 10) : 0,
+        servingLabel: selectedFood ? servingLabel : null,
+        servingGrams: selectedFood ? gramsForServing(selectedFood.food, servingLabel, 1) : null,
+      },
+      { onSuccess: () => setFavoriteJustSaved(true) }
+    );
     setFavoritePickerOpen(false);
   }
 
@@ -196,6 +210,8 @@ export default function LogFoodScreen() {
     setName(food.brandName ? `${food.brandName} ${food.name}` : food.name);
     setSearchOpen(false);
     setQuery("");
+    setAppliedFrom(null);
+    setFavoriteJustSaved(false);
   }
 
   // A food handed back from barcode-scan or custom-food (create/edit) arrives
@@ -240,6 +256,8 @@ export default function LogFoodScreen() {
     setServingLabel(null);
     setQuantity(1);
     setFoundViaScan(false);
+    setAppliedFrom(null);
+    setFavoriteJustSaved(false);
   }
 
   async function handleSave() {
@@ -481,11 +499,29 @@ export default function LogFoodScreen() {
             </>
           ) : null}
 
-          {selectedFood ? (
+          {selectedFood || name.trim() || manualOpen ? (
             <>
+              {appliedFrom ? (
+                <View style={styles.foundBanner}>
+                  <Ionicons name={appliedFrom === "favorite" ? "star" : "time"} size={14} color={Color.success} />
+                  <Text style={styles.foundBannerText}>
+                    {appliedFrom === "favorite" ? "From your favourites — review below" : "From recent — review below"}
+                  </Text>
+                </View>
+              ) : null}
               <Text style={styles.sectionLabel}>REVIEW BEFORE LOGGING</Text>
               <Text style={styles.fieldLabel}>Food name</Text>
-              <TextInput value={name} onChangeText={setName} placeholder="e.g. Chicken and rice" placeholderTextColor={Color.textFaint} style={styles.input} />
+              <TextInput
+                value={name}
+                onChangeText={(v) => {
+                  setName(v);
+                  setAppliedFrom(null);
+                  setFavoriteJustSaved(false);
+                }}
+                placeholder="e.g. Chicken and rice"
+                placeholderTextColor={Color.textFaint}
+                style={styles.input}
+              />
 
               <View style={styles.gridRow}>
                 <View style={styles.numberField}>
@@ -507,46 +543,20 @@ export default function LogFoodScreen() {
                   <TextInput value={fatG} onChangeText={setFatG} keyboardType="number-pad" placeholder="e.g. 12" placeholderTextColor={Color.textFaint} style={styles.input} />
                 </View>
               </View>
+
+              {!selectedFood ? (
+                <Pressable onPress={cancelManualEntry} style={styles.closeSearchRow}>
+                  <Text style={styles.closeSearchText}>Clear and start over</Text>
+                </Pressable>
+              ) : null}
             </>
           ) : (
             <View style={styles.fallbackSection}>
               <Text style={styles.sectionLabel}>CAN&apos;T FIND YOUR FOOD?</Text>
 
-              {manualOpen ? (
-                <>
-                  <Text style={styles.fieldLabel}>Food name</Text>
-                  <TextInput value={name} onChangeText={setName} placeholder="e.g. Chicken and rice" placeholderTextColor={Color.textFaint} style={styles.input} />
-
-                  <View style={styles.gridRow}>
-                    <View style={styles.numberField}>
-                      <Text style={styles.fieldLabel}>Calories</Text>
-                      <TextInput value={calories} onChangeText={setCalories} keyboardType="number-pad" placeholder="e.g. 450" placeholderTextColor={Color.textFaint} style={styles.input} />
-                    </View>
-                    <View style={styles.numberField}>
-                      <Text style={styles.fieldLabel}>Protein (g)</Text>
-                      <TextInput value={proteinG} onChangeText={setProteinG} keyboardType="number-pad" placeholder="e.g. 40" placeholderTextColor={Color.textFaint} style={styles.input} />
-                    </View>
-                  </View>
-                  <View style={styles.gridRow}>
-                    <View style={styles.numberField}>
-                      <Text style={styles.fieldLabel}>Carbs (g)</Text>
-                      <TextInput value={carbsG} onChangeText={setCarbsG} keyboardType="number-pad" placeholder="e.g. 50" placeholderTextColor={Color.textFaint} style={styles.input} />
-                    </View>
-                    <View style={styles.numberField}>
-                      <Text style={styles.fieldLabel}>Fat (g)</Text>
-                      <TextInput value={fatG} onChangeText={setFatG} keyboardType="number-pad" placeholder="e.g. 12" placeholderTextColor={Color.textFaint} style={styles.input} />
-                    </View>
-                  </View>
-
-                  <Pressable onPress={cancelManualEntry} style={styles.closeSearchRow}>
-                    <Text style={styles.closeSearchText}>Cancel manual entry</Text>
-                  </Pressable>
-                </>
-              ) : (
-                <Pressable onPress={() => setManualOpen(true)} style={styles.fallbackLink}>
-                  <Text style={styles.fallbackLinkText}>Log it manually</Text>
-                </Pressable>
-              )}
+              <Pressable onPress={() => setManualOpen(true)} style={styles.fallbackLink}>
+                <Text style={styles.fallbackLinkText}>Log it manually</Text>
+              </Pressable>
 
               <View style={styles.customFoodRow}>
                 <Pressable onPress={() => router.push({ pathname: "/custom-food", params: { date, mealType } })} style={styles.quickLink}>
@@ -563,9 +573,21 @@ export default function LogFoodScreen() {
 
           {name.trim() ? (
             <View style={{ marginTop: Spacing.md }}>
-              <Pressable onPress={() => setFavoritePickerOpen((v) => !v)} style={styles.favoriteToggle}>
-                <Ionicons name="star-outline" size={14} color={Color.gold} />
-                <Text style={styles.favoriteToggleText}>Add to favourites</Text>
+              <Pressable
+                onPress={() => {
+                  setFavoritePickerOpen((v) => !v);
+                  setFavoriteJustSaved(false);
+                }}
+                style={styles.favoriteToggle}
+              >
+                <Ionicons
+                  name={favoriteJustSaved ? "checkmark-circle" : "star-outline"}
+                  size={14}
+                  color={favoriteJustSaved ? Color.success : Color.gold}
+                />
+                <Text style={[styles.favoriteToggleText, favoriteJustSaved ? { color: Color.success } : null]}>
+                  {favoriteJustSaved ? "Added to favourites" : "Add to favourites"}
+                </Text>
               </Pressable>
               {favoritePickerOpen ? (
                 <View style={[styles.mealRow, { marginTop: Spacing.sm }]}>

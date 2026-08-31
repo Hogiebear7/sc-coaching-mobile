@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack, useRouter, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, ScrollView, StatusBar, StyleSheet, Text, View } from "react-native";
+import { Image, ScrollView, StatusBar, StyleSheet, Text, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
@@ -22,6 +22,21 @@ const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 30_000 } },
 });
 
+// Android 12+'s native splash screen caps the icon at a fixed ~288dp
+// regardless of any size we configure (see expo-splash-screen's
+// windowSplashScreenAnimatedIcon docs) — a hard OS limit, not something our
+// artwork can override. This screen takes over the instant JS is ready
+// (see the hideAsync() call below) so the branding treatment we actually
+// want — the full logo, generously sized — is what's visible for the
+// loading window, rather than the tiny native-capped icon.
+function CustomSplashScreen() {
+  return (
+    <View style={styles.splashRoot}>
+      <Image source={require("../../assets/images/splash-logo-crop.png")} style={styles.splashLogo} resizeMode="contain" />
+    </View>
+  );
+}
+
 // Route-gates the whole app on auth status: signed-out users are always
 // bounced to (auth), signed-in users away from it. Mirrors the web app's
 // server-side session check in the dashboard layout, just done client-side
@@ -39,7 +54,6 @@ function AuthGate() {
 
   useEffect(() => {
     if (status === "loading") return;
-    SplashScreen.hideAsync();
 
     const inAuthGroup = segments[0] === "(auth)";
     const inTabsGroup = segments[0] === "(tabs)";
@@ -69,11 +83,7 @@ function AuthGate() {
   }, [status, router]);
 
   if (status === "loading") {
-    return (
-      <View style={styles.loading}>
-        <ActivityIndicator color={Color.gold} size="large" />
-      </View>
-    );
+    return <CustomSplashScreen />;
   }
 
   return (
@@ -151,6 +161,14 @@ export default function RootLayout() {
     getLastCrash().then(setLastCrash);
   }, []);
 
+  // Hide the native splash (and its size-capped icon) as soon as this
+  // component has mounted a first frame, so CustomSplashScreen — not the
+  // tiny native icon — is what's visible for however long auth/crash-check
+  // loading actually takes.
+  useEffect(() => {
+    SplashScreen.hideAsync();
+  }, []);
+
   if (lastCrash) {
     return (
       <SafeAreaProvider>
@@ -192,11 +210,15 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Color.bg0,
   },
-  loading: {
+  splashRoot: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: Color.bg0,
+  },
+  splashLogo: {
+    width: "72%",
+    aspectRatio: 865 / 330,
   },
   crashRoot: { flex: 1, backgroundColor: Color.bg0 },
   crashScroll: { padding: Spacing.lg, paddingTop: Spacing.xxl },

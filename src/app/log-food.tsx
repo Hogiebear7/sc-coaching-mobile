@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Alert, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
@@ -21,6 +21,7 @@ import {
 } from "@/lib/queries/food-catalog";
 import { tapFeedback } from "@/lib/haptics";
 import { hasAccess } from "@/lib/member-access";
+import { useAddFoodFavorite, useFoodFavorites, useRemoveFoodFavorite, type FoodFavorite } from "@/lib/queries/food-favorites";
 import { MEAL_TYPE_OPTIONS, useCreateFoodEntry, useRecentFoods, type MealType } from "@/lib/queries/nutrition-diary";
 import { useMemberTier } from "@/lib/queries/profile";
 import { todayDateString } from "@/lib/workout-formatters";
@@ -79,8 +80,12 @@ export default function LogFoodScreen() {
   const canSearch = hasAccess(tier, "foodSearch");
   const { date: dateParam, mealType: mealTypeParam, foodJson, query: queryParam } = useLocalSearchParams<{ date?: string; mealType?: string; foodJson?: string; query?: string }>();
   const { data: recentFoods } = useRecentFoods();
+  const { data: favorites } = useFoodFavorites();
+  const addFavorite = useAddFoodFavorite();
+  const removeFavorite = useRemoveFoodFavorite();
   const createEntry = useCreateFoodEntry();
   const reportMissing = useReportMissingFood();
+  const [favoritePickerOpen, setFavoritePickerOpen] = useState(false);
 
   const date = dateParam ?? todayDateString();
   const [mealType, setMealType] = useState<MealType>((mealTypeParam as MealType) ?? defaultMealTypeForNow());
@@ -141,6 +146,44 @@ export default function LogFoodScreen() {
     setProteinG(String(f.proteinG));
     setCarbsG(String(f.carbsG));
     setFatG(String(f.fatG));
+  }
+
+  function applyFavorite(f: FoodFavorite) {
+    tapFeedback();
+    setSelectedFood(null);
+    setName(f.name);
+    setCalories(String(f.calories));
+    setProteinG(String(f.proteinG));
+    setCarbsG(String(f.carbsG));
+    setFatG(String(f.fatG));
+  }
+
+  // The meal bucket a favourite is saved under is just which shelf it shows
+  // up on later (see the Meal tabs above, which already govern the whole
+  // screen) — deliberately independent of whichever meal is currently
+  // selected for logging, so "save this breakfast thing while I'm mid-log
+  // of lunch" works without switching tabs first.
+  function saveFavorite(targetMealType: MealType) {
+    if (!name.trim()) return;
+    tapFeedback();
+    addFavorite.mutate({
+      mealType: targetMealType,
+      name: name.trim(),
+      calories: parseInt(calories, 10) || 0,
+      proteinG: proteinG.trim() ? parseInt(proteinG, 10) : 0,
+      carbsG: carbsG.trim() ? parseInt(carbsG, 10) : 0,
+      fatG: fatG.trim() ? parseInt(fatG, 10) : 0,
+      servingLabel: selectedFood ? servingLabel : null,
+      servingGrams: selectedFood ? gramsForServing(selectedFood.food, servingLabel, 1) : null,
+    });
+    setFavoritePickerOpen(false);
+  }
+
+  function confirmRemoveFavorite(f: FoodFavorite) {
+    Alert.alert("Remove favourite?", `"${f.name}" will be removed from your favourites.`, [
+      { text: "Cancel", style: "cancel" },
+      { text: "Remove", style: "destructive", onPress: () => removeFavorite.mutate(f.id) },
+    ]);
   }
 
   function selectSearchResult(food: FoodRecord, source: "search" | "scan" = "search") {
@@ -389,22 +432,52 @@ export default function LogFoodScreen() {
               <Stepper label="Quantity" value={quantity} onChange={setQuantity} min={0.5} max={20} step={0.5} suffix="× serving" />
               <Text style={styles.gramsTotal}>= {Math.round(gramsForServing(selectedFood.food, servingLabel, quantity))}g total</Text>
             </Card>
-          ) : !searchOpen && recentFoods && recentFoods.length > 0 ? (
+          ) : !searchOpen ? (
             <>
-              <Text style={[styles.fieldLabel, { marginTop: Spacing.md }]}>Quick add from recent</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: Spacing.xs, paddingBottom: Spacing.sm }}>
-                {recentFoods.map((f) => (
-                  <Pressable key={f.id} onPress={() => applyRecent(f)} style={styles.recentChip}>
-                    <Text style={styles.recentChipIcon}>{iconForFood(f.name)}</Text>
-                    <Text style={styles.recentChipText} numberOfLines={1}>
-                      {f.name}
-                    </Text>
-                    <Text style={styles.recentChipSub} numberOfLines={1}>
-                      {f.calories} kcal
-                    </Text>
-                  </Pressable>
-                ))}
-              </ScrollView>
+              {favorites && favorites.filter((f) => f.mealType === mealType).length > 0 ? (
+                <>
+                  <Text style={[styles.fieldLabel, { marginTop: Spacing.md }]}>Favourites — {mealLabel}</Text>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: Spacing.xs, paddingBottom: Spacing.sm }}>
+                    {favorites
+                      .filter((f) => f.mealType === mealType)
+                      .map((f) => (
+                        <Pressable
+                          key={f.id}
+                          onPress={() => applyFavorite(f)}
+                          onLongPress={() => confirmRemoveFavorite(f)}
+                          style={styles.recentChip}
+                        >
+                          <Ionicons name="star" size={13} color={Color.gold} />
+                          <Text style={styles.recentChipText} numberOfLines={1}>
+                            {f.name}
+                          </Text>
+                          <Text style={styles.recentChipSub} numberOfLines={1}>
+                            {f.calories} kcal
+                          </Text>
+                        </Pressable>
+                      ))}
+                  </ScrollView>
+                </>
+              ) : null}
+
+              {recentFoods && recentFoods.length > 0 ? (
+                <>
+                  <Text style={[styles.fieldLabel, { marginTop: Spacing.md }]}>Quick add from recent</Text>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: Spacing.xs, paddingBottom: Spacing.sm }}>
+                    {recentFoods.map((f) => (
+                      <Pressable key={f.id} onPress={() => applyRecent(f)} style={styles.recentChip}>
+                        <Text style={styles.recentChipIcon}>{iconForFood(f.name)}</Text>
+                        <Text style={styles.recentChipText} numberOfLines={1}>
+                          {f.name}
+                        </Text>
+                        <Text style={styles.recentChipSub} numberOfLines={1}>
+                          {f.calories} kcal
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </ScrollView>
+                </>
+              ) : null}
             </>
           ) : null}
 
@@ -488,6 +561,24 @@ export default function LogFoodScreen() {
             </View>
           )}
 
+          {name.trim() ? (
+            <View style={{ marginTop: Spacing.md }}>
+              <Pressable onPress={() => setFavoritePickerOpen((v) => !v)} style={styles.favoriteToggle}>
+                <Ionicons name="star-outline" size={14} color={Color.gold} />
+                <Text style={styles.favoriteToggleText}>Add to favourites</Text>
+              </Pressable>
+              {favoritePickerOpen ? (
+                <View style={[styles.mealRow, { marginTop: Spacing.sm }]}>
+                  {MEAL_TYPE_OPTIONS.map((opt) => (
+                    <Pressable key={opt.value} onPress={() => saveFavorite(opt.value)} style={styles.mealChip}>
+                      <Text style={styles.mealChipText}>{opt.label}</Text>
+                    </Pressable>
+                  ))}
+                </View>
+              ) : null}
+            </View>
+          ) : null}
+
           {error ? <Text style={styles.error}>{error}</Text> : null}
 
           <Button title="Log food" onPress={handleSave} loading={createEntry.isPending} style={{ marginTop: Spacing.lg }} />
@@ -538,6 +629,8 @@ const styles = StyleSheet.create({
   fallbackSection: { marginTop: Spacing.sm },
   fallbackLink: { paddingVertical: 6 },
   fallbackLinkText: { fontSize: 13, fontWeight: "600", color: Color.textMuted },
+  favoriteToggle: { flexDirection: "row", alignItems: "center", gap: 6, paddingVertical: 6, alignSelf: "flex-start" },
+  favoriteToggleText: { fontSize: 13, fontWeight: "600", color: Color.gold },
   customFoodRow: { flexDirection: "row", gap: Spacing.lg, marginTop: Spacing.md },
   quickLink: { flexDirection: "row", alignItems: "center", gap: 4 },
   quickLinkText: { fontSize: 11, fontWeight: "600", color: Color.textFaint },

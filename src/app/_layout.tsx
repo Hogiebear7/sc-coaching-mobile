@@ -123,6 +123,7 @@ function AuthGate() {
       <Stack.Screen name="staff-program-builder" options={{ presentation: "card" }} />
       <Stack.Screen name="staff-nutrition-target" options={{ presentation: "card" }} />
       <Stack.Screen name="class-workout-builder" options={{ presentation: "card" }} />
+      <Stack.Screen name="class-editor" options={{ presentation: "modal" }} />
       <Stack.Screen name="workout-library" options={{ presentation: "card" }} />
       <Stack.Screen name="workout-generator" options={{ presentation: "card" }} />
       <Stack.Screen name="workout-template-builder" options={{ presentation: "card" }} />

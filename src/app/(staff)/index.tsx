@@ -116,6 +116,13 @@ function ClassCard({ classItem }: { classItem: StaffClassSummary }) {
             {classItem.bookedCount}/{classItem.capacity}
           </Text>
         </View>
+        <Pressable
+          onPress={() => router.push({ pathname: "/class-editor", params: { classId: classItem.id } })}
+          hitSlop={10}
+          style={{ marginLeft: Spacing.sm }}
+        >
+          <Ionicons name="create-outline" size={18} color={Color.textFaint} />
+        </Pressable>
         <Ionicons
           name={expanded ? "chevron-up" : "chevron-down"}
           size={18}
@@ -287,6 +294,7 @@ function confirmLogout(logout: () => void) {
 }
 
 export default function StaffOperationsScreen() {
+  const router = useRouter();
   const { logout, setViewMode } = useAuth();
   const provisionMemberProfile = useProvisionMemberProfile();
   const { data, isLoading, isError, refetch, isRefetching } = useStaffClasses();
@@ -337,6 +345,9 @@ export default function StaffOperationsScreen() {
           <Text style={styles.headerTitle}>Classes</Text>
         </View>
         <View style={styles.headerActions}>
+          <Pressable onPress={() => router.push("/class-editor")} hitSlop={12}>
+            <Ionicons name="add-circle-outline" size={22} color={Color.textMuted} />
+          </Pressable>
           <Pressable onPress={handleSwitchToMemberView} hitSlop={12} disabled={provisionMemberProfile.isPending}>
             {provisionMemberProfile.isPending ? (
               <ActivityIndicator size="small" color={Color.textMuted} />

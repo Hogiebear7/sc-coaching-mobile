@@ -25,6 +25,12 @@ export interface StaffClassSummary {
   capacity: number;
   bookedCount: number;
   roster: StaffClassRosterEntry[];
+  // Present on the actual API response (the server type extends the full
+  // ClassRecord) but previously undeclared here since nothing needed them
+  // until the class editor below.
+  seriesId?: string | null;
+  imageUrl?: string | null;
+  imageAlt?: string | null;
 }
 
 interface StaffClassesResponse {
@@ -248,6 +254,58 @@ export function useStaffClassCategories() {
     queryKey: ["staff-class-categories"],
     queryFn: () =>
       apiFetch<StaffClassCategoriesResponse>("/api/mobile/staff/class-categories").then((r) => r.data),
+  });
+}
+
+export interface SaveClassInput {
+  // Present = editing that single occurrence (no repeat controls apply,
+  // same as the web form's edit mode). Absent = creating new — "weekly"
+  // repeat creates a recurring series and generates its first occurrences.
+  id?: string;
+  title: string;
+  category: string;
+  date: string;
+  startTime: string;
+  durationMins: number;
+  capacity: number;
+  repeat: "none" | "weekly";
+  weekdays?: number[];
+  repeatEndDate?: string | null;
+  imageUrl?: string | null;
+  imageAlt?: string | null;
+}
+
+// Reuses the existing web create/update route (classes.manage,
+// Bearer-compatible) — same id-optional pattern as
+// useSaveStaffWorkoutTemplate above.
+export function useSaveClass() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: SaveClassInput) =>
+      apiFetch<{ success: true; message: string }>("/api/staff/classes", { method: "POST", body: input }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["staff-classes"] }),
+  });
+}
+
+// Blocks server-side on past/started classes — cancels bookings, restores
+// passes, clears the waitlist, and notifies affected members.
+export function useDeleteClass() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      apiFetch<{ success: true; message: string }>("/api/staff/classes/delete", { method: "POST", body: { id } }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["staff-classes"] }),
+  });
+}
+
+// Stops future generation from a recurring series — existing booked
+// occurrences are left for staff to cancel individually if needed.
+export function useStopClassSeries() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      apiFetch<{ success: true; message: string }>("/api/staff/classes/series/stop", { method: "POST", body: { id } }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["staff-classes"] }),
   });
 }
 

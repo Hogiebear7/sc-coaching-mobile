@@ -884,6 +884,12 @@ export default function LogWorkoutScreen() {
   }
 
   async function handleSubmit(finalRpe: number | null, finalFeelingNotes: string) {
+    // Unlike handleLogPress (which dismisses before the modal even opens),
+    // submitting from inside the modal had no equivalent — if the member
+    // was still typing in the modal's Notes field, the keyboard was still
+    // up for everything that follows (modal close, navigation). Dismissing
+    // it up front here keeps that out of the mix.
+    Keyboard.dismiss();
     setError(null);
     if (!title.trim() || !date.trim()) {
       setError("Title and date are required.");
@@ -1040,7 +1046,14 @@ export default function LogWorkoutScreen() {
       };
       if (programId) await advanceProgram.mutateAsync(programId);
       successFeedback();
-      setFeelModalOpen(false);
+      // No explicit setFeelModalOpen(false) here — the whole screen (modal
+      // included) is about to be replaced by the navigation below anyway.
+      // Closing the modal first and THEN navigating stacks two separate
+      // native transitions back to back (modal dismiss, then a full screen
+      // replace) instead of letting them happen as one; letting the modal
+      // get torn down as part of the same screen-replace, rather than
+      // beforehand, avoids that collision. Same class of issue as the
+      // discard() deferral below, one step earlier in the sequence.
       hasSubmittedRef.current = true;
       setPendingWorkoutSummary(summary);
       router.replace("/workout-summary");

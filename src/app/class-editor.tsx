@@ -5,6 +5,7 @@ import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, Text
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
+import { MonthDatePicker } from "@/components/ui/MonthDatePicker";
 import { Stepper } from "@/components/ui/Stepper";
 import { Color, Radius, Spacing } from "@/constants/theme";
 import { ApiError } from "@/lib/api-client";
@@ -76,6 +77,7 @@ export default function ClassEditorScreen() {
   const [weekdays, setWeekdays] = useState<number[]>([]);
   const [repeatEndDate, setRepeatEndDate] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [calendarOpen, setCalendarOpen] = useState(false);
 
   // Fires once the matched class actually loads (id transitions from
   // undefined to a real value) — not on every refetch, so it doesn't stomp
@@ -247,7 +249,27 @@ export default function ClassEditorScreen() {
           <Pressable onPress={() => setDate(tomorrow)} style={[styles.chip, date === tomorrow && styles.chipActive]}>
             <Text style={[styles.chipText, date === tomorrow && styles.chipTextActive]}>Tomorrow</Text>
           </Pressable>
+          <Pressable
+            onPress={() => setCalendarOpen((v) => !v)}
+            style={[styles.chip, { flexDirection: "row", alignItems: "center" }, calendarOpen && styles.chipActive]}
+          >
+            <Ionicons name="calendar-outline" size={13} color={calendarOpen ? Color.gold : Color.textMuted} />
+            <Text style={[styles.chipText, calendarOpen && styles.chipTextActive, { marginLeft: 4 }]}>Calendar</Text>
+          </Pressable>
         </View>
+
+        {calendarOpen ? (
+          <MonthDatePicker
+            value={date}
+            minDate={today}
+            onChange={(iso) => {
+              tapFeedback();
+              setDate(iso);
+              setCalendarOpen(false);
+            }}
+          />
+        ) : null}
+
         <TextInput
           value={date}
           onChangeText={setDate}

@@ -24,8 +24,12 @@ const { withMainActivity } = require("@expo/config-plugins");
 // expect. withMainActivity mods run strictly after all dangerousMods have
 // completed, which reliably guarantees the splash drawables already exist
 // by the time this runs, regardless of array position.
+// Verified transparent (pixel(0,0) alpha=0 after a disk round-trip) —
+// a previous version of this string was, on inspection, actually an
+// OPAQUE BLACK pixel (alpha=255), which is why the "fix" first shipped
+// as a visible black box being animated instead of nothing at all.
 const TRANSPARENT_PNG_BASE64 =
-  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=";
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAALSURBVBhXY2AAAgAABQABqtXIUQAAAABJRU5ErkJggg==";
 
 module.exports = function withTransparentSplashIcon(config) {
   return withMainActivity(config, (config) => {

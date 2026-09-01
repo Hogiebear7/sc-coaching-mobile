@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack, useRouter, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect, useState } from "react";
-import { Image, ScrollView, StatusBar, StyleSheet, Text, View } from "react-native";
+import { Image, ScrollView, StatusBar, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
@@ -35,10 +35,25 @@ const queryClient = new QueryClient({
 // (see the hideAsync() call below) so the branding treatment we actually
 // want — the full logo, generously sized — is what's visible for the
 // loading window, rather than the tiny native-capped icon.
+const SPLASH_LOGO_ASPECT_RATIO = 865 / 330; // matches assets/images/splash-logo-crop.png
+
 function CustomSplashScreen() {
+  // Percentage width + aspectRatio in style can fail to resolve on the very
+  // first render before Yoga has settled the parent's size — confirmed
+  // on-device: the logo rendered at its raw source-pixel width (865px)
+  // instead of 72% of screen width, overflowing both edges. Computing an
+  // explicit pixel size from the actual window dimensions has no such race.
+  const { width: screenWidth } = useWindowDimensions();
+  const logoWidth = Math.round(screenWidth * 0.72);
+  const logoHeight = Math.round(logoWidth / SPLASH_LOGO_ASPECT_RATIO);
+
   return (
     <View style={styles.splashRoot}>
-      <Image source={require("../../assets/images/splash-logo-crop.png")} style={styles.splashLogo} resizeMode="contain" />
+      <Image
+        source={require("../../assets/images/splash-logo-crop.png")}
+        style={{ width: logoWidth, height: logoHeight }}
+        resizeMode="contain"
+      />
     </View>
   );
 }
@@ -221,10 +236,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: Color.bg0,
-  },
-  splashLogo: {
-    width: "72%",
-    aspectRatio: 865 / 330,
   },
   crashRoot: { flex: 1, backgroundColor: Color.bg0 },
   crashScroll: { padding: Spacing.lg, paddingTop: Spacing.xxl },

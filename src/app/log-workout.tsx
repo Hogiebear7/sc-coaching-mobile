@@ -3,6 +3,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
   Alert,
+  findNodeHandle,
   Image,
   InteractionManager,
   Keyboard,
@@ -703,6 +704,36 @@ export default function LogWorkoutScreen() {
   }, [hydrated, prefillRunTitle, prefillRunDurationMins, prefillRunDistanceKm, runRows.length]);
 
   const weightInputRefs = useRef<Record<string, TextInput | null>>({});
+  const scrollRef = useRef<ScrollView | null>(null);
+  // The "+ Exercise"/"+ Run" row always sits right after the last entry (see
+  // render below) — scrolling to bring IT into view is what actually shows
+  // the newly-added box above it, without needing a ref per entry.
+  const addButtonsRef = useRef<View | null>(null);
+
+  function scrollToAddButtons() {
+    const scrollNode = findNodeHandle(scrollRef.current);
+    if (!scrollNode) return;
+    addButtonsRef.current?.measureLayout(
+      scrollNode,
+      (_x, y) => scrollRef.current?.scrollTo({ y: Math.max(0, y - 80), animated: true }),
+      () => {}
+    );
+  }
+
+  function handleAddExercise() {
+    tapFeedback();
+    update({ exerciseRows: [...exerciseRows, newExerciseRow()] });
+    // The new row needs a layout pass before its position can be measured —
+    // same short-delay pattern already used elsewhere in this file (see the
+    // set-complete auto-focus below) rather than an arbitrary guess.
+    setTimeout(scrollToAddButtons, 50);
+  }
+
+  function handleAddRun() {
+    tapFeedback();
+    update({ runRows: [...runRows, newRunRow()] });
+    setTimeout(scrollToAddButtons, 50);
+  }
 
   function updateRow(key: string, patch: Partial<Omit<ExerciseRow, "key">>) {
     update({ exerciseRows: exerciseRows.map((r) => (r.key === key ? { ...r, ...patch } : r)) });
@@ -1089,7 +1120,7 @@ export default function LogWorkoutScreen() {
           </Pressable>
         </View>
 
-        <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+        <ScrollView ref={scrollRef} contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
           <TextField label="Title" value={title} onChangeText={(v) => update({ title: v })} placeholder="e.g. Lower Body Strength" />
           <DateField
             label="Date"
@@ -1380,14 +1411,6 @@ export default function LogWorkoutScreen() {
 
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionLabel}>SESSION ENTRIES</Text>
-            <View style={{ flexDirection: "row", gap: Spacing.sm }}>
-              <Pressable onPress={() => update({ exerciseRows: [...exerciseRows, newExerciseRow()] })} style={styles.addChip}>
-                <Text style={styles.addChipText}>+ Exercise</Text>
-              </Pressable>
-              <Pressable onPress={() => update({ runRows: [...runRows, newRunRow()] })} style={styles.addChip}>
-                <Text style={styles.addChipText}>+ Run</Text>
-              </Pressable>
-            </View>
           </View>
 
           {exerciseRows.length === 0 && runRows.length === 0 ? (
@@ -1734,6 +1757,15 @@ export default function LogWorkoutScreen() {
             </Card>
           ))}
 
+          <View ref={addButtonsRef} style={styles.addButtonsRow}>
+            <Pressable onPress={handleAddExercise} style={styles.addChip}>
+              <Text style={styles.addChipText}>+ Exercise</Text>
+            </Pressable>
+            <Pressable onPress={handleAddRun} style={styles.addChip}>
+              <Text style={styles.addChipText}>+ Run</Text>
+            </Pressable>
+          </View>
+
           <TextField
             label="Notes — optional"
             value={notes}
@@ -1790,6 +1822,7 @@ const styles = StyleSheet.create({
   sectionLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted },
   addChip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.sm, paddingVertical: 6 },
   addChipText: { fontSize: 11, fontWeight: "600", color: Color.textSecondary },
+  addButtonsRow: { flexDirection: "row", gap: Spacing.sm, marginTop: Spacing.sm, marginBottom: Spacing.md },
   emptyHint: { fontSize: 12, color: Color.textMuted, borderWidth: 1, borderColor: Color.borderSubtle, borderStyle: "dashed", borderRadius: Radius.md, padding: Spacing.md },
   entryCard: { padding: Spacing.md, marginBottom: Spacing.md },
   // A superset group wraps its member cards in one bordered block with a

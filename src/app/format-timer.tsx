@@ -1,10 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Alert, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
+import { KeyboardAwareScroll } from "@/components/ui/KeyboardAwareScroll";
 import { Color, Radius, Spacing } from "@/constants/theme";
 import { successFeedback, tapFeedback } from "@/lib/haptics";
 import { formatDuration, parseDuration } from "@/lib/workout-formatters";
@@ -276,7 +277,7 @@ function PhaseWorkoutCard({
   const workPhases = phases.filter((p) => p.kind === "work");
 
   return (
-    <ScrollView contentContainerStyle={styles.cardBody}>
+    <KeyboardAwareScroll contentContainerStyle={styles.cardBody}>
       <Text style={styles.cardHint}>Review your {title.toLowerCase()} before you start.</Text>
       <View style={styles.cardList}>
         {workPhases.map((p, i) => (
@@ -296,7 +297,7 @@ function PhaseWorkoutCard({
         disabled={phases.length === 0}
         style={{ marginTop: Spacing.lg, alignSelf: "stretch" }}
       />
-    </ScrollView>
+    </KeyboardAwareScroll>
   );
 }
 
@@ -321,7 +322,7 @@ function CircuitWorkoutCard({ config, onStart }: { config: CircuitConfig; onStar
     .join(" · ");
 
   return (
-    <ScrollView contentContainerStyle={styles.cardBody}>
+    <KeyboardAwareScroll contentContainerStyle={styles.cardBody}>
       <Text style={styles.cardHint}>
         {roundsLabel}
         {restLabel ? ` · ${restLabel}` : ""}
@@ -344,7 +345,7 @@ function CircuitWorkoutCard({ config, onStart }: { config: CircuitConfig; onStar
         disabled={stations.length === 0}
         style={{ marginTop: Spacing.lg, alignSelf: "stretch" }}
       />
-    </ScrollView>
+    </KeyboardAwareScroll>
   );
 }
 
@@ -355,7 +356,7 @@ function EmomWorkoutCard({ config, onStart }: { config: EmomConfig; onStart: () 
   const movements = config.movements.filter((m) => m.name.trim());
 
   return (
-    <ScrollView contentContainerStyle={styles.cardBody}>
+    <KeyboardAwareScroll contentContainerStyle={styles.cardBody}>
       <Text style={styles.cardHint}>
         Every {interval}s for {config.totalMins || "10"} min — {roundCount} round{roundCount === 1 ? "" : "s"} through your movements.
       </Text>
@@ -374,7 +375,7 @@ function EmomWorkoutCard({ config, onStart }: { config: EmomConfig; onStart: () 
         disabled={movements.length === 0}
         style={{ marginTop: Spacing.lg, alignSelf: "stretch" }}
       />
-    </ScrollView>
+    </KeyboardAwareScroll>
   );
 }
 
@@ -432,7 +433,7 @@ function PhaseLiveView({ phases, timeCapSecs }: { phases: Phase[]; timeCapSecs?:
 
 function AmrapWorkoutCard({ config, onStart }: { config: AmrapConfig; onStart: () => void }) {
   return (
-    <ScrollView contentContainerStyle={styles.cardBody}>
+    <KeyboardAwareScroll contentContainerStyle={styles.cardBody}>
       <Text style={styles.cardHint}>
         {config.subMode === "rounds"
           ? "Work through these movements for as many full rounds as possible before time's up."
@@ -455,7 +456,7 @@ function AmrapWorkoutCard({ config, onStart }: { config: AmrapConfig; onStart: (
         disabled={config.movements.length === 0}
         style={{ marginTop: Spacing.lg, alignSelf: "stretch" }}
       />
-    </ScrollView>
+    </KeyboardAwareScroll>
   );
 }
 
@@ -554,7 +555,7 @@ function AmrapLiveView({ config }: { config: AmrapConfig }) {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+    <KeyboardAwareScroll contentContainerStyle={styles.body}>
       <Text style={styles.phaseKind}>AMRAP</Text>
       <Text style={styles.clock}>{formatDuration(Math.ceil(remaining))}</Text>
 
@@ -595,13 +596,13 @@ function AmrapLiveView({ config }: { config: AmrapConfig }) {
         }}
         style={{ marginTop: Spacing.lg, alignSelf: "stretch" }}
       />
-    </ScrollView>
+    </KeyboardAwareScroll>
   );
 }
 
 function ChipperWorkoutCard({ config, onStart }: { config: ChipperConfig; onStart: () => void }) {
   return (
-    <ScrollView contentContainerStyle={styles.cardBody}>
+    <KeyboardAwareScroll contentContainerStyle={styles.cardBody}>
       <Text style={styles.cardHint}>
         Review your movements before you start — work through them in order, logging reps or time as you go.
       </Text>
@@ -625,7 +626,7 @@ function ChipperWorkoutCard({ config, onStart }: { config: ChipperConfig; onStar
         disabled={config.movements.length === 0}
         style={{ marginTop: Spacing.lg, alignSelf: "stretch" }}
       />
-    </ScrollView>
+    </KeyboardAwareScroll>
   );
 }
 
@@ -786,7 +787,7 @@ function ChipperLiveView({ config }: { config: ChipperConfig }) {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+    <KeyboardAwareScroll contentContainerStyle={styles.body}>
       <Text style={styles.phaseKind}>CHIPPER</Text>
       <Text style={styles.clock}>{formatDuration(Math.floor(totalElapsed))}</Text>
 
@@ -806,7 +807,7 @@ function ChipperLiveView({ config }: { config: ChipperConfig }) {
       </View>
 
       <Button title="Finish & save" onPress={finish} style={{ marginTop: Spacing.lg, alignSelf: "stretch" }} />
-    </ScrollView>
+    </KeyboardAwareScroll>
   );
 }
 
@@ -904,9 +905,7 @@ export default function FormatTimerScreen() {
         </View>
         <View style={{ width: 22 }} />
       </View>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
-        {body}
-      </KeyboardAvoidingView>
+      {body}
     </SafeAreaView>
   );
 }

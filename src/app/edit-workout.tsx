@@ -1,10 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useMemo, useState } from "react";
-import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Alert, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
+import { KeyboardAwareScroll } from "@/components/ui/KeyboardAwareScroll";
 import { Card } from "@/components/ui/Card";
 import { DateField } from "@/components/ui/DateField";
 import { ExerciseAutocomplete } from "@/components/ui/ExerciseAutocomplete";
@@ -301,7 +302,6 @@ export default function EditWorkoutScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
         <View style={styles.header}>
           <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backButton}>
             <Ionicons name="chevron-back" size={22} color={Color.textPrimary} />
@@ -327,7 +327,7 @@ export default function EditWorkoutScreen() {
             <Button title="Back" variant="secondary" onPress={() => router.back()} style={{ marginTop: Spacing.md }} />
           </View>
         ) : (
-          <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+          <KeyboardAwareScroll contentContainerStyle={styles.scroll}>
             <TextField label="Title" value={title} onChangeText={setTitle} placeholder="e.g. Lower Body Strength" />
             <DateField label="Date" value={date} onChange={setDate} maxDate={todayDateString()} />
             <TextField
@@ -532,9 +532,8 @@ export default function EditWorkoutScreen() {
                 style={{ flex: 1 }}
               />
             </View>
-          </ScrollView>
+          </KeyboardAwareScroll>
         )}
-      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

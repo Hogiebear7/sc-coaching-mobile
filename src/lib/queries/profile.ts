@@ -112,7 +112,14 @@ export function useUpdateProfile() {
         method: "POST",
         body: input,
       }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["profile"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["profile"] });
+      // dateOfBirth/gender/heightCm/primaryGoal all feed the calorie/macro
+      // target's TDEE and goal-bias math — see the equivalent comment in
+      // weekly-training.ts.
+      qc.invalidateQueries({ queryKey: ["my-nutrition-target"] });
+      qc.invalidateQueries({ queryKey: ["weekly-nutrition-targets"] });
+    },
   });
 }
 

@@ -1,9 +1,6 @@
 import { Link } from "expo-router";
 import { useState } from "react";
 import {
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -11,6 +8,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { BrandMark } from "@/components/ui/BrandMark";
+import { KeyboardAwareScroll } from "@/components/ui/KeyboardAwareScroll";
 import { Button } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/TextField";
 import { Color, Spacing } from "@/constants/theme";
@@ -41,11 +39,7 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-      >
-        <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+        <KeyboardAwareScroll contentContainerStyle={styles.scroll}>
           <BrandMark style={styles.logo} />
           <Text style={styles.eyebrow}>WELCOME BACK</Text>
           <Text style={styles.title}>Sign in</Text>
@@ -87,8 +81,7 @@ export default function LoginScreen() {
               Create one
             </Link>
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+        </KeyboardAwareScroll>
     </SafeAreaView>
   );
 }

@@ -51,6 +51,13 @@ export function useSaveGoal() {
   return useMutation({
     mutationFn: (input: SaveGoalInput) =>
       apiFetch<{ success: true; message: string }>("/api/profile/goal", { method: "POST", body: input }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["goal-timeline"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["goal-timeline"] });
+      // goalWeightKg/goalBodyFatPct/goalTargetDate drive the calorie/macro
+      // target's goal-timeline adjustment directly — see the equivalent
+      // comment in weekly-training.ts.
+      qc.invalidateQueries({ queryKey: ["my-nutrition-target"] });
+      qc.invalidateQueries({ queryKey: ["weekly-nutrition-targets"] });
+    },
   });
 }

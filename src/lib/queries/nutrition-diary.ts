@@ -148,6 +148,13 @@ export function useCreateFoodEntry() {
     onSuccess: (_res, vars) => {
       qc.invalidateQueries({ queryKey: ["nutrition-diary", vars.date] });
       qc.invalidateQueries({ queryKey: ["nutrition-recent-foods"] });
+      // A logged day's actual calories feed the next day's compliance
+      // adjustment on the calorie/macro target (see resolveTargetForDate in
+      // the main repo's lib/nutrition-target-data.ts) — without this,
+      // logging food can leave tomorrow's target stale once it becomes
+      // "today".
+      qc.invalidateQueries({ queryKey: ["my-nutrition-target"] });
+      qc.invalidateQueries({ queryKey: ["weekly-nutrition-targets"] });
     },
   });
 }
@@ -157,7 +164,11 @@ export function useDeleteFoodEntry() {
   return useMutation({
     mutationFn: ({ id }: { id: string; date: string }) =>
       apiFetch<{ success: true }>("/api/mobile/nutrition/diary/delete", { method: "POST", body: { id } }),
-    onSuccess: (_res, vars) => qc.invalidateQueries({ queryKey: ["nutrition-diary", vars.date] }),
+    onSuccess: (_res, vars) => {
+      qc.invalidateQueries({ queryKey: ["nutrition-diary", vars.date] });
+      qc.invalidateQueries({ queryKey: ["my-nutrition-target"] });
+      qc.invalidateQueries({ queryKey: ["weekly-nutrition-targets"] });
+    },
   });
 }
 

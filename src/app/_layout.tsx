@@ -1,8 +1,10 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { focusManager, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack, useRouter, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect, useState } from "react";
-import { Image, ScrollView, StatusBar, StyleSheet, Text, useWindowDimensions, View } from "react-native";
+import { AppState, Image, ScrollView, StatusBar, StyleSheet, Text, useWindowDimensions, View } from "react-native";
+import type { AppStateStatus } from "react-native";
+import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
@@ -27,6 +29,18 @@ installGlobalCrashHandler();
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 30_000 } },
 });
+
+// React Query's focus-manager assumes "always focused" by default outside
+// the browser, so a query that's gone stale on a screen kept mounted in the
+// background (every bottom-tab screen, in this app) never automatically
+// refetches on its own — only an actual remount, an explicit refetch, or
+// this listener firing on app foreground will pick it up. Without this, any
+// nutrition/recovery/training input this app doesn't already know to
+// invalidate (today's, or a future one) can leave a stale number on screen
+// indefinitely once the member backgrounds and reopens the app.
+function onAppStateChange(status: AppStateStatus) {
+  focusManager.setFocused(status === "active");
+}
 
 // Android 12+'s native splash screen caps the icon at a fixed ~288dp
 // regardless of any size we configure (see expo-splash-screen's
@@ -191,6 +205,11 @@ export default function RootLayout() {
     SplashScreen.hideAsync();
   }, []);
 
+  useEffect(() => {
+    const sub = AppState.addEventListener("change", onAppStateChange);
+    return () => sub.remove();
+  }, []);
+
   if (lastCrash) {
     return (
       <SafeAreaProvider>
@@ -207,23 +226,25 @@ export default function RootLayout() {
   }
 
   return (
-    <SafeAreaProvider>
-      <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <TourProvider>
-            <WorkoutDraftProvider>
-              <RestTimerProvider>
-                <StatusBar barStyle="light-content" backgroundColor={Color.bg0} />
-                <View style={styles.root}>
-                  <AuthGate />
-                  <TourHost />
-                </View>
-              </RestTimerProvider>
-            </WorkoutDraftProvider>
-          </TourProvider>
-        </AuthProvider>
-      </QueryClientProvider>
-    </SafeAreaProvider>
+    <KeyboardProvider>
+      <SafeAreaProvider>
+        <QueryClientProvider client={queryClient}>
+          <AuthProvider>
+            <TourProvider>
+              <WorkoutDraftProvider>
+                <RestTimerProvider>
+                  <StatusBar barStyle="light-content" backgroundColor={Color.bg0} />
+                  <View style={styles.root}>
+                    <AuthGate />
+                    <TourHost />
+                  </View>
+                </RestTimerProvider>
+              </WorkoutDraftProvider>
+            </TourProvider>
+          </AuthProvider>
+        </QueryClientProvider>
+      </SafeAreaProvider>
+    </KeyboardProvider>
   );
 }
 

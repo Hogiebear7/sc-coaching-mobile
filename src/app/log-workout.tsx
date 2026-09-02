@@ -11,12 +11,12 @@ import {
   Modal,
   Platform,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from "react-native";
+import type { KeyboardAwareScrollViewRef } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
@@ -24,6 +24,7 @@ import { Card } from "@/components/ui/Card";
 import { Collapsible } from "@/components/ui/Collapsible";
 import { DateField } from "@/components/ui/DateField";
 import { ExerciseAutocomplete } from "@/components/ui/ExerciseAutocomplete";
+import { KeyboardAwareScroll } from "@/components/ui/KeyboardAwareScroll";
 import { LogWorkoutTour } from "@/components/ui/LogWorkoutTour";
 import { SupersetChips } from "@/components/ui/SupersetChips";
 import { TextField } from "@/components/ui/TextField";
@@ -704,7 +705,7 @@ export default function LogWorkoutScreen() {
   }, [hydrated, prefillRunTitle, prefillRunDurationMins, prefillRunDistanceKm, runRows.length]);
 
   const weightInputRefs = useRef<Record<string, TextInput | null>>({});
-  const scrollRef = useRef<ScrollView | null>(null);
+  const scrollRef = useRef<KeyboardAwareScrollViewRef | null>(null);
   // The "+ Exercise"/"+ Run" row always sits right after the last entry (see
   // render below) — scrolling to bring IT into view is what actually shows
   // the newly-added box above it, without needing a ref per entry.
@@ -1109,18 +1110,17 @@ export default function LogWorkoutScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
       <LogWorkoutTour />
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
-        <View style={styles.header}>
-          <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backButton}>
-            <Ionicons name="chevron-back" size={22} color={Color.textPrimary} />
-          </Pressable>
-          <Text style={styles.headerTitle}>Log Workout</Text>
-          <Pressable onPress={handleDiscard} hitSlop={12}>
-            <Text style={styles.discardText}>Discard</Text>
-          </Pressable>
-        </View>
+      <View style={styles.header}>
+        <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backButton}>
+          <Ionicons name="chevron-back" size={22} color={Color.textPrimary} />
+        </Pressable>
+        <Text style={styles.headerTitle}>Log Workout</Text>
+        <Pressable onPress={handleDiscard} hitSlop={12}>
+          <Text style={styles.discardText}>Discard</Text>
+        </Pressable>
+      </View>
 
-        <ScrollView ref={scrollRef} contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+      <KeyboardAwareScroll ref={scrollRef} contentContainerStyle={styles.scroll}>
           <TextField label="Title" value={title} onChangeText={(v) => update({ title: v })} placeholder="e.g. Lower Body Strength" />
           <DateField
             label="Date"
@@ -1785,8 +1785,7 @@ export default function LogWorkoutScreen() {
               <Text style={styles.saveTemplateText}>Save as template</Text>
             </Pressable>
           ) : null}
-        </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardAwareScroll>
 
       <HowDidYouFeelModal
         visible={feelModalOpen}

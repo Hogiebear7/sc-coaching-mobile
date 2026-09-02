@@ -113,6 +113,11 @@ export function useSaveCycleSettings() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["cycle"] });
       qc.invalidateQueries({ queryKey: ["dashboard"] });
+      // Cycle dates/regularity feed the calorie/macro target's cycle-phase
+      // adjustment when cycle tracking is enabled — see the equivalent
+      // comment in weekly-training.ts.
+      qc.invalidateQueries({ queryKey: ["my-nutrition-target"] });
+      qc.invalidateQueries({ queryKey: ["weekly-nutrition-targets"] });
     },
   });
 }

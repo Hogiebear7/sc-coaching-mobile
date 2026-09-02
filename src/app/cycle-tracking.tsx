@@ -3,16 +3,14 @@ import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
   Pressable,
-  ScrollView,
   StyleSheet,
   Switch,
   Text,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { KeyboardAwareScroll } from "@/components/ui/KeyboardAwareScroll";
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -255,7 +253,6 @@ export default function CycleTrackingScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
         <View style={styles.header}>
           <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backButton}>
             <Ionicons name="chevron-back" size={22} color={Color.textPrimary} />
@@ -278,7 +275,7 @@ export default function CycleTrackingScreen() {
             <Button title="Retry" onPress={() => refetch()} variant="secondary" style={{ marginTop: Spacing.md }} />
           </View>
         ) : (
-          <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+          <KeyboardAwareScroll contentContainerStyle={styles.scroll}>
             {phase && phase.phase !== "Unknown" ? (
               <Card style={[styles.phaseCard, { marginTop: 0 }]}>
                 <View style={styles.phaseHeaderRow}>
@@ -568,9 +565,8 @@ export default function CycleTrackingScreen() {
                 />
               </View>
             </Card>
-          </ScrollView>
+          </KeyboardAwareScroll>
         )}
-      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

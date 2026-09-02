@@ -65,15 +65,24 @@ export function useSchedule() {
   });
 }
 
+// Booking/cancelling a class now also syncs a matching Weekly Training
+// entry server-side (see lib/weekly-training-sync.ts in the main repo),
+// which in turn is an input to the calorie/macro target — the three extra
+// invalidations here mirror useUpdateWeeklyTraining's, for the same reason.
+function invalidateBookingEffects(qc: ReturnType<typeof useQueryClient>) {
+  qc.invalidateQueries({ queryKey: ["schedule"] });
+  qc.invalidateQueries({ queryKey: ["dashboard"] });
+  qc.invalidateQueries({ queryKey: ["weekly-training"] });
+  qc.invalidateQueries({ queryKey: ["my-nutrition-target"] });
+  qc.invalidateQueries({ queryKey: ["weekly-nutrition-targets"] });
+}
+
 export function useBookClass() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (classId: string) =>
       apiFetch<ActionResponse>("/api/bookings/create", { method: "POST", body: { classId } }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["schedule"] });
-      qc.invalidateQueries({ queryKey: ["dashboard"] });
-    },
+    onSuccess: () => invalidateBookingEffects(qc),
   });
 }
 
@@ -82,10 +91,7 @@ export function useCancelBooking() {
   return useMutation({
     mutationFn: (bookingId: string) =>
       apiFetch<ActionResponse>("/api/bookings/cancel", { method: "POST", body: { bookingId } }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["schedule"] });
-      qc.invalidateQueries({ queryKey: ["dashboard"] });
-    },
+    onSuccess: () => invalidateBookingEffects(qc),
   });
 }
 
@@ -112,9 +118,9 @@ export function useRespondToOffer() {
   return useMutation({
     mutationFn: (vars: { entryId: string; action: "accept" | "reject" }) =>
       apiFetch<ActionResponse>("/api/bookings/waitlist/respond", { method: "POST", body: vars }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["schedule"] });
-      qc.invalidateQueries({ queryKey: ["dashboard"] });
-    },
+    // "accept" creates a real booking (same Weekly Training sync effects as
+    // useBookClass); "reject" doesn't, but invalidating unconditionally
+    // here is harmless — just an extra background refetch.
+    onSuccess: () => invalidateBookingEffects(qc),
   });
 }

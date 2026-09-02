@@ -26,6 +26,13 @@ export function useLogBodyWeight() {
   return useMutation({
     mutationFn: (input: { date: string; weightKg: number }) =>
       apiFetch<{ success: true; message: string }>("/api/profile/body-weight", { method: "POST", body: input }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["body-weight-logs"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["body-weight-logs"] });
+      // Current bodyweight drives the calorie/macro target's TDEE estimate
+      // directly — without this, logging a new weight leaves the Nutrition
+      // tab showing a stale number.
+      qc.invalidateQueries({ queryKey: ["my-nutrition-target"] });
+      qc.invalidateQueries({ queryKey: ["weekly-nutrition-targets"] });
+    },
   });
 }

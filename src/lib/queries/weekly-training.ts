@@ -25,6 +25,10 @@ export interface WeeklyTrainingSession {
   recurring: boolean;
   /** Server-assigned; the client never sets this directly. */
   weekOf: string | null;
+  /** Set only on a session auto-created from a class booking — server-owned
+      and read-only here, same as weekOf. null for a session the member
+      created themselves. */
+  sourceBookingId: string | null;
 }
 
 export interface WeeklyTrainingScheduleData {
@@ -54,6 +58,15 @@ export function useUpdateWeeklyTraining() {
         method: "POST",
         body: { sessions },
       }).then((r) => r.data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["weekly-training"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["weekly-training"] });
+      // The weekly plan is a fallback input to the calorie/macro target for
+      // any date without its own Recovery check-in — without this, editing
+      // a session leaves the Nutrition tab showing a stale number until
+      // something else happens to refetch it (see nutrition.ts's identical
+      // invalidation for the same reason).
+      qc.invalidateQueries({ queryKey: ["my-nutrition-target"] });
+      qc.invalidateQueries({ queryKey: ["weekly-nutrition-targets"] });
+    },
   });
 }

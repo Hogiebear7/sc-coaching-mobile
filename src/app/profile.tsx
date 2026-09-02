@@ -5,15 +5,13 @@ import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import {
   ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { KeyboardAwareScroll } from "@/components/ui/KeyboardAwareScroll";
 
 import { BodyFatCard } from "@/components/ui/BodyFatCard";
 import { BodyWeightCard } from "@/components/ui/BodyWeightCard";
@@ -263,7 +261,6 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
         <View style={styles.header}>
           <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backButton}>
             <Ionicons name="chevron-back" size={22} color={Color.textPrimary} />
@@ -282,7 +279,7 @@ export default function ProfileScreen() {
             <Button title="Retry" onPress={() => refetch()} variant="secondary" style={{ marginTop: Spacing.md }} />
           </View>
         ) : (
-          <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+          <KeyboardAwareScroll contentContainerStyle={styles.scroll}>
             <View style={styles.identityRow}>
               {data.avatarDataUrl ? (
                 <Image source={{ uri: data.avatarDataUrl }} style={styles.avatar as ImageStyle} contentFit="cover" />
@@ -671,9 +668,8 @@ export default function ProfileScreen() {
               />
             ) : null}
             <Button title="Log out" onPress={logout} variant="secondary" style={{ marginTop: isStaffRole ? Spacing.sm : Spacing.xl }} />
-          </ScrollView>
+          </KeyboardAwareScroll>
         )}
-      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

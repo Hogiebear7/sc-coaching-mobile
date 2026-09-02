@@ -26,6 +26,13 @@ export function useLogBodyFat() {
   return useMutation({
     mutationFn: (input: { date: string; bodyFatPct: number }) =>
       apiFetch<{ success: true; message: string }>("/api/profile/body-fat", { method: "POST", body: input }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["body-fat-logs"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["body-fat-logs"] });
+      // Feeds the calorie/macro target's goal-timeline adjustment when a
+      // body-fat-based goal is set — see the equivalent comment in
+      // body-weight.ts.
+      qc.invalidateQueries({ queryKey: ["my-nutrition-target"] });
+      qc.invalidateQueries({ queryKey: ["weekly-nutrition-targets"] });
+    },
   });
 }

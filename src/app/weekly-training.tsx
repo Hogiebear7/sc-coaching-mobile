@@ -1,12 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  findNodeHandle,
-  Platform,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -16,6 +13,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { KeyboardAwareScroll } from "@/components/ui/KeyboardAwareScroll";
 import { Color, Radius, Spacing } from "@/constants/theme";
 import { ApiError } from "@/lib/auth-context";
 import { tapFeedback } from "@/lib/haptics";
@@ -47,6 +45,7 @@ function newSession(dayOfWeek: TrainingDayOfWeek): WeeklyTrainingSession {
     notes: null,
     recurring: true,
     weekOf: null,
+    sourceBookingId: null,
   };
 }
 
@@ -116,32 +115,6 @@ export default function WeeklyTrainingScreen() {
   const [error, setError] = useState<string | null>(null);
   const [view, setView] = useState<"list" | "week">("week");
   const [selectedDay, setSelectedDay] = useState<TrainingDayOfWeek>(1);
-
-  // Each session card has several chip rows below its label input — on a
-  // shorter screen the keyboard can cover all of them once it opens, and
-  // KeyboardAvoidingView alone only resizes the container, it doesn't scroll
-  // a specific field into view. Scroll the tapped card to the top instead.
-  const scrollRef = useRef<ScrollView>(null);
-  const cardRefs = useRef<Record<string, View | null>>({});
-
-  function scrollCardIntoView(id: string) {
-    // findNodeHandle isn't supported on web (no on-screen keyboard to dodge
-    // there anyway, which is the only reason this scroll exists — see the
-    // comment above scrollRef).
-    if (Platform.OS === "web") return;
-    const card = cardRefs.current[id];
-    const scrollNode = scrollRef.current;
-    if (!card || !scrollNode) return;
-    const scrollHandle = findNodeHandle(scrollNode);
-    if (!scrollHandle) return;
-    setTimeout(() => {
-      card.measureLayout(
-        scrollHandle,
-        (_x, y) => scrollNode.scrollTo({ y: Math.max(0, y - 12), animated: true }),
-        () => {}
-      );
-    }, 150);
-  }
 
   useEffect(() => {
     if (hydrated || isLoading) return;
@@ -237,7 +210,7 @@ export default function WeeklyTrainingScreen() {
             </View>
           ) : null}
 
-          <ScrollView ref={scrollRef} contentContainerStyle={styles.scroll}>
+          <KeyboardAwareScroll contentContainerStyle={styles.scroll}>
             {(view === "week" ? [selectedDay] : DAY_ORDER).map((day) => {
               const daySessions = sessions.filter((s) => s.dayOfWeek === day);
               return (
@@ -254,13 +227,11 @@ export default function WeeklyTrainingScreen() {
                     <Text style={styles.dayEmptyText}>Nothing set</Text>
                   ) : (
                     daySessions.map((s) => (
-                      <View key={s.id} ref={(el) => { cardRefs.current[s.id] = el; }}>
-                      <Card style={styles.sessionCard}>
+                      <Card key={s.id} style={styles.sessionCard}>
                         <View style={styles.sessionTopRow}>
                           <TextInput
                             value={s.label}
                             onChangeText={(text) => updateSession(s.id, { label: text })}
-                            onFocus={() => scrollCardIntoView(s.id)}
                             placeholder="e.g. Football training"
                             placeholderTextColor={Color.textFaint}
                             style={styles.labelInput}
@@ -269,6 +240,10 @@ export default function WeeklyTrainingScreen() {
                             <Ionicons name="trash-outline" size={16} color={Color.textFaint} />
                           </Pressable>
                         </View>
+
+                        {s.sourceBookingId ? (
+                          <Text style={styles.syncedBadge}>Synced from your booking</Text>
+                        ) : null}
 
                         <View style={styles.chipRow}>
                           {ACTIVITY_OPTIONS.map((opt) => (
@@ -320,7 +295,6 @@ export default function WeeklyTrainingScreen() {
                           ) : null}
                         </View>
                       </Card>
-                      </View>
                     ))
                   )}
                 </View>
@@ -328,7 +302,7 @@ export default function WeeklyTrainingScreen() {
             })}
 
             {error ? <Text style={styles.errorText}>{error}</Text> : null}
-          </ScrollView>
+          </KeyboardAwareScroll>
 
           <View style={styles.footer}>
             <Button title="Save" onPress={handleSave} loading={updateSchedule.isPending} />
@@ -424,6 +398,7 @@ const styles = StyleSheet.create({
   chipTextActive: { color: Color.gold },
   recurringRow: { borderTopWidth: 1, borderTopColor: Color.borderSubtle, paddingTop: Spacing.sm, marginTop: 2 },
   oneOffHint: { fontSize: 11, color: Color.textFaint, marginTop: 6, fontStyle: "italic" },
+  syncedBadge: { fontSize: 11, color: Color.gold, marginBottom: 4 },
   errorText: { fontSize: 12, color: Color.warning, textAlign: "center", marginTop: Spacing.sm },
   footer: { padding: Spacing.lg, borderTopWidth: 1, borderTopColor: Color.borderSubtle },
 });

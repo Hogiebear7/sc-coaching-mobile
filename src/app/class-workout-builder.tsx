@@ -3,10 +3,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -17,6 +14,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ExerciseAutocomplete } from "@/components/ui/ExerciseAutocomplete";
+import { KeyboardAwareScroll } from "@/components/ui/KeyboardAwareScroll";
 import { Color, Radius, Spacing } from "@/constants/theme";
 import { ApiError } from "@/lib/api-client";
 import { useExerciseLibraryNameIndex } from "@/lib/queries/exercise-library";
@@ -365,7 +363,6 @@ export default function ClassWorkoutBuilderScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
         <View style={styles.header}>
           <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backButton}>
             <Ionicons name="chevron-back" size={22} color={Color.textPrimary} />
@@ -382,7 +379,7 @@ export default function ClassWorkoutBuilderScreen() {
           </View>
         </View>
 
-        <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+        <KeyboardAwareScroll contentContainerStyle={styles.scroll}>
           <Text style={styles.intro}>
             Save the workout below and it lands in every booked member&apos;s Workouts tab right
             away. Once someone&apos;s checked in you can also enter their exact numbers here, which
@@ -633,8 +630,7 @@ export default function ClassWorkoutBuilderScreen() {
             loading={saveWorkout.isPending}
             style={{ marginTop: Spacing.sm }}
           />
-        </ScrollView>
-      </KeyboardAvoidingView>
+        </KeyboardAwareScroll>
     </SafeAreaView>
   );
 }

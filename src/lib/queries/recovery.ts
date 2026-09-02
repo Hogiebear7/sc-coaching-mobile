@@ -67,6 +67,11 @@ export function useLogRecovery() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["recovery"] });
       qc.invalidateQueries({ queryKey: ["dashboard"] });
+      // A same-date Recovery check-in overrides the weekly plan as the
+      // day's exertion input to the calorie/macro target — without this,
+      // logging recovery leaves the Nutrition tab showing a stale number.
+      qc.invalidateQueries({ queryKey: ["my-nutrition-target"] });
+      qc.invalidateQueries({ queryKey: ["weekly-nutrition-targets"] });
     },
   });
 }

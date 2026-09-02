@@ -1,10 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
+import { KeyboardAwareScroll } from "@/components/ui/KeyboardAwareScroll";
 import { MonthDatePicker } from "@/components/ui/MonthDatePicker";
 import { Stepper } from "@/components/ui/Stepper";
 import { Color, Radius, Spacing } from "@/constants/theme";
@@ -50,6 +51,20 @@ function isValidDate(v: string): boolean {
 function isValidTime(v: string): boolean {
   return /^([01]\d|2[0-3]):[0-5]\d$/.test(v);
 }
+// The API, MonthDatePicker, and Today/Tomorrow comparisons all work in ISO
+// (YYYY-MM-DD) — these two convert at the boundary so the text fields can
+// display/accept DD-MM-YYYY without that spreading through the rest of the
+// screen.
+function isoToDisplay(iso: string): string {
+  const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  return m ? `${m[3]}-${m[2]}-${m[1]}` : iso;
+}
+function displayToIso(display: string): string | null {
+  const m = display.trim().match(/^(\d{2})-(\d{2})-(\d{4})$/);
+  if (!m) return null;
+  const iso = `${m[3]}-${m[2]}-${m[1]}`;
+  return isValidDate(iso) ? iso : null;
+}
 
 export default function ClassEditorScreen() {
   const router = useRouter();
@@ -69,15 +84,22 @@ export default function ClassEditorScreen() {
 
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("");
-  const [date, setDate] = useState(isoOf(new Date()));
+  // Displayed/typed in DD-MM-YYYY; isoToDisplay/displayToIso convert at the
+  // boundary wherever ISO is actually needed (API payload, MonthDatePicker,
+  // Today/Tomorrow comparisons) — see the comment on those functions above.
+  const [dateText, setDateText] = useState(isoToDisplay(isoOf(new Date())));
   const [startTime, setStartTime] = useState("");
   const [durationMins, setDurationMins] = useState(60);
   const [capacity, setCapacity] = useState(12);
   const [repeat, setRepeat] = useState<"none" | "weekly">("none");
   const [weekdays, setWeekdays] = useState<number[]>([]);
-  const [repeatEndDate, setRepeatEndDate] = useState("");
+  const [endDateText, setEndDateText] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const [endCalendarOpen, setEndCalendarOpen] = useState(false);
+
+  const dateIso = displayToIso(dateText);
+  const endDateIso = displayToIso(endDateText);
 
   // Fires once the matched class actually loads (id transitions from
   // undefined to a real value) — not on every refetch, so it doesn't stomp
@@ -86,7 +108,7 @@ export default function ClassEditorScreen() {
     if (!existing) return;
     setTitle(existing.title);
     setCategory(existing.category);
-    setDate(existing.date);
+    setDateText(isoToDisplay(existing.date));
     setStartTime(existing.startTime);
     setDurationMins(existing.durationMins);
     setCapacity(existing.capacity);
@@ -109,12 +131,14 @@ export default function ClassEditorScreen() {
     setError(null);
     if (!title.trim()) return setError("Class name is required.");
     if (!category) return setError("Pick a category.");
-    if (!isValidDate(date)) return setError("Date must be in YYYY-MM-DD format.");
+    // Validated fresh from what's actually displayed (dateText/endDateText),
+    // not a possibly-stale derived value — see the comment on
+    // isoToDisplay/displayToIso above.
+    if (!dateIso) return setError("Date must be in DD-MM-YYYY format.");
     if (!isValidTime(startTime)) return setError("Start time must be in HH:MM (24-hour) format.");
     if (repeat === "weekly" && weekdays.length === 0) return setError("Pick at least one day for a repeating class.");
-    const trimmedEndDate = repeatEndDate.trim();
-    if (repeat === "weekly" && trimmedEndDate && !isValidDate(trimmedEndDate)) {
-      return setError("End date must be in YYYY-MM-DD format.");
+    if (repeat === "weekly" && endDateText.trim() && !endDateIso) {
+      return setError("End date must be in DD-MM-YYYY format.");
     }
 
     try {
@@ -122,13 +146,13 @@ export default function ClassEditorScreen() {
         id: existing?.id,
         title: title.trim(),
         category,
-        date,
+        date: dateIso,
         startTime,
         durationMins,
         capacity,
         repeat: isEditing ? "none" : repeat,
         weekdays: repeat === "weekly" ? weekdays : undefined,
-        repeatEndDate: repeat === "weekly" && trimmedEndDate ? trimmedEndDate : null,
+        repeatEndDate: repeat === "weekly" && endDateIso ? endDateIso : null,
       });
       tapFeedback();
       router.back();
@@ -222,7 +246,7 @@ export default function ClassEditorScreen() {
         <View style={{ width: 22 }} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+      <KeyboardAwareScroll contentContainerStyle={styles.scroll}>
         <Text style={styles.fieldLabel}>Class name</Text>
         <TextInput
           value={title}
@@ -243,11 +267,11 @@ export default function ClassEditorScreen() {
 
         <Text style={[styles.fieldLabel, { marginTop: Spacing.sm }]}>Date</Text>
         <View style={styles.chipRow}>
-          <Pressable onPress={() => setDate(today)} style={[styles.chip, date === today && styles.chipActive]}>
-            <Text style={[styles.chipText, date === today && styles.chipTextActive]}>Today</Text>
+          <Pressable onPress={() => setDateText(isoToDisplay(today))} style={[styles.chip, dateIso === today && styles.chipActive]}>
+            <Text style={[styles.chipText, dateIso === today && styles.chipTextActive]}>Today</Text>
           </Pressable>
-          <Pressable onPress={() => setDate(tomorrow)} style={[styles.chip, date === tomorrow && styles.chipActive]}>
-            <Text style={[styles.chipText, date === tomorrow && styles.chipTextActive]}>Tomorrow</Text>
+          <Pressable onPress={() => setDateText(isoToDisplay(tomorrow))} style={[styles.chip, dateIso === tomorrow && styles.chipActive]}>
+            <Text style={[styles.chipText, dateIso === tomorrow && styles.chipTextActive]}>Tomorrow</Text>
           </Pressable>
           <Pressable
             onPress={() => setCalendarOpen((v) => !v)}
@@ -260,20 +284,20 @@ export default function ClassEditorScreen() {
 
         {calendarOpen ? (
           <MonthDatePicker
-            value={date}
+            value={dateIso ?? today}
             minDate={today}
             onChange={(iso) => {
               tapFeedback();
-              setDate(iso);
+              setDateText(isoToDisplay(iso));
               setCalendarOpen(false);
             }}
           />
         ) : null}
 
         <TextInput
-          value={date}
-          onChangeText={setDate}
-          placeholder="YYYY-MM-DD"
+          value={dateText}
+          onChangeText={setDateText}
+          placeholder="DD-MM-YYYY"
           placeholderTextColor={Color.textFaint}
           style={[styles.input, { marginTop: Spacing.xs }]}
           autoCapitalize="none"
@@ -296,7 +320,7 @@ export default function ClassEditorScreen() {
           autoCapitalize="none"
         />
 
-        <Stepper label="Duration" value={durationMins} onChange={setDurationMins} min={15} max={180} step={15} suffix="min" />
+        <Stepper label="Duration" value={durationMins} onChange={setDurationMins} min={5} max={180} step={5} suffix="min" />
         <Stepper label="Capacity" value={capacity} onChange={setCapacity} min={1} max={50} step={1} suffix="spots" />
 
         {!isEditing ? (
@@ -322,13 +346,42 @@ export default function ClassEditorScreen() {
                   ))}
                 </View>
 
-                <Text style={[styles.fieldLabel, { marginTop: Spacing.sm }]}>End date (optional)</Text>
+                <View style={[styles.labelRow, { marginTop: Spacing.sm }]}>
+                  <Text style={styles.fieldLabel}>End date (optional)</Text>
+                  {endDateText ? (
+                    <Pressable onPress={() => setEndDateText("")} hitSlop={8}>
+                      <Text style={styles.clearLinkText}>Clear</Text>
+                    </Pressable>
+                  ) : null}
+                </View>
+                <View style={styles.chipRow}>
+                  <Pressable
+                    onPress={() => setEndCalendarOpen((v) => !v)}
+                    style={[styles.chip, { flexDirection: "row", alignItems: "center" }, endCalendarOpen && styles.chipActive]}
+                  >
+                    <Ionicons name="calendar-outline" size={13} color={endCalendarOpen ? Color.gold : Color.textMuted} />
+                    <Text style={[styles.chipText, endCalendarOpen && styles.chipTextActive, { marginLeft: 4 }]}>Calendar</Text>
+                  </Pressable>
+                </View>
+
+                {endCalendarOpen ? (
+                  <MonthDatePicker
+                    value={endDateIso ?? dateIso ?? today}
+                    minDate={dateIso ?? today}
+                    onChange={(iso) => {
+                      tapFeedback();
+                      setEndDateText(isoToDisplay(iso));
+                      setEndCalendarOpen(false);
+                    }}
+                  />
+                ) : null}
+
                 <TextInput
-                  value={repeatEndDate}
-                  onChangeText={setRepeatEndDate}
-                  placeholder="YYYY-MM-DD — leave blank to repeat indefinitely"
+                  value={endDateText}
+                  onChangeText={setEndDateText}
+                  placeholder="DD-MM-YYYY — leave blank to repeat indefinitely"
                   placeholderTextColor={Color.textFaint}
-                  style={styles.input}
+                  style={[styles.input, { marginTop: Spacing.xs }]}
                   autoCapitalize="none"
                 />
               </>
@@ -352,7 +405,7 @@ export default function ClassEditorScreen() {
             </Pressable>
           </>
         ) : null}
-      </ScrollView>
+      </KeyboardAwareScroll>
     </SafeAreaView>
   );
 }
@@ -385,4 +438,6 @@ const styles = StyleSheet.create({
   error: { fontSize: 12, color: Color.danger, marginTop: Spacing.sm, textAlign: "center" },
   dangerLink: { alignItems: "center", paddingVertical: Spacing.md },
   dangerLinkText: { fontSize: 13, fontWeight: "600", color: Color.danger },
+  labelRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 6 },
+  clearLinkText: { fontSize: 11, fontWeight: "600", color: Color.gold },
 });

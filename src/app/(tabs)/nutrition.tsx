@@ -6,8 +6,6 @@ import {
   ActivityIndicator,
   Animated,
   Easing,
-  KeyboardAvoidingView,
-  Platform,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -22,6 +20,7 @@ import { BodyWeightCard } from "@/components/ui/BodyWeightCard";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { InfoModal } from "@/components/ui/InfoModal";
+import { KeyboardAwareScroll } from "@/components/ui/KeyboardAwareScroll";
 import { MacroLegendRow, MacroPieChart, type MacroKind } from "@/components/ui/MacroPieChart";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { UpsellCard } from "@/components/ui/Upsell";
@@ -321,11 +320,9 @@ function AssistantMessageText({ text }: { text: string }) {
 function CoachChat({
   configured,
   initialMessages,
-  onFocusInput,
 }: {
   configured: boolean;
   initialMessages: NutritionAiMessage[];
-  onFocusInput: () => void;
 }) {
   const [messages, setMessages] = useState<NutritionAiMessage[]>(initialMessages);
   const [input, setInput] = useState("");
@@ -438,7 +435,6 @@ function CoachChat({
           style={styles.chatInput}
           multiline
           onSubmitEditing={handleSend}
-          onFocus={onFocusInput}
         />
         <Pressable onPress={handleSend} disabled={send.isPending || !input.trim()} style={styles.sendButton}>
           <Text style={styles.sendButtonText}>Send</Text>
@@ -454,12 +450,6 @@ export default function NutritionScreen() {
   const today = todayDateString();
   const [selectedDate, setSelectedDate] = useState(today);
   const [macroInfo, setMacroInfo] = useState<MacroKind | null>(null);
-  // The coach chat's input sits near the bottom of a long scroll view —
-  // KeyboardAvoidingView alone doesn't scroll a *specific* field into view,
-  // it only resizes/pads the container, so the keyboard can still end up
-  // covering an input that wasn't already on screen when it opened. Scroll
-  // to the end on focus since the chat input is always the last thing here.
-  const scrollRef = useRef<ScrollView>(null);
 
   const { data, isLoading, isError, refetch, isRefetching } = useNutrition();
   const { data: target } = useMyNutritionTarget();
@@ -523,13 +513,10 @@ export default function NutritionScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
-        <ScrollView
-          ref={scrollRef}
-          contentContainerStyle={styles.scroll}
-          keyboardShouldPersistTaps="handled"
-          refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => refetch()} tintColor={Color.gold} />}
-        >
+      <KeyboardAwareScroll
+        contentContainerStyle={styles.scroll}
+        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => refetch()} tintColor={Color.gold} />}
+      >
           <View style={styles.headerRow}>
             <Text style={styles.heading}>Nutrition</Text>
           </View>
@@ -765,11 +752,9 @@ export default function NutritionScreen() {
             <CoachChat
               configured={data.aiNutritionCoachConfigured}
               initialMessages={data.initialAiNutritionMessages}
-              onFocusInput={() => setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 150)}
             />
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+        </KeyboardAwareScroll>
 
       <InfoModal
         visible={macroInfo !== null}

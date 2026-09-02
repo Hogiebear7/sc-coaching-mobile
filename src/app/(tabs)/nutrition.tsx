@@ -28,6 +28,7 @@ import { Color, Radius, Spacing } from "@/constants/theme";
 import { ApiError } from "@/lib/auth-context";
 import { tapFeedback } from "@/lib/haptics";
 import { hasAccess } from "@/lib/member-access";
+import { useFoodFavorites, type FoodFavorite } from "@/lib/queries/food-favorites";
 import { useMemberTier } from "@/lib/queries/profile";
 import { useReduceMotionPref } from "@/lib/use-reduce-motion";
 import {
@@ -450,15 +451,33 @@ export default function NutritionScreen() {
   const today = todayDateString();
   const [selectedDate, setSelectedDate] = useState(today);
   const [macroInfo, setMacroInfo] = useState<MacroKind | null>(null);
+  const [quickAddTab, setQuickAddTab] = useState<"recent" | "favourites">("recent");
+  // Collapsed by default — a member who logs a lot of foods can otherwise
+  // end up scrolling past a long, always-expanded list for every meal just
+  // to reach the next section. Empty meals don't need a collapse state at
+  // all (tapping one always means "add"), so this only ever tracks meals
+  // that actually have entries.
+  const [expandedMeals, setExpandedMeals] = useState<Set<MealType>>(new Set());
 
   const { data, isLoading, isError, refetch, isRefetching } = useNutrition();
   const { data: target } = useMyNutritionTarget();
   const { data: diary } = useNutritionDiary(selectedDate);
   const { data: recentFoods } = useRecentFoods();
+  const { data: favorites } = useFoodFavorites();
   const createEntry = useCreateFoodEntry();
   const deleteEntry = useDeleteFoodEntry();
 
-  function handleQuickAdd(food: NonNullable<typeof recentFoods>[number]) {
+  function toggleMealExpanded(mealType: MealType) {
+    tapFeedback();
+    setExpandedMeals((prev) => {
+      const next = new Set(prev);
+      if (next.has(mealType)) next.delete(mealType);
+      else next.add(mealType);
+      return next;
+    });
+  }
+
+  function handleQuickAdd(food: { name: string; calories: number; proteinG: number; carbsG: number; fatG: number }) {
     tapFeedback();
     createEntry.mutate({
       date: selectedDate,
@@ -612,19 +631,58 @@ export default function NutritionScreen() {
             <HydrationCard date={selectedDate} />
           </View>
 
-          {recentFoods && recentFoods.length > 0 ? (
+          {(recentFoods && recentFoods.length > 0) || (favorites && favorites.length > 0) ? (
             <View style={styles.section}>
               <SectionHeader label="QUICK ADD" />
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: Spacing.xs }}>
-                {recentFoods.slice(0, 10).map((f) => (
-                  <Pressable key={f.id} onPress={() => handleQuickAdd(f)} style={styles.quickAddChip}>
-                    <Text style={styles.quickAddChipText} numberOfLines={1} ellipsizeMode="tail">
-                      {f.name}
-                    </Text>
-                    <Text style={styles.quickAddChipSub}>{f.calories} kcal</Text>
-                  </Pressable>
-                ))}
-              </ScrollView>
+              <View style={styles.quickAddTabRow}>
+                <Pressable
+                  onPress={() => setQuickAddTab("recent")}
+                  style={[styles.quickAddTab, quickAddTab === "recent" && styles.quickAddTabActive]}
+                >
+                  <Text style={[styles.quickAddTabText, quickAddTab === "recent" && styles.quickAddTabTextActive]}>
+                    Recently added
+                  </Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => setQuickAddTab("favourites")}
+                  style={[styles.quickAddTab, quickAddTab === "favourites" && styles.quickAddTabActive]}
+                >
+                  <Text style={[styles.quickAddTabText, quickAddTab === "favourites" && styles.quickAddTabTextActive]}>
+                    Favourites
+                  </Text>
+                </Pressable>
+              </View>
+              {quickAddTab === "recent" ? (
+                (recentFoods?.length ?? 0) > 0 ? (
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: Spacing.xs }}>
+                    {recentFoods!.slice(0, 10).map((f) => (
+                      <Pressable key={f.id} onPress={() => handleQuickAdd(f)} style={styles.quickAddChip}>
+                        <Text style={styles.quickAddChipText} numberOfLines={1} ellipsizeMode="tail">
+                          {f.name}
+                        </Text>
+                        <Text style={styles.quickAddChipSub}>{f.calories} kcal</Text>
+                      </Pressable>
+                    ))}
+                  </ScrollView>
+                ) : (
+                  <Text style={styles.quickAddEmptyText}>Nothing logged recently.</Text>
+                )
+              ) : (favorites?.length ?? 0) > 0 ? (
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: Spacing.xs }}>
+                  {favorites!.map((f: FoodFavorite) => (
+                    <Pressable key={f.id} onPress={() => handleQuickAdd(f)} style={styles.quickAddChip}>
+                      <Text style={styles.quickAddChipText} numberOfLines={1} ellipsizeMode="tail">
+                        {f.name}
+                      </Text>
+                      <Text style={styles.quickAddChipSub}>{f.calories} kcal</Text>
+                    </Pressable>
+                  ))}
+                </ScrollView>
+              ) : (
+                <Text style={styles.quickAddEmptyText}>
+                  No favourites yet — save one from the star icon when adding a food.
+                </Text>
+              )}
             </View>
           ) : null}
 
@@ -638,35 +696,57 @@ export default function NutritionScreen() {
               {MEAL_TYPE_OPTIONS.map((meal, mealIdx) => {
                 const mealEntries = (diary?.entries ?? []).filter((e) => e.mealType === meal.value);
                 const mealCals = mealEntries.reduce((s, e) => s + e.calories, 0);
+                const hasEntries = mealEntries.length > 0;
+                const isExpanded = expandedMeals.has(meal.value);
                 return (
                   <View key={meal.value} style={[styles.mealBlock, mealIdx > 0 && styles.mealBlockDivider]}>
                     <Pressable
-                      onPress={() => router.push({ pathname: "/log-food", params: { date: selectedDate, mealType: meal.value } })}
+                      onPress={() =>
+                        hasEntries
+                          ? toggleMealExpanded(meal.value)
+                          : router.push({ pathname: "/log-food", params: { date: selectedDate, mealType: meal.value } })
+                      }
                       style={styles.mealHeader}
                     >
                       <Text style={styles.mealTitle}>{meal.label}</Text>
                       <View style={styles.mealHeaderRight}>
-                        {mealCals > 0 ? (
-                          <Text style={styles.mealCals}>{mealCals} kcal</Text>
+                        {hasEntries ? (
+                          <Text style={styles.mealCals}>
+                            {mealCals} kcal · {mealEntries.length} item{mealEntries.length === 1 ? "" : "s"}
+                          </Text>
                         ) : (
                           <Text style={styles.mealAddHint}>Add</Text>
                         )}
-                        <Ionicons name={mealCals > 0 ? "chevron-forward" : "add-circle-outline"} size={16} color={mealCals > 0 ? Color.textFaint : Color.gold} />
+                        {hasEntries ? (
+                          <Pressable
+                            hitSlop={8}
+                            onPress={() => router.push({ pathname: "/log-food", params: { date: selectedDate, mealType: meal.value } })}
+                          >
+                            <Ionicons name="add-circle-outline" size={16} color={Color.gold} />
+                          </Pressable>
+                        ) : null}
+                        <Ionicons
+                          name={!hasEntries ? "add-circle-outline" : isExpanded ? "chevron-up" : "chevron-down"}
+                          size={16}
+                          color={hasEntries ? Color.textFaint : Color.gold}
+                        />
                       </View>
                     </Pressable>
-                    {mealEntries.map((e) => (
-                      <View key={e.id} style={styles.entryRow}>
-                        <View style={{ flex: 1 }}>
-                          <Text style={styles.entryName}>{e.name}</Text>
-                          <Text style={styles.entryMacros}>
-                            {e.calories} kcal · P{e.proteinG} C{e.carbsG} F{e.fatG}
-                          </Text>
-                        </View>
-                        <Pressable onPress={() => deleteEntry.mutate({ id: e.id, date: selectedDate })} hitSlop={8}>
-                          <Ionicons name="close-circle-outline" size={16} color={Color.textFaint} />
-                        </Pressable>
-                      </View>
-                    ))}
+                    {hasEntries && isExpanded
+                      ? mealEntries.map((e) => (
+                          <View key={e.id} style={styles.entryRow}>
+                            <View style={{ flex: 1 }}>
+                              <Text style={styles.entryName}>{e.name}</Text>
+                              <Text style={styles.entryMacros}>
+                                {e.calories} kcal · P{e.proteinG} C{e.carbsG} F{e.fatG}
+                              </Text>
+                            </View>
+                            <Pressable onPress={() => deleteEntry.mutate({ id: e.id, date: selectedDate })} hitSlop={8}>
+                              <Ionicons name="close-circle-outline" size={16} color={Color.textFaint} />
+                            </Pressable>
+                          </View>
+                        ))
+                      : null}
                   </View>
                 );
               })}
@@ -800,6 +880,18 @@ const styles = StyleSheet.create({
   },
   quickAddChipText: { fontSize: 12, fontWeight: "600", color: Color.textPrimary },
   quickAddChipSub: { fontSize: 10, color: Color.textMuted, marginTop: 2 },
+  quickAddTabRow: { flexDirection: "row", gap: Spacing.xs, marginBottom: Spacing.sm },
+  quickAddTab: {
+    borderRadius: Radius.pill,
+    borderWidth: 1,
+    borderColor: Color.borderSubtle,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 5,
+  },
+  quickAddTabActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
+  quickAddTabText: { fontSize: 11, fontWeight: "600", color: Color.textMuted },
+  quickAddTabTextActive: { color: Color.gold },
+  quickAddEmptyText: { fontSize: 12, color: Color.textFaint },
   diaryCard: { padding: 0 },
   mealBlock: { padding: Spacing.md },
   mealBlockDivider: { borderTopWidth: 1, borderTopColor: Color.borderSubtle },
@@ -808,14 +900,20 @@ const styles = StyleSheet.create({
   mealHeaderRight: { flexDirection: "row", alignItems: "center", gap: 6 },
   mealCals: { fontSize: 11, color: Color.textMuted },
   mealAddHint: { fontSize: 11, color: Color.gold, fontWeight: "600" },
+  // Indented + a left accent line so an expanded meal's entries read as
+  // nested under their header, not just another row in the same list.
   entryRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingTop: Spacing.sm,
+    paddingLeft: Spacing.sm,
     marginTop: Spacing.sm,
+    marginLeft: 4,
     borderTopWidth: 1,
     borderTopColor: Color.borderSubtle,
+    borderLeftWidth: 2,
+    borderLeftColor: Color.borderSubtle,
   },
   entryName: { fontSize: 13, fontWeight: "500", color: Color.textPrimary },
   entryMacros: { fontSize: 10, color: Color.textMuted, marginTop: 2 },

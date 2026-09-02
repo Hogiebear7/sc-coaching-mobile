@@ -36,7 +36,14 @@ import { humanizeZoneValue } from "@/lib/muscle-slug-map";
 import { useExerciseLibrary } from "@/lib/queries/exercise-library";
 import { useEquipmentCatalog, useGymProfiles } from "@/lib/queries/gym-profiles";
 import { useProfile } from "@/lib/queries/profile";
+import { useWorkoutHelperTier, type SessionTier } from "@/lib/queries/workout-helper";
 import { generateWorkout } from "@/lib/workout-generator";
+
+function tierDotColor(tier: SessionTier): string {
+  if (tier === "full") return Color.success;
+  if (tier === "reduced") return Color.warning;
+  return Color.gold;
+}
 
 const TIME_PRESETS = [15, 30, 45, 60, 90];
 
@@ -186,6 +193,10 @@ export default function WorkoutGeneratorScreen() {
   const { data: gymProfilesData } = useGymProfiles();
   const { data: equipmentCatalogData } = useEquipmentCatalog();
   const { data: profileData } = useProfile();
+  // Best-effort — generation works exactly as before if this hasn't loaded
+  // or failed (see the tier fallback in lib/workout-generator.ts), it just
+  // won't be scaled to today's readiness/load/planned session yet.
+  const { data: tierData } = useWorkoutHelperTier();
 
   const [primaryBodyParts, setPrimaryBodyParts] = useState<Set<string>>(new Set());
   const [secondaryBodyParts, setSecondaryBodyParts] = useState<Set<string>>(new Set());
@@ -335,6 +346,7 @@ export default function WorkoutGeneratorScreen() {
       secondaryBodyParts: [...secondaryBodyParts],
       equipment: equipmentVendorValues,
       timeMinutes,
+      tier: tierData?.tier,
     });
 
     if (exercises.length === 0) {
@@ -372,6 +384,16 @@ export default function WorkoutGeneratorScreen() {
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.scroll}>
+          {tierData ? (
+            <Card style={styles.tierCard}>
+              <View style={styles.tierHeaderRow}>
+                <View style={[styles.tierDot, { backgroundColor: tierDotColor(tierData.tier) }]} />
+                <Text style={styles.tierTitle}>{tierData.tierLabel} today</Text>
+              </View>
+              <Text style={styles.tierRationale}>{tierData.rationale}</Text>
+            </Card>
+          ) : null}
+
           <Text style={styles.sectionLabel}>MUSCLE AREAS</Text>
           <Text style={styles.sectionSub}>Tap the body to pick where to focus.</Text>
 
@@ -611,6 +633,11 @@ const styles = StyleSheet.create({
   centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
   errorText: { color: Color.textMuted, fontSize: 14 },
   scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
+  tierCard: { padding: Spacing.md, marginTop: Spacing.md },
+  tierHeaderRow: { flexDirection: "row", alignItems: "center", gap: Spacing.xs },
+  tierDot: { width: 8, height: 8, borderRadius: 4 },
+  tierTitle: { fontSize: 13, fontWeight: "700", color: Color.textPrimary },
+  tierRationale: { fontSize: 12, color: Color.textMuted, marginTop: 4, lineHeight: 17 },
   sectionLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginTop: Spacing.lg },
   sectionSub: { fontSize: 12, color: Color.textFaint, marginTop: 2, marginBottom: Spacing.sm },
   fieldLabel: { fontSize: 11, fontWeight: "600", color: Color.textSecondary, marginBottom: 4 },

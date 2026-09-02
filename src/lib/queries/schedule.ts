@@ -67,14 +67,16 @@ export function useSchedule() {
 
 // Booking/cancelling a class now also syncs a matching Weekly Training
 // entry server-side (see lib/weekly-training-sync.ts in the main repo),
-// which in turn is an input to the calorie/macro target — the three extra
-// invalidations here mirror useUpdateWeeklyTraining's, for the same reason.
+// which in turn is an input to the calorie/macro target and the Workout
+// Helper's tier — these extra invalidations mirror useUpdateWeeklyTraining's,
+// for the same reason.
 function invalidateBookingEffects(qc: ReturnType<typeof useQueryClient>) {
   qc.invalidateQueries({ queryKey: ["schedule"] });
   qc.invalidateQueries({ queryKey: ["dashboard"] });
   qc.invalidateQueries({ queryKey: ["weekly-training"] });
   qc.invalidateQueries({ queryKey: ["my-nutrition-target"] });
   qc.invalidateQueries({ queryKey: ["weekly-nutrition-targets"] });
+  qc.invalidateQueries({ queryKey: ["workout-helper-tier"] });
 }
 
 export function useBookClass() {

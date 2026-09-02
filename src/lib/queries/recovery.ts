@@ -72,6 +72,8 @@ export function useLogRecovery() {
       // logging recovery leaves the Nutrition tab showing a stale number.
       qc.invalidateQueries({ queryKey: ["my-nutrition-target"] });
       qc.invalidateQueries({ queryKey: ["weekly-nutrition-targets"] });
+      // Readiness and rolling load also drive the Workout Helper's tier.
+      qc.invalidateQueries({ queryKey: ["workout-helper-tier"] });
     },
   });
 }

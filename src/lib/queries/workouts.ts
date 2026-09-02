@@ -136,6 +136,17 @@ export interface CreateWorkoutInput {
   runs: CreateWorkoutRunInput[];
 }
 
+// A logged workout can win the exertion tier for its own date over the
+// weekly plan (calorie/macro target) and feeds the rolling 7-day load
+// (Workout Helper tier) — these three invalidations mirror the ones on
+// weekly-training.ts's useUpdateWeeklyTraining for the same reason.
+function invalidateWorkoutEffects(qc: ReturnType<typeof useQueryClient>) {
+  qc.invalidateQueries({ queryKey: ["workouts"] });
+  qc.invalidateQueries({ queryKey: ["my-nutrition-target"] });
+  qc.invalidateQueries({ queryKey: ["weekly-nutrition-targets"] });
+  qc.invalidateQueries({ queryKey: ["workout-helper-tier"] });
+}
+
 export function useCreateWorkout() {
   const qc = useQueryClient();
   return useMutation({
@@ -144,7 +155,7 @@ export function useCreateWorkout() {
         method: "POST",
         body: input,
       }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["workouts"] }),
+    onSuccess: () => invalidateWorkoutEffects(qc),
   });
 }
 
@@ -162,7 +173,7 @@ export function useEditWorkout() {
         method: "POST",
         body: input,
       }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["workouts"] }),
+    onSuccess: () => invalidateWorkoutEffects(qc),
   });
 }
 
@@ -183,7 +194,7 @@ export function useUpdateClassWorkout() {
         method: "POST",
         body: input,
       }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["workouts"] }),
+    onSuccess: () => invalidateWorkoutEffects(qc),
   });
 }
 
@@ -197,7 +208,7 @@ export function useDeleteWorkoutSession() {
         method: "POST",
         body: { id },
       }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["workouts"] }),
+    onSuccess: () => invalidateWorkoutEffects(qc),
   });
 }
 

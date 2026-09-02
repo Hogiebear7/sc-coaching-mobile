@@ -67,6 +67,9 @@ export function useUpdateWeeklyTraining() {
       // invalidation for the same reason).
       qc.invalidateQueries({ queryKey: ["my-nutrition-target"] });
       qc.invalidateQueries({ queryKey: ["weekly-nutrition-targets"] });
+      // Same reason — it's also an input to the Workout Helper's session
+      // tier (today's planned/booked exertion).
+      qc.invalidateQueries({ queryKey: ["workout-helper-tier"] });
     },
   });
 }

@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import { useMemo, useState } from "react";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback, useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -81,6 +81,21 @@ export default function WorkoutsScreen() {
   const { data: program } = useMyProgram();
   const advanceProgram = useAdvanceProgram();
   const [trendExercise, setTrendExercise] = useState<string | null>(null);
+
+  // This tab stays mounted in the background rather than unmounting when
+  // the member navigates away to Log Workout — so the mutation-time
+  // invalidation in useCreateWorkout should already refresh it, but that
+  // depends on this screen still being an active query observer at that
+  // exact moment (e.g. not mid-transition). Refetching on every focus is
+  // the standard, unconditional guarantee: a member coming back to this
+  // tab after logging (or editing/deleting) a workout always sees it,
+  // regardless of any invalidation timing edge case.
+  useFocusEffect(
+    useCallback(() => {
+      refetch();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
+  );
 
   const today = todayDateString();
   const dateWindow = useMemo(() => recentDates(21, today), [today]);
@@ -221,7 +236,7 @@ export default function WorkoutsScreen() {
               <EmptyState
                 icon="barbell-outline"
                 title={selectedDate === today ? "Nothing logged today" : "Nothing logged this day"}
-                body="Log a workout or repeat your last session."
+                body="Log a workout, or start a saved template from Workout Library."
                 actionLabel="Log a workout"
                 onAction={() => router.push({ pathname: "/log-workout", params: { date: selectedDate } })}
                 variant="primary"

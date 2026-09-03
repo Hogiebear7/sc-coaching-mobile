@@ -49,13 +49,17 @@ function onAppStateChange(status: AppStateStatus) {
 // (see the hideAsync() call below) so the branding treatment we actually
 // want — the full logo, generously sized — is what's visible for the
 // loading window, rather than the tiny native-capped icon.
-const SPLASH_LOGO_ASPECT_RATIO = 865 / 330; // matches assets/images/splash-logo-crop.png
+const SPLASH_LOGO_ASPECT_RATIO = 975 / 378; // matches assets/images/splash-logo-crop-v2.png
+
+// How much longer the branded splash stays up after auth status has actually
+// resolved, so the logo isn't just a flash on fast/cached loads.
+const SPLASH_MIN_HOLD_MS = 2000;
 
 function CustomSplashScreen() {
   // Percentage width + aspectRatio in style can fail to resolve on the very
   // first render before Yoga has settled the parent's size — confirmed
-  // on-device: the logo rendered at its raw source-pixel width (865px)
-  // instead of 72% of screen width, overflowing both edges. Computing an
+  // on-device: the logo rendered at its raw source-pixel width instead of
+  // 72% of screen width, overflowing both edges. Computing an
   // explicit pixel size from the actual window dimensions has no such race.
   const { width: screenWidth } = useWindowDimensions();
   const logoWidth = Math.round(screenWidth * 0.72);
@@ -64,7 +68,7 @@ function CustomSplashScreen() {
   return (
     <View style={styles.splashRoot}>
       <Image
-        source={require("../../assets/images/splash-logo-crop.png")}
+        source={require("../../assets/images/splash-logo-crop-v2.png")}
         style={{ width: logoWidth, height: logoHeight }}
         resizeMode="contain"
       />
@@ -86,6 +90,18 @@ function AuthGate() {
   // choice. Plain members have no staff group to switch to, so it's a no-op
   // for them.
   const wantsStaffGroup = isStaffRole && viewMode === "coach";
+
+  // Auth status alone can resolve in well under SPLASH_MIN_HOLD_MS on a warm
+  // cache, which would otherwise make the branded splash barely flash before
+  // the app underneath appears. This keeps CustomSplashScreen up for a flat
+  // minimum hold *after* status stops being "loading", independent of how
+  // long auth resolution itself took.
+  const [splashHoldElapsed, setSplashHoldElapsed] = useState(false);
+  useEffect(() => {
+    if (status === "loading") return;
+    const timer = setTimeout(() => setSplashHoldElapsed(true), SPLASH_MIN_HOLD_MS);
+    return () => clearTimeout(timer);
+  }, [status]);
 
   useEffect(() => {
     if (status === "loading") return;
@@ -117,7 +133,7 @@ function AuthGate() {
     });
   }, [status, router]);
 
-  if (status === "loading") {
+  if (status === "loading" || !splashHoldElapsed) {
     return <CustomSplashScreen />;
   }
 

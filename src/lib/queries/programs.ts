@@ -44,6 +44,10 @@ export interface ProgrammeAiMeta {
   sessionMinutes: number;
   equipmentSlugs: string[];
   gymProfileId: string | null;
+  /** Free-text detail the member added (upcoming event, a specific PB, a
+      show date, etc.) — passed to the AI at generation time and kept here
+      so "Regenerate" reuses the same brief. */
+  notes: string | null;
   generatedAt: string;
 }
 
@@ -167,6 +171,7 @@ export interface GenerateProgrammeInput {
   sessionMinutes: number;
   equipmentSlugs: string[];
   gymProfileId: string | null;
+  notes: string | null;
 }
 
 export interface ProgrammePreview {

@@ -291,6 +291,11 @@ export default function WorkoutsScreen() {
 
         <View style={styles.section}>
           <SectionHeader label="TOOLS" />
+          {/* Two explicit rows of 2, not one flex-wrap container relying on
+              flexBasis percentages to split evenly — the same fix already
+              proven for the Schedule tab's calendar grid, whose own
+              percentage-based wrap silently collapsed to one column per row
+              on some screen widths. */}
           <View style={styles.toolsRow}>
             <Card tier="compact" style={styles.toolCard}>
               <Pressable onPress={() => router.push("/plate-calculator")} style={styles.toolCardInner}>
@@ -310,6 +315,8 @@ export default function WorkoutsScreen() {
                 <Text style={styles.toolCardText}>Rest Timer</Text>
               </Pressable>
             </Card>
+          </View>
+          <View style={styles.toolsRow}>
             {hasAccess(tier, "workoutGenerate") ? (
               <Card tier="compact" style={styles.toolCard}>
                 <Pressable onPress={() => router.push("/workout-generator")} style={styles.toolCardInner}>

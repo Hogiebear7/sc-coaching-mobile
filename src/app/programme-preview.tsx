@@ -35,6 +35,7 @@ export default function ProgrammePreviewScreen() {
         sessionMinutes: preview.aiMeta.sessionMinutes,
         equipmentSlugs: preview.aiMeta.equipmentSlugs,
         gymProfileId: preview.aiMeta.gymProfileId,
+        notes: preview.aiMeta.notes,
       },
       {
         onSuccess: (next) => setPreview(next),

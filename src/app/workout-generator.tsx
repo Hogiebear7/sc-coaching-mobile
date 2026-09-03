@@ -28,6 +28,7 @@ import { BodyDiagram, type ZoneSelectionState } from "@/components/ui/BodyDiagra
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { EquipmentPicker } from "@/components/ui/EquipmentPicker";
+import { TextField } from "@/components/ui/TextField";
 import { Color, Radius, Spacing } from "@/constants/theme";
 import { CARDIO_VENDOR_VALUE, findBodyZone, vendorValuesPresentForZone, type BodyZoneKey } from "@/lib/body-zones";
 import { equipmentSlugMatchesVendorString } from "@/lib/equipment-matching";
@@ -42,7 +43,14 @@ import { generateWorkout } from "@/lib/workout-generator";
 
 type GeneratorMode = "workout" | "programme";
 
-const GOAL_PRESETS = ["Build strength", "Build muscle", "Lose fat", "General fitness", "Improve conditioning"];
+const GOAL_PRESETS = [
+  "Build strength",
+  "Build muscle",
+  "Lose fat",
+  "General fitness",
+  "Improve conditioning",
+  "Sports performance",
+];
 const WEEKS_PRESETS = [4, 8, 12] as const;
 const DAYS_PER_WEEK_PRESETS = [2, 3, 4, 5, 6];
 
@@ -211,6 +219,7 @@ export default function WorkoutGeneratorScreen() {
   const [goal, setGoal] = useState<string>(GOAL_PRESETS[0]);
   const [weeks, setWeeks] = useState<(typeof WEEKS_PRESETS)[number]>(8);
   const [daysPerWeek, setDaysPerWeek] = useState(3);
+  const [notes, setNotes] = useState("");
 
   const [primaryBodyParts, setPrimaryBodyParts] = useState<Set<string>>(new Set());
   const [secondaryBodyParts, setSecondaryBodyParts] = useState<Set<string>>(new Set());
@@ -380,7 +389,15 @@ export default function WorkoutGeneratorScreen() {
   function handleGenerateProgramme() {
     setError(null);
     generateProgramme.mutate(
-      { goal, weeks, daysPerWeek, sessionMinutes: timeMinutes, equipmentSlugs, gymProfileId: selectedGymProfileId },
+      {
+        goal,
+        weeks,
+        daysPerWeek,
+        sessionMinutes: timeMinutes,
+        equipmentSlugs,
+        gymProfileId: selectedGymProfileId,
+        notes: notes.trim() || null,
+      },
       {
         onSuccess: (preview) => {
           router.push({ pathname: "/programme-preview", params: { preview: JSON.stringify(preview) } });
@@ -402,25 +419,23 @@ export default function WorkoutGeneratorScreen() {
         <View style={{ width: 22 }} />
       </View>
 
-      <View style={styles.modeToggleWrap}>
-        <View style={styles.segmentGroup} accessibilityRole="tablist" accessibilityLabel="What to generate">
-          <Pressable
-            onPress={() => setMode("workout")}
-            style={[styles.segment, mode === "workout" && styles.segmentActive]}
-            accessibilityRole="tab"
-            accessibilityState={{ selected: mode === "workout" }}
-          >
-            <Text style={[styles.segmentText, mode === "workout" && styles.segmentTextActive]}>Workout</Text>
-          </Pressable>
-          <Pressable
-            onPress={() => setMode("programme")}
-            style={[styles.segment, mode === "programme" && styles.segmentActive]}
-            accessibilityRole="tab"
-            accessibilityState={{ selected: mode === "programme" }}
-          >
-            <Text style={[styles.segmentText, mode === "programme" && styles.segmentTextActive]}>Programme</Text>
-          </Pressable>
-        </View>
+      <View style={styles.modeToggleWrap} accessibilityRole="tablist" accessibilityLabel="What to generate">
+        <Pressable
+          onPress={() => setMode("workout")}
+          style={[styles.modePill, mode === "workout" && styles.modePillActive]}
+          accessibilityRole="tab"
+          accessibilityState={{ selected: mode === "workout" }}
+        >
+          <Text style={[styles.modePillText, mode === "workout" && styles.modePillTextActive]}>Workout</Text>
+        </Pressable>
+        <Pressable
+          onPress={() => setMode("programme")}
+          style={[styles.modePill, mode === "programme" && styles.modePillActive]}
+          accessibilityRole="tab"
+          accessibilityState={{ selected: mode === "programme" }}
+        >
+          <Text style={[styles.modePillText, mode === "programme" && styles.modePillTextActive]}>Programme</Text>
+        </Pressable>
       </View>
 
       {isLoading ? (
@@ -637,6 +652,17 @@ export default function WorkoutGeneratorScreen() {
                   </Pressable>
                 ))}
               </View>
+
+              <TextField
+                label="ANYTHING ELSE THE AI SHOULD KNOW? — OPTIONAL"
+                value={notes}
+                onChangeText={setNotes}
+                placeholder="e.g. peaking for a 10k in 6 weeks, prepping for rugby pre-season, chasing a 100kg bench PB, first bodybuilding show in November…"
+                multiline
+                numberOfLines={3}
+                maxLength={500}
+                style={{ minHeight: 72, textAlignVertical: "top" }}
+              />
             </>
           )}
 
@@ -726,7 +752,26 @@ const styles = StyleSheet.create({
   },
   backButton: { padding: 4 },
   headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
-  modeToggleWrap: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.sm },
+  modeToggleWrap: {
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: Spacing.sm,
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing.md,
+  },
+  modePill: {
+    minWidth: 120,
+    alignItems: "center",
+    borderRadius: Radius.pill,
+    borderWidth: 1,
+    borderColor: Color.borderSubtle,
+    backgroundColor: Color.surface1,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: 10,
+  },
+  modePillActive: { borderColor: Color.goldBorder, backgroundColor: Color.goldWeak },
+  modePillText: { fontSize: 13, fontWeight: "700", color: Color.textMuted },
+  modePillTextActive: { color: Color.gold },
   centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
   errorText: { color: Color.textMuted, fontSize: 14 },
   scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },

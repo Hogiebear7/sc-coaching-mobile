@@ -7,6 +7,8 @@ export type NotificationType =
   | "message"
   | "membership"
   | "class_reminder"
+  | "booking_confirmed"
+  | "booking_cancelled"
   | "cancellation"
   | "waitlist_offer"
   | "waitlist_timeout"

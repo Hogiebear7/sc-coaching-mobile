@@ -27,6 +27,8 @@ const TYPE_LABEL: Record<NotificationType, string> = {
   message: "Message",
   membership: "Membership",
   class_reminder: "Class reminder",
+  booking_confirmed: "Booking confirmed",
+  booking_cancelled: "Booking cancelled",
   cancellation: "Cancellation",
   waitlist_offer: "Spot offer",
   waitlist_timeout: "Offer expiring",
@@ -39,6 +41,11 @@ const TYPE_ICON: Record<NotificationType, keyof typeof Ionicons.glyphMap> = {
   message: "chatbubble-ellipses-outline",
   membership: "card-outline",
   class_reminder: "calendar-outline",
+  booking_confirmed: "checkmark-circle-outline",
+  // Same icon as `cancellation` — the web dashboard's own TYPE_ICON uses an
+  // identical SVG path for both, since a cancelled booking is the same
+  // "cancelled" concept either way.
+  booking_cancelled: "close-circle-outline",
   cancellation: "close-circle-outline",
   waitlist_offer: "star-outline",
   waitlist_timeout: "time-outline",
@@ -54,6 +61,8 @@ const TYPE_IS_URGENT: Record<NotificationType, boolean> = {
   message: false,
   membership: false,
   class_reminder: false,
+  booking_confirmed: false,
+  booking_cancelled: false,
   cancellation: false,
   waitlist_offer: true,
   waitlist_timeout: true,

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { DateStrip } from "@/components/ui/DateStrip";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { ProgramDayCard } from "@/components/ui/ProgramDayCard";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { SessionCard } from "@/components/ui/SessionCard";
 import { TrendChart } from "@/components/ui/TrendChart";
@@ -250,53 +251,25 @@ export default function WorkoutsScreen() {
             <SectionHeader label="ACTIVE PROGRAM" />
             <Card style={styles.programCard} tier="hero">
               <Text style={styles.programName}>{program.name}</Text>
+              {program.source === "ai" && program.totalWeeks ? (
+                <Text style={styles.programWeekLabel}>
+                  Week {Math.min((program.completedCycles ?? 0) + 1, program.totalWeeks)} of {program.totalWeeks}
+                </Text>
+              ) : null}
               <Text style={styles.programDayLabel}>{currentDay.label}</Text>
 
+              <ProgramDayCard day={currentDay} />
+
               {currentDay.type === "rest" ? (
-                <>
-                  <View style={styles.restRow}>
-                    <Ionicons name="moon-outline" size={18} color={Color.textMuted} />
-                    <Text style={styles.restText}>Rest day — no exercises prescribed.</Text>
-                  </View>
-                  <Button
-                    title="Mark complete"
-                    variant="secondary"
-                    onPress={handleMarkDayComplete}
-                    loading={advanceProgram.isPending}
-                    style={{ marginTop: Spacing.md }}
-                  />
-                </>
+                <Button
+                  title="Mark complete"
+                  variant="secondary"
+                  onPress={handleMarkDayComplete}
+                  loading={advanceProgram.isPending}
+                  style={{ marginTop: Spacing.md }}
+                />
               ) : (
                 <>
-                  {currentDay.exercises.map((ex) => (
-                    <View key={ex.id} style={styles.programExerciseRow}>
-                      <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                        {ex.supersetGroup ? (
-                          <View style={styles.supersetBadge}>
-                            <Text style={styles.supersetBadgeText}>{ex.supersetGroup}</Text>
-                          </View>
-                        ) : null}
-                        <Text style={styles.programExerciseName}>{ex.name}</Text>
-                      </View>
-                      <Text style={styles.programExerciseTarget}>
-                        {[
-                          ex.targetSets !== null && ex.targetReps ? `${ex.targetSets} × ${ex.targetReps}` : ex.targetReps ?? (ex.targetSets !== null ? `${ex.targetSets} sets` : null),
-                          ex.targetWeight,
-                        ]
-                          .filter(Boolean)
-                          .join(" · ") || "—"}
-                      </Text>
-                      {ex.muscleTags.length > 0 ? (
-                        <View style={styles.muscleTagRow}>
-                          {ex.muscleTags.map((tag) => (
-                            <View key={tag} style={styles.muscleTagChip}>
-                              <Text style={styles.muscleTagChipText}>{tag}</Text>
-                            </View>
-                          ))}
-                        </View>
-                      ) : null}
-                    </View>
-                  ))}
                   <Button
                     title="Start workout"
                     onPress={() =>
@@ -640,17 +613,8 @@ const styles = StyleSheet.create({
   pbLabel: { fontSize: 10, color: Color.textMuted, marginTop: 2 },
   programCard: { padding: Spacing.md },
   programName: { fontSize: 11, fontWeight: "600", color: Color.textMuted },
+  programWeekLabel: { fontSize: 11, fontWeight: "600", color: Color.gold, marginTop: 2 },
   programDayLabel: { fontSize: 18, fontWeight: "700", color: Color.textPrimary, marginTop: 2, marginBottom: Spacing.sm },
-  restRow: { flexDirection: "row", alignItems: "center", gap: Spacing.xs, paddingVertical: Spacing.sm },
-  restText: { fontSize: 13, color: Color.textMuted },
-  programExerciseRow: { paddingVertical: Spacing.sm, borderTopWidth: 1, borderTopColor: Color.borderSubtle },
-  programExerciseName: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
-  programExerciseTarget: { fontSize: 12, color: Color.textMuted, marginTop: 2 },
-  supersetBadge: { borderRadius: 999, backgroundColor: Color.gold + "26", paddingHorizontal: 6, paddingVertical: 1 },
-  supersetBadgeText: { fontSize: 10, fontWeight: "700", color: Color.gold },
-  muscleTagRow: { flexDirection: "row", flexWrap: "wrap", gap: 4, marginTop: Spacing.xs },
-  muscleTagChip: { borderRadius: Radius.pill, backgroundColor: Color.goldWeak, paddingHorizontal: Spacing.sm, paddingVertical: 3 },
-  muscleTagChipText: { fontSize: 10, fontWeight: "600", color: Color.gold },
   skipRow: { alignItems: "center", marginTop: Spacing.sm, paddingVertical: 6 },
   skipText: { fontSize: 12, color: Color.textFaint },
   toolsRow: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.sm },

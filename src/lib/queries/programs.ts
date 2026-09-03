@@ -35,6 +35,18 @@ export interface ProgramDay {
   exercises: PrescribedExercise[];
 }
 
+export type TrainingProgramSource = "staff" | "ai";
+
+export interface ProgrammeAiMeta {
+  goal: string;
+  splitStyle: string;
+  daysPerWeek: number;
+  sessionMinutes: number;
+  equipmentSlugs: string[];
+  gymProfileId: string | null;
+  generatedAt: string;
+}
+
 export interface TrainingProgram {
   id: string;
   userId: string;
@@ -45,6 +57,10 @@ export interface TrainingProgram {
   createdByStaffId: string;
   createdAt: string;
   updatedAt: string;
+  source?: TrainingProgramSource;
+  totalWeeks?: number | null;
+  completedCycles?: number;
+  aiMeta?: ProgrammeAiMeta | null;
 }
 
 export interface StaffTrainingProgramSummary extends TrainingProgram {
@@ -137,6 +153,52 @@ export function useAdvanceProgram() {
   return useMutation({
     mutationFn: (id: string) =>
       apiFetch<MyProgramResponse>("/api/mobile/programs/advance", { method: "POST", body: { id } }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["my-program"] }),
+  });
+}
+
+// AI programme builder — generate is a preview only (nothing saved, safe to
+// re-roll for free); save persists exactly what was previewed. See
+// gym-app/app/api/mobile/programs/{generate,save}/route.ts.
+export interface GenerateProgrammeInput {
+  goal: string;
+  weeks: 4 | 8 | 12;
+  daysPerWeek: number;
+  sessionMinutes: number;
+  equipmentSlugs: string[];
+  gymProfileId: string | null;
+}
+
+export interface ProgrammePreview {
+  name: string;
+  days: ProgramDay[];
+  totalWeeks: number;
+  aiMeta: ProgrammeAiMeta;
+}
+
+interface GenerateProgrammeResponse {
+  success: true;
+  configured: true;
+  data: ProgrammePreview;
+}
+
+export function useGenerateProgramme() {
+  return useMutation({
+    mutationFn: (input: GenerateProgrammeInput) =>
+      apiFetch<GenerateProgrammeResponse>("/api/mobile/programs/generate", { method: "POST", body: input }).then(
+        (r) => r.data
+      ),
+  });
+}
+
+export function useSaveProgramme() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: ProgrammePreview) =>
+      apiFetch<{ success: true; data: { program: TrainingProgram } }>("/api/mobile/programs/save", {
+        method: "POST",
+        body: input,
+      }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["my-program"] }),
   });
 }

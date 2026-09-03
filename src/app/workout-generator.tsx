@@ -35,9 +35,16 @@ import { tapFeedback } from "@/lib/haptics";
 import { humanizeZoneValue } from "@/lib/muscle-slug-map";
 import { useExerciseLibrary } from "@/lib/queries/exercise-library";
 import { useEquipmentCatalog, useGymProfiles } from "@/lib/queries/gym-profiles";
+import { useGenerateProgramme } from "@/lib/queries/programs";
 import { useProfile } from "@/lib/queries/profile";
 import { useWorkoutHelperTier, type SessionTier } from "@/lib/queries/workout-helper";
 import { generateWorkout } from "@/lib/workout-generator";
+
+type GeneratorMode = "workout" | "programme";
+
+const GOAL_PRESETS = ["Build strength", "Build muscle", "Lose fat", "General fitness", "Improve conditioning"];
+const WEEKS_PRESETS = [4, 8, 12] as const;
+const DAYS_PER_WEEK_PRESETS = [2, 3, 4, 5, 6];
 
 function tierDotColor(tier: SessionTier): string {
   if (tier === "full") return Color.success;
@@ -197,6 +204,13 @@ export default function WorkoutGeneratorScreen() {
   // or failed (see the tier fallback in lib/workout-generator.ts), it just
   // won't be scaled to today's readiness/load/planned session yet.
   const { data: tierData } = useWorkoutHelperTier();
+
+  const generateProgramme = useGenerateProgramme();
+
+  const [mode, setMode] = useState<GeneratorMode>("workout");
+  const [goal, setGoal] = useState<string>(GOAL_PRESETS[0]);
+  const [weeks, setWeeks] = useState<(typeof WEEKS_PRESETS)[number]>(8);
+  const [daysPerWeek, setDaysPerWeek] = useState(3);
 
   const [primaryBodyParts, setPrimaryBodyParts] = useState<Set<string>>(new Set());
   const [secondaryBodyParts, setSecondaryBodyParts] = useState<Set<string>>(new Set());
@@ -363,14 +377,50 @@ export default function WorkoutGeneratorScreen() {
     });
   }
 
+  function handleGenerateProgramme() {
+    setError(null);
+    generateProgramme.mutate(
+      { goal, weeks, daysPerWeek, sessionMinutes: timeMinutes, equipmentSlugs, gymProfileId: selectedGymProfileId },
+      {
+        onSuccess: (preview) => {
+          router.push({ pathname: "/programme-preview", params: { preview: JSON.stringify(preview) } });
+        },
+        onError: (err) => {
+          setError(err instanceof Error ? err.message : "Couldn't generate a programme right now.");
+        },
+      }
+    );
+  }
+
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
       <View style={styles.header}>
         <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backButton}>
           <Ionicons name="chevron-back" size={22} color={Color.textPrimary} />
         </Pressable>
-        <Text style={styles.headerTitle}>Generate a Workout</Text>
+        <Text style={styles.headerTitle}>{mode === "workout" ? "Generate a Workout" : "Generate a Programme"}</Text>
         <View style={{ width: 22 }} />
+      </View>
+
+      <View style={styles.modeToggleWrap}>
+        <View style={styles.segmentGroup} accessibilityRole="tablist" accessibilityLabel="What to generate">
+          <Pressable
+            onPress={() => setMode("workout")}
+            style={[styles.segment, mode === "workout" && styles.segmentActive]}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: mode === "workout" }}
+          >
+            <Text style={[styles.segmentText, mode === "workout" && styles.segmentTextActive]}>Workout</Text>
+          </Pressable>
+          <Pressable
+            onPress={() => setMode("programme")}
+            style={[styles.segment, mode === "programme" && styles.segmentActive]}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: mode === "programme" }}
+          >
+            <Text style={[styles.segmentText, mode === "programme" && styles.segmentTextActive]}>Programme</Text>
+          </Pressable>
+        </View>
       </View>
 
       {isLoading ? (
@@ -394,6 +444,8 @@ export default function WorkoutGeneratorScreen() {
             </Card>
           ) : null}
 
+          {mode === "workout" ? (
+            <>
           <Text style={styles.sectionLabel}>MUSCLE AREAS</Text>
           <Text style={styles.sectionSub}>Tap the body to pick where to focus.</Text>
 
@@ -552,8 +604,43 @@ export default function WorkoutGeneratorScreen() {
               />
             </>
           ) : null}
+            </>
+          ) : (
+            <>
+              <Text style={styles.sectionLabel}>GOAL</Text>
+              <View style={styles.chipRow}>
+                {GOAL_PRESETS.map((g) => (
+                  <Pressable key={g} onPress={() => setGoal(g)} style={[styles.chip, goal === g && styles.chipActive]}>
+                    <Text style={[styles.chipText, goal === g && styles.chipTextActive]}>{g}</Text>
+                  </Pressable>
+                ))}
+              </View>
 
-          <Text style={styles.sectionLabel}>TIME AVAILABLE</Text>
+              <Text style={styles.sectionLabel}>PROGRAMME LENGTH</Text>
+              <View style={styles.chipRow}>
+                {WEEKS_PRESETS.map((w) => (
+                  <Pressable key={w} onPress={() => setWeeks(w)} style={[styles.chip, weeks === w && styles.chipActive]}>
+                    <Text style={[styles.chipText, weeks === w && styles.chipTextActive]}>{w} weeks</Text>
+                  </Pressable>
+                ))}
+              </View>
+
+              <Text style={styles.sectionLabel}>DAYS PER WEEK</Text>
+              <View style={styles.chipRow}>
+                {DAYS_PER_WEEK_PRESETS.map((d) => (
+                  <Pressable
+                    key={d}
+                    onPress={() => setDaysPerWeek(d)}
+                    style={[styles.chip, daysPerWeek === d && styles.chipActive]}
+                  >
+                    <Text style={[styles.chipText, daysPerWeek === d && styles.chipTextActive]}>{d}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            </>
+          )}
+
+          <Text style={styles.sectionLabel}>{mode === "workout" ? "TIME AVAILABLE" : "SESSION LENGTH"}</Text>
           <View style={styles.chipRow}>
             {TIME_PRESETS.map((mins) => (
               <Pressable
@@ -612,7 +699,16 @@ export default function WorkoutGeneratorScreen() {
 
           {error ? <Text style={styles.error}>{error}</Text> : null}
 
-          <Button title="Generate workout" onPress={handleGenerate} style={{ marginTop: Spacing.lg }} />
+          {mode === "workout" ? (
+            <Button title="Generate workout" onPress={handleGenerate} style={{ marginTop: Spacing.lg }} />
+          ) : (
+            <Button
+              title="Generate programme"
+              onPress={handleGenerateProgramme}
+              loading={generateProgramme.isPending}
+              style={{ marginTop: Spacing.lg }}
+            />
+          )}
         </ScrollView>
       )}
     </SafeAreaView>
@@ -630,6 +726,7 @@ const styles = StyleSheet.create({
   },
   backButton: { padding: 4 },
   headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
+  modeToggleWrap: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.sm },
   centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
   errorText: { color: Color.textMuted, fontSize: 14 },
   scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },

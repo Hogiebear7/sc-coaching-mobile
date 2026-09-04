@@ -12,7 +12,8 @@
       "infoPlist": {
         "CFBundleDisplayName": "S&C Performance",
         "ITSAppUsesNonExemptEncryption": false
-      }
+      },
+      "buildNumber": "2"
     },
     "android": {
       "package": "com.sandcperformancecoaching.app",

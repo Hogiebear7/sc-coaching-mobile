@@ -8,7 +8,20 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ProgramDayCard } from "@/components/ui/ProgramDayCard";
 import { Color, Spacing } from "@/constants/theme";
-import { useGenerateProgramme, useSaveProgramme, type ProgrammePreview } from "@/lib/queries/programs";
+import {
+  useGenerateProgramme,
+  useSaveProgramme,
+  useSyncProgrammeToWeeklySchedule,
+  type ProgrammePreview,
+  type TrainingProgram,
+} from "@/lib/queries/programs";
+import type { TrainingDayOfWeek } from "@/lib/queries/weekly-training";
+
+// Monday-first, same order/labels as weekly-training.tsx's own picker.
+const DAY_ORDER: TrainingDayOfWeek[] = [1, 2, 3, 4, 5, 6, 0];
+const DAY_ABBR: Record<TrainingDayOfWeek, string> = {
+  0: "Sun", 1: "Mon", 2: "Tue", 3: "Wed", 4: "Thu", 5: "Fri", 6: "Sat",
+};
 
 // Review-before-save step for the AI programme builder — nothing is
 // persisted until "Save & start this programme" is tapped, and
@@ -21,9 +34,16 @@ export default function ProgrammePreviewScreen() {
   const params = useLocalSearchParams<{ preview: string }>();
   const [preview, setPreview] = useState<ProgrammePreview>(() => JSON.parse(params.preview));
   const [error, setError] = useState<string | null>(null);
+  // Set once save succeeds — flips the screen from "review" to "add this
+  // to your schedule?" rather than navigating away immediately, since the
+  // sync call needs the saved programme's real id.
+  const [savedProgram, setSavedProgram] = useState<TrainingProgram | null>(null);
+  const workoutDays = preview.days.filter((d) => d.type === "workout");
+  const [weekdayMap, setWeekdayMap] = useState<(TrainingDayOfWeek | null)[]>(() => workoutDays.map(() => null));
 
   const generateProgramme = useGenerateProgramme();
   const saveProgramme = useSaveProgramme();
+  const syncSchedule = useSyncProgrammeToWeeklySchedule();
 
   function handleRegenerate() {
     setError(null);
@@ -47,13 +67,81 @@ export default function ProgrammePreviewScreen() {
   function handleSave() {
     setError(null);
     saveProgramme.mutate(preview, {
-      onSuccess: () => router.replace("/(tabs)/workouts"),
+      onSuccess: (res) => setSavedProgram(res.data.program),
       onError: (err) => setError(err instanceof Error ? err.message : "Couldn't save the programme right now."),
     });
   }
 
-  const workoutDayCount = preview.days.filter((d) => d.type === "workout").length;
+  function handleSync() {
+    if (!savedProgram || weekdayMap.some((d) => d === null)) return;
+    setError(null);
+    syncSchedule.mutate(
+      { id: savedProgram.id, weekdayMap: weekdayMap as TrainingDayOfWeek[] },
+      {
+        onSuccess: () => router.replace("/(tabs)/workouts"),
+        onError: (err) => setError(err instanceof Error ? err.message : "Couldn't add to your schedule right now."),
+      }
+    );
+  }
+
+  const workoutDayCount = workoutDays.length;
   const busy = generateProgramme.isPending || saveProgramme.isPending;
+
+  if (savedProgram) {
+    const allAssigned = weekdayMap.every((d) => d !== null);
+    return (
+      <SafeAreaView style={styles.safe} edges={["top"]}>
+        <View style={styles.header}>
+          <View style={{ width: 22 }} />
+          <Text style={styles.headerTitle}>Add to Schedule</Text>
+          <View style={{ width: 22 }} />
+        </View>
+        <ScrollView contentContainerStyle={styles.scroll}>
+          <Card style={styles.summaryCard}>
+            <Text style={styles.programName}>Programme saved</Text>
+            <Text style={styles.summaryHint}>
+              Add {savedProgram.name} to your Weekly Schedule so it shows up alongside your bookings for all{" "}
+              {preview.totalWeeks} weeks? Pick which day of the week each workout falls on.
+            </Text>
+          </Card>
+
+          {workoutDays.map((day, i) => (
+            <Card key={day.id} style={styles.dayCard}>
+              <Text style={styles.dayLabel}>{day.label}</Text>
+              <View style={styles.weekdayRow}>
+                {DAY_ORDER.map((d) => (
+                  <Pressable
+                    key={d}
+                    onPress={() => setWeekdayMap((prev) => prev.map((v, idx) => (idx === i ? d : v)))}
+                    style={[styles.chip, weekdayMap[i] === d && styles.chipActive]}
+                  >
+                    <Text style={[styles.chipText, weekdayMap[i] === d && styles.chipTextActive]}>{DAY_ABBR[d]}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            </Card>
+          ))}
+
+          {error ? <Text style={styles.error}>{error}</Text> : null}
+
+          <Button
+            title="Add to schedule"
+            onPress={handleSync}
+            loading={syncSchedule.isPending}
+            disabled={!allAssigned}
+            style={{ marginTop: Spacing.lg }}
+          />
+          <Button
+            title="Skip for now"
+            variant="secondary"
+            onPress={() => router.replace("/(tabs)/workouts")}
+            disabled={syncSchedule.isPending}
+            style={{ marginTop: Spacing.sm }}
+          />
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
@@ -83,6 +171,20 @@ export default function ProgrammePreviewScreen() {
             <ProgramDayCard day={day} />
           </Card>
         ))}
+
+        {preview.testCheckpoints && preview.testCheckpoints.length > 0 ? (
+          <>
+            <Text style={styles.sectionLabel}>TEST CHECKPOINTS</Text>
+            {preview.testCheckpoints.map((checkpoint) => (
+              <Card key={checkpoint.day.id} style={styles.dayCard}>
+                <Text style={styles.dayLabel}>
+                  Week {checkpoint.weekNumber} · {checkpoint.day.label}
+                </Text>
+                <ProgramDayCard day={checkpoint.day} />
+              </Card>
+            ))}
+          </>
+        ) : null}
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
 
@@ -119,4 +221,24 @@ const styles = StyleSheet.create({
   dayCard: { padding: Spacing.md, marginTop: Spacing.sm },
   dayLabel: { fontSize: 15, fontWeight: "700", color: Color.textPrimary },
   error: { fontSize: 12, color: Color.danger, marginTop: Spacing.md },
+  sectionLabel: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: Color.textFaint,
+    letterSpacing: 0.6,
+    marginTop: Spacing.lg,
+    marginBottom: 2,
+  },
+  weekdayRow: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.xs, marginTop: Spacing.sm },
+  chip: {
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 6,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: Color.borderSubtle,
+    backgroundColor: Color.surface1,
+  },
+  chipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
+  chipText: { fontSize: 12, fontWeight: "600", color: Color.textMuted },
+  chipTextActive: { color: Color.gold },
 });

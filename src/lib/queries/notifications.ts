@@ -14,7 +14,9 @@ export type NotificationType =
   | "waitlist_timeout"
   | "readiness_alert"
   | "cancellation_credit_restored"
-  | "no_show";
+  | "no_show"
+  | "training_reminder"
+  | "training_checkin";
 
 export interface NotificationRecord {
   id: string;

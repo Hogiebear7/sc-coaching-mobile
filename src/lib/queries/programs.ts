@@ -1,11 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { apiFetch } from "@/lib/api-client";
+import type { TrainingDayOfWeek } from "@/lib/queries/weekly-training";
 import type { WorkoutSetType } from "@/lib/queries/workouts";
 
 // Mirrors ProgramDayType/PrescribedSet/PrescribedExercise/ProgramDayRecord/
 // TrainingProgramRecord in the main repo's lib/db.ts.
-export type ProgramDayType = "workout" | "rest";
+export type ProgramDayType = "workout" | "rest" | "test";
 export type TrainingProgramStatus = "active" | "archived";
 
 export interface PrescribedSet {
@@ -33,6 +34,28 @@ export interface ProgramDay {
   label: string;
   type: ProgramDayType;
   exercises: PrescribedExercise[];
+}
+
+// A baseline/retest checkpoint — see gym-app's lib/training-programs.ts
+// computeCheckpointWeeks. weekNumber is 1-based against totalWeeks, not a
+// calendar week.
+export interface TestCheckpoint {
+  weekNumber: number;
+  day: ProgramDay;
+}
+
+export interface AdjustmentProposal {
+  type: "accelerate" | "hold_back" | "expedite_timeline";
+  rationale: string;
+  proposedTotalWeeks?: number;
+}
+
+export interface ProgrammeCheckIn {
+  cycleIndex: number;
+  generatedAt: string;
+  feedbackText: string;
+  adjustmentProposal: AdjustmentProposal | null;
+  adjustmentDecision: "accepted" | "declined" | null;
 }
 
 export type TrainingProgramSource = "staff" | "ai";
@@ -65,6 +88,9 @@ export interface TrainingProgram {
   totalWeeks?: number | null;
   completedCycles?: number;
   aiMeta?: ProgrammeAiMeta | null;
+  testCheckpoints?: TestCheckpoint[];
+  progressBias?: "accelerate" | "normal" | "hold_back";
+  checkIns?: ProgrammeCheckIn[];
 }
 
 export interface StaffTrainingProgramSummary extends TrainingProgram {
@@ -178,6 +204,7 @@ export interface ProgrammePreview {
   name: string;
   days: ProgramDay[];
   totalWeeks: number;
+  testCheckpoints: TestCheckpoint[];
   aiMeta: ProgrammeAiMeta;
 }
 
@@ -205,5 +232,53 @@ export function useSaveProgramme() {
         body: input,
       }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["my-program"] }),
+  });
+}
+
+interface CheckInResponse {
+  success: true;
+  configured: true;
+  data: ProgrammeCheckIn;
+}
+
+// Lazy-generate-and-cache, same shape as the post-workout review — the
+// first open of a given cycle's check-in triggers generation server-side;
+// every later open just reads the cached result back.
+export function useProgrammeCheckIn(programId: string | undefined, cycleIndex: number | undefined) {
+  return useQuery({
+    queryKey: ["programme-checkin", programId, cycleIndex],
+    queryFn: () =>
+      apiFetch<CheckInResponse>(`/api/mobile/programs/${programId}/checkin/${cycleIndex}`).then((r) => r.data),
+    enabled: programId !== undefined && cycleIndex !== undefined,
+  });
+}
+
+export function useApplyProgrammeAdjustment(programId: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { cycleIndex: number; decision: "accept" | "decline" }) =>
+      apiFetch<{ success: true; data: { program: TrainingProgram } }>(`/api/mobile/programs/${programId}/apply-adjustment`, {
+        method: "POST",
+        body: input,
+      }),
+    onSuccess: (_res, vars) => {
+      qc.invalidateQueries({ queryKey: ["programme-checkin", programId, vars.cycleIndex] });
+      qc.invalidateQueries({ queryKey: ["my-program"] });
+    },
+  });
+}
+
+// One weekday (0-6) per type:"workout" day in the programme, in order —
+// see gym-app's lib/programme-weekly-sync.ts for how these get expanded
+// into real one-off Weekly Training sessions across every week.
+export function useSyncProgrammeToWeeklySchedule() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { id: string; weekdayMap: TrainingDayOfWeek[] }) =>
+      apiFetch<{ success: true; message: string }>("/api/mobile/programs/sync-weekly-schedule", {
+        method: "POST",
+        body: input,
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["weekly-training"] }),
   });
 }

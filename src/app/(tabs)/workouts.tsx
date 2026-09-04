@@ -113,6 +113,15 @@ export default function WorkoutsScreen() {
   );
 
   const currentDay = program?.days[program.currentDayIndex] ?? null;
+  // A checkpoint replaces the normal day content only on the first day of
+  // the week it's due — completedCycles + 1 is the current week number,
+  // same math as the "Week X of Y" label rendered below.
+  const currentWeekNumber = (program?.completedCycles ?? 0) + 1;
+  const dueCheckpoint =
+    program && program.currentDayIndex === 0
+      ? (program.testCheckpoints ?? []).find((c) => c.weekNumber === currentWeekNumber) ?? null
+      : null;
+  const displayDay = dueCheckpoint?.day ?? currentDay;
 
   function handleMarkDayComplete() {
     if (!program) return;
@@ -256,11 +265,27 @@ export default function WorkoutsScreen() {
                   Week {Math.min((program.completedCycles ?? 0) + 1, program.totalWeeks)} of {program.totalWeeks}
                 </Text>
               ) : null}
-              <Text style={styles.programDayLabel}>{currentDay.label}</Text>
+              {program.source === "ai" && (program.completedCycles ?? 0) > 0 ? (
+                <Pressable
+                  onPress={() =>
+                    router.push({
+                      pathname: "/programme-checkin",
+                      params: { programId: program.id, cycleIndex: String((program.completedCycles ?? 0) - 1) },
+                    })
+                  }
+                  style={styles.checkinBanner}
+                >
+                  <Ionicons name="flag-outline" size={14} color={Color.accentData} />
+                  <Text style={styles.checkinBannerText}>Week {program.completedCycles} check-in ready</Text>
+                  <Ionicons name="chevron-forward" size={14} color={Color.accentData} />
+                </Pressable>
+              ) : null}
+              {dueCheckpoint ? <Text style={styles.checkpointBadge}>CHECK-IN TEST</Text> : null}
+              <Text style={styles.programDayLabel}>{displayDay!.label}</Text>
 
-              <ProgramDayCard day={currentDay} />
+              <ProgramDayCard day={displayDay!} />
 
-              {currentDay.type === "rest" ? (
+              {displayDay!.type === "rest" ? (
                 <Button
                   title="Mark complete"
                   variant="secondary"
@@ -271,11 +296,11 @@ export default function WorkoutsScreen() {
               ) : (
                 <>
                   <Button
-                    title="Start workout"
+                    title={dueCheckpoint ? "Start test" : "Start workout"}
                     onPress={() =>
                       router.push({
                         pathname: "/log-workout",
-                        params: { programId: program.id, dayId: currentDay.id, title: currentDay.label },
+                        params: { programId: program.id, dayId: displayDay!.id, title: displayDay!.label },
                       })
                     }
                     style={{ marginTop: Spacing.md }}
@@ -621,6 +646,25 @@ const styles = StyleSheet.create({
   programCard: { padding: Spacing.md },
   programName: { fontSize: 11, fontWeight: "600", color: Color.textMuted },
   programWeekLabel: { fontSize: 11, fontWeight: "600", color: Color.gold, marginTop: 2 },
+  checkinBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    alignSelf: "flex-start",
+    marginTop: Spacing.sm,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 6,
+    borderRadius: Radius.pill,
+    backgroundColor: "rgba(85,196,254,0.12)",
+  },
+  checkinBannerText: { fontSize: 12, fontWeight: "600", color: Color.accentData },
+  checkpointBadge: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: Color.accentData,
+    letterSpacing: 0.6,
+    marginTop: Spacing.sm,
+  },
   programDayLabel: { fontSize: 18, fontWeight: "700", color: Color.textPrimary, marginTop: 2, marginBottom: Spacing.sm },
   skipRow: { alignItems: "center", marginTop: Spacing.sm, paddingVertical: 6 },
   skipText: { fontSize: 12, color: Color.textFaint },

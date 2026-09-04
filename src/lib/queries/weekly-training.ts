@@ -29,6 +29,9 @@ export interface WeeklyTrainingSession {
       and read-only here, same as weekOf. null for a session the member
       created themselves. */
   sourceBookingId: string | null;
+  /** Set only on a session auto-created from a saved AI training programme —
+      server-owned and read-only here, same as sourceBookingId. */
+  sourceProgramId: string | null;
 }
 
 export interface WeeklyTrainingScheduleData {

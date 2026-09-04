@@ -93,6 +93,11 @@ const LINK_HREF_ROUTES: Record<string, string> = {
   "/dashboard/bookings": "/(tabs)/schedule",
   "/dashboard/membership": "/membership",
   "/dashboard/messages": "/messages",
+  // A training reminder/check-in notification can't carry the specific
+  // programme id + cycle a check-in screen needs (push payloads only carry
+  // a fixed linkHref string) — routes to the Workouts tab instead, which
+  // surfaces a "check-in ready" banner on the active programme itself.
+  "/dashboard/programme": "/(tabs)/workouts",
   // The live-workout-in-progress notification (workout-draft.tsx) sets
   // linkHref to an already-valid native route rather than a web dashboard
   // path — passed through as-is instead of falling back to Home.

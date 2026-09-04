@@ -46,6 +46,7 @@ function newSession(dayOfWeek: TrainingDayOfWeek): WeeklyTrainingSession {
     recurring: true,
     weekOf: null,
     sourceBookingId: null,
+    sourceProgramId: null,
   };
 }
 
@@ -243,6 +244,9 @@ export default function WeeklyTrainingScreen() {
 
                         {s.sourceBookingId ? (
                           <Text style={styles.syncedBadge}>Synced from your booking</Text>
+                        ) : null}
+                        {s.sourceProgramId ? (
+                          <Text style={styles.syncedBadge}>Synced from your programme</Text>
                         ) : null}
 
                         <View style={styles.chipRow}>

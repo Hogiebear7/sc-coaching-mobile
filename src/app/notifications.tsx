@@ -35,6 +35,8 @@ const TYPE_LABEL: Record<NotificationType, string> = {
   readiness_alert: "Readiness alert",
   cancellation_credit_restored: "Credit restored",
   no_show: "Missed class",
+  training_reminder: "Training reminder",
+  training_checkin: "Weekly check-in",
 };
 
 const TYPE_ICON: Record<NotificationType, keyof typeof Ionicons.glyphMap> = {
@@ -52,6 +54,8 @@ const TYPE_ICON: Record<NotificationType, keyof typeof Ionicons.glyphMap> = {
   readiness_alert: "heart-outline",
   cancellation_credit_restored: "return-up-back-outline",
   no_show: "alert-circle-outline",
+  training_reminder: "barbell-outline",
+  training_checkin: "flag-outline",
 };
 
 // Mirrors the web app's urgent/routine split (dashboard/notifications/
@@ -69,6 +73,8 @@ const TYPE_IS_URGENT: Record<NotificationType, boolean> = {
   readiness_alert: true,
   cancellation_credit_restored: false,
   no_show: false,
+  training_reminder: false,
+  training_checkin: false,
 };
 
 function formatRelativeTime(iso: string): string {

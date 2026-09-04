@@ -30,6 +30,7 @@ import { BodyDiagram, type ZoneSelectionState } from "@/components/ui/BodyDiagra
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { EquipmentPicker } from "@/components/ui/EquipmentPicker";
+import { KeyboardAwareScroll } from "@/components/ui/KeyboardAwareScroll";
 import { MonthDatePicker } from "@/components/ui/MonthDatePicker";
 import { TextField } from "@/components/ui/TextField";
 import { Color, Radius, Spacing } from "@/constants/theme";
@@ -612,7 +613,7 @@ export default function WorkoutGeneratorScreen() {
           <Button title="Retry" onPress={() => refetch()} variant="secondary" style={{ marginTop: Spacing.md }} />
         </View>
       ) : (
-        <ScrollView contentContainerStyle={styles.scroll}>
+        <KeyboardAwareScroll contentContainerStyle={styles.scroll}>
           {/* Today's readiness tier only scales a single generated workout
               (see handleGenerate) — it has no bearing on a multi-week
               programme, so it only renders in workout mode. Quiet "tier"
@@ -954,7 +955,12 @@ export default function WorkoutGeneratorScreen() {
                 multiline
                 numberOfLines={2}
                 maxLength={500}
-                style={{ minHeight: 56, textAlignVertical: "top" }}
+                // TextField's base style has a fixed height:48, which wins
+                // over a same-object minHeight override and pins the box to
+                // one line regardless of content — height:undefined clears
+                // that fixed value so the native multiline auto-grow (up to
+                // maxHeight, then it scrolls internally) actually works.
+                style={{ height: undefined, minHeight: 56, maxHeight: 140, textAlignVertical: "top" }}
               />
             </>
           ) : null}
@@ -971,7 +977,7 @@ export default function WorkoutGeneratorScreen() {
               style={{ marginTop: Spacing.lg }}
             />
           )}
-        </ScrollView>
+        </KeyboardAwareScroll>
       )}
     </SafeAreaView>
   );

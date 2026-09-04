@@ -192,7 +192,10 @@ export function useAdvanceProgram() {
 // gym-app/app/api/mobile/programs/{generate,save}/route.ts.
 export interface GenerateProgrammeInput {
   goal: string;
-  weeks: 4 | 8 | 12;
+  // A fixed preset (4/8/12) or a whole-number week count derived from a
+  // custom end date (see workout-generator.tsx's weeksUntil) — the backend
+  // accepts any integer in a sane range, not just the three presets.
+  weeks: number;
   daysPerWeek: number;
   sessionMinutes: number;
   equipmentSlugs: string[];

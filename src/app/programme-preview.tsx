@@ -50,7 +50,7 @@ export default function ProgrammePreviewScreen() {
     generateProgramme.mutate(
       {
         goal: preview.aiMeta.goal,
-        weeks: preview.totalWeeks as 4 | 8 | 12,
+        weeks: preview.totalWeeks,
         daysPerWeek: preview.aiMeta.daysPerWeek,
         sessionMinutes: preview.aiMeta.sessionMinutes,
         equipmentSlugs: preview.aiMeta.equipmentSlugs,

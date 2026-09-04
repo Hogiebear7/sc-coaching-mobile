@@ -28,6 +28,7 @@ import { BodyDiagram, type ZoneSelectionState } from "@/components/ui/BodyDiagra
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { EquipmentPicker } from "@/components/ui/EquipmentPicker";
+import { MonthDatePicker } from "@/components/ui/MonthDatePicker";
 import { TextField } from "@/components/ui/TextField";
 import { Color, Radius, Spacing } from "@/constants/theme";
 import { CARDIO_VENDOR_VALUE, findBodyZone, vendorValuesPresentForZone, type BodyZoneKey } from "@/lib/body-zones";
@@ -51,8 +52,71 @@ const GOAL_PRESETS = [
   "Improve conditioning",
   "Sports performance",
 ];
+const SPORTS_GOAL = "Sports performance";
 const WEEKS_PRESETS = [4, 8, 12] as const;
 const DAYS_PER_WEEK_PRESETS = [2, 3, 4, 5, 6];
+
+// Capped to keep the AI skeleton call and its checkpoint math (see the main
+// repo's computeCheckpointWeeks) inside a sane range regardless of how far
+// out a member picks an end date.
+const MIN_CUSTOM_WEEKS = 1;
+const MAX_CUSTOM_WEEKS = 26;
+
+function todayISO(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function weeksUntil(endISO: string): number {
+  const start = new Date(`${todayISO()}T00:00:00`);
+  const end = new Date(`${endISO}T00:00:00`);
+  const days = Math.round((end.getTime() - start.getTime()) / 86_400_000);
+  return Math.min(MAX_CUSTOM_WEEKS, Math.max(MIN_CUSTOM_WEEKS, Math.round(days / 7)));
+}
+
+function formatEndDate(iso: string): string {
+  return new Date(`${iso}T00:00:00`).toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" });
+}
+
+// One sport list, no per-sport sub-schema — the follow-up detail field is a
+// single free-text input whose placeholder adapts per sport. Keeps this
+// genuinely lightweight rather than a branching questionnaire.
+const SPORTS = [
+  "Soccer",
+  "Rugby",
+  "Hockey",
+  "Gaelic football",
+  "Hurling",
+  "Camogie",
+  "American football",
+  "Ice hockey",
+  "Cricket",
+  "Boxing",
+  "MMA",
+  "Golf",
+  "Tennis",
+  "Swimming",
+  "Running",
+  "Other",
+];
+
+const SPORT_DETAIL_PLACEHOLDER: Record<string, string> = {
+  Soccer: "Position — e.g. striker, centre-back",
+  Rugby: "Position — e.g. prop, fly-half",
+  Hockey: "Position — e.g. forward, goalkeeper",
+  "Gaelic football": "Position — e.g. full-forward",
+  Hurling: "Position — e.g. midfield",
+  Camogie: "Position — e.g. midfield",
+  "American football": "Position — e.g. wide receiver",
+  "Ice hockey": "Position — e.g. defenceman",
+  Cricket: "Role — e.g. fast bowler, opening batter",
+  Boxing: "Weight class, fight date, amateur or pro",
+  MMA: "Weight class, fight date, amateur or pro",
+  Golf: "Handicap or upcoming competition",
+  Tennis: "Level or upcoming competition",
+  Swimming: "Event — e.g. 100m freestyle",
+  Running: "Distance or event — e.g. 10K, marathon",
+  Other: "Position, role, or event",
+};
 
 function tierDotColor(tier: SessionTier): string {
   if (tier === "full") return Color.success;
@@ -218,8 +282,44 @@ export default function WorkoutGeneratorScreen() {
   const [mode, setMode] = useState<GeneratorMode>("workout");
   const [goal, setGoal] = useState<string>(GOAL_PRESETS[0]);
   const [weeks, setWeeks] = useState<(typeof WEEKS_PRESETS)[number]>(8);
+  const [lengthMode, setLengthMode] = useState<"preset" | "custom">("preset");
+  const [customEndDate, setCustomEndDate] = useState<string | null>(null);
+  const [showEndDatePicker, setShowEndDatePicker] = useState(false);
   const [daysPerWeek, setDaysPerWeek] = useState(3);
+  const [sport, setSport] = useState<string | null>(null);
+  const [sportDetail, setSportDetail] = useState("");
   const [notes, setNotes] = useState("");
+
+  const isSportsGoal = goal === SPORTS_GOAL;
+  const effectiveWeeks = lengthMode === "custom" && customEndDate ? weeksUntil(customEndDate) : weeks;
+
+  function selectGoal(g: string) {
+    tapFeedback();
+    setGoal(g);
+    if (g !== SPORTS_GOAL) {
+      setSport(null);
+      setSportDetail("");
+    }
+  }
+
+  function selectPresetWeeks(w: (typeof WEEKS_PRESETS)[number]) {
+    tapFeedback();
+    setWeeks(w);
+    setLengthMode("preset");
+    setShowEndDatePicker(false);
+  }
+
+  function openCustomEndDate() {
+    tapFeedback();
+    setLengthMode("custom");
+    setShowEndDatePicker(true);
+  }
+
+  function selectSport(s: string) {
+    tapFeedback();
+    setSport((prev) => (prev === s ? null : s));
+    setSportDetail("");
+  }
 
   const [primaryBodyParts, setPrimaryBodyParts] = useState<Set<string>>(new Set());
   const [secondaryBodyParts, setSecondaryBodyParts] = useState<Set<string>>(new Set());
@@ -388,15 +488,25 @@ export default function WorkoutGeneratorScreen() {
 
   function handleGenerateProgramme() {
     setError(null);
+
+    // Sport context is real, meaningful input to the AI, but the backend
+    // only has one freeform notes field — fold it in rather than adding a
+    // new API surface for two extra strings.
+    const noteParts: string[] = [];
+    if (isSportsGoal && sport) {
+      noteParts.push(`Sport: ${sport}${sportDetail.trim() ? ` (${sportDetail.trim()})` : ""}`);
+    }
+    if (notes.trim()) noteParts.push(notes.trim());
+
     generateProgramme.mutate(
       {
         goal,
-        weeks,
+        weeks: effectiveWeeks,
         daysPerWeek,
         sessionMinutes: timeMinutes,
         equipmentSlugs,
         gymProfileId: selectedGymProfileId,
-        notes: notes.trim() || null,
+        notes: noteParts.length > 0 ? noteParts.join(". ").slice(0, 500) : null,
       },
       {
         onSuccess: (preview) => {
@@ -415,7 +525,7 @@ export default function WorkoutGeneratorScreen() {
         <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backButton}>
           <Ionicons name="chevron-back" size={22} color={Color.textPrimary} />
         </Pressable>
-        <Text style={styles.headerTitle}>{mode === "workout" ? "Generate a Workout" : "Generate a Programme"}</Text>
+        <Text style={styles.headerTitle}>{mode === "workout" ? "Generate a Workout" : "Set up your programme"}</Text>
         <View style={{ width: 22 }} />
       </View>
 
@@ -449,8 +559,13 @@ export default function WorkoutGeneratorScreen() {
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.scroll}>
-          {tierData ? (
-            <Card style={styles.tierCard}>
+          {/* Today's readiness tier only scales a single generated workout
+              (see handleGenerate) — it has no bearing on a multi-week
+              programme, so it only renders in workout mode. Quiet "tier"
+              Card (no border, faint wash) so it reads as ambient context,
+              not a competing choice. */}
+          {tierData && mode === "workout" ? (
+            <Card style={styles.tierCard} tier="quiet">
               <View style={styles.tierHeaderRow}>
                 <View style={[styles.tierDot, { backgroundColor: tierDotColor(tierData.tier) }]} />
                 <Text style={styles.tierTitle}>{tierData.tierLabel} today</Text>
@@ -622,25 +737,68 @@ export default function WorkoutGeneratorScreen() {
             </>
           ) : (
             <>
-              <Text style={styles.sectionLabel}>GOAL</Text>
+              <Text style={styles.groupHeader}>Programme setup</Text>
+
+              <Text style={styles.fieldLabel}>Goal</Text>
               <View style={styles.chipRow}>
                 {GOAL_PRESETS.map((g) => (
-                  <Pressable key={g} onPress={() => setGoal(g)} style={[styles.chip, goal === g && styles.chipActive]}>
+                  <Pressable key={g} onPress={() => selectGoal(g)} style={[styles.chip, goal === g && styles.chipActive]}>
                     <Text style={[styles.chipText, goal === g && styles.chipTextActive]}>{g}</Text>
                   </Pressable>
                 ))}
               </View>
 
-              <Text style={styles.sectionLabel}>PROGRAMME LENGTH</Text>
+              <Text style={[styles.fieldLabel, { marginTop: Spacing.md }]}>Programme length</Text>
               <View style={styles.chipRow}>
                 {WEEKS_PRESETS.map((w) => (
-                  <Pressable key={w} onPress={() => setWeeks(w)} style={[styles.chip, weeks === w && styles.chipActive]}>
-                    <Text style={[styles.chipText, weeks === w && styles.chipTextActive]}>{w} weeks</Text>
+                  <Pressable
+                    key={w}
+                    onPress={() => selectPresetWeeks(w)}
+                    style={[styles.chip, lengthMode === "preset" && weeks === w && styles.chipActive]}
+                  >
+                    <Text style={[styles.chipText, lengthMode === "preset" && weeks === w && styles.chipTextActive]}>
+                      {w} weeks
+                    </Text>
                   </Pressable>
                 ))}
+                <Pressable
+                  onPress={openCustomEndDate}
+                  style={[styles.chip, styles.chipIconRow, lengthMode === "custom" && styles.chipActive]}
+                >
+                  <Ionicons
+                    name="calendar-outline"
+                    size={13}
+                    color={lengthMode === "custom" ? Color.gold : Color.textMuted}
+                  />
+                  <Text style={[styles.chipText, lengthMode === "custom" && styles.chipTextActive, { marginLeft: 4 }]}>
+                    Custom date
+                  </Text>
+                </Pressable>
               </View>
 
-              <Text style={styles.sectionLabel}>DAYS PER WEEK</Text>
+              {lengthMode === "custom" && customEndDate && !showEndDatePicker ? (
+                <Pressable onPress={() => setShowEndDatePicker(true)} style={styles.customEndDateRow}>
+                  <Ionicons name="flag-outline" size={13} color={Color.gold} />
+                  <Text style={styles.customEndDateText}>
+                    Ends {formatEndDate(customEndDate)} · ~{effectiveWeeks} week{effectiveWeeks === 1 ? "" : "s"}
+                  </Text>
+                  <Text style={styles.changeLinkText}>Change</Text>
+                </Pressable>
+              ) : null}
+
+              {lengthMode === "custom" && showEndDatePicker ? (
+                <MonthDatePicker
+                  value={customEndDate ?? todayISO()}
+                  minDate={todayISO()}
+                  onChange={(iso) => {
+                    tapFeedback();
+                    setCustomEndDate(iso);
+                    setShowEndDatePicker(false);
+                  }}
+                />
+              ) : null}
+
+              <Text style={[styles.fieldLabel, { marginTop: Spacing.md }]}>Days per week</Text>
               <View style={styles.chipRow}>
                 {DAYS_PER_WEEK_PRESETS.map((d) => (
                   <Pressable
@@ -652,21 +810,14 @@ export default function WorkoutGeneratorScreen() {
                   </Pressable>
                 ))}
               </View>
-
-              <TextField
-                label="ANYTHING ELSE THE AI SHOULD KNOW? — OPTIONAL"
-                value={notes}
-                onChangeText={setNotes}
-                placeholder="e.g. peaking for a 10k in 6 weeks, prepping for rugby pre-season, chasing a 100kg bench PB, first bodybuilding show in November…"
-                multiline
-                numberOfLines={3}
-                maxLength={500}
-                style={{ minHeight: 72, textAlignVertical: "top" }}
-              />
             </>
           )}
 
-          <Text style={styles.sectionLabel}>{mode === "workout" ? "TIME AVAILABLE" : "SESSION LENGTH"}</Text>
+          {mode === "programme" ? <Text style={styles.groupHeader}>Practical constraints</Text> : null}
+
+          <Text style={mode === "programme" ? styles.fieldLabel : styles.sectionLabel}>
+            {mode === "workout" ? "TIME AVAILABLE" : "Session length"}
+          </Text>
           <View style={styles.chipRow}>
             {TIME_PRESETS.map((mins) => (
               <Pressable
@@ -679,11 +830,13 @@ export default function WorkoutGeneratorScreen() {
             ))}
           </View>
 
-          <Text style={styles.sectionLabel}>EQUIPMENT AVAILABLE — OPTIONAL</Text>
-          <Text style={styles.sectionSub}>
+          <Text style={[mode === "programme" ? styles.fieldLabel : styles.sectionLabel, { marginTop: Spacing.md }]}>
+            {mode === "workout" ? "EQUIPMENT AVAILABLE — OPTIONAL" : "Available equipment"}
+          </Text>
+          <Text style={styles.equipmentStatus}>
             {equipmentSlugs.length > 0
-              ? `Using ${equipmentSlugs.length} item${equipmentSlugs.length === 1 ? "" : "s"}${selectedProfile ? ` from "${selectedProfile.name}"` : ""}.`
-              : "Leave blank to allow any equipment."}
+              ? `Using ${equipmentSlugs.length} item${equipmentSlugs.length === 1 ? "" : "s"}${selectedProfile ? ` from "${selectedProfile.name}"` : ""}`
+              : "Any equipment — leave blank to allow anything"}
           </Text>
 
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.profileRow}>
@@ -706,21 +859,56 @@ export default function WorkoutGeneratorScreen() {
           </ScrollView>
 
           {(gymProfilesData?.profiles.length ?? 0) === 0 ? (
-            <Text style={styles.emptyProfileHint}>
-              No gym profiles yet — add one to skip re-picking equipment every time, or just pick it below for this
-              workout only.
-            </Text>
+            <Text style={styles.emptyProfileHint}>No saved profiles yet — pick equipment below, or save one for next time.</Text>
           ) : null}
 
           <Pressable onPress={() => setShowEquipmentEditor((v) => !v)} style={styles.editEquipmentRow}>
-            <Ionicons name={showEquipmentEditor ? "chevron-up" : "chevron-down"} size={14} color={Color.textMuted} />
-            <Text style={styles.editEquipmentText}>
-              {selectedProfile ? "Edit equipment for this workout" : "Choose equipment for this workout"}
-            </Text>
+            <Text style={styles.editEquipmentText}>{selectedProfile ? "Edit equipment" : "Choose equipment"}</Text>
+            <Ionicons name={showEquipmentEditor ? "chevron-up" : "chevron-down"} size={13} color={Color.textMuted} />
           </Pressable>
 
           {showEquipmentEditor ? (
             <EquipmentPicker catalog={equipmentCatalogData} selectedSlugs={equipmentSlugs} onToggle={toggleEquipmentSlug} />
+          ) : null}
+
+          {mode === "programme" ? (
+            <>
+              <Text style={styles.groupHeader}>Context for AI</Text>
+
+              {isSportsGoal ? (
+                <>
+                  <Text style={styles.fieldLabel}>Sport</Text>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRowScroll}>
+                    {SPORTS.map((s) => (
+                      <Pressable key={s} onPress={() => selectSport(s)} style={[styles.chip, sport === s && styles.chipActive]}>
+                        <Text style={[styles.chipText, sport === s && styles.chipTextActive]}>{s}</Text>
+                      </Pressable>
+                    ))}
+                  </ScrollView>
+
+                  {sport ? (
+                    <TextField
+                      label="Position / event / role"
+                      value={sportDetail}
+                      onChangeText={setSportDetail}
+                      placeholder={SPORT_DETAIL_PLACEHOLDER[sport] ?? "Position, role, or event"}
+                      style={{ marginTop: Spacing.xs }}
+                    />
+                  ) : null}
+                </>
+              ) : null}
+
+              <TextField
+                label="Additional notes for AI"
+                value={notes}
+                onChangeText={setNotes}
+                placeholder="e.g. 10K race in 6 weeks, returning from a hamstring injury, limited to a home gym, boxing bout in 8 weeks"
+                multiline
+                numberOfLines={2}
+                maxLength={500}
+                style={{ minHeight: 56, textAlignVertical: "top" }}
+              />
+            </>
           ) : null}
 
           {error ? <Text style={styles.error}>{error}</Text> : null}
@@ -782,8 +970,40 @@ const styles = StyleSheet.create({
   tierRationale: { fontSize: 12, color: Color.textMuted, marginTop: 4, lineHeight: 17 },
   sectionLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginTop: Spacing.lg },
   sectionSub: { fontSize: 12, color: Color.textFaint, marginTop: 2, marginBottom: Spacing.sm },
-  fieldLabel: { fontSize: 11, fontWeight: "600", color: Color.textSecondary, marginBottom: 4 },
+  // The one loud label per logical group ("Programme setup", "Practical
+  // constraints", "Context for AI") — everything under it uses the quieter
+  // fieldLabel below, so the page reads as three groups, not six-plus
+  // equally-shouting eyebrows in a row.
+  groupHeader: {
+    fontSize: 15,
+    fontWeight: "700",
+    letterSpacing: -0.2,
+    color: Color.textPrimary,
+    marginTop: Spacing.xl,
+    marginBottom: Spacing.sm,
+  },
+  fieldLabel: { fontSize: 11, fontWeight: "600", color: Color.textSecondary, marginBottom: 6 },
   chipRow: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.xs },
+  chipRowScroll: { gap: Spacing.xs, paddingBottom: 2 },
+  chipIconRow: { flexDirection: "row", alignItems: "center" },
+  // Selected-custom-date summary — replaces the raw calendar once a date is
+  // picked, rather than leaving the picker permanently open or showing a
+  // second control alongside the still-highlighted duration chips.
+  customEndDateRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: Spacing.sm,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 8,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: Color.goldBorder,
+    backgroundColor: Color.goldWeak,
+  },
+  customEndDateText: { flex: 1, fontSize: 12, fontWeight: "600", color: Color.textPrimary },
+  changeLinkText: { fontSize: 12, fontWeight: "600", color: Color.gold },
+  equipmentStatus: { fontSize: 12, color: Color.textFaint, marginTop: 2, marginBottom: Spacing.sm },
   chip: {
     flexDirection: "row",
     alignItems: "center",

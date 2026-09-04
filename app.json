@@ -10,7 +10,8 @@
     "ios": {
       "bundleIdentifier": "com.sandcperformancecoaching.app",
       "infoPlist": {
-        "CFBundleDisplayName": "S&C Performance"
+        "CFBundleDisplayName": "S&C Performance",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {

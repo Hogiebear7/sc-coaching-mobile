@@ -3,7 +3,9 @@ import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  FlatList,
   LayoutAnimation,
+  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -266,6 +268,59 @@ function SelectedMusclesSection({
   );
 }
 
+// Tap-to-open modal list rather than a horizontal chip row — 16 sports
+// don't fit on screen at once, and this is fundamentally a single-select
+// field (one sport at a time), not a multi-select chip cluster like the
+// muscle areas above. Mirrors CountryPicker's exact modal shape (list +
+// checkmark on the selected row) minus the search bar, which a 16-item
+// list doesn't need.
+function SportField({ value, onChange }: { value: string | null; onChange: (value: string | null) => void }) {
+  const [open, setOpen] = useState(false);
+
+  function select(sport: string | null) {
+    tapFeedback();
+    onChange(sport);
+    setOpen(false);
+  }
+
+  return (
+    <>
+      <Pressable onPress={() => setOpen(true)} style={styles.sportField}>
+        <Text style={value ? styles.sportFieldValue : styles.sportFieldPlaceholder}>{value ?? "Select a sport"}</Text>
+        <Ionicons name="chevron-down" size={16} color={Color.textFaint} />
+      </Pressable>
+
+      <Modal visible={open} animationType="slide" onRequestClose={() => setOpen(false)}>
+        <SafeAreaView style={styles.sportModalSafe} edges={["top"]}>
+          <View style={styles.sportModalHeader}>
+            <Text style={styles.sportModalTitle}>Sport</Text>
+            <Pressable onPress={() => setOpen(false)} hitSlop={12}>
+              <Ionicons name="close" size={22} color={Color.textPrimary} />
+            </Pressable>
+          </View>
+
+          <FlatList
+            data={SPORTS}
+            keyExtractor={(s) => s}
+            ListHeaderComponent={
+              <Pressable onPress={() => select(null)} style={styles.sportRow}>
+                <Text style={styles.sportRowText}>Not set</Text>
+                {!value ? <Ionicons name="checkmark" size={18} color={Color.gold} /> : null}
+              </Pressable>
+            }
+            renderItem={({ item }) => (
+              <Pressable onPress={() => select(item)} style={styles.sportRow}>
+                <Text style={styles.sportRowText}>{item}</Text>
+                {item === value ? <Ionicons name="checkmark" size={18} color={Color.gold} /> : null}
+              </Pressable>
+            )}
+          />
+        </SafeAreaView>
+      </Modal>
+    </>
+  );
+}
+
 export default function WorkoutGeneratorScreen() {
   const router = useRouter();
   const { data, isLoading, isError, refetch } = useExerciseLibrary();
@@ -315,9 +370,8 @@ export default function WorkoutGeneratorScreen() {
     setShowEndDatePicker(true);
   }
 
-  function selectSport(s: string) {
-    tapFeedback();
-    setSport((prev) => (prev === s ? null : s));
+  function selectSport(s: string | null) {
+    setSport(s);
     setSportDetail("");
   }
 
@@ -878,13 +932,7 @@ export default function WorkoutGeneratorScreen() {
               {isSportsGoal ? (
                 <>
                   <Text style={styles.fieldLabel}>Sport</Text>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRowScroll}>
-                    {SPORTS.map((s) => (
-                      <Pressable key={s} onPress={() => selectSport(s)} style={[styles.chip, sport === s && styles.chipActive]}>
-                        <Text style={[styles.chipText, sport === s && styles.chipTextActive]}>{s}</Text>
-                      </Pressable>
-                    ))}
-                  </ScrollView>
+                  <SportField value={sport} onChange={selectSport} />
 
                   {sport ? (
                     <TextField
@@ -899,7 +947,7 @@ export default function WorkoutGeneratorScreen() {
               ) : null}
 
               <TextField
-                label="Additional notes for AI"
+                label="Additional notes for your AI coach"
                 value={notes}
                 onChangeText={setNotes}
                 placeholder="e.g. 10K race in 6 weeks, returning from a hamstring injury, limited to a home gym, boxing bout in 8 weeks"
@@ -984,8 +1032,41 @@ const styles = StyleSheet.create({
   },
   fieldLabel: { fontSize: 11, fontWeight: "600", color: Color.textSecondary, marginBottom: 6 },
   chipRow: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.xs },
-  chipRowScroll: { gap: Spacing.xs, paddingBottom: 2 },
   chipIconRow: { flexDirection: "row", alignItems: "center" },
+  // Sport field — a tap-to-open modal list (see SportField), not a chip
+  // row, so 16 sports never require horizontal scrolling to browse.
+  sportField: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    height: 44,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: Color.borderSubtle,
+    backgroundColor: Color.surface1,
+    paddingHorizontal: Spacing.md,
+  },
+  sportFieldValue: { fontSize: 14, color: Color.textPrimary },
+  sportFieldPlaceholder: { fontSize: 14, color: Color.textFaint },
+  sportModalSafe: { flex: 1, backgroundColor: Color.bg0 },
+  sportModalHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+  },
+  sportModalTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
+  sportRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: Color.borderSubtle,
+  },
+  sportRowText: { fontSize: 14, color: Color.textPrimary },
   // Selected-custom-date summary — replaces the raw calendar once a date is
   // picked, rather than leaving the picker permanently open or showing a
   // second control alongside the still-highlighted duration chips.

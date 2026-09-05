@@ -599,21 +599,34 @@ export default function LogWorkoutScreen() {
   const advanceProgram = useAdvanceProgram();
 
   const { draft, hydrated, update, startTimer, pauseTimer, resetTimer, discard, elapsedSecsNow } = useWorkoutDraft();
-  const { title, date, durationMins, notes, exerciseRows, runRows, seeded, isLive } = draft;
+  const { title, date, durationMins, notes, exerciseRows, runRows, isLive } = draft;
   const [error, setError] = useState<string | null>(null);
   const [feelModalOpen, setFeelModalOpen] = useState(false);
   const [sessionRpe, setSessionRpe] = useState<number | null>(null);
   const [feelingNotes, setFeelingNotes] = useState("");
 
-  // Initialize once, on first arrival with an empty draft — resuming an
-  // existing draft (the whole point of persisting it) must NOT be
-  // overwritten by whatever params this particular navigation carried.
+  // Identifies which fresh-seed source (a specific program day/checkpoint,
+  // template, or a just-generated exercise list) this navigation carried —
+  // null for a plain blank "Log a workout" start with nothing to seed from.
+  const currentSeedSource = programId && dayId
+    ? `program:${programId}:${dayId}`
+    : templateId
+      ? `template:${templateId}`
+      : generatedExercisesParam
+        ? "generated"
+        : null;
+
+  // Initialize once, on first arrival with an empty draft and no seed source
+  // — a genuine blank start. Arriving WITH a seed source is handled by the
+  // effect below instead, which also covers title/date so a stale leftover
+  // draft (draft.date already set from something unrelated) can't silently
+  // block a fresh "Start workout"/"Start test" tap from pre-filling.
   useEffect(() => {
-    if (!hydrated || draft.date) return;
+    if (!hydrated || draft.date || currentSeedSource) return;
     const initDate = initialDate ?? todayDateString();
     update({ title: initialTitle ?? "", date: initDate, isLive: initDate === todayDateString() });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hydrated, draft.date]);
+  }, [hydrated, draft.date, currentSeedSource]);
 
   // The displayed clock is driven by this state, refreshed every second
   // while the timer runs — reading elapsedSecsNow() directly in JSX doesn't
@@ -634,15 +647,26 @@ export default function LogWorkoutScreen() {
   // InteractionManager comment in handleSubmit for the full story).
   const hasSubmittedRef = useRef(false);
 
-  // Arriving from the Active Program card, a saved Library template, or the
-  // workout generator — all three prefill exercise rows (name, target sets,
-  // set type) from a PrescribedExercise[] so the member only has to fill in
-  // what they actually did. Only runs for a genuinely fresh draft (seeded
-  // guards it).
+  // Arriving from the Active Program card (a regular day OR a due test
+  // checkpoint — the latter lives in program.testCheckpoints[], not
+  // program.days[], so it needs its own lookup), a saved Library template,
+  // or the workout generator — all three prefill exercise rows (name,
+  // target sets, set type) from a PrescribedExercise[] so the member only
+  // has to fill in what they actually did.
+  //
+  // Keyed off currentSeedSource rather than just "is the draft empty" so
+  // this reliably fires every time a *different* day/checkpoint/template is
+  // requested (title/date included — see the effect above), while a
+  // re-arrival at the SAME source (draft.seededFrom already matches) is
+  // left alone, preserving whatever sets the member has already logged.
   useEffect(() => {
-    if (hasSubmittedRef.current || seeded || exerciseRows.length > 0) return;
+    if (hasSubmittedRef.current || !currentSeedSource || draft.seededFrom === currentSeedSource) return;
 
-    const dayExercises = programId && dayId ? program?.days.find((d) => d.id === dayId)?.exercises : undefined;
+    const dayExercises =
+      programId && dayId
+        ? (program?.days.find((d) => d.id === dayId)?.exercises ??
+          program?.testCheckpoints?.find((c) => c.day.id === dayId)?.day.exercises)
+        : undefined;
     const templateExercises = templateId ? templates?.find((t) => t.id === templateId)?.exercises : undefined;
     let generatedExercisesSource: typeof dayExercises;
     if (generatedExercisesParam) {
@@ -653,6 +677,9 @@ export default function LogWorkoutScreen() {
       }
     }
     const source = dayExercises ?? templateExercises ?? generatedExercisesSource;
+    // program/templates data may not have loaded yet on the very first
+    // render — this effect re-fires once it has, via the deps below, rather
+    // than giving up and leaving the draft unseeded.
     if (!source) return;
 
     const rows: ExerciseRow[] = source.map((ex) => {
@@ -674,9 +701,21 @@ export default function LogWorkoutScreen() {
         perSide: false,
       };
     });
-    update({ exerciseRows: rows, seeded: true });
+
+    const seedDate = initialDate ?? todayDateString();
+    update({
+      title: initialTitle ?? "",
+      date: seedDate,
+      isLive: seedDate === todayDateString(),
+      exerciseRows: rows,
+      runRows: [],
+      accumulatedSecs: 0,
+      startedAtMs: null,
+      seeded: true,
+      seededFrom: currentSeedSource,
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [programId, dayId, program, templateId, templates, generatedExercisesParam, seeded, exerciseRows.length]);
+  }, [currentSeedSource, draft.seededFrom, program, templates, generatedExercisesParam]);
 
   // "Add to workout" from the exercise library — appends to whatever's
   // already in progress (a ref, not the `seeded` flag above, since this can

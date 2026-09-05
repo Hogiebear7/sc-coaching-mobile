@@ -205,6 +205,12 @@ export interface WorkoutDraft {
   exerciseRows: ExerciseRow[];
   runRows: RunRow[];
   seeded: boolean;
+  /** Identifies which program day/checkpoint/template/generated source last
+      seeded this draft (e.g. "program:abc:day1") — lets log-workout.tsx
+      tell "same context, resume my in-progress sets" apart from "a
+      genuinely different day, start fresh" without touching the timer/
+      resume system below. Null for a plain blank-started workout. */
+  seededFrom: string | null;
   isLive: boolean;
   // Timer is timestamp-based (not a running counter) so elapsed time stays
   // correct across the app being backgrounded or this screen unmounting —
@@ -230,6 +236,7 @@ function emptyDraft(): WorkoutDraft {
     exerciseRows: [],
     runRows: [],
     seeded: false,
+    seededFrom: null,
     isLive: false,
     accumulatedSecs: 0,
     startedAtMs: null,

@@ -50,12 +50,21 @@ export interface AdjustmentProposal {
   proposedTotalWeeks?: number;
 }
 
+// A second, independent proposal from AdjustmentProposal above — offered
+// only on a refresh-eligible week (roughly every 4-6 weeks), regardless of
+// whether a pace/timeline adjustment is also on offer that cycle.
+export interface ExerciseRefreshProposal {
+  rationale: string;
+}
+
 export interface ProgrammeCheckIn {
   cycleIndex: number;
   generatedAt: string;
   feedbackText: string;
   adjustmentProposal: AdjustmentProposal | null;
   adjustmentDecision: "accepted" | "declined" | null;
+  exerciseRefreshProposal: ExerciseRefreshProposal | null;
+  exerciseRefreshDecision: "accepted" | "declined" | null;
 }
 
 export type TrainingProgramSource = "staff" | "ai";
@@ -63,6 +72,10 @@ export type TrainingProgramSource = "staff" | "ai";
 export interface ProgrammeAiMeta {
   goal: string;
   splitStyle: string;
+  /** Why this split/balance fits the goal, and an honest read on how
+      demanding it'll feel — undefined for programmes saved before this
+      field existed. */
+  rationale?: string | null;
   daysPerWeek: number;
   sessionMinutes: number;
   equipmentSlugs: string[];
@@ -259,7 +272,10 @@ export function useProgrammeCheckIn(programId: string | undefined, cycleIndex: n
 export function useApplyProgrammeAdjustment(programId: string | undefined) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (input: { cycleIndex: number; decision: "accept" | "decline" }) =>
+    // kind defaults server-side to "adjustment" when omitted — pass
+    // "refresh" to act on exerciseRefreshProposal instead, independently of
+    // any pace/timeline adjustmentProposal the same check-in might have.
+    mutationFn: (input: { cycleIndex: number; kind?: "adjustment" | "refresh"; decision: "accept" | "decline" }) =>
       apiFetch<{ success: true; data: { program: TrainingProgram } }>(`/api/mobile/programs/${programId}/apply-adjustment`, {
         method: "POST",
         body: input,

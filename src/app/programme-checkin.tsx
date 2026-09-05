@@ -26,9 +26,9 @@ export default function ProgrammeCheckInScreen() {
   const { data, isLoading, isError, refetch } = useProgrammeCheckIn(programId, cycleIndex);
   const applyAdjustment = useApplyProgrammeAdjustment(programId);
 
-  function handleDecision(decision: "accept" | "decline") {
+  function handleDecision(decision: "accept" | "decline", kind: "adjustment" | "refresh" = "adjustment") {
     if (cycleIndex === undefined) return;
-    applyAdjustment.mutate({ cycleIndex, decision }, { onSuccess: () => refetch() });
+    applyAdjustment.mutate({ cycleIndex, kind, decision }, { onSuccess: () => refetch() });
   }
 
   return (
@@ -90,6 +90,41 @@ export default function ProgrammeCheckInScreen() {
             </Card>
           ) : null}
 
+          {data.exerciseRefreshProposal ? (
+            <Card style={styles.refreshCard}>
+              <Text style={styles.refreshLabel}>Refresh your exercises</Text>
+              <Text style={styles.proposalRationale}>{data.exerciseRefreshProposal.rationale}</Text>
+              <Text style={styles.proposalDetail}>
+                Swaps each workout day&apos;s exercises for different ones targeting the same muscle groups — your
+                weight/rep targets start fresh from your logged history, same as day one.
+              </Text>
+
+              {data.exerciseRefreshDecision === null ? (
+                <View style={styles.decisionRow}>
+                  <Button
+                    title="Accept"
+                    onPress={() => handleDecision("accept", "refresh")}
+                    loading={applyAdjustment.isPending}
+                    style={{ flex: 1 }}
+                  />
+                  <Button
+                    title="Decline"
+                    variant="secondary"
+                    onPress={() => handleDecision("decline", "refresh")}
+                    disabled={applyAdjustment.isPending}
+                    style={{ flex: 1 }}
+                  />
+                </View>
+              ) : (
+                <Text style={styles.decisionText}>
+                  {data.exerciseRefreshDecision === "accepted"
+                    ? "Accepted — your exercises have been refreshed."
+                    : "Declined — your exercises are unchanged."}
+                </Text>
+              )}
+            </Card>
+          ) : null}
+
           <Button title="Done" onPress={() => router.replace("/(tabs)/workouts")} style={{ marginTop: Spacing.xl }} />
         </ScrollView>
       )}
@@ -119,6 +154,8 @@ const styles = StyleSheet.create({
   proposalLabel: { fontSize: 14, fontWeight: "700", color: Color.accentData },
   proposalRationale: { fontSize: 13, color: Color.textSecondary, lineHeight: 19, marginTop: Spacing.xs },
   proposalDetail: { fontSize: 12, color: Color.textMuted, marginTop: Spacing.sm },
+  refreshCard: { marginTop: Spacing.lg, borderColor: "rgba(143,191,159,0.35)", backgroundColor: "rgba(143,191,159,0.1)" },
+  refreshLabel: { fontSize: 14, fontWeight: "700", color: Color.success },
   decisionRow: { flexDirection: "row", gap: Spacing.sm, marginTop: Spacing.md },
   decisionText: { fontSize: 12, color: Color.textMuted, marginTop: Spacing.md, fontStyle: "italic" },
 });

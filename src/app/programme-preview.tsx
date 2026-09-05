@@ -160,8 +160,10 @@ export default function ProgrammePreviewScreen() {
             {preview.aiMeta.splitStyle} · {workoutDayCount} workout day{workoutDayCount === 1 ? "" : "s"}/week ·{" "}
             {preview.totalWeeks} weeks
           </Text>
+          {preview.aiMeta.rationale ? <Text style={styles.rationaleText}>{preview.aiMeta.rationale}</Text> : null}
           <Text style={styles.summaryHint}>
             Exercises stay the same each week; weight and reps adjust automatically based on how you log each cycle.
+            {preview.totalWeeks > 1 ? " Every few weeks you'll also get the option to refresh them for variety." : ""}
           </Text>
         </Card>
 
@@ -217,6 +219,7 @@ const styles = StyleSheet.create({
   summaryCard: { padding: Spacing.md, marginTop: Spacing.md },
   programName: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
   summaryLine: { fontSize: 12, color: Color.textMuted, marginTop: 4 },
+  rationaleText: { fontSize: 13, color: Color.textSecondary, marginTop: Spacing.sm, lineHeight: 19 },
   summaryHint: { fontSize: 12, color: Color.textFaint, marginTop: Spacing.sm, lineHeight: 17 },
   dayCard: { padding: Spacing.md, marginTop: Spacing.sm },
   dayLabel: { fontSize: 15, fontWeight: "700", color: Color.textPrimary },

@@ -101,6 +101,7 @@ export default function WorkoutsScreen() {
   const today = todayDateString();
   const dateWindow = useMemo(() => recentDates(21, today), [today]);
   const [selectedDate, setSelectedDate] = useState(today);
+  const [showRationale, setShowRationale] = useState(false);
 
   const markedDates = useMemo(() => new Set((data?.sessions ?? []).map((s) => s.date)), [data]);
   const sectionByExerciseId = useMemo(
@@ -264,6 +265,15 @@ export default function WorkoutsScreen() {
                 <Text style={styles.programWeekLabel}>
                   Week {Math.min((program.completedCycles ?? 0) + 1, program.totalWeeks)} of {program.totalWeeks}
                 </Text>
+              ) : null}
+              {program.aiMeta?.rationale ? (
+                <Pressable onPress={() => setShowRationale((v) => !v)} style={styles.rationaleToggle}>
+                  <Text style={styles.rationaleToggleText}>Why this programme</Text>
+                  <Ionicons name={showRationale ? "chevron-up" : "chevron-down"} size={12} color={Color.textMuted} />
+                </Pressable>
+              ) : null}
+              {program.aiMeta?.rationale && showRationale ? (
+                <Text style={styles.rationaleText}>{program.aiMeta.rationale}</Text>
               ) : null}
               {program.source === "ai" && (program.completedCycles ?? 0) > 0 ? (
                 <Pressable
@@ -646,6 +656,9 @@ const styles = StyleSheet.create({
   programCard: { padding: Spacing.md },
   programName: { fontSize: 11, fontWeight: "600", color: Color.textMuted },
   programWeekLabel: { fontSize: 11, fontWeight: "600", color: Color.gold, marginTop: 2 },
+  rationaleToggle: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: Spacing.xs },
+  rationaleToggleText: { fontSize: 11, fontWeight: "600", color: Color.textMuted },
+  rationaleText: { fontSize: 12, color: Color.textSecondary, marginTop: 4, lineHeight: 17 },
   checkinBanner: {
     flexDirection: "row",
     alignItems: "center",

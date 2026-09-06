@@ -1,16 +1,20 @@
 import { Ionicons } from "@expo/vector-icons";
-import { StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { Color, Radius, Spacing } from "@/constants/theme";
-import type { ProgramDay } from "@/lib/queries/programs";
+import type { PrescribedExercise, ProgramDay } from "@/lib/queries/programs";
 
 // Read-only rendering of one program day's exercises (or its rest-day
 // state) — shared by the Workouts tab's ACTIVE PROGRAM card and the AI
 // programme preview screen, so a day looks identical whether it's the one
 // the member's about to start or one they're reviewing before saving.
 // Actions (Start workout / Mark complete / Save) stay in each screen —
-// this component only ever reads a day, never mutates anything.
-export function ProgramDayCard({ day }: { day: ProgramDay }) {
+// this component only ever reads a day, never mutates anything, with one
+// narrow exception: onRequestSwap, passed only by the Workouts tab (never by
+// the read-only pre-save preview), renders a small swap icon next to each
+// eligible strength exercise (a conditioning/run entry never gets one — same
+// exclusion applyExerciseRefresh makes server-side).
+export function ProgramDayCard({ day, onRequestSwap }: { day: ProgramDay; onRequestSwap?: (exercise: PrescribedExercise) => void }) {
   if (day.type === "rest") {
     return (
       <View style={styles.restRow}>
@@ -24,13 +28,20 @@ export function ProgramDayCard({ day }: { day: ProgramDay }) {
     <>
       {day.exercises.map((ex) => (
         <View key={ex.id} style={styles.exerciseRow}>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-            {ex.supersetGroup ? (
-              <View style={styles.supersetBadge}>
-                <Text style={styles.supersetBadgeText}>{ex.supersetGroup}</Text>
-              </View>
+          <View style={styles.exerciseNameRow}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexShrink: 1 }}>
+              {ex.supersetGroup ? (
+                <View style={styles.supersetBadge}>
+                  <Text style={styles.supersetBadgeText}>{ex.supersetGroup}</Text>
+                </View>
+              ) : null}
+              <Text style={styles.exerciseName}>{ex.name}</Text>
+            </View>
+            {onRequestSwap && !ex.conditioningProtocol ? (
+              <Pressable onPress={() => onRequestSwap(ex)} hitSlop={10} accessibilityLabel={`Swap ${ex.name}`}>
+                <Ionicons name="swap-horizontal-outline" size={18} color={Color.textMuted} />
+              </Pressable>
             ) : null}
-            <Text style={styles.exerciseName}>{ex.name}</Text>
           </View>
           {ex.conditioningProtocol && ex.targetSets === null && ex.targetReps === null ? null : (
             <Text style={styles.exerciseTarget}>
@@ -67,6 +78,7 @@ const styles = StyleSheet.create({
   restRow: { flexDirection: "row", alignItems: "center", gap: Spacing.xs, paddingVertical: Spacing.sm },
   restText: { fontSize: 13, color: Color.textMuted },
   exerciseRow: { paddingVertical: Spacing.sm, borderTopWidth: 1, borderTopColor: Color.borderSubtle },
+  exerciseNameRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: Spacing.sm },
   exerciseName: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
   exerciseTarget: { fontSize: 12, color: Color.textMuted, marginTop: 2 },
   protocolNote: { fontSize: 12, color: Color.textMuted, marginTop: 4, fontStyle: "italic" },

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { DateStrip } from "@/components/ui/DateStrip";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { ExerciseSwapSheet } from "@/components/ui/ExerciseSwapSheet";
 import { ProgramDayCard } from "@/components/ui/ProgramDayCard";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { SessionCard } from "@/components/ui/SessionCard";
@@ -16,7 +17,7 @@ import { UpsellTile } from "@/components/ui/Upsell";
 import { Color, Radius, Spacing } from "@/constants/theme";
 import { tapFeedback } from "@/lib/haptics";
 import { hasAccess } from "@/lib/member-access";
-import { useAdvanceProgram, useMyProgram, useSetProgramStatus } from "@/lib/queries/programs";
+import { useAdvanceProgram, useMyProgram, useSetProgramStatus, type PrescribedExercise } from "@/lib/queries/programs";
 import { useMemberTier } from "@/lib/queries/profile";
 import { useRestTimer } from "@/lib/rest-timer";
 import { type PersonalBest, useWorkouts } from "@/lib/queries/workouts";
@@ -83,6 +84,7 @@ export default function WorkoutsScreen() {
   const advanceProgram = useAdvanceProgram();
   const setProgramStatus = useSetProgramStatus();
   const [trendExercise, setTrendExercise] = useState<string | null>(null);
+  const [swapTarget, setSwapTarget] = useState<PrescribedExercise | null>(null);
 
   // This tab stays mounted in the background rather than unmounting when
   // the member navigates away to Log Workout — so the mutation-time
@@ -371,7 +373,12 @@ export default function WorkoutsScreen() {
               {dueCheckpoint ? <Text style={styles.checkpointBadge}>CHECK-IN TEST</Text> : null}
               <Text style={styles.programDayLabel}>{displayDay!.label}</Text>
 
-              <ProgramDayCard day={displayDay!} />
+              <ProgramDayCard
+                day={displayDay!}
+                onRequestSwap={
+                  program.source === "ai" && displayDay!.type === "workout" ? (ex) => setSwapTarget(ex) : undefined
+                }
+              />
 
               {displayDay!.type === "rest" ? (
                 <Button
@@ -695,6 +702,14 @@ export default function WorkoutsScreen() {
           </Card>
         </View>
       </ScrollView>
+
+      <ExerciseSwapSheet
+        visible={swapTarget !== null}
+        onClose={() => setSwapTarget(null)}
+        programId={program?.id ?? ""}
+        dayId={displayDay?.id ?? ""}
+        exercise={swapTarget}
+      />
     </SafeAreaView>
   );
 }

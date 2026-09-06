@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { apiFetch } from "@/lib/api-client";
-import type { TrainingDayOfWeek } from "@/lib/queries/weekly-training";
+import type { TrainingDayOfWeek, TrainingTimeOfDay } from "@/lib/queries/weekly-training";
 import type { WorkoutSetType } from "@/lib/queries/workouts";
 
 // Mirrors ProgramDayType/PrescribedSet/PrescribedExercise/ProgramDayRecord/
@@ -230,6 +230,43 @@ export function useSetProgramStatus() {
   });
 }
 
+// Member-facing "I can't do / don't like this exercise" — AI-ranked
+// alternatives from the real exercise library for one prescribed exercise.
+// A mutation (not a query) since it's an on-demand AI call, not cached data
+// — same shape as useGenerateProgramme.
+export interface ExerciseAlternative {
+  exerciseId: string;
+  name: string;
+  muscleTags: string[];
+  rationale: string;
+}
+
+// programId/exerciseId travel in the mutate() input rather than as hook
+// params — this is called from one shared modal reused for whichever
+// exercise the member last tapped, so the ids must be fresh per call, not
+// closed over at hook-creation time.
+export function useExerciseAlternatives() {
+  return useMutation({
+    mutationFn: (input: { programId: string; exerciseId: string; dayId: string; reason?: string }) =>
+      apiFetch<{ success: true; data: { alternatives: ExerciseAlternative[] } }>(
+        `/api/mobile/programs/${input.programId}/exercises/${input.exerciseId}/alternatives`,
+        { method: "POST", body: { dayId: input.dayId, reason: input.reason } }
+      ).then((r) => r.data.alternatives),
+  });
+}
+
+export function useSwapProgramExercise() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { programId: string; exerciseId: string; dayId: string; newExerciseId: string }) =>
+      apiFetch<{ success: true; data: { program: TrainingProgram } }>(
+        `/api/mobile/programs/${input.programId}/exercises/${input.exerciseId}/swap`,
+        { method: "POST", body: { dayId: input.dayId, newExerciseId: input.newExerciseId } }
+      ),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["my-program"] }),
+  });
+}
+
 // AI programme builder — generate is a preview only (nothing saved, safe to
 // re-roll for free); save persists exactly what was previewed. See
 // gym-app/app/api/mobile/programs/{generate,save}/route.ts.
@@ -326,7 +363,7 @@ export function useApplyProgrammeAdjustment(programId: string | undefined) {
 export function useSyncProgrammeToWeeklySchedule() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (input: { id: string; weekdayMap: TrainingDayOfWeek[] }) =>
+    mutationFn: (input: { id: string; weekdayMap: TrainingDayOfWeek[]; timeOfDay?: TrainingTimeOfDay | null }) =>
       apiFetch<{ success: true; message: string }>("/api/mobile/programs/sync-weekly-schedule", {
         method: "POST",
         body: input,

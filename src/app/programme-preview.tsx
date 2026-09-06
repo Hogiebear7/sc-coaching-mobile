@@ -15,13 +15,23 @@ import {
   type ProgrammePreview,
   type TrainingProgram,
 } from "@/lib/queries/programs";
-import type { TrainingDayOfWeek } from "@/lib/queries/weekly-training";
+import type { TrainingDayOfWeek, TrainingTimeOfDay } from "@/lib/queries/weekly-training";
 
 // Monday-first, same order/labels as weekly-training.tsx's own picker.
 const DAY_ORDER: TrainingDayOfWeek[] = [1, 2, 3, 4, 5, 6, 0];
 const DAY_ABBR: Record<TrainingDayOfWeek, string> = {
   0: "Sun", 1: "Mon", 2: "Tue", 3: "Wed", 4: "Thu", 5: "Fri", 6: "Sat",
 };
+
+// Same options/order as weekly-training.tsx's own time-of-day picker —
+// applied once here to every session this sync creates, rather than the
+// member re-picking it per session afterward.
+const TIME_OF_DAY_OPTIONS: { value: TrainingTimeOfDay | null; label: string }[] = [
+  { value: null, label: "Any time" },
+  { value: "morning", label: "Morning" },
+  { value: "afternoon", label: "Afternoon" },
+  { value: "evening", label: "Evening" },
+];
 
 // Review-before-save step for the AI programme builder — nothing is
 // persisted until "Save & start this programme" is tapped, and
@@ -40,6 +50,7 @@ export default function ProgrammePreviewScreen() {
   const [savedProgram, setSavedProgram] = useState<TrainingProgram | null>(null);
   const workoutDays = preview.days.filter((d) => d.type === "workout");
   const [weekdayMap, setWeekdayMap] = useState<(TrainingDayOfWeek | null)[]>(() => workoutDays.map(() => null));
+  const [timeOfDay, setTimeOfDay] = useState<TrainingTimeOfDay | null>(null);
 
   const generateProgramme = useGenerateProgramme();
   const saveProgramme = useSaveProgramme();
@@ -77,7 +88,7 @@ export default function ProgrammePreviewScreen() {
     if (!savedProgram || weekdayMap.some((d) => d === null)) return;
     setError(null);
     syncSchedule.mutate(
-      { id: savedProgram.id, weekdayMap: weekdayMap as TrainingDayOfWeek[] },
+      { id: savedProgram.id, weekdayMap: weekdayMap as TrainingDayOfWeek[], timeOfDay },
       {
         onSuccess: () => router.replace("/(tabs)/workouts"),
         onError: (err) => setError(err instanceof Error ? err.message : "Couldn't add to your schedule right now."),
@@ -122,6 +133,21 @@ export default function ProgrammePreviewScreen() {
               </View>
             </Card>
           ))}
+
+          <Card style={styles.dayCard}>
+            <Text style={styles.dayLabel}>Usual training time</Text>
+            <View style={styles.weekdayRow}>
+              {TIME_OF_DAY_OPTIONS.map((opt) => (
+                <Pressable
+                  key={opt.label}
+                  onPress={() => setTimeOfDay(opt.value)}
+                  style={[styles.chip, timeOfDay === opt.value && styles.chipActive]}
+                >
+                  <Text style={[styles.chipText, timeOfDay === opt.value && styles.chipTextActive]}>{opt.label}</Text>
+                </Pressable>
+              ))}
+            </View>
+          </Card>
 
           {error ? <Text style={styles.error}>{error}</Text> : null}
 

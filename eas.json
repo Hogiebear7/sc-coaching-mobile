@@ -12,6 +12,9 @@
       },
       "android": {
         "buildType": "apk"
+      },
+      "env": {
+        "EAS_ACCOUNT_TARGET": "sandcmail"
       }
     },
     "preview": {
@@ -22,10 +25,16 @@
       },
       "android": {
         "buildType": "apk"
+      },
+      "env": {
+        "EAS_ACCOUNT_TARGET": "sandcmail"
       }
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "env": {
+        "EAS_ACCOUNT_TARGET": "sandcmails-team"
+      }
     }
   },
   "submit": {

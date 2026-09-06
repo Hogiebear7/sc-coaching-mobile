@@ -42,6 +42,10 @@ export function ProgramDayCard({ day }: { day: ProgramDay }) {
               .filter(Boolean)
               .join(" · ") || "—"}
           </Text>
+          {/* Only a conditioning-protocol entry's notes are ever shown here
+              — nothing else populates PrescribedExercise.notes today, but
+              gating explicitly keeps it that way rather than by accident. */}
+          {ex.conditioningProtocol && ex.notes ? <Text style={styles.protocolNote}>{ex.notes}</Text> : null}
           {ex.muscleTags.length > 0 ? (
             <View style={styles.muscleTagRow}>
               {ex.muscleTags.map((tag) => (
@@ -63,6 +67,7 @@ const styles = StyleSheet.create({
   exerciseRow: { paddingVertical: Spacing.sm, borderTopWidth: 1, borderTopColor: Color.borderSubtle },
   exerciseName: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
   exerciseTarget: { fontSize: 12, color: Color.textMuted, marginTop: 2 },
+  protocolNote: { fontSize: 12, color: Color.textMuted, marginTop: 4, fontStyle: "italic" },
   supersetBadge: { borderRadius: 999, backgroundColor: Color.gold + "26", paddingHorizontal: 6, paddingVertical: 1 },
   supersetBadgeText: { fontSize: 10, fontWeight: "700", color: Color.gold },
   muscleTagRow: { flexDirection: "row", flexWrap: "wrap", gap: 4, marginTop: Spacing.xs },

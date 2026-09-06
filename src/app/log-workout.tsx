@@ -682,7 +682,15 @@ export default function LogWorkoutScreen() {
     // than giving up and leaving the draft unseeded.
     if (!source) return;
 
-    const rows: ExerciseRow[] = source.map((ex) => {
+    // A conditioning-protocol entry (an AI-prescribed running/interval
+    // session — see ProgrammeConditioningProtocol) isn't a strength
+    // exercise at all — it seeds into the app's existing Run log fields
+    // instead of a blank weight/reps exercise row, which is the only place
+    // a member can actually see and log against it.
+    const strengthSource = source.filter((ex) => !ex.conditioningProtocol);
+    const protocolSource = source.filter((ex) => ex.conditioningProtocol);
+
+    const rows: ExerciseRow[] = strengthSource.map((ex) => {
       const defaultSetType = ex.setType ?? "standard";
       const setRows =
         ex.sets && ex.sets.length > 0
@@ -702,13 +710,22 @@ export default function LogWorkoutScreen() {
       };
     });
 
+    const protocolRunRows: RunRow[] = protocolSource.map((ex) => ({
+      ...newRunRow(),
+      reps: ex.conditioningProtocol?.reps != null ? String(ex.conditioningProtocol.reps) : "",
+      distance: ex.conditioningProtocol?.distanceMeters != null ? String(ex.conditioningProtocol.distanceMeters) : "",
+      distanceUnit: "m",
+      // Never a target time — the member logs their own actual duration.
+      notes: ex.conditioningProtocol?.description ?? "",
+    }));
+
     const seedDate = initialDate ?? todayDateString();
     update({
       title: initialTitle ?? "",
       date: seedDate,
       isLive: seedDate === todayDateString(),
       exerciseRows: rows,
-      runRows: [],
+      runRows: protocolRunRows,
       accumulatedSecs: 0,
       startedAtMs: null,
       seeded: true,

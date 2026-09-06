@@ -34,7 +34,10 @@ export default function StaffMemberScreen() {
   const { userId } = useLocalSearchParams<{ userId: string }>();
   const { data, isLoading, isError, refetch } = useStaffMemberDetail(userId);
   const { data: programs } = useStaffPrograms(userId);
-  const activeProgram = programs?.find((p) => p.status === "active") ?? null;
+  // Includes "paused" too, so a member's own pause doesn't misleadingly
+  // read here as "no programme assigned" (which could prompt staff to
+  // assign a duplicate).
+  const activeProgram = programs?.find((p) => p.status === "active" || p.status === "paused") ?? null;
   const { data: nutritionTarget } = useStaffNutritionTarget(userId);
 
   const saveNotes = useSaveCoachNotes(userId);
@@ -257,7 +260,10 @@ export default function StaffMemberScreen() {
               <>
                 <View style={styles.rowLine}>
                   <Text style={styles.rowLabel}>Program</Text>
-                  <Text style={styles.rowValue}>{activeProgram.name}</Text>
+                  <Text style={styles.rowValue}>
+                    {activeProgram.name}
+                    {activeProgram.status === "paused" ? " (Paused)" : ""}
+                  </Text>
                 </View>
                 <View style={styles.rowLine}>
                   <Text style={styles.rowLabel}>Days</Text>

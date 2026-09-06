@@ -32,16 +32,18 @@ export function ProgramDayCard({ day }: { day: ProgramDay }) {
             ) : null}
             <Text style={styles.exerciseName}>{ex.name}</Text>
           </View>
-          <Text style={styles.exerciseTarget}>
-            {[
-              ex.targetSets !== null && ex.targetReps
-                ? `${ex.targetSets} × ${ex.targetReps}`
-                : (ex.targetReps ?? (ex.targetSets !== null ? `${ex.targetSets} sets` : null)),
-              ex.targetWeight,
-            ]
-              .filter(Boolean)
-              .join(" · ") || "—"}
-          </Text>
+          {ex.conditioningProtocol && ex.targetSets === null && ex.targetReps === null ? null : (
+            <Text style={styles.exerciseTarget}>
+              {[
+                ex.targetSets !== null && ex.targetReps
+                  ? `${ex.targetSets} × ${ex.targetReps}`
+                  : (ex.targetReps ?? (ex.targetSets !== null ? `${ex.targetSets} sets` : null)),
+                ex.targetWeight,
+              ]
+                .filter(Boolean)
+                .join(" · ") || "—"}
+            </Text>
+          )}
           {/* Only a conditioning-protocol entry's notes are ever shown here
               — nothing else populates PrescribedExercise.notes today, but
               gating explicitly keeps it that way rather than by accident. */}

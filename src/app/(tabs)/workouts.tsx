@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
-import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
@@ -16,7 +16,7 @@ import { UpsellTile } from "@/components/ui/Upsell";
 import { Color, Radius, Spacing } from "@/constants/theme";
 import { tapFeedback } from "@/lib/haptics";
 import { hasAccess } from "@/lib/member-access";
-import { useAdvanceProgram, useMyProgram } from "@/lib/queries/programs";
+import { useAdvanceProgram, useMyProgram, useSetProgramStatus } from "@/lib/queries/programs";
 import { useMemberTier } from "@/lib/queries/profile";
 import { useRestTimer } from "@/lib/rest-timer";
 import { type PersonalBest, useWorkouts } from "@/lib/queries/workouts";
@@ -81,6 +81,7 @@ export default function WorkoutsScreen() {
   const { data, isLoading, isError, refetch, isRefetching } = useWorkouts();
   const { data: program } = useMyProgram();
   const advanceProgram = useAdvanceProgram();
+  const setProgramStatus = useSetProgramStatus();
   const [trendExercise, setTrendExercise] = useState<string | null>(null);
 
   // This tab stays mounted in the background rather than unmounting when
@@ -128,6 +129,53 @@ export default function WorkoutsScreen() {
     if (!program) return;
     tapFeedback();
     advanceProgram.mutate(program.id);
+  }
+
+  // Pause/Resume are reversible — no destructive styling, matching this
+  // app's existing Archive-vs-Delete convention (workout-template-builder.tsx).
+  function handlePauseProgramme() {
+    if (!program) return;
+    Alert.alert("Pause programme?", "You can resume it any time from here.", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Pause",
+        onPress: () => {
+          tapFeedback();
+          setProgramStatus.mutate({ id: program.id, status: "paused" });
+        },
+      },
+    ]);
+  }
+
+  function handleResumeProgramme() {
+    if (!program) return;
+    Alert.alert("Resume programme?", "Picks back up right where you left off.", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Resume",
+        onPress: () => {
+          tapFeedback();
+          setProgramStatus.mutate({ id: program.id, status: "active" });
+        },
+      },
+    ]);
+  }
+
+  // Cancel is permanent (from here) — destructive styling, matching this
+  // app's Delete convention.
+  function handleCancelProgramme() {
+    if (!program) return;
+    Alert.alert("Cancel programme?", "This moves it to your Archive. This can't be undone from here.", [
+      { text: "Never mind", style: "cancel" },
+      {
+        text: "Cancel programme",
+        style: "destructive",
+        onPress: () => {
+          tapFeedback();
+          setProgramStatus.mutate({ id: program.id, status: "archived" });
+        },
+      },
+    ]);
   }
 
   // Exercises with at least 2 dated points on ANY of the three compact
@@ -256,11 +304,41 @@ export default function WorkoutsScreen() {
           </Card>
         </View>
 
-        {program && currentDay ? (
+        {program && program.status === "paused" ? (
           <View style={styles.section}>
             <SectionHeader label="ACTIVE PROGRAM" />
             <Card style={styles.programCard} tier="hero">
-              <Text style={styles.programName}>{program.name}</Text>
+              <View style={styles.programHeaderRow}>
+                <Text style={styles.programName}>{program.name}</Text>
+                <Pressable onPress={handleCancelProgramme} hitSlop={12} accessibilityLabel="Cancel programme">
+                  <Ionicons name="close-circle-outline" size={18} color={Color.textMuted} />
+                </Pressable>
+              </View>
+              <Text style={styles.pausedBadge}>PAUSED</Text>
+              <Text style={styles.pausedHint}>Resume when you&apos;re ready to pick back up where you left off.</Text>
+              <Button
+                title="Resume programme"
+                onPress={handleResumeProgramme}
+                loading={setProgramStatus.isPending}
+                style={{ marginTop: Spacing.md }}
+              />
+            </Card>
+          </View>
+        ) : program && currentDay ? (
+          <View style={styles.section}>
+            <SectionHeader label="ACTIVE PROGRAM" />
+            <Card style={styles.programCard} tier="hero">
+              <View style={styles.programHeaderRow}>
+                <Text style={styles.programName}>{program.name}</Text>
+                <View style={styles.programHeaderActions}>
+                  <Pressable onPress={handlePauseProgramme} hitSlop={12} accessibilityLabel="Pause programme">
+                    <Ionicons name="pause-circle-outline" size={18} color={Color.textMuted} />
+                  </Pressable>
+                  <Pressable onPress={handleCancelProgramme} hitSlop={12} accessibilityLabel="Cancel programme">
+                    <Ionicons name="close-circle-outline" size={18} color={Color.textMuted} />
+                  </Pressable>
+                </View>
+              </View>
               {program.source === "ai" && program.totalWeeks ? (
                 <Text style={styles.programWeekLabel}>
                   Week {Math.min((program.completedCycles ?? 0) + 1, program.totalWeeks)} of {program.totalWeeks}
@@ -654,7 +732,11 @@ const styles = StyleSheet.create({
   pbValue: { fontSize: 22, fontWeight: "700", color: Color.gold, fontVariant: ["tabular-nums"] },
   pbLabel: { fontSize: 10, color: Color.textMuted, marginTop: 2 },
   programCard: { padding: Spacing.md },
-  programName: { fontSize: 11, fontWeight: "600", color: Color.textMuted },
+  programHeaderRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
+  programHeaderActions: { flexDirection: "row", gap: 12 },
+  programName: { fontSize: 11, fontWeight: "600", color: Color.textMuted, flexShrink: 1 },
+  pausedBadge: { fontSize: 10, fontWeight: "700", color: Color.textMuted, letterSpacing: 0.5, marginTop: Spacing.sm },
+  pausedHint: { fontSize: 12, color: Color.textSecondary, marginTop: 4 },
   programWeekLabel: { fontSize: 11, fontWeight: "600", color: Color.gold, marginTop: 2 },
   rationaleToggle: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: Spacing.xs },
   rationaleToggleText: { fontSize: 11, fontWeight: "600", color: Color.textMuted },

@@ -7,7 +7,7 @@ import type { WorkoutSetType } from "@/lib/queries/workouts";
 // Mirrors ProgramDayType/PrescribedSet/PrescribedExercise/ProgramDayRecord/
 // TrainingProgramRecord in the main repo's lib/db.ts.
 export type ProgramDayType = "workout" | "rest" | "test";
-export type TrainingProgramStatus = "active" | "archived";
+export type TrainingProgramStatus = "active" | "paused" | "archived";
 
 export interface PrescribedSet {
   reps: string | null;
@@ -210,6 +210,22 @@ export function useAdvanceProgram() {
   return useMutation({
     mutationFn: (id: string) =>
       apiFetch<MyProgramResponse>("/api/mobile/programs/advance", { method: "POST", body: { id } }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["my-program"] }),
+  });
+}
+
+// Member-facing Pause/Resume/Cancel — Cancel sends status: "archived" (the
+// same status staff-side archiving already produces, so a cancelled
+// programme shows up in the member's existing Archive screen rather than a
+// new, parallel concept nothing else in the app knows about).
+export function useSetProgramStatus() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, status }: { id: string; status: TrainingProgramStatus }) =>
+      apiFetch<{ success: true; data: { program: TrainingProgram } }>(`/api/mobile/programs/${id}/status`, {
+        method: "POST",
+        body: { status },
+      }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["my-program"] }),
   });
 }

@@ -43,7 +43,7 @@ import { useEquipmentCatalog, useGymProfiles } from "@/lib/queries/gym-profiles"
 import { useGenerateProgramme } from "@/lib/queries/programs";
 import { useProfile } from "@/lib/queries/profile";
 import { useWorkoutHelperTier, type SessionTier } from "@/lib/queries/workout-helper";
-import { generateWorkout } from "@/lib/workout-generator";
+import { generateStructuredWorkout, generateWorkout } from "@/lib/workout-generator";
 
 type GeneratorMode = "workout" | "programme";
 
@@ -345,6 +345,13 @@ export default function WorkoutGeneratorScreen() {
   const [sport, setSport] = useState<string | null>(null);
   const [sportDetail, setSportDetail] = useState("");
   const [notes, setNotes] = useState("");
+  // "Structure" choice — the compound-first, alternating-antagonist
+  // template is the new default for both modes; "Choose muscle areas"
+  // (workout mode) / goal === "Build muscle" (programme mode, forced
+  // server-side) keep the older manual/freeform body-part behavior.
+  const [splitPreference, setSplitPreference] = useState<"fullBody" | "upperLower">("fullBody");
+  const [workoutStructure, setWorkoutStructure] = useState<"fullBody" | "upperLower" | "chooseAreas">("fullBody");
+  const [workoutHalf, setWorkoutHalf] = useState<"upper" | "lower">("upper");
 
   const isSportsGoal = goal === SPORTS_GOAL;
   const effectiveWeeks = lengthMode === "custom" && customEndDate ? weeksUntil(customEndDate) : weeks;
@@ -507,7 +514,8 @@ export default function WorkoutGeneratorScreen() {
   }
 
   function handleGenerate() {
-    if (!data || primaryBodyParts.size === 0) {
+    if (!data) return;
+    if (workoutStructure === "chooseAreas" && primaryBodyParts.size === 0) {
       setError("Pick at least one primary muscle area.");
       return;
     }
@@ -518,14 +526,23 @@ export default function WorkoutGeneratorScreen() {
       equipmentCatalogItems.some((item) => equipmentSlugMatchesVendorString(item, v))
     );
 
-    const exercises = generateWorkout({
-      exercises: data.exercises,
-      primaryBodyParts: [...primaryBodyParts],
-      secondaryBodyParts: [...secondaryBodyParts],
-      equipment: equipmentVendorValues,
-      timeMinutes,
-      tier: tierData?.tier,
-    });
+    const exercises =
+      workoutStructure === "chooseAreas"
+        ? generateWorkout({
+            exercises: data.exercises,
+            primaryBodyParts: [...primaryBodyParts],
+            secondaryBodyParts: [...secondaryBodyParts],
+            equipment: equipmentVendorValues,
+            timeMinutes,
+            tier: tierData?.tier,
+          })
+        : generateStructuredWorkout({
+            exercises: data.exercises,
+            daySpec: workoutStructure === "upperLower" ? { mode: "upperLower", half: workoutHalf } : { mode: "fullBody" },
+            equipment: equipmentVendorValues,
+            timeMinutes,
+            tier: tierData?.tier,
+          });
 
     if (exercises.length === 0) {
       setError("No matching exercises for that combination — try a different muscle area or equipment.");
@@ -562,6 +579,7 @@ export default function WorkoutGeneratorScreen() {
         equipmentSlugs,
         gymProfileId: selectedGymProfileId,
         notes: noteParts.length > 0 ? noteParts.join(". ").slice(0, 500) : null,
+        splitPreference,
       },
       {
         onSuccess: (preview) => {
@@ -631,7 +649,72 @@ export default function WorkoutGeneratorScreen() {
 
           {mode === "workout" ? (
             <>
-          <Text style={styles.sectionLabel}>MUSCLE AREAS</Text>
+          <Text style={styles.sectionLabel}>STRUCTURE</Text>
+          <Text style={styles.sectionSub}>
+            {workoutStructure === "fullBody"
+              ? "A balanced full-body session — compound lifts first, alternating upper and lower, finishing with a conditioning move and core."
+              : workoutStructure === "upperLower"
+                ? "One half of the body, compound lifts first."
+                : "Tap the body to pick where to focus."}
+          </Text>
+          <View style={styles.chipRow}>
+            <Pressable
+              onPress={() => {
+                tapFeedback();
+                setWorkoutStructure("fullBody");
+              }}
+              style={[styles.chip, workoutStructure === "fullBody" && styles.chipActive]}
+            >
+              <Text style={[styles.chipText, workoutStructure === "fullBody" && styles.chipTextActive]}>Full Body</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => {
+                tapFeedback();
+                setWorkoutStructure("upperLower");
+              }}
+              style={[styles.chip, workoutStructure === "upperLower" && styles.chipActive]}
+            >
+              <Text style={[styles.chipText, workoutStructure === "upperLower" && styles.chipTextActive]}>Upper / Lower</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => {
+                tapFeedback();
+                setWorkoutStructure("chooseAreas");
+              }}
+              style={[styles.chip, workoutStructure === "chooseAreas" && styles.chipActive]}
+            >
+              <Text style={[styles.chipText, workoutStructure === "chooseAreas" && styles.chipTextActive]}>
+                Choose muscle areas
+              </Text>
+            </Pressable>
+          </View>
+
+          {workoutStructure === "upperLower" ? (
+            <View style={[styles.chipRow, { marginTop: Spacing.sm }]}>
+              <Pressable
+                onPress={() => {
+                  tapFeedback();
+                  setWorkoutHalf("upper");
+                }}
+                style={[styles.chip, workoutHalf === "upper" && styles.chipActive]}
+              >
+                <Text style={[styles.chipText, workoutHalf === "upper" && styles.chipTextActive]}>Upper Body</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => {
+                  tapFeedback();
+                  setWorkoutHalf("lower");
+                }}
+                style={[styles.chip, workoutHalf === "lower" && styles.chipActive]}
+              >
+                <Text style={[styles.chipText, workoutHalf === "lower" && styles.chipTextActive]}>Lower Body</Text>
+              </Pressable>
+            </View>
+          ) : null}
+
+          {workoutStructure === "chooseAreas" ? (
+            <>
+          <Text style={[styles.sectionLabel, { marginTop: Spacing.md }]}>MUSCLE AREAS</Text>
           <Text style={styles.sectionSub}>Tap the body to pick where to focus.</Text>
 
           <Card style={styles.diagramCard}>
@@ -790,6 +873,8 @@ export default function WorkoutGeneratorScreen() {
             </>
           ) : null}
             </>
+          ) : null}
+            </>
           ) : (
             <>
               <Text style={styles.groupHeader}>Programme setup</Text>
@@ -802,6 +887,37 @@ export default function WorkoutGeneratorScreen() {
                   </Pressable>
                 ))}
               </View>
+
+              {goal !== "Build muscle" ? (
+                <>
+                  <Text style={[styles.fieldLabel, { marginTop: Spacing.md }]}>Structure</Text>
+                  <Text style={styles.sectionSub}>
+                    Full Body alternates upper and lower each session. Upper/Lower dedicates each day to one half.
+                  </Text>
+                  <View style={styles.chipRow}>
+                    <Pressable
+                      onPress={() => {
+                        tapFeedback();
+                        setSplitPreference("fullBody");
+                      }}
+                      style={[styles.chip, splitPreference === "fullBody" && styles.chipActive]}
+                    >
+                      <Text style={[styles.chipText, splitPreference === "fullBody" && styles.chipTextActive]}>Full Body</Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={() => {
+                        tapFeedback();
+                        setSplitPreference("upperLower");
+                      }}
+                      style={[styles.chip, splitPreference === "upperLower" && styles.chipActive]}
+                    >
+                      <Text style={[styles.chipText, splitPreference === "upperLower" && styles.chipTextActive]}>
+                        Upper / Lower
+                      </Text>
+                    </Pressable>
+                  </View>
+                </>
+              ) : null}
 
               <Text style={[styles.fieldLabel, { marginTop: Spacing.md }]}>Programme length</Text>
               <View style={styles.chipRow}>

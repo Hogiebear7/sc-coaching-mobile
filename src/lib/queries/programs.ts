@@ -85,6 +85,10 @@ export interface ProgrammeAiMeta {
       so "Regenerate" reuses the same brief. */
   notes: string | null;
   generatedAt: string;
+  /** Which exercise-picking template generated this programme's days —
+      undefined for programmes saved before this field existed, equivalent
+      to "freeform" everywhere this is read. */
+  splitMode?: "fullBody" | "upperLower" | "freeform" | null;
 }
 
 export interface TrainingProgram {
@@ -214,6 +218,9 @@ export interface GenerateProgrammeInput {
   equipmentSlugs: string[];
   gymProfileId: string | null;
   notes: string | null;
+  /** The member's Structure choice — "Build muscle" as a goal still forces
+      the older freeform split server-side regardless of this value. */
+  splitPreference: "fullBody" | "upperLower";
 }
 
 export interface ProgrammePreview {

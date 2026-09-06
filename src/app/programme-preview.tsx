@@ -56,6 +56,7 @@ export default function ProgrammePreviewScreen() {
         equipmentSlugs: preview.aiMeta.equipmentSlugs,
         gymProfileId: preview.aiMeta.gymProfileId,
         notes: preview.aiMeta.notes,
+        splitPreference: preview.aiMeta.splitMode === "upperLower" ? "upperLower" : "fullBody",
       },
       {
         onSuccess: (next) => setPreview(next),

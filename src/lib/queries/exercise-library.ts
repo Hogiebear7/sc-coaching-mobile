@@ -19,6 +19,11 @@ export interface ExerciseLibraryRecord {
   difficulty: string | null;
   description: string | null;
   instructions: string[];
+  /** Vendor-supplied classification (mechanic/forceType/primaryRegion/...) —
+      the server has always sent this field, it just wasn't typed/used here
+      until the compound-first structured workout generator needed it (see
+      lib/movement-buckets.ts). */
+  taxonomy: Record<string, unknown> | null;
   isCustom: boolean;
   approved: boolean;
   createdAt: string;

@@ -696,11 +696,21 @@ export default function LogWorkoutScreen() {
         ex.sets && ex.sets.length > 0
           ? ex.sets.map((s) => newSetRow(s.setType ?? defaultSetType))
           : Array.from({ length: ex.targetSets ?? 3 }, () => newSetRow(defaultSetType));
+      // A test-checkpoint exercise (e.g. "5RM Back Squat") has no library
+      // link and holds its protocol text in targetReps instead of a real
+      // rep target ("5RM", "12-minute run for distance") — see
+      // buildTestCheckpoints in the main repo. Nothing else previously
+      // carried that text onto this screen, so a member starting a test
+      // saw a blank strength exercise with no indication of the protocol
+      // they were meant to perform. Pre-filling it into notes surfaces it
+      // via the "More options" section, which already auto-expands
+      // whenever notes is non-empty.
+      const protocolNote = !ex.exerciseId && !ex.notes && ex.targetReps ? ex.targetReps : "";
       return {
         key: nextKey(),
         exerciseId: ex.exerciseId,
         name: ex.name,
-        notes: "",
+        notes: protocolNote,
         rir: "",
         setRows,
         unitMode: "weight",

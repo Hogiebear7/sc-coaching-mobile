@@ -7,8 +7,11 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { API_BASE_URL } from "@/constants/config";
 import { Color, Radius, Spacing } from "@/constants/theme";
+import { apiFetch } from "@/lib/api-client";
 import { tapFeedback } from "@/lib/haptics";
 import { useMembership } from "@/lib/queries/membership";
+
+const MEMBERSHIP_PATH = "/dashboard/membership";
 
 // Deliberately opens the system browser rather than an in-app WebView, and
 // deliberately shows no prices or "Buy" button here — gym membership is a
@@ -16,9 +19,24 @@ import { useMembership } from "@/lib/queries/membership";
 // requirement, but only as long as the app itself never presents a
 // purchase flow. Handing off to the browser for the actual checkout keeps
 // this clearly on the right side of that line.
-function openMembershipOnWeb() {
+//
+// Mints a short-lived, single-use handoff token first so that browser lands
+// already signed in as the same member, instead of dropping them at a login
+// screen (see gym-app's app/api/mobile/auth/web-handoff and app/api/auth/
+// web-handoff routes). If minting fails for any reason (offline, expired
+// mobile session, server hiccup), falls back to opening the bare URL —
+// exactly today's behavior — rather than blocking the button.
+async function openMembershipOnWeb() {
   tapFeedback();
-  Linking.openURL(`${API_BASE_URL}/dashboard/membership`);
+  try {
+    const res = await apiFetch<{ success: true; data: { token: string } }>("/api/mobile/auth/web-handoff", {
+      method: "POST",
+    });
+    const params = new URLSearchParams({ token: res.data.token, next: MEMBERSHIP_PATH });
+    Linking.openURL(`${API_BASE_URL}/api/auth/web-handoff?${params.toString()}`);
+  } catch {
+    Linking.openURL(`${API_BASE_URL}${MEMBERSHIP_PATH}`);
+  }
 }
 
 const STATUS_LABEL: Record<string, string> = {

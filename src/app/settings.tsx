@@ -262,6 +262,16 @@ export default function SettingsScreen() {
             />
           </Card>
 
+          <SectionLabel>COMMUNITY</SectionLabel>
+          <Card style={styles.settingsCard}>
+            <Row
+              icon="people-outline"
+              title="Community privacy"
+              sub="Leaderboard visibility and your display name"
+              onPress={() => router.push("/community-privacy")}
+            />
+          </Card>
+
           {canUseGymProfiles ? (
             <>
               <SectionLabel>TRAINING</SectionLabel>

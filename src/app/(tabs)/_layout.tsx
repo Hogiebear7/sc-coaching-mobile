@@ -10,8 +10,15 @@ const SCREEN_WIDTH = Dimensions.get("window").width;
 // Same 5 routes, in tab-bar order, as hrefs — used both to resolve "which
 // tab am I on" from the current pathname and to know what "next"/"previous"
 // means for a swipe.
-const TAB_ROUTES = ["/(tabs)", "/(tabs)/schedule", "/(tabs)/workouts", "/(tabs)/recovery", "/(tabs)/nutrition"];
-const TAB_SEGMENTS = ["index", "schedule", "workouts", "recovery", "nutrition"];
+const TAB_ROUTES = [
+  "/(tabs)",
+  "/(tabs)/schedule",
+  "/(tabs)/workouts",
+  "/(tabs)/recovery",
+  "/(tabs)/nutrition",
+  "/(tabs)/community",
+];
+const TAB_SEGMENTS = ["index", "schedule", "workouts", "recovery", "nutrition", "community"];
 
 function currentTabIndex(pathname: string): number {
   const segment = pathname.replace(/^\/+|\/+$/g, "") || "index";
@@ -79,17 +86,20 @@ const pageTurnTransitionSpec = {
   config: { duration: 300, easing: Easing.inOut(Easing.ease) },
 };
 
-// Same 5 tabs, same order, as the web app's BottomNavBar
-// (app/(dashboard)/dashboard/bottom-nav.tsx): Home, Schedule, Workouts,
-// Recovery, Nutrition. Declared explicitly via <Tabs.Screen> rather than
-// left to file-based auto-discovery — Expo Router's directory-order
-// fallback isn't guaranteed to match filename order across platforms.
+// The first 5 match the web app's BottomNavBar (app/(dashboard)/dashboard/
+// bottom-nav.tsx): Home, Schedule, Workouts, Recovery, Nutrition. Community
+// is mobile-only for now — the web dashboard doesn't get a matching tab in
+// this pass (see the Community-tab plan). Declared explicitly via
+// <Tabs.Screen> rather than left to file-based auto-discovery — Expo
+// Router's directory-order fallback isn't guaranteed to match filename
+// order across platforms.
 const ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
   index: "home-outline",
   schedule: "calendar-outline",
   workouts: "barbell-outline",
   recovery: "heart-outline",
   nutrition: "nutrition-outline",
+  community: "people-outline",
 };
 
 const LABELS: Record<string, string> = {
@@ -98,6 +108,7 @@ const LABELS: Record<string, string> = {
   workouts: "Workouts",
   recovery: "Recovery",
   nutrition: "Nutrition",
+  community: "Community",
 };
 
 export default function TabsLayout() {
@@ -162,6 +173,7 @@ export default function TabsLayout() {
         <Tabs.Screen name="workouts" />
         <Tabs.Screen name="recovery" />
         <Tabs.Screen name="nutrition" />
+        <Tabs.Screen name="community" />
       </Tabs>
     </View>
   );

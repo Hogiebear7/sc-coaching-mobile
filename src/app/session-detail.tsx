@@ -10,7 +10,7 @@ import { MuscleMap } from "@/components/ui/MuscleMap";
 import { StatCard } from "@/components/ui/StatCard";
 import { Color, Radius, Spacing } from "@/constants/theme";
 import { tapFeedback } from "@/lib/haptics";
-import { useDeleteWorkoutSession, useWorkouts } from "@/lib/queries/workouts";
+import { useDeleteWorkoutSession, useSetWorkoutVisibility, useWorkouts } from "@/lib/queries/workouts";
 import { computeExerciseSetTotals, computeSessionTotals, formatExerciseSetLabels, formatRun } from "@/lib/workout-formatters";
 
 function formatLongDate(dateISO: string): string {
@@ -22,6 +22,7 @@ export default function SessionDetailScreen() {
   const { id } = useLocalSearchParams<{ id?: string }>();
   const { data, isLoading } = useWorkouts();
   const deleteSession = useDeleteWorkoutSession();
+  const setVisibility = useSetWorkoutVisibility();
 
   const session = useMemo(() => data?.sessions.find((s) => s.id === id), [data, id]);
   const totals = useMemo(() => (session ? computeSessionTotals(session.exercises) : null), [session]);
@@ -67,6 +68,20 @@ export default function SessionDetailScreen() {
             >
               <Text style={styles.editLink}>Edit</Text>
             </Pressable>
+            <Pressable
+              onPress={() => {
+                tapFeedback();
+                setVisibility.mutate({ sessionId: session.id, isPrivate: !session.isPrivate });
+              }}
+              hitSlop={12}
+              accessibilityLabel={session.isPrivate ? "Show in Community feed" : "Hide from Community feed"}
+            >
+              <Ionicons
+                name={session.isPrivate ? "eye-off-outline" : "eye-outline"}
+                size={18}
+                color={Color.textMuted}
+              />
+            </Pressable>
             <Pressable onPress={handleDelete} hitSlop={12}>
               <Ionicons name="trash-outline" size={18} color={Color.danger} />
             </Pressable>
@@ -89,6 +104,12 @@ export default function SessionDetailScreen() {
         <ScrollView contentContainerStyle={styles.scroll}>
           <Text style={styles.title}>{session.title}</Text>
           <Text style={styles.date}>{formatLongDate(session.date)}</Text>
+          {session.isPrivate ? (
+            <View style={styles.privateBadge}>
+              <Ionicons name="eye-off-outline" size={12} color={Color.textFaint} />
+              <Text style={styles.privateBadgeText}>Hidden from Community feed</Text>
+            </View>
+          ) : null}
 
           <View style={styles.statsGrid}>
             <View style={styles.statsRow}>
@@ -194,6 +215,8 @@ const styles = StyleSheet.create({
   scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
   title: { fontSize: 22, fontWeight: "700", color: Color.textPrimary },
   date: { fontSize: 13, color: Color.textMuted, marginTop: 2 },
+  privateBadge: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 6 },
+  privateBadgeText: { fontSize: 11, color: Color.textFaint },
   statsGrid: { gap: Spacing.sm, marginTop: Spacing.lg },
   statsRow: { flexDirection: "row", gap: Spacing.sm },
   sectionLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginTop: Spacing.xl, marginBottom: Spacing.sm },

@@ -61,6 +61,8 @@ export interface WorkoutSessionSummary {
   /** Set when synced from a class — edited via useUpdateClassWorkout
       (exercises/notes only), not the general self-logged edit flow. */
   classId: string | null;
+  /** Hides this session from the member's followers' Community feed. */
+  isPrivate: boolean;
 }
 
 export interface PersonalBest {
@@ -174,6 +176,20 @@ export function useEditWorkout() {
         body: input,
       }),
     onSuccess: () => invalidateWorkoutEffects(qc),
+  });
+}
+
+// Toggles a session's Community-feed visibility — see gym-app's
+// app/api/mobile/workouts/[id]/visibility/route.ts.
+export function useSetWorkoutVisibility() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { sessionId: string; isPrivate: boolean }) =>
+      apiFetch<{ success: true }>(`/api/mobile/workouts/${input.sessionId}/visibility`, {
+        method: "POST",
+        body: { isPrivate: input.isPrivate },
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["workouts"] }),
   });
 }
 

@@ -35,6 +35,10 @@ export interface CommunityFeedItem {
   likeCount: number;
   commentCount: number;
   likedByMe: boolean;
+  /** This session is where the author set an all-time best — drives the
+      Community screen's "Member wins" section. */
+  isPersonalBest: boolean;
+  personalBestExercise: string | null;
   createdAt: string;
 }
 
@@ -45,6 +49,35 @@ export function useCommunityFeed() {
       apiFetch<{ success: true; data: { items: CommunityFeedItem[]; hasMore: boolean } }>(
         "/api/mobile/community/feed"
       ).then((r) => r.data),
+  });
+}
+
+// One feed item by id — backs the /community/workout/[id] deep-link target,
+// which doesn't require the item to be on the requester's current feed page.
+export function useCommunityWorkoutItem(id: string) {
+  return useQuery({
+    queryKey: ["community-workout-item", id],
+    queryFn: () =>
+      apiFetch<{ success: true; data: { item: CommunityFeedItem } }>(`/api/mobile/community/workouts/${id}`).then(
+        (r) => r.data.item
+      ),
+    enabled: !!id,
+  });
+}
+
+// The ONE thing the Home screen's compact Community module shows — never a
+// list. See gym-app's app/api/mobile/community/highlight/route.ts.
+export interface CommunityHighlight {
+  type: "win" | "leaderboard" | "empty";
+  text: string;
+  href: string;
+}
+
+export function useCommunityHighlight() {
+  return useQuery({
+    queryKey: ["community-highlight"],
+    queryFn: () =>
+      apiFetch<{ success: true; data: CommunityHighlight }>("/api/mobile/community/highlight").then((r) => r.data),
   });
 }
 

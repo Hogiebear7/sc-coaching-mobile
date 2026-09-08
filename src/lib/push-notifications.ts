@@ -105,6 +105,12 @@ const LINK_HREF_ROUTES: Record<string, string> = {
 };
 
 export function mapLinkHrefToRoute(linkHref: string): string {
+  // Community hrefs are already valid native routes, set directly by the
+  // backend (see gym-app's app/api/mobile/community/**/route.ts) — always
+  // /community or /community/workout/<id>, never a web dashboard path, so
+  // they pass through unchanged rather than needing a fixed dict entry per
+  // dynamic id (same idea as the /log-workout passthrough below).
+  if (linkHref === "/community" || linkHref.startsWith("/community/")) return linkHref;
   return LINK_HREF_ROUTES[linkHref] ?? "/(tabs)";
 }
 

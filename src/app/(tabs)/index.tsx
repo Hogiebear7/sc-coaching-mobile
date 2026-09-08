@@ -23,6 +23,7 @@ import { ReadinessSparkline } from "@/components/ui/ReadinessSparkline";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { StatCard } from "@/components/ui/StatCard";
 import { Color, Spacing } from "@/constants/theme";
+import { useCommunityHighlight } from "@/lib/queries/community";
 import { useDashboard } from "@/lib/queries/dashboard";
 import { useNotifications } from "@/lib/queries/notifications";
 import { useProfile } from "@/lib/queries/profile";
@@ -50,6 +51,7 @@ function formatClassDate(dateISO: string): string {
 export default function DashboardScreen() {
   const router = useRouter();
   const { data, isLoading, isError, refetch, isRefetching } = useDashboard();
+  const { data: communityHighlight } = useCommunityHighlight();
   const { data: notifications } = useNotifications();
   const unreadCount = notifications?.filter((n) => n.readAt === null).length ?? 0;
   const { data: profile } = useProfile();
@@ -343,7 +345,7 @@ export default function DashboardScreen() {
             </Pressable>
             <Pressable
               onPress={() => router.push({ pathname: "/workout-library", params: { tab: "exercises" } })}
-              style={styles.rowCard}
+              style={[styles.rowCard, styles.rowCardDivider]}
             >
               <View style={styles.rowCardIcon}>
                 <Ionicons name="body-outline" size={18} color={Color.gold} />
@@ -351,6 +353,24 @@ export default function DashboardScreen() {
               <View style={{ flex: 1 }}>
                 <Text style={styles.rowCardTitle}>Library</Text>
                 <Text style={styles.rowCardSub}>Exercises, demonstrations & your saved workouts</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={Color.textFaint} />
+            </Pressable>
+            {/* Community — one quiet pointer, never a feed preview. The
+                title carries whatever's actually worth surfacing today
+                (a win, a leaderboard position, or a plain invitation when
+                there's nothing yet); "Community" itself is just the small
+                sub-label. Sits last, lowest-priority row on Home — see the
+                Community entry-point plan for why this isn't a bottom tab. */}
+            <Pressable onPress={() => router.push((communityHighlight?.href ?? "/community") as never)} style={styles.rowCard}>
+              <View style={styles.rowCardIcon}>
+                <Ionicons name="people-outline" size={18} color={Color.gold} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.rowCardTitle} numberOfLines={1}>
+                  {communityHighlight?.text ?? "See member wins and leaderboards"}
+                </Text>
+                <Text style={styles.rowCardSub}>Community</Text>
               </View>
               <Ionicons name="chevron-forward" size={18} color={Color.textFaint} />
             </Pressable>

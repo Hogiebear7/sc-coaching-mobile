@@ -16,7 +16,11 @@ export type NotificationType =
   | "cancellation_credit_restored"
   | "no_show"
   | "training_reminder"
-  | "training_checkin";
+  | "training_checkin"
+  | "new_follower"
+  | "workout_liked"
+  | "workout_commented"
+  | "mentioned_in_comment";
 
 export interface NotificationRecord {
   id: string;

@@ -98,9 +98,22 @@ export function useMemberSearch(query: string) {
   });
 }
 
+// A handful of real members not yet followed — backs the Community screen's
+// empty-Activity state so it offers actual people, not just a dead void.
+export function useSuggestedMembers() {
+  return useQuery({
+    queryKey: ["community-suggested-members"],
+    queryFn: () =>
+      apiFetch<{ success: true; data: { results: MemberSearchResult[] } }>(
+        "/api/mobile/community/search?suggested=1"
+      ).then((r) => r.data.results),
+  });
+}
+
 function invalidateFeedAndSearch(qc: ReturnType<typeof useQueryClient>) {
   qc.invalidateQueries({ queryKey: ["community-feed"] });
   qc.invalidateQueries({ queryKey: ["community-search"] });
+  qc.invalidateQueries({ queryKey: ["community-suggested-members"] });
 }
 
 export function useFollowUser() {

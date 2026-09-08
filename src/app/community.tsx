@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { CommentSheet } from "@/components/ui/CommentSheet";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -13,7 +14,9 @@ import { Color, Radius, Spacing } from "@/constants/theme";
 import { tapFeedback } from "@/lib/haptics";
 import {
   useCommunityFeed,
+  useFollowUser,
   useLeaderboard,
+  useSuggestedMembers,
   useToggleWorkoutLike,
   type CommunityFeedItem,
   type LeaderboardMetric,
@@ -56,6 +59,27 @@ function WinRow({ item, isLast, onPress }: { item: CommunityFeedItem; isLast: bo
       </View>
       <Ionicons name="chevron-forward" size={16} color={Color.textFaint} />
     </Pressable>
+  );
+}
+
+function SuggestedMemberRow({
+  fullName,
+  isLast,
+  onFollow,
+  pending,
+}: {
+  fullName: string;
+  isLast: boolean;
+  onFollow: () => void;
+  pending: boolean;
+}) {
+  return (
+    <View style={[styles.suggestedRow, !isLast && styles.suggestedRowDivider]}>
+      <Text style={styles.suggestedName} numberOfLines={1}>
+        {fullName}
+      </Text>
+      <Button title="Follow" onPress={onFollow} loading={pending} style={styles.suggestedFollowButton} />
+    </View>
   );
 }
 
@@ -124,6 +148,8 @@ export default function CommunityScreen() {
 
   const feed = useCommunityFeed();
   const leaderboard = useLeaderboard(metric);
+  const suggested = useSuggestedMembers();
+  const followUser = useFollowUser();
 
   const wins = (feed.data?.items ?? []).filter((i) => i.isPersonalBest).slice(0, MAX_WINS);
 
@@ -141,10 +167,12 @@ export default function CommunityScreen() {
           <Ionicons name="chevron-back" size={22} color={Color.textPrimary} />
         </Pressable>
         <Text style={styles.headerTitle}>Community</Text>
-        <Pressable onPress={() => setSearchOpen(true)} hitSlop={12}>
-          <Ionicons name="person-add-outline" size={20} color={Color.textMuted} />
+        <Pressable onPress={() => setSearchOpen(true)} hitSlop={12} style={styles.followButton}>
+          <Ionicons name="person-add-outline" size={15} color={Color.gold} />
+          <Text style={styles.followButtonText}>Follow</Text>
         </Pressable>
       </View>
+      <Text style={styles.subhead}>See who&apos;s training, where you rank, and who to follow.</Text>
 
       <ScrollView
         ref={scrollRef}
@@ -222,13 +250,32 @@ export default function CommunityScreen() {
           {feed.isLoading ? (
             <ActivityIndicator color={Color.gold} style={{ marginTop: Spacing.md }} />
           ) : !feed.data || feed.data.items.length === 0 ? (
-            <EmptyState
-              icon="people-outline"
-              title="No activity yet"
-              body="Follow other members to see their workouts here."
-              actionLabel="Find people"
-              onAction={() => setSearchOpen(true)}
-            />
+            <>
+              <EmptyState
+                icon="people-outline"
+                title="Your feed is quiet"
+                body="Follow members to see their sessions, PBs and progress here."
+                actionLabel={suggested.data && suggested.data.length > 0 ? undefined : "Follow members"}
+                onAction={() => setSearchOpen(true)}
+              />
+              {suggested.data && suggested.data.length > 0 ? (
+                <Card style={styles.suggestedCard}>
+                  <Text style={styles.suggestedLabel}>MEMBERS TO FOLLOW</Text>
+                  {suggested.data.map((r, i) => (
+                    <SuggestedMemberRow
+                      key={r.userId}
+                      fullName={r.fullName}
+                      isLast={i === suggested.data!.length - 1}
+                      pending={followUser.isPending && followUser.variables === r.userId}
+                      onFollow={() => {
+                        tapFeedback();
+                        followUser.mutate(r.userId);
+                      }}
+                    />
+                  ))}
+                </Card>
+              ) : null}
+            </>
           ) : (
             feed.data.items.map((item) => (
               <FeedCard key={item.id} item={item} onOpenComments={() => setActiveItem(item)} />
@@ -258,6 +305,43 @@ const styles = StyleSheet.create({
   },
   backButton: { padding: 4 },
   headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
+  followButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    borderRadius: Radius.pill,
+    borderWidth: 1,
+    borderColor: Color.goldBorder,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 5,
+  },
+  followButtonText: { fontSize: 12, fontWeight: "600", color: Color.gold },
+  subhead: {
+    fontSize: 12,
+    color: Color.textMuted,
+    paddingHorizontal: Spacing.lg,
+    marginTop: -Spacing.xs,
+    marginBottom: Spacing.md,
+  },
+  suggestedCard: { padding: 0, overflow: "hidden", marginTop: Spacing.sm },
+  suggestedLabel: {
+    fontSize: 10,
+    fontWeight: "700",
+    letterSpacing: 0.6,
+    color: Color.textFaint,
+    paddingHorizontal: Spacing.md,
+    paddingTop: Spacing.md,
+  },
+  suggestedRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: Spacing.sm,
+    padding: Spacing.md,
+  },
+  suggestedRowDivider: { borderBottomWidth: 1, borderBottomColor: Color.borderSubtle },
+  suggestedName: { fontSize: 14, fontWeight: "600", color: Color.textPrimary, flex: 1 },
+  suggestedFollowButton: { paddingHorizontal: Spacing.md },
   scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
   section: { marginBottom: Spacing.xl },
   winsCard: { padding: 0, overflow: "hidden" },
@@ -291,18 +375,25 @@ const styles = StyleSheet.create({
   },
   feedActionButton: { flexDirection: "row", alignItems: "center", gap: 4 },
   feedActionText: { fontSize: 11, fontWeight: "500", color: Color.textFaint },
-  metricRow: { flexDirection: "row", gap: 6, marginBottom: Spacing.sm },
+  metricRow: {
+    flexDirection: "row",
+    gap: 2,
+    marginBottom: Spacing.sm,
+    padding: 3,
+    borderRadius: Radius.pill,
+    borderWidth: 1,
+    borderColor: Color.borderSubtle,
+    backgroundColor: "rgba(255,255,255,0.03)",
+  },
   metricChip: {
     flex: 1,
     alignItems: "center",
     borderRadius: Radius.pill,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    paddingVertical: 8,
+    paddingVertical: 7,
   },
-  metricChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
-  metricChipText: { fontSize: 11, fontWeight: "600", color: Color.textMuted },
-  metricChipTextActive: { color: Color.gold },
+  metricChipActive: { backgroundColor: Color.gold },
+  metricChipText: { fontSize: 11, fontWeight: "600", color: Color.textFaint },
+  metricChipTextActive: { color: Color.goldForeground, fontWeight: "700" },
   emptyLeaderboardText: { fontSize: 12, color: Color.textMuted, textAlign: "center", paddingVertical: Spacing.sm },
   leaderboardCard: { padding: 0, overflow: "hidden" },
   leaderboardRow: {

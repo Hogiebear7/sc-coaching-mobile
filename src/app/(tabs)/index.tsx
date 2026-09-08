@@ -55,6 +55,7 @@ export default function DashboardScreen() {
   const { data: notifications } = useNotifications();
   const unreadCount = notifications?.filter((n) => n.readAt === null).length ?? 0;
   const { data: profile } = useProfile();
+  const memberTier = profile?.memberTier ?? "free";
   const [infoModal, setInfoModal] = useState<"load" | "sleep" | null>(null);
 
   const onRefresh = useCallback(() => {
@@ -125,50 +126,98 @@ export default function DashboardScreen() {
           <Text style={styles.subGreeting}>Ready when you are.</Text>
         </View>
 
-        {/* Next Session */}
-        <View style={styles.section}>
-          <SectionHeader
-            label="NEXT SESSION"
-            right={
-              data.hasMonthPasses ? (
-                <View style={styles.chip}>
-                  <Text style={styles.chipText}>
-                    {data.monthPassesRemaining === null
-                      ? "Unlimited classes"
-                      : `${data.monthPassesRemaining} left this month`}
-                  </Text>
+        {/* Top-of-Home is tier-aware by job-to-be-done, not just by
+            entitlement: a real membership member's job here is "when's my
+            next session" — booking stays prominent, unchanged. An App
+            Subscription member never books through this app at all, so the
+            same slot becomes their actual daily job, training. A free
+            member's job is deciding whether to become one of the above —
+            handled as one calm card, Tier 2 (app-only, the broadly
+            relevant path for non-local members) framed as the primary next
+            step and Tier 1 membership as a quieter secondary link, never
+            two equally-loud CTAs. */}
+        {memberTier === "membership" ? (
+          <View style={styles.section}>
+            <SectionHeader
+              label="NEXT SESSION"
+              right={
+                data.hasMonthPasses ? (
+                  <View style={styles.chip}>
+                    <Text style={styles.chipText}>
+                      {data.monthPassesRemaining === null
+                        ? "Unlimited classes"
+                        : `${data.monthPassesRemaining} left this month`}
+                    </Text>
+                  </View>
+                ) : undefined
+              }
+            />
+            <Card style={styles.nextSessionCard}>
+              {data.nextSession ? (
+                <View style={styles.nextSessionRow}>
+                  <View style={styles.nextSessionTime}>
+                    <Text style={styles.nextSessionTimeText}>
+                      {data.nextSession.startTime.split(":")[0]}
+                    </Text>
+                    <Text style={styles.nextSessionTimeSub}>:{data.nextSession.startTime.split(":")[1]}</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.nextSessionTitle}>{data.nextSession.title}</Text>
+                    <Text style={styles.nextSessionMeta}>
+                      {formatClassDate(data.nextSession.date)} · {data.nextSession.durationMins} min
+                    </Text>
+                  </View>
                 </View>
-              ) : undefined
-            }
-          />
-          <Card style={styles.nextSessionCard}>
-            {data.nextSession ? (
-              <View style={styles.nextSessionRow}>
+              ) : (
+                <EmptyState
+                  icon="calendar-outline"
+                  title="No session booked yet"
+                  body="Book your next session to keep your training on track."
+                  actionLabel="Book next session"
+                  onAction={() => router.push("/(tabs)/schedule")}
+                  variant="primary"
+                />
+              )}
+            </Card>
+          </View>
+        ) : memberTier === "app_subscription" ? (
+          <View style={styles.section}>
+            <SectionHeader label="TODAY" />
+            <Card style={styles.nextSessionCard}>
+              <Pressable onPress={() => router.push("/(tabs)/workouts")} style={styles.nextSessionRow}>
                 <View style={styles.nextSessionTime}>
-                  <Text style={styles.nextSessionTimeText}>
-                    {data.nextSession.startTime.split(":")[0]}
-                  </Text>
-                  <Text style={styles.nextSessionTimeSub}>:{data.nextSession.startTime.split(":")[1]}</Text>
+                  <Ionicons name="flash-outline" size={22} color={Color.gold} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.nextSessionTitle}>{data.nextSession.title}</Text>
-                  <Text style={styles.nextSessionMeta}>
-                    {formatClassDate(data.nextSession.date)} · {data.nextSession.durationMins} min
+                  <Text style={styles.nextSessionTitle}>Today&apos;s workout</Text>
+                  <Text style={styles.nextSessionMeta} numberOfLines={1}>
+                    {data.quickActions.programmeEnabled && data.quickActions.programmeTitle
+                      ? data.quickActions.programmeTitle
+                      : "Log & review sessions"}
                   </Text>
                 </View>
+                <Ionicons name="chevron-forward" size={18} color={Color.textFaint} />
+              </Pressable>
+            </Card>
+          </View>
+        ) : (
+          <View style={styles.section}>
+            <SectionHeader label="YOUR ACCESS" />
+            <Card style={styles.freeCard}>
+              <View style={styles.freeCardIcon}>
+                <Ionicons name="sparkles-outline" size={18} color={Color.gold} />
               </View>
-            ) : (
-              <EmptyState
-                icon="calendar-outline"
-                title="No session booked yet"
-                body="Book your next session to keep your training on track."
-                actionLabel="Book next session"
-                onAction={() => router.push("/(tabs)/schedule")}
-                variant="primary"
-              />
-            )}
-          </Card>
-        </View>
+              <Text style={styles.freeCardTitle}>Unlock digital coaching</Text>
+              <Text style={styles.freeCardBody}>
+                Workouts, programmes, recovery, nutrition and AI coaching — wherever you train.
+              </Text>
+              <Button title="See app plans" onPress={() => router.push("/membership")} style={{ marginTop: Spacing.md }} />
+              <Pressable onPress={() => router.push("/membership")} hitSlop={8} style={styles.freeCardSecondary}>
+                <Text style={styles.freeCardSecondaryText}>Or explore in-person membership</Text>
+              </Pressable>
+            </Card>
+          </View>
+        )}
 
         {/* Readiness — the one dominant module on Home: hero surface tier,
             a bigger ring, and (when there's no check-in yet) a real action
@@ -541,6 +590,40 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: Color.textMuted,
     marginTop: 2,
+  },
+  freeCard: {
+    padding: Spacing.lg,
+    alignItems: "flex-start",
+  },
+  freeCardIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: Color.goldWeak,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: Spacing.sm,
+  },
+  freeCardTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: Color.textPrimary,
+  },
+  freeCardBody: {
+    fontSize: 12,
+    color: Color.textMuted,
+    marginTop: 4,
+    lineHeight: 17,
+  },
+  freeCardSecondary: {
+    marginTop: Spacing.md,
+    alignSelf: "center",
+  },
+  freeCardSecondaryText: {
+    fontSize: 12,
+    fontWeight: "500",
+    color: Color.textFaint,
+    textDecorationLine: "underline",
   },
   readinessCard: {
     padding: Spacing.md,

@@ -39,7 +39,7 @@ export function MemberSearchSheet({
     <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={handleClose}>
       <Pressable style={styles.backdrop} onPress={handleClose}>
         <Pressable style={styles.card} onPress={(e) => e.stopPropagation()}>
-          <Text style={styles.title}>{mode === "mention" ? "Mention someone" : "Find people"}</Text>
+          <Text style={styles.title}>{mode === "mention" ? "Mention someone" : "Follow members"}</Text>
           <TextField
             label="Search by name"
             placeholder="e.g. Alex Rider"

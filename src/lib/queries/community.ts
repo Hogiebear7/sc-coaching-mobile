@@ -204,6 +204,7 @@ export function useReportComment() {
 }
 
 export interface CommunityPrivacy {
+  discoverable: boolean;
   leaderboardVisible: boolean;
   showRealName: boolean;
 }

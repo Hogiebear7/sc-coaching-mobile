@@ -267,7 +267,7 @@ export default function SettingsScreen() {
             <Row
               icon="people-outline"
               title="Community privacy"
-              sub="Leaderboard visibility and your display name"
+              sub="Who can find you, leaderboards, and your display name"
               onPress={() => router.push("/community-privacy")}
             />
           </Card>

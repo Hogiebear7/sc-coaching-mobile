@@ -1,7 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useRef, useState } from "react";
-import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useEffect, useRef, useState } from "react";
+import { ActivityIndicator, Modal, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
@@ -11,6 +12,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { MemberSearchSheet } from "@/components/ui/MemberSearchSheet";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Color, Radius, Spacing } from "@/constants/theme";
+import { useAuth } from "@/lib/auth-context";
 import { tapFeedback } from "@/lib/haptics";
 import {
   useCommunityFeed,
@@ -136,8 +138,44 @@ function FeedCard({ item, onOpenComments }: { item: CommunityFeedItem; onOpenCom
   );
 }
 
+const DISCOVERABILITY_NOTICE_KEY_PREFIX = "community-discoverability-notice-seen-v1-";
+
+// Shown at most once per account, ever — the honesty mechanism that makes
+// discoverable-by-default defensible: a plain fact, not a buried setting.
+// Same backdrop+card weight as MemberSearchSheet/CommentSheet, but with a
+// neutral "Got it" as the primary action (acknowledge, don't push toward
+// opting out) and an equally-reachable text link into the real control.
+function DiscoverabilityNotice({
+  visible,
+  onDismiss,
+  onManageSettings,
+}: {
+  visible: boolean;
+  onDismiss: () => void;
+  onManageSettings: () => void;
+}) {
+  return (
+    <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={onDismiss}>
+      <View style={styles.noticeBackdrop}>
+        <View style={styles.noticeCard}>
+          <Text style={styles.noticeTitle}>You&apos;re visible to other members</Text>
+          <Text style={styles.noticeBody}>
+            By default, other members can find your name, follow you, and see you on leaderboards.
+            You can turn any of this off in Settings → Community.
+          </Text>
+          <Button title="Got it" onPress={onDismiss} style={{ marginTop: Spacing.md }} />
+          <Pressable onPress={onManageSettings} hitSlop={8} style={styles.noticeSecondary}>
+            <Text style={styles.noticeSecondaryText}>Manage settings</Text>
+          </Pressable>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
 export default function CommunityScreen() {
   const router = useRouter();
+  const { user } = useAuth();
   const params = useLocalSearchParams<{ tab?: string }>();
   const [metric, setMetric] = useState<LeaderboardMetric>("volume");
   const [searchOpen, setSearchOpen] = useState(false);
@@ -152,6 +190,27 @@ export default function CommunityScreen() {
   const followUser = useFollowUser();
 
   const wins = (feed.data?.items ?? []).filter((i) => i.isPersonalBest).slice(0, MAX_WINS);
+
+  const [noticeVisible, setNoticeVisible] = useState(false);
+  const noticeKey = user ? DISCOVERABILITY_NOTICE_KEY_PREFIX + user.id : null;
+
+  useEffect(() => {
+    if (!noticeKey) return;
+    let cancelled = false;
+    AsyncStorage.getItem(noticeKey)
+      .then((seen) => {
+        if (!cancelled && !seen) setNoticeVisible(true);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [noticeKey]);
+
+  function dismissNotice() {
+    setNoticeVisible(false);
+    if (noticeKey) AsyncStorage.setItem(noticeKey, "1").catch(() => {});
+  }
 
   function scrollToLeaderboardIfRequested() {
     if (params.tab === "leaderboard" && !hasScrolledToLeaderboard.current && leaderboardY.current > 0) {
@@ -255,10 +314,10 @@ export default function CommunityScreen() {
                 icon="people-outline"
                 title="Your feed is quiet"
                 body="Follow members to see their sessions, PBs and progress here."
-                actionLabel={suggested.data && suggested.data.length > 0 ? undefined : "Follow members"}
-                onAction={() => setSearchOpen(true)}
               />
-              {suggested.data && suggested.data.length > 0 ? (
+              {suggested.isLoading ? (
+                <ActivityIndicator color={Color.gold} style={{ marginTop: Spacing.sm }} />
+              ) : suggested.data && suggested.data.length > 0 ? (
                 <Card style={styles.suggestedCard}>
                   <Text style={styles.suggestedLabel}>MEMBERS TO FOLLOW</Text>
                   {suggested.data.map((r, i) => (
@@ -274,7 +333,9 @@ export default function CommunityScreen() {
                     />
                   ))}
                 </Card>
-              ) : null}
+              ) : (
+                <Text style={styles.suggestedEmptyText}>No one else to show right now.</Text>
+              )}
             </>
           ) : (
             feed.data.items.map((item) => (
@@ -289,6 +350,14 @@ export default function CommunityScreen() {
         visible={activeItem !== null}
         onClose={() => setActiveItem(null)}
         workoutSessionId={activeItem?.id ?? ""}
+      />
+      <DiscoverabilityNotice
+        visible={noticeVisible}
+        onDismiss={dismissNotice}
+        onManageSettings={() => {
+          dismissNotice();
+          router.push("/community-privacy");
+        }}
       />
     </SafeAreaView>
   );
@@ -342,6 +411,32 @@ const styles = StyleSheet.create({
   suggestedRowDivider: { borderBottomWidth: 1, borderBottomColor: Color.borderSubtle },
   suggestedName: { fontSize: 14, fontWeight: "600", color: Color.textPrimary, flex: 1 },
   suggestedFollowButton: { paddingHorizontal: Spacing.md },
+  suggestedEmptyText: {
+    fontSize: 13,
+    color: Color.textMuted,
+    textAlign: "center",
+    marginTop: Spacing.sm,
+  },
+  noticeBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(4,10,20,0.72)",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: Spacing.xl,
+  },
+  noticeCard: {
+    width: "100%",
+    maxWidth: 360,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    borderColor: Color.borderDefault,
+    backgroundColor: Color.surface1,
+    padding: Spacing.lg,
+  },
+  noticeTitle: { fontSize: 15, fontWeight: "700", color: Color.textPrimary },
+  noticeBody: { fontSize: 13, color: Color.textSecondary, lineHeight: 19, marginTop: Spacing.sm },
+  noticeSecondary: { marginTop: Spacing.md, alignSelf: "center" },
+  noticeSecondaryText: { fontSize: 12, fontWeight: "500", color: Color.textFaint, textDecorationLine: "underline" },
   scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
   section: { marginBottom: Spacing.xl },
   winsCard: { padding: 0, overflow: "hidden" },

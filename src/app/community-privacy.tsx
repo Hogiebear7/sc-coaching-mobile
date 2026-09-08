@@ -16,11 +16,12 @@ export default function CommunityPrivacyScreen() {
   // there's nothing to resync via an effect. A toggle just mutates and
   // waits for the query to refetch (useSetCommunityPrivacy already
   // invalidates it on success).
+  const discoverable = data?.discoverable ?? true;
   const leaderboardVisible = data?.leaderboardVisible ?? true;
   const showRealName = data?.showRealName ?? true;
 
-  function update(next: { leaderboardVisible: boolean; showRealName: boolean }) {
-    setPrivacy.mutate(next);
+  function update(next: Partial<{ discoverable: boolean; leaderboardVisible: boolean; showRealName: boolean }>) {
+    setPrivacy.mutate({ discoverable, leaderboardVisible, showRealName, ...next });
   }
 
   return (
@@ -38,20 +39,23 @@ export default function CommunityPrivacyScreen() {
       ) : (
         <ScrollView contentContainerStyle={styles.scroll}>
           <Text style={styles.intro}>
-            Visible by default — turn either of these off any time. Following someone always shows
-            them your workouts (mark one private from its own screen if you don&apos;t want that);
-            these two only control the leaderboard.
+            These are independent — you can, for example, stay off the leaderboard and still be
+            followable, or the reverse. All three are on by default.
           </Text>
 
           <Card style={styles.card}>
             <View style={styles.settingRow}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.settingTitle}>Show me on leaderboards</Text>
-                <Text style={styles.settingSub}>Turn off to leave every Community leaderboard entirely.</Text>
+                <Text style={styles.settingTitle}>Show me in search and suggestions</Text>
+                <Text style={styles.settingSub}>
+                  Other members can find you by name and see you as someone to follow. Turn this off
+                  and new people won&apos;t find you — but anyone already following you isn&apos;t
+                  affected, and you can still search for and follow others yourself.
+                </Text>
               </View>
               <Switch
-                value={leaderboardVisible}
-                onValueChange={(v) => update({ leaderboardVisible: v, showRealName })}
+                value={discoverable}
+                onValueChange={(v) => update({ discoverable: v })}
                 trackColor={{ false: Color.surface3, true: Color.gold }}
                 thumbColor={Color.textPrimary}
                 disabled={setPrivacy.isPending}
@@ -59,14 +63,31 @@ export default function CommunityPrivacyScreen() {
             </View>
             <View style={[styles.settingRow, styles.settingRowDivider]}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.settingTitle}>Show my real name</Text>
+                <Text style={styles.settingTitle}>Show me on leaderboards</Text>
                 <Text style={styles.settingSub}>
-                  Turn off to appear as first name + last initial instead (e.g. &quot;Jamie F.&quot;).
+                  Include your lifts and rankings in Community leaderboards. Turn this off to keep
+                  your numbers out of every leaderboard.
+                </Text>
+              </View>
+              <Switch
+                value={leaderboardVisible}
+                onValueChange={(v) => update({ leaderboardVisible: v })}
+                trackColor={{ false: Color.surface3, true: Color.gold }}
+                thumbColor={Color.textPrimary}
+                disabled={setPrivacy.isPending}
+              />
+            </View>
+            <View style={[styles.settingRow, styles.settingRowDivider]}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.settingTitle}>Show my full name</Text>
+                <Text style={styles.settingSub}>
+                  Use your full name wherever you appear in Community — leaderboards, search,
+                  suggestions. Turn this off to show your first name and last initial instead.
                 </Text>
               </View>
               <Switch
                 value={showRealName}
-                onValueChange={(v) => update({ leaderboardVisible, showRealName: v })}
+                onValueChange={(v) => update({ showRealName: v })}
                 trackColor={{ false: Color.surface3, true: Color.gold }}
                 thumbColor={Color.textPrimary}
                 disabled={setPrivacy.isPending}

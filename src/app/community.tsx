@@ -228,7 +228,7 @@ export default function CommunityScreen() {
         <Text style={styles.headerTitle}>Community</Text>
         <Pressable onPress={() => setSearchOpen(true)} hitSlop={12} style={styles.followButton}>
           <Ionicons name="person-add-outline" size={15} color={Color.gold} />
-          <Text style={styles.followButtonText}>Follow</Text>
+          <Text style={styles.followButtonText}>People</Text>
         </Pressable>
       </View>
       <Text style={styles.subhead}>See who&apos;s training, where you rank, and who to follow.</Text>

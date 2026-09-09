@@ -365,31 +365,32 @@ export default function LogFoodScreen() {
                 {isSearching ? <ActivityIndicator size="small" color={Color.textFaint} /> : null}
               </View>
 
-              {/* Alternate logging methods — deliberately quiet relative to
-                  the search bar above, since search + recent is the primary
-                  path. Living here (not in the header) ties them to "if
-                  search doesn't find it" rather than reading as a row of
-                  detached, equal-weight nav icons. */}
+              {/* Alternate logging methods — given real visual weight rather
+                  than a quiet fallback row: Describe/Photo/Barcode are each
+                  a genuine, high-value way to log (AI-assisted, not a
+                  last-resort), so they're styled like the gold-accent
+                  affordances used elsewhere for a meaningful action, not
+                  muted secondary chrome. */}
               <View style={styles.methodsRow}>
                 <Pressable
                   onPress={() => router.push({ pathname: "/describe-food", params: { date, mealType } })}
                   style={styles.methodChip}
                 >
-                  <Ionicons name="chatbubble-ellipses-outline" size={15} color={Color.textSecondary} />
+                  <Ionicons name="chatbubble-ellipses-outline" size={17} color={Color.gold} />
                   <Text style={styles.methodChipText}>Describe</Text>
                 </Pressable>
                 <Pressable
                   onPress={() => router.push({ pathname: "/label-scan", params: { date, mealType } })}
                   style={styles.methodChip}
                 >
-                  <Ionicons name="camera-outline" size={15} color={Color.textSecondary} />
-                  <Text style={styles.methodChipText}>Photo</Text>
+                  <Ionicons name="camera-outline" size={19} color={Color.gold} />
+                  <Text style={[styles.methodChipText, styles.methodChipTextPhoto]}>Photo</Text>
                 </Pressable>
                 <Pressable
                   onPress={() => router.push({ pathname: "/barcode-scan", params: { date, mealType } })}
                   style={styles.methodChip}
                 >
-                  <Ionicons name="barcode-outline" size={15} color={Color.textSecondary} />
+                  <Ionicons name="barcode-outline" size={17} color={Color.gold} />
                   <Text style={styles.methodChipText}>Barcode</Text>
                 </Pressable>
               </View>
@@ -689,12 +690,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 6,
-    height: 36,
+    height: 44,
     borderRadius: Radius.md,
     borderWidth: 1,
-    borderColor: Color.borderSubtle,
+    borderColor: Color.goldBorder,
+    backgroundColor: Color.goldWeak,
   },
-  methodChipText: { fontSize: 12, fontWeight: "600", color: Color.textSecondary },
+  methodChipText: { fontSize: 13, fontWeight: "700", color: Color.gold },
+  methodChipTextPhoto: { fontSize: 14 },
   sectionLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginTop: Spacing.lg, marginBottom: Spacing.sm },
   fallbackSection: { marginTop: Spacing.sm },
   fallbackLink: { paddingVertical: 6 },

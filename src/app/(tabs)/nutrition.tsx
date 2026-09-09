@@ -926,11 +926,11 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: Color.textPrimary,
     fontVariant: ["tabular-nums"],
-    marginBottom: Spacing.sm,
+    marginBottom: 7,
   },
   hydrationMetricTarget: { fontSize: 15, fontWeight: "500", color: Color.textMuted },
   hydrationEmptyText: { fontSize: 11, color: Color.textMuted, lineHeight: 16 },
-  hydrationBodyRow: { flexDirection: "row", alignItems: "center", gap: Spacing.lg },
+  hydrationBodyRow: { flexDirection: "row", alignItems: "center", gap: 13 },
   hydrationSideCol: { flex: 1 },
   hydrationSideText: { fontSize: 13, fontWeight: "500", color: Color.textSecondary, lineHeight: 18 },
   bottleWrap: { width: 64, alignItems: "center" },
@@ -963,7 +963,7 @@ const styles = StyleSheet.create({
   // Decorative glass-sheen highlight — purely visual, not tied to hydration
   // data, so it's fine as a static overlay rather than anything animated.
   bottleSheen: { position: "absolute", top: 0, left: 0, bottom: 0, width: "45%" },
-  hydrationQuickAddRow: { flexDirection: "row", gap: Spacing.xs, marginTop: Spacing.lg },
+  hydrationQuickAddRow: { flexDirection: "row", gap: Spacing.xs, marginTop: 14 },
   hydrationChip: {
     flex: 1,
     alignItems: "center",

@@ -1,7 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Alert, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Alert, Image, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
@@ -11,6 +12,7 @@ import { Stepper } from "@/components/ui/Stepper";
 import { Color, Radius, Spacing } from "@/constants/theme";
 import { ApiError } from "@/lib/api-client";
 import { trackEvent } from "@/lib/analytics";
+import { useAuth } from "@/lib/auth-context";
 import { iconForFood } from "@/lib/food-icons";
 import {
   gramsForServing,
@@ -75,10 +77,49 @@ function FoodResultRow({ food, onPress }: { food: FoodRecord; onPress: () => voi
   );
 }
 
+const PHOTO_CALLOUT_KEY_PREFIX = "log-food-photo-callout-seen-v1-";
+
+// One-time, dismiss-and-forget — same mechanism as Community's
+// discoverability notice (local AsyncStorage seen-flag, no context), just
+// without a secondary action since there's no related settings screen to
+// send someone to here.
+function PhotoCallout({ visible, onDismiss }: { visible: boolean; onDismiss: () => void }) {
+  return (
+    <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={onDismiss}>
+      <View style={styles.calloutBackdrop}>
+        <View style={styles.calloutCard}>
+          <Text style={styles.calloutBody}>Snap a photo — we&apos;ll work out what&apos;s on the plate.</Text>
+          <Button title="Got it" onPress={onDismiss} style={{ marginTop: Spacing.md }} />
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
 export default function LogFoodScreen() {
   const router = useRouter();
+  const { user } = useAuth();
   const tier = useMemberTier();
   const canSearch = hasAccess(tier, "foodSearch");
+
+  const [photoCalloutVisible, setPhotoCalloutVisible] = useState(false);
+  const photoCalloutKey = user ? PHOTO_CALLOUT_KEY_PREFIX + user.id : null;
+  useEffect(() => {
+    if (!photoCalloutKey) return;
+    let cancelled = false;
+    AsyncStorage.getItem(photoCalloutKey)
+      .then((seen) => {
+        if (!cancelled && !seen) setPhotoCalloutVisible(true);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [photoCalloutKey]);
+  function dismissPhotoCallout() {
+    setPhotoCalloutVisible(false);
+    if (photoCalloutKey) AsyncStorage.setItem(photoCalloutKey, "1").catch(() => {});
+  }
   const { date: dateParam, mealType: mealTypeParam, foodJson, query: queryParam } = useLocalSearchParams<{ date?: string; mealType?: string; foodJson?: string; query?: string }>();
   const { data: recentFoods } = useRecentFoods();
   const { data: favorites } = useFoodFavorites();
@@ -659,12 +700,30 @@ export default function LogFoodScreen() {
 
           <Button title="Log food" onPress={handleSave} loading={createEntry.isPending} style={{ marginTop: Spacing.lg }} />
         </KeyboardAwareScroll>
+      <PhotoCallout visible={photoCalloutVisible} onDismiss={dismissPhotoCallout} />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: Color.bg0 },
+  calloutBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(4,10,20,0.72)",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: Spacing.xl,
+  },
+  calloutCard: {
+    width: "100%",
+    maxWidth: 360,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    borderColor: Color.borderDefault,
+    backgroundColor: Color.surface1,
+    padding: Spacing.lg,
+  },
+  calloutBody: { fontSize: 14, color: Color.textPrimary, lineHeight: 20 },
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md },
   backButton: { padding: 4 },
   headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },

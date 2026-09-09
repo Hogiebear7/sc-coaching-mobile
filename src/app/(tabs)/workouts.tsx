@@ -1,7 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect, useRouter } from "expo-router";
-import { useCallback, useMemo, useState } from "react";
-import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { ActivityIndicator, Alert, Modal, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
@@ -15,6 +16,7 @@ import { SessionCard } from "@/components/ui/SessionCard";
 import { TrendChart } from "@/components/ui/TrendChart";
 import { UpsellTile } from "@/components/ui/Upsell";
 import { Color, Radius, Spacing } from "@/constants/theme";
+import { useAuth } from "@/lib/auth-context";
 import { tapFeedback } from "@/lib/haptics";
 import { hasAccess } from "@/lib/member-access";
 import { useAdvanceProgram, useMyProgram, useSetProgramStatus, type PrescribedExercise } from "@/lib/queries/programs";
@@ -75,16 +77,58 @@ function formatShortDate(dateISO: string): string {
   return new Date(`${dateISO}T00:00:00`).toLocaleDateString(undefined, { day: "numeric", month: "short" });
 }
 
+const AI_CALLOUT_KEY_PREFIX = "workouts-ai-callout-seen-v1-";
+
+// One-time, dismiss-and-forget — same mechanism as Log Food's Photo callout
+// and Community's discoverability notice (local AsyncStorage seen-flag, no
+// context, no secondary action).
+function AiCalloutModal({ visible, onDismiss }: { visible: boolean; onDismiss: () => void }) {
+  return (
+    <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={onDismiss}>
+      <View style={styles.calloutBackdrop}>
+        <View style={styles.calloutCard}>
+          <Text style={styles.calloutBody}>
+            Your programme can adapt, not just log. Generate a session or swap any exercise that
+            doesn&apos;t fit today.
+          </Text>
+          <Button title="Got it" onPress={onDismiss} style={{ marginTop: Spacing.md }} />
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
 export default function WorkoutsScreen() {
   const router = useRouter();
+  const { user } = useAuth();
   const restTimer = useRestTimer();
   const tier = useMemberTier();
+  const canGenerate = hasAccess(tier, "workoutGenerate");
   const { data, isLoading, isError, refetch, isRefetching } = useWorkouts();
   const { data: program } = useMyProgram();
   const advanceProgram = useAdvanceProgram();
   const setProgramStatus = useSetProgramStatus();
   const [trendExercise, setTrendExercise] = useState<string | null>(null);
   const [swapTarget, setSwapTarget] = useState<PrescribedExercise | null>(null);
+
+  const [aiCalloutVisible, setAiCalloutVisible] = useState(false);
+  const aiCalloutKey = user && canGenerate ? AI_CALLOUT_KEY_PREFIX + user.id : null;
+  useEffect(() => {
+    if (!aiCalloutKey) return;
+    let cancelled = false;
+    AsyncStorage.getItem(aiCalloutKey)
+      .then((seen) => {
+        if (!cancelled && !seen) setAiCalloutVisible(true);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [aiCalloutKey]);
+  function dismissAiCallout() {
+    setAiCalloutVisible(false);
+    if (aiCalloutKey) AsyncStorage.setItem(aiCalloutKey, "1").catch(() => {});
+  }
 
   // This tab stays mounted in the background rather than unmounting when
   // the member navigates away to Log Workout — so the mutation-time
@@ -437,7 +481,7 @@ export default function WorkoutsScreen() {
             </Card>
           </View>
           <View style={styles.toolsRow}>
-            {hasAccess(tier, "workoutGenerate") ? (
+            {canGenerate ? (
               <Card tier="compact" style={styles.toolCard}>
                 <Pressable onPress={() => router.push("/workout-generator")} style={styles.toolCardInner}>
                   <Ionicons name="sparkles-outline" size={18} color={Color.gold} />
@@ -710,6 +754,7 @@ export default function WorkoutsScreen() {
         dayId={displayDay?.id ?? ""}
         exercise={swapTarget}
       />
+      <AiCalloutModal visible={aiCalloutVisible} onDismiss={dismissAiCallout} />
     </SafeAreaView>
   );
 }
@@ -717,6 +762,23 @@ export default function WorkoutsScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: Color.bg0 },
   centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
+  calloutBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(4,10,20,0.72)",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: Spacing.xl,
+  },
+  calloutCard: {
+    width: "100%",
+    maxWidth: 360,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    borderColor: Color.borderDefault,
+    backgroundColor: Color.surface1,
+    padding: Spacing.lg,
+  },
+  calloutBody: { fontSize: 14, color: Color.textPrimary, lineHeight: 20 },
   errorText: { color: Color.textMuted, fontSize: 14 },
   scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
   headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: Spacing.md, marginBottom: Spacing.lg },

@@ -370,7 +370,11 @@ export default function LogFoodScreen() {
                   a genuine, high-value way to log (AI-assisted, not a
                   last-resort), so they're styled like the gold-accent
                   affordances used elsewhere for a meaningful action, not
-                  muted secondary chrome. */}
+                  muted secondary chrome. Photo carries the app's primary
+                  solid-fill treatment (same language as the main CTA below)
+                  since it's the single highest-value entry point of the
+                  three — Describe/Barcode stay on the secondary
+                  gold-tinted-outline look. */}
               <View style={styles.methodsRow}>
                 <Pressable
                   onPress={() => router.push({ pathname: "/describe-food", params: { date, mealType } })}
@@ -381,10 +385,10 @@ export default function LogFoodScreen() {
                 </Pressable>
                 <Pressable
                   onPress={() => router.push({ pathname: "/label-scan", params: { date, mealType } })}
-                  style={styles.methodChip}
+                  style={[styles.methodChip, styles.methodChipPrimary]}
                 >
-                  <Ionicons name="camera-outline" size={19} color={Color.gold} />
-                  <Text style={[styles.methodChipText, styles.methodChipTextPhoto]}>Photo</Text>
+                  <Ionicons name="camera-outline" size={17} color={Color.goldForeground} />
+                  <Text style={[styles.methodChipText, styles.methodChipTextPrimary]}>Photo</Text>
                 </Pressable>
                 <Pressable
                   onPress={() => router.push({ pathname: "/barcode-scan", params: { date, mealType } })}
@@ -697,7 +701,12 @@ const styles = StyleSheet.create({
     backgroundColor: Color.goldWeak,
   },
   methodChipText: { fontSize: 13, fontWeight: "700", color: Color.gold },
-  methodChipTextPhoto: { fontSize: 14 },
+  // Photo's primary treatment — same solid-fill language as the main CTA,
+  // border kept (Button's own primary variant keeps its border over the
+  // fill too) so it doesn't look like a different component, just the
+  // primary state of this one.
+  methodChipPrimary: { backgroundColor: Color.gold },
+  methodChipTextPrimary: { color: Color.goldForeground },
   sectionLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginTop: Spacing.lg, marginBottom: Spacing.sm },
   fallbackSection: { marginTop: Spacing.sm },
   fallbackLink: { paddingVertical: 6 },

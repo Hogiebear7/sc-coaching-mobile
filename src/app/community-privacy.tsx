@@ -5,12 +5,20 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Card } from "@/components/ui/Card";
 import { Color, Spacing } from "@/constants/theme";
+import { useAuth } from "@/lib/auth-context";
 import { useCommunityPrivacy, useSetCommunityPrivacy } from "@/lib/queries/community";
 
 export default function CommunityPrivacyScreen() {
   const router = useRouter();
+  const { user } = useAuth();
   const { data, isLoading } = useCommunityPrivacy();
   const setPrivacy = useSetCommunityPrivacy();
+
+  // A member is always Community-eligible — this screen looks exactly as it
+  // always has for them. A staff account (coach/admin/admin_manager) is
+  // excluded from Community by default and needs its own opt-in, shown only
+  // to them; once on, the same three toggles below apply with full parity.
+  const isStaff = user?.role !== "member";
 
   // data is the single source of truth — no local state mirroring it, so
   // there's nothing to resync via an effect. A toggle just mutates and
@@ -19,9 +27,17 @@ export default function CommunityPrivacyScreen() {
   const discoverable = data?.discoverable ?? true;
   const leaderboardVisible = data?.leaderboardVisible ?? true;
   const showRealName = data?.showRealName ?? true;
+  const communityOptIn = data?.communityOptIn ?? false;
 
-  function update(next: Partial<{ discoverable: boolean; leaderboardVisible: boolean; showRealName: boolean }>) {
-    setPrivacy.mutate({ discoverable, leaderboardVisible, showRealName, ...next });
+  function update(
+    next: Partial<{
+      discoverable: boolean;
+      leaderboardVisible: boolean;
+      showRealName: boolean;
+      communityOptIn: boolean;
+    }>
+  ) {
+    setPrivacy.mutate({ discoverable, leaderboardVisible, showRealName, communityOptIn, ...next });
   }
 
   return (
@@ -39,11 +55,34 @@ export default function CommunityPrivacyScreen() {
       ) : (
         <ScrollView contentContainerStyle={styles.scroll}>
           <Text style={styles.intro}>
-            These are independent — you can, for example, stay off the leaderboard and still be
-            followable, or the reverse. All three are on by default.
+            {isStaff
+              ? "Off by default — you won't appear anywhere in Community until you turn this on."
+              : "These are independent — you can, for example, stay off the leaderboard and still be followable, or the reverse. All three are on by default."}
           </Text>
 
-          <Card style={styles.card}>
+          {isStaff ? (
+            <Card style={styles.card}>
+              <View style={styles.settingRow}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.settingTitle}>Show me in Community</Text>
+                  <Text style={styles.settingSub}>
+                    Appear in Community exactly like a member — followable, in the activity feed,
+                    and on leaderboards.
+                  </Text>
+                </View>
+                <Switch
+                  value={communityOptIn}
+                  onValueChange={(v) => update({ communityOptIn: v })}
+                  trackColor={{ false: Color.surface3, true: Color.gold }}
+                  thumbColor={Color.textPrimary}
+                  disabled={setPrivacy.isPending}
+                />
+              </View>
+            </Card>
+          ) : null}
+
+          {(!isStaff || communityOptIn) ? (
+          <Card style={[styles.card, isStaff && styles.cardSpaced]}>
             <View style={styles.settingRow}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.settingTitle}>Show me in search and suggestions</Text>
@@ -94,6 +133,7 @@ export default function CommunityPrivacyScreen() {
               />
             </View>
           </Card>
+          ) : null}
         </ScrollView>
       )}
     </SafeAreaView>
@@ -114,6 +154,7 @@ const styles = StyleSheet.create({
   scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
   intro: { fontSize: 12, color: Color.textSecondary, lineHeight: 17, marginBottom: Spacing.lg },
   card: { padding: Spacing.md },
+  cardSpaced: { marginTop: Spacing.md },
   settingRow: { flexDirection: "row", alignItems: "center", gap: Spacing.md, paddingVertical: Spacing.sm },
   settingRowDivider: { borderTopWidth: 1, borderTopColor: Color.borderSubtle },
   settingTitle: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },

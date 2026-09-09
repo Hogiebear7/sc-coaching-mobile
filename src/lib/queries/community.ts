@@ -207,6 +207,9 @@ export interface CommunityPrivacy {
   discoverable: boolean;
   leaderboardVisible: boolean;
   showRealName: boolean;
+  // Only meaningful for a staff account (coach/admin/admin_manager) — a
+  // member is always Community-eligible and never reads this field.
+  communityOptIn: boolean;
 }
 
 export function useCommunityPrivacy() {

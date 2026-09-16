@@ -33,9 +33,28 @@ export function useNearbyGyms(coords: { lat: number; lng: number } | null) {
   });
 }
 
+export interface GeocodeCandidate {
+  lat: number;
+  lng: number;
+  label: string;
+}
+
+// A single unambiguous match resolves directly; two or more real candidates
+// (e.g. "Navan" — genuinely a place in Canada, two counties in Ireland,
+// Northern Ireland, and Norway) come back for the caller to disambiguate
+// instead of the server guessing. See gym-app's geocode route for the exact
+// rule (candidate count from Nominatim, not a scoring heuristic).
+export type GeocodeResult = GeocodeCandidate | { candidates: GeocodeCandidate[] };
+
 interface GeocodeResponse {
   success: true;
-  data: { lat: number; lng: number; label: string };
+  data: GeocodeResult;
+}
+
+export function isGeocodeCandidateList(
+  result: GeocodeResult
+): result is { candidates: GeocodeCandidate[] } {
+  return "candidates" in result;
 }
 
 // Manual fallback for find-a-coach.tsx when device location is denied or

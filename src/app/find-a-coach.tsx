@@ -12,17 +12,50 @@ import { TextField } from "@/components/ui/TextField";
 import { Color, Radius, Spacing } from "@/constants/theme";
 import { ApiError } from "@/lib/api-client";
 import {
+  ALLOWED_RADIUS_KM,
+  DEFAULT_RADIUS_KM,
   isGeocodeCandidateList,
   useGeocodeLocation,
   useNearbyGyms,
   type GeocodeCandidate,
   type NearbyGym,
+  type RadiusKm,
 } from "@/lib/queries/gyms";
 
 type Status = "idle" | "requesting" | "denied" | "ready" | "error";
 
+// Which coordinate source is currently driving the search — deliberately a
+// third state rather than "whichever of deviceCoords/searchCoords is set,"
+// so a radius change after a manual search can never silently fall back to
+// stale device coords just because searchCoords happens to be readable too.
+type CoordsSource = "device" | "search" | null;
+
 function formatDistance(km: number): string {
   return km < 1 ? "Less than 1 km away" : `${Math.round(km)} km away`;
+}
+
+// The next radius up from the current one, for the no-results "search wider"
+// action — null once already at the largest allowed radius, so that action
+// simply doesn't render rather than looping or clamping.
+function widerRadius(radiusKm: RadiusKm): RadiusKm | null {
+  const index = ALLOWED_RADIUS_KM.indexOf(radiusKm);
+  return ALLOWED_RADIUS_KM[index + 1] ?? null;
+}
+
+function RadiusChips({ radiusKm, onChange }: { radiusKm: RadiusKm; onChange: (value: RadiusKm) => void }) {
+  return (
+    <View style={styles.radiusRow}>
+      {ALLOWED_RADIUS_KM.map((value) => (
+        <Pressable
+          key={value}
+          onPress={() => onChange(value)}
+          style={[styles.radiusChip, radiusKm === value && styles.radiusChipActive]}
+        >
+          <Text style={[styles.radiusChipText, radiusKm === value && styles.radiusChipTextActive]}>{value} km</Text>
+        </Pressable>
+      ))}
+    </View>
+  );
 }
 
 function GymRow({ gym }: { gym: NearbyGym }) {
@@ -57,7 +90,14 @@ function GymRow({ gym }: { gym: NearbyGym }) {
 export default function FindACoachScreen() {
   const router = useRouter();
   const [status, setStatus] = useState<Status>("idle");
-  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
+  // Device GPS and manual-search results are kept in separate slots — see
+  // CoordsSource above for why a third "which one is active" flag drives
+  // the actual query instead of just picking whichever slot is non-null.
+  const [deviceCoords, setDeviceCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [searchCoords, setSearchCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [coordsSource, setCoordsSource] = useState<CoordsSource>(null);
+  const activeSearchCoords = coordsSource === "search" ? searchCoords : coordsSource === "device" ? deviceCoords : null;
+  const [radiusKm, setRadiusKm] = useState<RadiusKm>(DEFAULT_RADIUS_KM);
   // Set only when coords came from the manual search box below, not device
   // GPS — used to caption the results list so it's clear what "near you"
   // actually means right now.
@@ -68,7 +108,7 @@ export default function FindACoachScreen() {
   // form and a candidate list at once would be cluttered, so picking one
   // replaces the other rather than layering.
   const [candidates, setCandidates] = useState<GeocodeCandidate[] | null>(null);
-  const { data: gyms, isLoading, isError, error } = useNearbyGyms(coords);
+  const { data: gyms, isLoading, isError, error } = useNearbyGyms(activeSearchCoords, radiusKm);
   const geocode = useGeocodeLocation();
 
   async function requestLocation() {
@@ -82,19 +122,21 @@ export default function FindACoachScreen() {
     }
     try {
       const position = await Location.getCurrentPositionAsync({});
-      setCoords({ lat: position.coords.latitude, lng: position.coords.longitude });
+      setDeviceCoords({ lat: position.coords.latitude, lng: position.coords.longitude });
+      setCoordsSource("device");
       setStatus("ready");
     } catch {
       setStatus("error");
     }
   }
 
-  // The one place coords/searchedLabel get set from a manual search —
+  // The one place searchCoords/searchedLabel get set from a manual search —
   // always a single, already-disambiguated candidate, never a raw geocode
   // response. No distance is ever computed before this runs (useNearbyGyms
-  // stays disabled until coords exists).
+  // stays disabled until activeSearchCoords exists).
   function selectLocation(candidate: GeocodeCandidate) {
-    setCoords({ lat: candidate.lat, lng: candidate.lng });
+    setSearchCoords({ lat: candidate.lat, lng: candidate.lng });
+    setCoordsSource("search");
     setSearchedLabel(candidate.label);
     setCandidates(null);
     setStatus("ready");
@@ -120,10 +162,12 @@ export default function FindACoachScreen() {
   // manual-search entry point as a failed device-location lookup, rather
   // than inventing a second UI for the same job.
   function resetToSearch() {
-    setCoords(null);
+    setSearchCoords(null);
+    setCoordsSource(null);
     setSearchedLabel(null);
     setCandidates(null);
     setSearchQuery("");
+    setRadiusKm(DEFAULT_RADIUS_KM);
     setStatus("denied");
   }
 
@@ -132,6 +176,7 @@ export default function FindACoachScreen() {
   }, []);
 
   const showSearchFallback = status === "denied" || status === "error" || isError;
+  const nextRadius = widerRadius(radiusKm);
 
   return (
     <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
@@ -218,29 +263,46 @@ export default function FindACoachScreen() {
               </>
             )}
           </View>
-        ) : isLoading ? (
-          <View style={styles.centerFill}>
-            <ActivityIndicator color={Color.gold} size="large" />
-          </View>
-        ) : !gyms || gyms.length === 0 ? (
-          <View style={styles.centerFill}>
-            <Text style={styles.errorHeading}>No gyms or coaches found nearby</Text>
-            <Text style={styles.errorText}>Try a nearby town or postcode, or browse digital coaching from S&C.</Text>
-            <Button title="Search another area" onPress={resetToSearch} variant="secondary" style={{ marginTop: Spacing.md }} />
-            <Pressable onPress={() => router.push("/membership")} hitSlop={8} style={styles.noResultsSecondary}>
-              <Text style={styles.noResultsSecondaryText}>See S&C app plans</Text>
-            </Pressable>
-          </View>
-        ) : (
+        ) : activeSearchCoords ? (
           <View>
-            {searchedLabel ? <Text style={styles.searchedLabel}>Showing results near {searchedLabel}</Text> : null}
-            <View style={styles.gymList}>
-              {gyms.map((gym) => (
-                <GymRow key={gym.id} gym={gym} />
-              ))}
-            </View>
+            <RadiusChips radiusKm={radiusKm} onChange={setRadiusKm} />
+            {isLoading ? (
+              <View style={styles.centerFill}>
+                <ActivityIndicator color={Color.gold} size="large" />
+              </View>
+            ) : !gyms || gyms.length === 0 ? (
+              <View style={styles.centerFill}>
+                <Text style={styles.errorHeading}>No gyms or coaches found within {radiusKm} km</Text>
+                <Text style={styles.errorText}>Try a wider radius, a nearby town or postcode, or browse digital coaching from S&C.</Text>
+                {nextRadius ? (
+                  <Button
+                    title={`Search within ${nextRadius} km`}
+                    onPress={() => setRadiusKm(nextRadius)}
+                    style={{ marginTop: Spacing.md }}
+                  />
+                ) : null}
+                <Button
+                  title="Search another area"
+                  onPress={resetToSearch}
+                  variant="secondary"
+                  style={{ marginTop: nextRadius ? Spacing.sm : Spacing.md }}
+                />
+                <Pressable onPress={() => router.push("/membership")} hitSlop={8} style={styles.noResultsSecondary}>
+                  <Text style={styles.noResultsSecondaryText}>See S&C app plans</Text>
+                </Pressable>
+              </View>
+            ) : (
+              <View>
+                {searchedLabel ? <Text style={styles.searchedLabel}>Showing results near {searchedLabel}</Text> : null}
+                <View style={styles.gymList}>
+                  {gyms.map((gym) => (
+                    <GymRow key={gym.id} gym={gym} />
+                  ))}
+                </View>
+              </View>
+            )}
           </View>
-        )}
+        ) : null}
       </ScrollView>
     </SafeAreaView>
   );
@@ -301,6 +363,17 @@ const styles = StyleSheet.create({
     color: Color.textFaint,
     marginBottom: Spacing.md,
   },
+  radiusRow: { flexDirection: "row", gap: Spacing.xs, marginBottom: Spacing.md },
+  radiusChip: {
+    borderRadius: Radius.pill,
+    borderWidth: 1,
+    borderColor: Color.borderSubtle,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 6,
+  },
+  radiusChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
+  radiusChipText: { fontSize: 12, fontWeight: "600", color: Color.textMuted },
+  radiusChipTextActive: { color: Color.gold },
   candidatesHeading: {
     fontSize: 13,
     fontWeight: "600",

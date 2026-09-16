@@ -19,15 +19,24 @@ interface NearbyGymsResponse {
   data: NearbyGym[];
 }
 
+// Mirrors gym-app's ALLOWED_RADIUS_KM/DEFAULT_RADIUS_KM
+// (app/api/mobile/gyms/nearby/route.ts) — kept as a plain duplicate literal
+// rather than a shared import, matching this codebase's existing
+// PRIMARY_GYM_SLUG/APP_SUBSCRIPTION_PACKAGE_SLUG precedent for small
+// cross-repo constants that can't be imported directly.
+export const ALLOWED_RADIUS_KM = [25, 50, 100] as const;
+export type RadiusKm = (typeof ALLOWED_RADIUS_KM)[number];
+export const DEFAULT_RADIUS_KM: RadiusKm = 25;
+
 // Disabled until real coordinates are available (see find-a-coach.tsx's
 // location-permission flow) — there's no meaningful "nearby" without them,
 // and firing the request early would just 400.
-export function useNearbyGyms(coords: { lat: number; lng: number } | null) {
+export function useNearbyGyms(coords: { lat: number; lng: number } | null, radiusKm: RadiusKm = DEFAULT_RADIUS_KM) {
   return useQuery({
-    queryKey: ["gyms-nearby", coords?.lat, coords?.lng],
+    queryKey: ["gyms-nearby", coords?.lat, coords?.lng, radiusKm],
     queryFn: () =>
       apiFetch<NearbyGymsResponse>(
-        `/api/mobile/gyms/nearby?lat=${encodeURIComponent(coords!.lat)}&lng=${encodeURIComponent(coords!.lng)}`
+        `/api/mobile/gyms/nearby?lat=${encodeURIComponent(coords!.lat)}&lng=${encodeURIComponent(coords!.lng)}&radiusKm=${radiusKm}`
       ).then((r) => r.data),
     enabled: coords !== null,
   });

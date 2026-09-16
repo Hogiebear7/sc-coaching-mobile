@@ -19,7 +19,7 @@ import { Card } from "@/components/ui/Card";
 import { UpsellCard } from "@/components/ui/Upsell";
 import { Color, Radius, Spacing } from "@/constants/theme";
 import { ApiError } from "@/lib/api-client";
-import { hasAccess } from "@/lib/member-access";
+import { hasAccess, isMembershipTier } from "@/lib/member-access";
 import {
   useMessages,
   useSendAiCoachMessage,
@@ -185,6 +185,21 @@ function CoachTab({ messages }: { messages: CoachMessage[] }) {
   const [error, setError] = useState<string | null>(null);
   const send = useSendCoachMessage();
   const scrollRef = useRef<ScrollView>(null);
+  const tier = useMemberTier();
+
+  // Server-enforced in app/api/messages/send/route.ts (gym-app) — this is
+  // UX only, so a non-Membership member never even sees the composer.
+  if (!isMembershipTier(tier)) {
+    return (
+      <View style={{ margin: Spacing.lg }}>
+        <UpsellCard
+          icon="chatbubble-ellipses-outline"
+          title="Message coach"
+          copyVariant="membership"
+        />
+      </View>
+    );
+  }
 
   async function handleSend() {
     const text = body.trim();

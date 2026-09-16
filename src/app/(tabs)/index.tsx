@@ -24,9 +24,10 @@ import { ReadinessRing } from "@/components/ui/ReadinessRing";
 import { ReadinessSparkline } from "@/components/ui/ReadinessSparkline";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { StatCard } from "@/components/ui/StatCard";
+import { UpsellRow } from "@/components/ui/Upsell";
 import { Color, Radius, Spacing } from "@/constants/theme";
 import { useAuth } from "@/lib/auth-context";
-import { hasAccess } from "@/lib/member-access";
+import { hasAccess, isMembershipTier } from "@/lib/member-access";
 import { POST_SIGNUP_SETUP_KEY_PREFIX } from "@/lib/post-signup-setup";
 import { useCommunityHighlight } from "@/lib/queries/community";
 import { useDashboard } from "@/lib/queries/dashboard";
@@ -460,16 +461,20 @@ export default function DashboardScreen() {
                 </Text>
               </View>
             </Pressable>
-            <Pressable onPress={() => router.push("/messages")} style={[styles.rowCard, styles.rowCardDivider]}>
-              <View style={styles.rowCardIcon}>
-                <Ionicons name="chatbubble-ellipses-outline" size={18} color={Color.gold} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.rowCardTitle}>Coach</Text>
-                <Text style={styles.rowCardSub}>Message your coach</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={18} color={Color.textFaint} />
-            </Pressable>
+            {isMembershipTier(memberTier) ? (
+              <Pressable onPress={() => router.push("/messages")} style={[styles.rowCard, styles.rowCardDivider]}>
+                <View style={styles.rowCardIcon}>
+                  <Ionicons name="chatbubble-ellipses-outline" size={18} color={Color.gold} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.rowCardTitle}>Coach</Text>
+                  <Text style={styles.rowCardSub}>Message your coach</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={Color.textFaint} />
+              </Pressable>
+            ) : (
+              <UpsellRow icon="chatbubble-ellipses-outline" title="Coach" copyVariant="membership" />
+            )}
             <Pressable
               onPress={() => router.push({ pathname: "/workout-library", params: { tab: "exercises" } })}
               style={[styles.rowCard, styles.rowCardDivider]}

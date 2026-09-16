@@ -67,10 +67,6 @@ interface FormValues {
   currentWeightKg: string;
   heightCm: string;
   additionalInfo: string;
-  emergencyContactName: string;
-  emergencyContactPhone: string;
-  emergencyContact2Name: string;
-  emergencyContact2Phone: string;
   dietaryPreference: string;
   allergies: string[];
   intolerancesOrMedical: string[];
@@ -100,10 +96,6 @@ const INITIAL_VALUES: FormValues = {
   currentWeightKg: "",
   heightCm: "",
   additionalInfo: "",
-  emergencyContactName: "",
-  emergencyContactPhone: "",
-  emergencyContact2Name: "",
-  emergencyContact2Phone: "",
   dietaryPreference: "standard",
   allergies: [],
   intolerancesOrMedical: [],
@@ -275,11 +267,6 @@ export default function SignupScreen() {
 
       if (!values.gender) next.gender = "Please select a gender.";
 
-      if (!values.emergencyContactName.trim()) next.emergencyContactName = "Emergency contact name is required.";
-      if (!values.emergencyContactPhone.trim()) next.emergencyContactPhone = "Emergency contact phone number is required.";
-      if (values.emergencyContact2Name.trim() && !values.emergencyContact2Phone.trim()) {
-        next.emergencyContact2Phone = "Enter a phone number for the second contact, or clear their name.";
-      }
     }
 
     if (currentStep === 2) {
@@ -332,10 +319,6 @@ export default function SignupScreen() {
           currentWeightKg: values.currentWeightKg.trim() || undefined,
           heightCm: values.heightCm.trim() || undefined,
           additionalInfo: values.additionalInfo.trim() || undefined,
-          emergencyContactName: values.emergencyContactName.trim(),
-          emergencyContactPhone: values.emergencyContactPhone.trim(),
-          emergencyContact2Name: values.emergencyContact2Name.trim() || undefined,
-          emergencyContact2Phone: values.emergencyContact2Phone.trim() || undefined,
           dietaryPreference: values.dietaryPreference,
           allergies: values.allergies,
           intolerancesOrMedical: values.intolerancesOrMedical,
@@ -456,43 +439,6 @@ export default function SignupScreen() {
                   ))}
                 </View>
                 {errors.gender ? <Text style={styles.error}>{errors.gender}</Text> : null}
-
-                <Text style={[styles.label, { marginTop: Spacing.lg }]}>In case of emergency</Text>
-                <Text style={styles.hint}>Who should we contact if something happens to you during a session?</Text>
-
-                <TextField
-                  label="Emergency contact name"
-                  value={values.emergencyContactName}
-                  onChangeText={(v) => update("emergencyContactName", v)}
-                  placeholder="e.g. Jane Smith"
-                  error={errors.emergencyContactName}
-                  style={{ marginTop: Spacing.sm }}
-                />
-                <TextField
-                  label="Emergency contact phone"
-                  value={values.emergencyContactPhone}
-                  onChangeText={(v) => update("emergencyContactPhone", v)}
-                  keyboardType="phone-pad"
-                  placeholder="+353 83 123 4567"
-                  error={errors.emergencyContactPhone}
-                />
-                <TextField
-                  label="Second emergency contact name — optional"
-                  value={values.emergencyContact2Name}
-                  onChangeText={(v) => update("emergencyContact2Name", v)}
-                  placeholder="e.g. John Smith"
-                  error={errors.emergencyContact2Name}
-                />
-                {values.emergencyContact2Name.trim() ? (
-                  <TextField
-                    label="Second emergency contact phone"
-                    value={values.emergencyContact2Phone}
-                    onChangeText={(v) => update("emergencyContact2Phone", v)}
-                    keyboardType="phone-pad"
-                    placeholder="+353 83 123 4567"
-                    error={errors.emergencyContact2Phone}
-                  />
-                ) : null}
               </>
             ) : null}
 
@@ -722,18 +668,6 @@ export default function SignupScreen() {
                   <ReviewRow label="Current weight" value={values.currentWeightKg || "—"} />
                   <ReviewRow label="Height" value={values.heightCm || "—"} />
                   <ReviewRow label="Additional info" value={values.additionalInfo || "—"} />
-                  <ReviewRow
-                    label="Emergency contact"
-                    value={`${values.emergencyContactName || "—"} — ${values.emergencyContactPhone || "—"}`}
-                  />
-                  <ReviewRow
-                    label="Second emergency contact"
-                    value={
-                      values.emergencyContact2Name.trim()
-                        ? `${values.emergencyContact2Name} — ${values.emergencyContact2Phone || "—"}`
-                        : "—"
-                    }
-                  />
                   <ReviewRow
                     label="Dietary preference"
                     value={optionLabel(DIETARY_PREFERENCES, values.dietaryPreference)}

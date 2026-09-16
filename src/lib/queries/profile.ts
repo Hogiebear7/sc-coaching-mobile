@@ -67,10 +67,11 @@ interface ProfileResponse {
   data: ProfileData;
 }
 
-export function useProfile() {
+export function useProfile(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ["profile"],
     queryFn: () => apiFetch<ProfileResponse>("/api/mobile/profile").then((r) => r.data),
+    enabled: options?.enabled ?? true,
   });
 }
 

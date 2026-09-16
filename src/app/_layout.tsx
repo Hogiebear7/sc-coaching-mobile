@@ -12,7 +12,10 @@ import { TourHost } from "@/components/ui/TourOverlay";
 import { Color, Radius, Spacing } from "@/constants/theme";
 import { AuthProvider, useAuth } from "@/lib/auth-context";
 import { clearLastCrash, getLastCrash, installGlobalCrashHandler, type CrashRecord } from "@/lib/crash-log";
+import { isEmergencyContactReminderDismissed } from "@/lib/emergency-contact-reminder";
+import { isMembershipTier } from "@/lib/member-access";
 import { addNotificationTapListener, mapLinkHrefToRoute } from "@/lib/push-notifications";
+import { useProfile } from "@/lib/queries/profile";
 import { RestTimerProvider } from "@/lib/rest-timer";
 import { TourProvider } from "@/lib/tour-context";
 import { WorkoutDraftProvider } from "@/lib/workout-draft";
@@ -91,6 +94,18 @@ function AuthGate() {
   // for them.
   const wantsStaffGroup = isStaffRole && viewMode === "coach";
 
+  // Only fetched for a signed-in member (staff have no ProfileRecord by
+  // default) — read-side check for the post-upgrade emergency-contact
+  // prompt below. There's no single write-side "just upgraded" hook (both
+  // staff's grantMemberTier and the self-serve Stripe webhook write a
+  // SubscriptionRecord directly), so this checks on every load instead —
+  // see gym-app/lib/member-tier-wall.ts's header comment for the fuller
+  // picture of why tier is always re-derived, never trusted as a stored
+  // flag.
+  const { data: profile } = useProfile({ enabled: status === "signedIn" && !isStaffRole });
+  const needsEmergencyContact =
+    !!profile && isMembershipTier(profile.memberTier) && !profile.emergencyContactName;
+
   // Auth status alone can resolve in well under SPLASH_MIN_HOLD_MS on a warm
   // cache, which would otherwise make the branded splash barely flash before
   // the app underneath appears. This keeps CustomSplashScreen up for a flat
@@ -121,8 +136,14 @@ function AuthGate() {
       router.replace("/(staff)" as never);
     } else if (!wantsStaffGroup && inStaffGroup) {
       router.replace("/(tabs)");
+    } else if (
+      needsEmergencyContact &&
+      !isEmergencyContactReminderDismissed() &&
+      (segments[0] as string) !== "complete-membership"
+    ) {
+      router.replace("/complete-membership" as never);
     }
-  }, [status, segments, router, wantsStaffGroup]);
+  }, [status, segments, router, wantsStaffGroup, needsEmergencyContact]);
 
   // Tapping a delivered notification (app backgrounded/killed) navigates
   // straight to the relevant screen, mirroring the web app's push linkHref.
@@ -142,6 +163,7 @@ function AuthGate() {
       <Stack.Screen name="(auth)" />
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="(staff)" />
+      <Stack.Screen name="complete-membership" options={{ presentation: "card" }} />
       <Stack.Screen name="membership" options={{ presentation: "card" }} />
       <Stack.Screen name="messages" options={{ presentation: "card" }} />
       <Stack.Screen name="notifications" options={{ presentation: "card" }} />

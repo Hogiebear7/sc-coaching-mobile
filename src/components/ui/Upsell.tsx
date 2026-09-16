@@ -13,16 +13,26 @@ import { Card } from "./Card";
 // cards, MORE TOOLS section, search box) don't use this — they're just
 // conditionally not rendered at the call site.
 
-const UPGRADE_COPY = "Available on App Subscription and above";
+// Two boundaries this shared treatment gates: the original free→paid one,
+// and the newer app_subscription→membership one (see
+// lib/member-access.ts's isMembershipTier) used for staff messaging/data
+// walls. Defaults to the original copy so every existing call site is
+// unaffected.
+const UPGRADE_COPY: Record<"appSubscription" | "membership", string> = {
+  appSubscription: "Available on App Subscription and above",
+  membership: "Available on the Membership tier",
+};
 
 // A settings-style row (icon + title + sub), greyed out, tappable through to
 // the membership screen. Matches the shape of settings.tsx's local `Row`.
 export function UpsellRow({
   icon,
   title,
+  copyVariant = "appSubscription",
 }: {
   icon: keyof typeof Ionicons.glyphMap;
   title: string;
+  copyVariant?: "appSubscription" | "membership";
 }) {
   const router = useRouter();
 
@@ -33,7 +43,7 @@ export function UpsellRow({
       </View>
       <View style={{ flex: 1 }}>
         <Text style={styles.rowTitle}>{title}</Text>
-        <Text style={styles.rowSub}>{UPGRADE_COPY}</Text>
+        <Text style={styles.rowSub}>{UPGRADE_COPY[copyVariant]}</Text>
       </View>
       <View style={styles.badge}>
         <Ionicons name="lock-closed" size={11} color={Color.gold} />
@@ -49,10 +59,12 @@ export function UpsellCard({
   icon,
   title,
   body,
+  copyVariant = "appSubscription",
 }: {
   icon: keyof typeof Ionicons.glyphMap;
   title: string;
   body?: string;
+  copyVariant?: "appSubscription" | "membership";
 }) {
   const router = useRouter();
 
@@ -64,7 +76,7 @@ export function UpsellCard({
         </View>
         <View style={{ flex: 1 }}>
           <Text style={styles.cardTitle}>{title}</Text>
-          <Text style={styles.cardBody}>{body ?? UPGRADE_COPY}</Text>
+          <Text style={styles.cardBody}>{body ?? UPGRADE_COPY[copyVariant]}</Text>
         </View>
         <View style={styles.badge}>
           <Ionicons name="lock-closed" size={11} color={Color.gold} />

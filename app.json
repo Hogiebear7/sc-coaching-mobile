@@ -61,6 +61,12 @@
           "microphonePermission": false
         }
       ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "S&C Coaching uses your location to find nearby gyms and coaches."
+        }
+      ],
       "./plugins/withTransparentSplashIcon.js"
     ],
     "experiments": {

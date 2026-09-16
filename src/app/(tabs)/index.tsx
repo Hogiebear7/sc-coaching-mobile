@@ -284,15 +284,15 @@ export default function DashboardScreen() {
             <SectionHeader label="YOUR ACCESS" />
             <Card style={styles.freeCard}>
               <View style={styles.freeCardIcon}>
-                <Ionicons name="sparkles-outline" size={18} color={Color.gold} />
+                <Ionicons name="location-outline" size={18} color={Color.gold} />
               </View>
-              <Text style={styles.freeCardTitle}>Unlock digital coaching</Text>
+              <Text style={styles.freeCardTitle}>Find a coach near you</Text>
               <Text style={styles.freeCardBody}>
-                Workouts, programmes, recovery, nutrition and AI coaching — wherever you train.
+                Search nearby gyms and coaches — or unlock digital coaching from S&C, wherever you train.
               </Text>
-              <Button title="See app plans" onPress={() => router.push("/membership")} style={{ marginTop: Spacing.md }} />
+              <Button title="Find a coach" onPress={() => router.push("/find-a-coach" as never)} style={{ marginTop: Spacing.md }} />
               <Pressable onPress={() => router.push("/membership")} hitSlop={8} style={styles.freeCardSecondary}>
-                <Text style={styles.freeCardSecondaryText}>Or explore in-person membership</Text>
+                <Text style={styles.freeCardSecondaryText}>Or see S&C&apos;s app plans</Text>
               </Pressable>
             </Card>
           </View>

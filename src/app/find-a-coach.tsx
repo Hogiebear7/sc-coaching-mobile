@@ -8,9 +8,10 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { BrandMark } from "@/components/ui/BrandMark";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { TextField } from "@/components/ui/TextField";
 import { Color, Radius, Spacing } from "@/constants/theme";
 import { ApiError } from "@/lib/api-client";
-import { useNearbyGyms, type NearbyGym } from "@/lib/queries/gyms";
+import { useGeocodeLocation, useNearbyGyms, type NearbyGym } from "@/lib/queries/gyms";
 
 type Status = "idle" | "requesting" | "denied" | "ready" | "error";
 
@@ -51,10 +52,17 @@ export default function FindACoachScreen() {
   const router = useRouter();
   const [status, setStatus] = useState<Status>("idle");
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
+  // Set only when coords came from the manual search box below, not device
+  // GPS — used to caption the results list so it's clear what "near you"
+  // actually means right now.
+  const [searchedLabel, setSearchedLabel] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
   const { data: gyms, isLoading, isError, error } = useNearbyGyms(coords);
+  const geocode = useGeocodeLocation();
 
   async function requestLocation() {
     setStatus("requesting");
+    setSearchedLabel(null);
     const { status: permission } = await Location.requestForegroundPermissionsAsync();
     if (permission !== "granted") {
       setStatus("denied");
@@ -66,6 +74,19 @@ export default function FindACoachScreen() {
       setStatus("ready");
     } catch {
       setStatus("error");
+    }
+  }
+
+  async function handleSearch() {
+    const query = searchQuery.trim();
+    if (!query || geocode.isPending) return;
+    try {
+      const result = await geocode.mutateAsync(query);
+      setCoords({ lat: result.lat, lng: result.lng });
+      setSearchedLabel(result.label);
+      setStatus("ready");
+    } catch {
+      // geocode.error already carries the message — rendered below.
     }
   }
 
@@ -94,20 +115,43 @@ export default function FindACoachScreen() {
           <View style={styles.centerFill}>
             <ActivityIndicator color={Color.gold} size="large" />
           </View>
-        ) : status === "denied" ? (
-          <View style={styles.centerFill}>
-            <Text style={styles.errorText}>
-              Location access is off, so nearby gyms can&apos;t be shown. Enable it in your device settings to
-              use this.
-            </Text>
-            <Button title="Try again" onPress={requestLocation} variant="secondary" style={{ marginTop: Spacing.md }} />
-          </View>
-        ) : status === "error" || isError ? (
-          <View style={styles.centerFill}>
-            <Text style={styles.errorText}>
-              {error instanceof ApiError ? error.message : "Couldn't find your location. Try again."}
-            </Text>
-            <Button title="Try again" onPress={requestLocation} variant="secondary" style={{ marginTop: Spacing.md }} />
+        ) : status === "denied" || status === "error" || isError ? (
+          <View>
+            <View style={styles.centerFill}>
+              <Text style={styles.errorText}>
+                {status === "denied"
+                  ? "Location access is off, so nearby gyms can't be shown. Enable it in your device settings, or search an area below."
+                  : error instanceof ApiError
+                    ? error.message
+                    : "Couldn't find your location. Try again, or search an area below."}
+              </Text>
+              <Button title="Try again" onPress={requestLocation} variant="secondary" style={{ marginTop: Spacing.md }} />
+            </View>
+
+            <View style={styles.searchRow}>
+              <View style={{ flex: 1 }}>
+                <TextField
+                  label="Search an area"
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                  placeholder="Town, city, or postcode"
+                  onSubmitEditing={handleSearch}
+                  returnKeyType="search"
+                />
+              </View>
+              <Button
+                title="Search"
+                onPress={handleSearch}
+                loading={geocode.isPending}
+                disabled={!searchQuery.trim()}
+                style={styles.searchButton}
+              />
+            </View>
+            {geocode.isError ? (
+              <Text style={[styles.errorText, styles.searchError]}>
+                {geocode.error instanceof ApiError ? geocode.error.message : "Couldn't search that area. Try again."}
+              </Text>
+            ) : null}
           </View>
         ) : isLoading ? (
           <View style={styles.centerFill}>
@@ -118,10 +162,13 @@ export default function FindACoachScreen() {
             <Text style={styles.errorText}>No gyms found nearby yet.</Text>
           </View>
         ) : (
-          <View style={styles.gymList}>
-            {gyms.map((gym) => (
-              <GymRow key={gym.id} gym={gym} />
-            ))}
+          <View>
+            {searchedLabel ? <Text style={styles.searchedLabel}>Showing results near {searchedLabel}</Text> : null}
+            <View style={styles.gymList}>
+              {gyms.map((gym) => (
+                <GymRow key={gym.id} gym={gym} />
+              ))}
+            </View>
           </View>
         )}
       </ScrollView>
@@ -157,6 +204,19 @@ const styles = StyleSheet.create({
   },
   centerFill: { alignItems: "center", justifyContent: "center", paddingVertical: Spacing.xxl },
   errorText: { color: Color.textMuted, fontSize: 14, textAlign: "center" },
+  searchRow: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    gap: Spacing.sm,
+    marginTop: Spacing.lg,
+  },
+  searchButton: { height: 48 },
+  searchError: { marginTop: Spacing.sm, textAlign: "left" },
+  searchedLabel: {
+    fontSize: 12,
+    color: Color.textFaint,
+    marginBottom: Spacing.md,
+  },
   gymList: { gap: Spacing.md },
   gymCard: { padding: Spacing.lg },
   recommendedBadge: {

@@ -1,9 +1,11 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import { Image, type ImageStyle } from "expo-image";
 import { useRouter } from "expo-router";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Modal,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -22,11 +24,87 @@ import { ReadinessRing } from "@/components/ui/ReadinessRing";
 import { ReadinessSparkline } from "@/components/ui/ReadinessSparkline";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { StatCard } from "@/components/ui/StatCard";
-import { Color, Spacing } from "@/constants/theme";
+import { Color, Radius, Spacing } from "@/constants/theme";
+import { useAuth } from "@/lib/auth-context";
+import { hasAccess } from "@/lib/member-access";
+import { POST_SIGNUP_SETUP_KEY_PREFIX } from "@/lib/post-signup-setup";
 import { useCommunityHighlight } from "@/lib/queries/community";
 import { useDashboard } from "@/lib/queries/dashboard";
 import { useNotifications } from "@/lib/queries/notifications";
 import { useProfile } from "@/lib/queries/profile";
+import { useTour } from "@/lib/tour-context";
+
+// Shown once, right after a member's very first signup — offers the two
+// setup steps that meaningfully improve day-one use of Workouts (an
+// equipment-aware gym profile, an AI-generated first programme) without
+// forcing either during the signup form itself. Gated behind the tour
+// prompt/card so the two one-time modals never stack on a fresh account.
+function PostSignupSetupModal() {
+  const router = useRouter();
+  const { user } = useAuth();
+  const { data: profile } = useProfile();
+  const { showPrompt: tourShowPrompt, activePage: tourActivePage } = useTour();
+  const [pending, setPending] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    AsyncStorage.getItem(POST_SIGNUP_SETUP_KEY_PREFIX + user.id)
+      .then((v) => {
+        if (!cancelled && v) setPending(true);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
+
+  function dismiss() {
+    setPending(false);
+    if (user) AsyncStorage.removeItem(POST_SIGNUP_SETUP_KEY_PREFIX + user.id).catch(() => {});
+  }
+
+  function choose(path: "/gym-profile-builder" | "/workout-generator" | "/membership") {
+    dismiss();
+    router.push(path as never);
+  }
+
+  const tier = profile?.memberTier ?? "free";
+  const canGymProfile = hasAccess(tier, "gymProfiles");
+  const canGenerate = hasAccess(tier, "workoutGenerate");
+  const visible = pending && !tourShowPrompt && !tourActivePage;
+
+  return (
+    <Modal visible={visible} transparent animationType="fade" statusBarTranslucent>
+      <View style={styles.setupBackdrop}>
+        <View style={styles.setupCard}>
+          <View style={styles.setupIcon}>
+            <Ionicons name="barbell-outline" size={22} color={Color.gold} />
+          </View>
+          <Text style={styles.setupTitle}>Set up your training?</Text>
+          <Text style={styles.setupBody}>
+            Add the equipment you have access to, or generate your first programme now — both take a couple of
+            minutes, and you can just as easily do this later from Workouts.
+          </Text>
+          <Button
+            title={canGymProfile ? "Set up a gym profile" : "Set up a gym profile — Upgrade"}
+            onPress={() => choose(canGymProfile ? "/gym-profile-builder" : "/membership")}
+            style={styles.setupButton}
+          />
+          <Button
+            title={canGenerate ? "Generate a programme" : "Generate a programme — Upgrade"}
+            onPress={() => choose(canGenerate ? "/workout-generator" : "/membership")}
+            variant="secondary"
+            style={styles.setupButton}
+          />
+          <Pressable onPress={dismiss} hitSlop={8} style={styles.setupLaterButton}>
+            <Text style={styles.setupLaterText}>I&apos;ll do this later</Text>
+          </Pressable>
+        </View>
+      </View>
+    </Modal>
+  );
+}
 
 function formatTodayLabel(): string {
   return new Date().toLocaleDateString(undefined, {
@@ -466,6 +544,7 @@ export default function DashboardScreen() {
           </Card>
         </View>
       </ScrollView>
+      <PostSignupSetupModal />
     </SafeAreaView>
   );
 }
@@ -759,4 +838,43 @@ const styles = StyleSheet.create({
     color: Color.textMuted,
     marginTop: 2,
   },
+  setupBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(4,10,20,0.72)",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: Spacing.xl,
+  },
+  setupCard: {
+    width: "100%",
+    maxWidth: 380,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    borderColor: Color.borderDefault,
+    backgroundColor: Color.surface1,
+    padding: Spacing.xl,
+    alignItems: "center",
+  },
+  setupIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: Radius.pill,
+    borderWidth: 1,
+    borderColor: Color.goldBorder,
+    backgroundColor: Color.goldWeak,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: Spacing.md,
+  },
+  setupTitle: { fontSize: 18, fontWeight: "700", color: Color.textPrimary, textAlign: "center" },
+  setupBody: {
+    fontSize: 13,
+    color: Color.textMuted,
+    textAlign: "center",
+    marginTop: Spacing.sm,
+    lineHeight: 19,
+  },
+  setupButton: { width: "100%", marginTop: Spacing.lg },
+  setupLaterButton: { marginTop: Spacing.md, padding: Spacing.xs },
+  setupLaterText: { fontSize: 13, fontWeight: "600", color: Color.textMuted },
 });

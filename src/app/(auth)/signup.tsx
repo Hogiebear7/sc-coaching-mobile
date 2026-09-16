@@ -1,3 +1,4 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import { Link } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
@@ -21,6 +22,7 @@ import { Color, Radius, Spacing } from "@/constants/theme";
 import { ApiError, useAuth, type AuthUser } from "@/lib/auth-context";
 import { apiFetch } from "@/lib/api-client";
 import { ALLERGENS, DIETARY_PREFERENCES, INTOLERANCES, optionLabel } from "@/lib/dietary-options";
+import { POST_SIGNUP_SETUP_KEY_PREFIX } from "@/lib/post-signup-setup";
 import { setToken as persistToken } from "@/lib/token-store";
 
 // Mirrors the web signup wizard (app/(auth)/signup/page.tsx in the main
@@ -351,6 +353,7 @@ export default function SignupScreen() {
         },
       });
       await persistToken(res.token);
+      await AsyncStorage.setItem(POST_SIGNUP_SETUP_KEY_PREFIX + res.user.id, "1").catch(() => {});
       await setSession(res.token, res.user);
     } catch (e) {
       setFormError(e instanceof ApiError ? e.message : "Something went wrong. Try again.");

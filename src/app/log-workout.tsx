@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
   findNodeHandle,
@@ -56,6 +56,7 @@ import {
   formatExerciseLoad,
   getLastExercisePerformance,
   getLastSetForIndex,
+  getPersonalExerciseNames,
   livePace,
   parseDuration,
   todayDateString,
@@ -593,6 +594,10 @@ export default function LogWorkoutScreen() {
   const restTimerSeconds = profile?.restTimerSeconds ?? 90;
   const restTimer = useRestTimer();
   const { data: libraryIndex } = useExerciseLibraryNameIndex();
+  const personalExerciseNames = useMemo(
+    () => getPersonalExerciseNames(data?.sessions ?? [], data?.exerciseLibrary ?? [], libraryIndex?.items ?? []),
+    [data?.sessions, data?.exerciseLibrary, libraryIndex?.items]
+  );
   const { data: program } = useMyProgram();
   const { data: templates } = useWorkoutTemplates();
   const create = useCreateWorkout();
@@ -1535,6 +1540,7 @@ export default function LogWorkoutScreen() {
               <ExerciseAutocomplete
                 exercises={data?.exerciseLibrary ?? []}
                 libraryNames={libraryIndex?.items ?? []}
+                personalNames={personalExerciseNames}
                 value={row.name}
                 onChange={(name, exerciseId) => updateRow(row.key, { name, exerciseId })}
               />

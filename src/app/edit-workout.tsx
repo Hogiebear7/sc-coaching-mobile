@@ -23,7 +23,7 @@ import {
   type CreateWorkoutRunInput,
   type WorkoutSetType,
 } from "@/lib/queries/workouts";
-import { formatAsKg, formatDuration, parseDuration, todayDateString } from "@/lib/workout-formatters";
+import { formatAsKg, formatDuration, getPersonalExerciseNames, parseDuration, todayDateString } from "@/lib/workout-formatters";
 
 type EditSetRow = {
   key: string;
@@ -136,6 +136,10 @@ export default function EditWorkoutScreen() {
   const { id } = useLocalSearchParams<{ id?: string }>();
   const { data, isLoading } = useWorkouts();
   const { data: libraryIndex } = useExerciseLibraryNameIndex();
+  const personalExerciseNames = useMemo(
+    () => getPersonalExerciseNames(data?.sessions ?? [], data?.exerciseLibrary ?? [], libraryIndex?.items ?? []),
+    [data?.sessions, data?.exerciseLibrary, libraryIndex?.items]
+  );
   const editWorkout = useEditWorkout();
 
   const session = useMemo(() => data?.sessions.find((s) => s.id === id), [data, id]);
@@ -382,6 +386,7 @@ export default function EditWorkoutScreen() {
                 <ExerciseAutocomplete
                   exercises={data?.exerciseLibrary ?? []}
                   libraryNames={libraryIndex?.items ?? []}
+                  personalNames={personalExerciseNames}
                   value={row.name}
                   onChange={(name, exerciseId) => updateRow(row.key, { name, exerciseId })}
                 />

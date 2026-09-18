@@ -407,6 +407,35 @@ export interface ExerciseStats {
   history: ExerciseHistoryEntry[];
 }
 
+// Exercise names this member has typed and logged before that aren't in
+// either shared library list — the autocomplete's third suggestion source.
+// Deliberately client-side and derived from data the member's own screen
+// already fetched: there's no per-user table anywhere, this just diffs
+// their own session history against the two shared lists on the fly, so a
+// name typed once suggests again for THEM without ever being written
+// anywhere another member's suggestions could read from. Most-recent-first,
+// since sessions are already sorted newest-first.
+export function getPersonalExerciseNames(
+  sessions: WorkoutSessionSummary[],
+  exercises: { name: string }[],
+  libraryNames: { name: string }[]
+): string[] {
+  const known = new Set([...exercises, ...libraryNames].map((e) => e.name.trim().toLowerCase()));
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const session of sessions) {
+    for (const ex of session.exercises) {
+      const trimmed = ex.name.trim();
+      if (!trimmed) continue;
+      const lower = trimmed.toLowerCase();
+      if (known.has(lower) || seen.has(lower)) continue;
+      seen.add(lower);
+      result.push(trimmed);
+    }
+  }
+  return result;
+}
+
 // The full stat line for one exercise across every logged session —
 // heaviest set, best single-set volume/reps, a rough Epley 1RM estimate,
 // running totals, and a session-by-session history for a detail screen.

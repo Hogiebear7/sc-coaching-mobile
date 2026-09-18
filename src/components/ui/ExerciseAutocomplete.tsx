@@ -32,22 +32,29 @@ interface Suggestion {
 // (substring match, capped to 8 suggestions), touch-friendly list instead
 // of a hover/keyboard-nav combobox.
 //
-// Suggestions merge two sources: the coach-curated `exercises` list (small,
-// carries a muscle-group `section` so it feeds Set Levels tracking) and the
-// big imported `libraryNames` list (hundreds of exercises with demo GIFs,
-// no muscle-group section). Curated matches are shown first and take
-// priority on a name collision, since only they carry set-level tracking;
-// picking a library-only suggestion still saves fine — it just isn't
-// muscle-group tracked — and its GIF/demo still resolves afterwards via the
-// existing name-based lookup (findExerciseLibrarySlug).
+// Suggestions merge three sources: the coach-curated `exercises` list
+// (small, carries a muscle-group `section` so it feeds Set Levels
+// tracking), the big imported `libraryNames` list (hundreds of exercises
+// with demo GIFs, no muscle-group section), and this member's own
+// `personalNames` — exercise names THEY have typed and logged before that
+// aren't in either shared list. That last one exists purely client-side:
+// it's derived from the member's own already-fetched session history
+// (never sent to or suggested for anyone else), so a name typed once
+// autocompletes next time without ever being merged into a shared/global
+// exercise list. Curated matches are shown first and take priority on a
+// name collision, since only they carry set-level tracking; picking a
+// library-only or personal-only suggestion still saves fine — it just
+// isn't muscle-group tracked.
 export function ExerciseAutocomplete({
   exercises,
   libraryNames = [],
+  personalNames = [],
   value,
   onChange,
 }: {
   exercises: ExerciseLibraryEntry[];
   libraryNames?: ExerciseLibraryNameEntry[];
+  personalNames?: string[];
   value: string;
   onChange: (name: string, exerciseId: string | null) => void;
 }) {
@@ -60,15 +67,22 @@ export function ExerciseAutocomplete({
       .filter((e) => e.name.toLowerCase().includes(query))
       .map((e) => ({ key: e.id, name: e.name, exerciseId: e.id, badge: SECTION_LABELS[e.section] ?? e.section }));
     const curatedNames = new Set(exercises.map((e) => e.name.toLowerCase()));
-    const seenLibraryNames = new Set<string>();
+    const seenNames = new Set<string>();
     const libraryMatches: Suggestion[] = [];
     for (const l of libraryNames) {
       const lower = l.name.toLowerCase();
-      if (!lower.includes(query) || curatedNames.has(lower) || seenLibraryNames.has(lower)) continue;
-      seenLibraryNames.add(lower);
+      if (!lower.includes(query) || curatedNames.has(lower) || seenNames.has(lower)) continue;
+      seenNames.add(lower);
       libraryMatches.push({ key: `lib:${l.slug}`, name: l.name, exerciseId: null, badge: "Library" });
     }
-    suggestions = [...curatedMatches, ...libraryMatches].slice(0, 8);
+    const personalMatches: Suggestion[] = [];
+    for (const name of personalNames) {
+      const lower = name.toLowerCase();
+      if (!lower.includes(query) || curatedNames.has(lower) || seenNames.has(lower)) continue;
+      seenNames.add(lower);
+      personalMatches.push({ key: `personal:${name}`, name, exerciseId: null, badge: "Yours" });
+    }
+    suggestions = [...curatedMatches, ...libraryMatches, ...personalMatches].slice(0, 8);
   }
 
   return (

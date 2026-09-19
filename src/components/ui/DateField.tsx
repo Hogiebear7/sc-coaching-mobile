@@ -220,31 +220,40 @@ export function DateField({
                   ))}
                 </View>
 
-                <View style={styles.grid}>
-                  {cells.map((d, i) => {
-                    if (d === null) return <View key={i} style={styles.cell} />;
-                    const disabled = isDisabled(d);
-                    const isSelected = !!selected && selected.y === viewY && selected.m === viewM && selected.d === d;
-                    const isToday = todayParts.y === viewY && todayParts.m === viewM && todayParts.d === d;
-                    return (
-                      <Pressable
-                        key={i}
-                        disabled={disabled}
-                        onPress={() => handleSelect(d)}
-                        style={[styles.cell, isSelected && styles.cellSelected, isToday && !isSelected && styles.cellToday]}
-                      >
-                        <Text
-                          style={[
-                            styles.cellText,
-                            disabled && styles.cellTextDisabled,
-                            isSelected && styles.cellTextSelected,
-                          ]}
-                        >
-                          {d}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
+                <View>
+                  {Array.from({ length: cells.length / 7 }, (_, row) => (
+                    <View key={row} style={styles.dayRow}>
+                      {cells.slice(row * 7, row * 7 + 7).map((d, i) => {
+                        if (d === null) return <View key={i} style={styles.cell} />;
+                        const disabled = isDisabled(d);
+                        const isSelected =
+                          !!selected && selected.y === viewY && selected.m === viewM && selected.d === d;
+                        const isToday = todayParts.y === viewY && todayParts.m === viewM && todayParts.d === d;
+                        return (
+                          <Pressable
+                            key={i}
+                            disabled={disabled}
+                            onPress={() => handleSelect(d)}
+                            style={[
+                              styles.cell,
+                              isSelected && styles.cellSelected,
+                              isToday && !isSelected && styles.cellToday,
+                            ]}
+                          >
+                            <Text
+                              style={[
+                                styles.cellText,
+                                disabled && styles.cellTextDisabled,
+                                isSelected && styles.cellTextSelected,
+                              ]}
+                            >
+                              {d}
+                            </Text>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                  ))}
                 </View>
               </>
             )}
@@ -316,9 +325,14 @@ const styles = StyleSheet.create({
   yearCellText: { fontSize: 14, color: Color.textSecondary },
   weekRow: { flexDirection: "row", marginBottom: Spacing.xs },
   weekLabel: { flex: 1, textAlign: "center", fontSize: 11, fontWeight: "600", color: Color.textFaint },
-  grid: { flexDirection: "row", flexWrap: "wrap" },
+  // Each week is its own row of exactly 7 flex:1 cells, matching the header
+  // row's sizing exactly — a `${100/7}%` width inside a flex-wrap grid was
+  // the source of a rounding bug where accumulated pixel rounding pushed
+  // the 7th cell (Sunday) onto the next line on some screen widths, see
+  // MonthDatePicker.tsx for the same fix applied first.
+  dayRow: { flexDirection: "row" },
   cell: {
-    width: `${100 / 7}%`,
+    flex: 1,
     aspectRatio: 1,
     alignItems: "center",
     justifyContent: "center",

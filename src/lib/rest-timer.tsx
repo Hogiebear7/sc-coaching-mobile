@@ -57,6 +57,12 @@ function initialState(): RestTimerState {
   };
 }
 
+function formatClockForNotification(secs: number): string {
+  const m = Math.floor(secs / 60);
+  const s = secs % 60;
+  return `${m}:${String(s).padStart(2, "0")}`;
+}
+
 async function scheduleDoneNotification(remainingSecs: number, label: string | null): Promise<void> {
   if (Platform.OS === "web" || remainingSecs <= 0) return;
   try {
@@ -70,6 +76,31 @@ async function scheduleDoneNotification(remainingSecs: number, label: string | n
     });
   } catch {
     // Best-effort — a missing permission shouldn't block the timer itself.
+  }
+}
+
+// Fires immediately alongside scheduleDoneNotification, sharing its
+// identifier — so the moment the delayed "time's up" notification below
+// actually presents, it replaces this one in the shade rather than
+// stacking a second entry. `sticky` (Android-only; ignored on iOS) keeps
+// it from being swiped away mid-rest, since it's meant to stay visible
+// for the whole countdown, not just flash past.
+async function scheduleStartNotification(seconds: number, label: string | null, setSummary: string | null): Promise<void> {
+  if (Platform.OS === "web" || seconds <= 0) return;
+  try {
+    await Notifications.scheduleNotificationAsync({
+      identifier: NOTIFICATION_ID,
+      content: {
+        title: label ? `Resting — ${label}` : "Resting",
+        body: setSummary
+          ? `${setSummary} done. Back to it in ${formatClockForNotification(seconds)}.`
+          : `Back to your next set in ${formatClockForNotification(seconds)}.`,
+        sticky: true,
+      },
+      trigger: null,
+    });
+  } catch {
+    // Best-effort.
   }
 }
 
@@ -90,8 +121,10 @@ interface RestTimerContextValue {
   remainingNow: () => number;
   stopwatchElapsedNow: () => number;
   /** Starts fresh at `seconds` (running immediately). Used for auto-start
-   *  on set-complete and for a deliberate preset/duration change. */
-  start: (seconds: number, label?: string | null) => void;
+   *  on set-complete and for a deliberate preset/duration change.
+   *  `setSummary` (e.g. "Set 3 60kg ×8") only affects the immediate
+   *  start notification's body — it's not persisted in state. */
+  start: (seconds: number, label?: string | null, setSummary?: string | null) => void;
   /** Resumes from remainingAtPauseSecs — the play button on an already
    *  paused timer, as opposed to starting a new one. */
   resume: () => void;
@@ -149,7 +182,7 @@ export function RestTimerProvider({ children }: { children: ReactNode }) {
     return state.stopwatchAccumulatedSecs + Math.floor((Date.now() - state.stopwatchStartedAtMs) / 1000);
   }, [state]);
 
-  const start = useCallback((seconds: number, label: string | null = null) => {
+  const start = useCallback((seconds: number, label: string | null = null, setSummary: string | null = null) => {
     const endsAtMs = Date.now() + seconds * 1000;
     setState((prev) => ({
       ...prev,
@@ -159,6 +192,7 @@ export function RestTimerProvider({ children }: { children: ReactNode }) {
       endsAtMs,
       remainingAtPauseSecs: seconds,
     }));
+    void scheduleStartNotification(seconds, label, setSummary);
     void scheduleDoneNotification(seconds, label);
   }, []);
 

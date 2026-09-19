@@ -217,6 +217,12 @@ export interface WorkoutDraft {
   // a setInterval counter would stall the moment the JS thread suspends.
   accumulatedSecs: number;
   startedAtMs: number | null;
+  /** Overrides the profile's default rest-timer duration for auto-started
+      rests, for this workout only — set when the member picks a preset on
+      the full-screen rest timer mid-session. Null means "use the profile
+      default"; cleared by discard() like the rest of the draft, so it
+      never leaks into the next workout. */
+  restTimerOverrideSecs: number | null;
   format: WorkoutFormat;
   circuitConfig: CircuitConfig;
   amrapConfig: AmrapConfig;
@@ -240,6 +246,7 @@ function emptyDraft(): WorkoutDraft {
     isLive: false,
     accumulatedSecs: 0,
     startedAtMs: null,
+    restTimerOverrideSecs: null,
     format: "standard",
     circuitConfig: emptyCircuitConfig(),
     amrapConfig: emptyAmrapConfig(),

@@ -18,6 +18,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { BrandMark } from "@/components/ui/BrandMark";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { ContinueWorkoutPill } from "@/components/ui/ContinueWorkoutPill";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { InfoModal } from "@/components/ui/InfoModal";
 import { ReadinessRing } from "@/components/ui/ReadinessRing";
@@ -181,6 +182,7 @@ export default function DashboardScreen() {
               <Text style={styles.greeting}>Hi {data.firstName}</Text>
             </View>
             <View style={styles.headerActions}>
+              <ContinueWorkoutPill />
               <Pressable
                 onPress={() => router.push("/notifications")}
                 hitSlop={8}

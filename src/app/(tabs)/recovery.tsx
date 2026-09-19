@@ -6,6 +6,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Collapsible } from "@/components/ui/Collapsible";
+import { ContinueWorkoutPill } from "@/components/ui/ContinueWorkoutPill";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ReadinessRing } from "@/components/ui/ReadinessRing";
 import { SectionHeader } from "@/components/ui/SectionHeader";
@@ -155,7 +156,10 @@ export default function RecoveryScreen() {
         contentContainerStyle={styles.scroll}
         refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => refetch()} tintColor={Color.gold} />}
       >
-        <Text style={styles.heading}>Recovery</Text>
+        <View style={styles.headerRow}>
+          <Text style={styles.heading}>Recovery</Text>
+          <ContinueWorkoutPill />
+        </View>
 
         <Card style={styles.summaryCard} tier="hero">
           <View style={styles.summaryRow}>
@@ -282,13 +286,18 @@ const styles = StyleSheet.create({
   centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
   errorText: { color: Color.textMuted, fontSize: 14 },
   scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
+  headerRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: Spacing.md,
+    marginBottom: Spacing.lg,
+  },
   heading: {
     fontSize: 24,
     fontWeight: "700",
     fontStyle: "italic",
     color: Color.textPrimary,
-    marginTop: Spacing.md,
-    marginBottom: Spacing.lg,
   },
   summaryCard: { padding: Spacing.md, marginBottom: Spacing.lg },
   summaryRow: { flexDirection: "row", alignItems: "center", gap: Spacing.md },

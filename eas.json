@@ -30,6 +30,16 @@
         "EAS_ACCOUNT_TARGET": "hogiebear777"
       }
     },
+    "apkpure": {
+      "distribution": "internal",
+      "autoIncrement": true,
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EAS_ACCOUNT_TARGET": "hogiebear777"
+      }
+    },
     "production": {
       "autoIncrement": true,
       "env": {

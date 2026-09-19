@@ -5,6 +5,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { ContinueWorkoutPill } from "@/components/ui/ContinueWorkoutPill";
 import { Color, Radius, Spacing } from "@/constants/theme";
 import { ApiError } from "@/lib/auth-context";
 import {
@@ -347,8 +348,9 @@ export default function ScheduleScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
-      <View style={styles.header}>
+      <View style={[styles.header, styles.headerRow]}>
         <Text style={styles.heading}>Schedule</Text>
+        <ContinueWorkoutPill />
       </View>
 
       <View style={styles.tabBar}>
@@ -438,6 +440,7 @@ const styles = StyleSheet.create({
   centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
   errorText: { color: Color.textMuted, fontSize: 14 },
   header: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.md },
+  headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   heading: {
     fontSize: 24,
     fontWeight: "700",

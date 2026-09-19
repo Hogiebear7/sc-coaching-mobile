@@ -128,6 +128,22 @@ function unitModeColumnLabel(mode: ExerciseRow["unitMode"]): string {
   return "Weight";
 }
 
+// The rest-timer notification's body — "Set 3 60kg ×8 done" — so the
+// content on the lock screen actually says what was just lifted, not just
+// a generic "time's up".
+function formatCompletedSetSummary(row: ExerciseRow, sr: SetRow, setIdx: number): string {
+  const parts = [`Set ${setIdx + 1}`];
+  if (sr.weight.trim()) parts.push(row.unitMode === "weight" ? `${sr.weight.trim()}kg` : sr.weight.trim());
+  const repsLabel =
+    sr.repsRight.trim() && sr.repsLeft.trim()
+      ? `R${sr.repsRight.trim()}/L${sr.repsLeft.trim()}`
+      : sr.reps.trim()
+        ? `×${sr.reps.trim()}`
+        : null;
+  if (repsLabel) parts.push(repsLabel);
+  return parts.join(" ");
+}
+
 function nextSetType(current: WorkoutSetType): WorkoutSetType {
   const idx = SET_TYPE_OPTIONS.findIndex((opt) => opt.value === current);
   return SET_TYPE_OPTIONS[(idx + 1) % SET_TYPE_OPTIONS.length].value;
@@ -910,7 +926,9 @@ export default function LogWorkoutScreen() {
         // mount) means it keeps running and still notifies on completion
         // even if that screen is never opened at all — see
         // lib/rest-timer.tsx for why that distinction matters.
-        restTimer.start(restTimerSeconds);
+        const completedSet = row?.setRows[setIdx];
+        const setSummary = row && completedSet ? formatCompletedSetSummary(row, completedSet, setIdx) : null;
+        restTimer.start(restTimerSeconds, row?.name || null, setSummary);
       }
     }
     updateSetRow(rowKey, setKey, { completed: !wasCompleted });

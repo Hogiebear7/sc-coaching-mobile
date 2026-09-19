@@ -3,7 +3,6 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
   Alert,
-  findNodeHandle,
   Image,
   InteractionManager,
   Keyboard,
@@ -778,7 +777,11 @@ export default function LogWorkoutScreen() {
   const addButtonsRef = useRef<View | null>(null);
 
   function scrollToAddButtons() {
-    const scrollNode = findNodeHandle(scrollRef.current);
+    // getNativeScrollRef() is the modern, cross-platform way to get the
+    // scroll view's underlying node for measureLayout — findNodeHandle is
+    // deprecated on native and was never implemented at all by
+    // react-native-web, which crashed this entire flow on web.
+    const scrollNode = scrollRef.current?.getNativeScrollRef();
     if (!scrollNode) return;
     addButtonsRef.current?.measureLayout(
       scrollNode,

@@ -170,13 +170,16 @@ export default function LogFoodScreen() {
   const [selectedFood, setSelectedFood] = useState<{ food: FoodRecord; domain: FoodDomain } | null>(null);
   const [servingLabel, setServingLabel] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
-  // A typed exact-grams override, kept separate from servingLabel/quantity
-  // rather than replacing them — most catalog items only ever have a "100g"
-  // serving (Open Food Facts rarely gives a clean real package weight), so
-  // this is the escape hatch for "I know the real amount, the catalog
-  // doesn't." Empty string means no override; touching a serving chip or
-  // the quantity stepper clears it, so those controls always win back over
-  // a stale typed value rather than silently fighting it.
+  // A typed exact-grams override for a SINGLE serving — kept separate from
+  // servingLabel/quantity rather than replacing them, since most catalog
+  // items only ever have a "100g" serving (Open Food Facts rarely gives a
+  // clean real package weight). This is the escape hatch for "I know the
+  // real per-unit weight, the catalog doesn't." The quantity stepper still
+  // multiplies on top of it — typing 50g then stepping to 1.5x gives 75g —
+  // so it's a correction to the base weight, not a one-off total. Empty
+  // string means no override. Switching serving chips clears it (a typed
+  // weight for "1 slice" is meaningless once the chip says "1 cup"), but
+  // the stepper deliberately does not.
   const [gramsOverride, setGramsOverride] = useState("");
   const overrideGramsValue = gramsOverride.trim() ? Number(gramsOverride) : null;
   const overrideGrams = overrideGramsValue !== null && Number.isFinite(overrideGramsValue) && overrideGramsValue > 0 ? overrideGramsValue : null;
@@ -314,8 +317,9 @@ export default function LogFoodScreen() {
   // quantity changes — keeps the preview live as the member adjusts either.
   useEffect(() => {
     if (!selectedFood) return;
-    if (overrideGrams === null && (!Number.isFinite(quantity) || quantity < 0)) return;
-    const grams = overrideGrams ?? gramsForServing(selectedFood.food, servingLabel, quantity);
+    if (!Number.isFinite(quantity) || quantity < 0) return;
+    const baseGrams = overrideGrams ?? gramsForServing(selectedFood.food, servingLabel, 1);
+    const grams = baseGrams * quantity;
     const nutrition = nutritionForGrams(selectedFood.food.nutrition100g, grams);
     setCalories(String(nutrition.calories));
     setProteinG(String(nutrition.proteinG));
@@ -346,10 +350,9 @@ export default function LogFoodScreen() {
       return;
     }
 
-    // A typed grams override is an exact, already-total amount — store it
-    // as a 1×-quantity serving of that many grams rather than trying to
-    // preserve the original chip/stepper combination underneath it.
-    const qty = selectedFood ? (overrideGrams !== null ? 1 : quantity) : null;
+    // A typed grams override replaces the per-serving base weight, not the
+    // final total — quantity still applies on top of it either way.
+    const qty = selectedFood ? quantity : null;
 
     try {
       await createEntry.mutateAsync({
@@ -534,10 +537,7 @@ export default function LogFoodScreen() {
               <Stepper
                 label="Quantity"
                 value={quantity}
-                onChange={(v) => {
-                  setQuantity(v);
-                  setGramsOverride("");
-                }}
+                onChange={setQuantity}
                 min={0.5}
                 max={20}
                 step={0.5}
@@ -545,17 +545,18 @@ export default function LogFoodScreen() {
               />
               {/* Most catalog items only have a "100g" serving on record —
                   this is the way to say "I know the real amount" when that
-                  default doesn't match what's actually in front of you. */}
+                  default doesn't match what's actually in front of you.
+                  Quantity above still multiplies on top of this. */}
               <TextField
-                label="Or enter exact grams"
+                label="Or enter exact grams per serving"
                 value={gramsOverride}
                 onChangeText={setGramsOverride}
-                placeholder={`${Math.round(gramsForServing(selectedFood.food, servingLabel, quantity))}`}
+                placeholder={`${Math.round(gramsForServing(selectedFood.food, servingLabel, 1))}`}
                 keyboardType="decimal-pad"
                 style={styles.gramsOverrideInput}
               />
               <Text style={styles.gramsTotal}>
-                = {Math.round(overrideGrams ?? gramsForServing(selectedFood.food, servingLabel, quantity))}g total
+                = {Math.round((overrideGrams ?? gramsForServing(selectedFood.food, servingLabel, 1)) * quantity)}g total
               </Text>
             </Card>
           ) : !searchOpen ? (

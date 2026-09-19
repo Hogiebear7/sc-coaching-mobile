@@ -607,7 +607,6 @@ export default function LogWorkoutScreen() {
   }>();
   const { data } = useWorkouts();
   const { data: profile } = useProfile();
-  const restTimerSeconds = profile?.restTimerSeconds ?? 90;
   const restTimer = useRestTimer();
   const { data: libraryIndex } = useExerciseLibraryNameIndex();
   const { data: program } = useMyProgram();
@@ -617,6 +616,10 @@ export default function LogWorkoutScreen() {
 
   const { draft, hydrated, update, startTimer, pauseTimer, resetTimer, discard, elapsedSecsNow } = useWorkoutDraft();
   const { title, date, durationMins, notes, exerciseRows, runRows, isLive } = draft;
+  // A preset picked on the full-screen rest timer during this workout wins
+  // over the profile default for every rest that follows — see
+  // restTimerOverrideSecs in workout-draft.tsx.
+  const restTimerSeconds = draft.restTimerOverrideSecs ?? profile?.restTimerSeconds ?? 90;
   const [error, setError] = useState<string | null>(null);
   const [feelModalOpen, setFeelModalOpen] = useState(false);
   const [sessionRpe, setSessionRpe] = useState<number | null>(null);

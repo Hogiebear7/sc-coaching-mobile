@@ -9,6 +9,7 @@ import { isBatteryOptimizationRelevant, openBatteryOptimizationSettings } from "
 import { Color, Radius, Spacing } from "@/constants/theme";
 import { successFeedback, tapFeedback } from "@/lib/haptics";
 import { useRestTimer } from "@/lib/rest-timer";
+import { useWorkoutDraft } from "@/lib/workout-draft";
 
 const BATTERY_PROMPT_DISMISSED_KEY = "rest-timer-battery-prompt-dismissed-v1";
 
@@ -32,6 +33,7 @@ export default function RestTimerScreen() {
     label?: string;
   }>();
   const timer = useRestTimer();
+  const { update: updateDraft } = useWorkoutDraft();
   // Purely a re-render trigger — the actual value read each render is
   // timer.remainingNow() below, wall-clock-derived so it's always correct
   // on its own, including right after this screen was unmounted for a
@@ -116,6 +118,10 @@ export default function RestTimerScreen() {
   function handlePreset(secs: number) {
     tapFeedback();
     timer.reset(secs, timer.state.label);
+    // A deliberate preset pick here is "make this my rest duration for the
+    // rest of this workout" — not just for the timer sitting on screen
+    // right now. See restTimerOverrideSecs in workout-draft.tsx.
+    updateDraft({ restTimerOverrideSecs: secs });
   }
 
   function adjust(delta: number) {

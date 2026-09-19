@@ -25,6 +25,7 @@ import { DateField } from "@/components/ui/DateField";
 import { ExerciseAutocomplete } from "@/components/ui/ExerciseAutocomplete";
 import { KeyboardAwareScroll } from "@/components/ui/KeyboardAwareScroll";
 import { LogWorkoutTour } from "@/components/ui/LogWorkoutTour";
+import { PbToast } from "@/components/ui/PbToast";
 import { RestTimerBar } from "@/components/ui/RestTimerBar";
 import { SupersetChips } from "@/components/ui/SupersetChips";
 import { TextField } from "@/components/ui/TextField";
@@ -47,6 +48,7 @@ import {
   useWorkouts,
   type CreateWorkoutExerciseInput,
   type CreateWorkoutRunInput,
+  type WorkoutSessionSummary,
   type WorkoutSetType,
 } from "@/lib/queries/workouts";
 import {
@@ -54,6 +56,7 @@ import {
   formatAsMmSs,
   formatDuration,
   formatExerciseLoad,
+  getExerciseStats,
   getLastExercisePerformance,
   getLastSetForIndex,
   getPersonalExerciseNames,
@@ -142,6 +145,29 @@ function formatCompletedSetSummary(row: ExerciseRow, sr: SetRow, setIdx: number)
         : null;
   if (repsLabel) parts.push(repsLabel);
   return parts.join(" ");
+}
+
+// Live PB check against every session already logged for this exercise —
+// deliberately excludes the in-progress draft itself, so it's always
+// comparing the set just completed against real prior history, not
+// against earlier sets from the same still-unsaved workout. Weight-mode
+// only: "PB" isn't a well-defined comparison for time holds or bands.
+function checkForLivePb(sessions: WorkoutSessionSummary[] | undefined, row: ExerciseRow, sr: SetRow): string | null {
+  if (row.unitMode !== "weight" || !row.name.trim()) return null;
+  const w = parseFloat(sr.weight);
+  if (!Number.isFinite(w)) return null;
+
+  const stats = getExerciseStats(sessions ?? [], row.name);
+  if (stats.sessionCount === 0) return null;
+
+  const reps = sr.reps.trim() ? parseInt(sr.reps, 10) : null;
+  const beatWeight = !stats.heaviestWeight || w > stats.heaviestWeight.value;
+  const oneRm = reps !== null && Number.isFinite(reps) ? w * (1 + reps / 30) : null;
+  const beatOneRm = oneRm !== null && (!stats.estimatedOneRepMax || oneRm > stats.estimatedOneRepMax.value);
+  if (!beatWeight && !beatOneRm) return null;
+
+  const loadLabel = reps !== null && Number.isFinite(reps) ? `${w}kg × ${reps}` : `${w}kg`;
+  return beatWeight ? `New PB on ${row.name} — ${loadLabel}` : `New estimated 1RM on ${row.name} — ${loadLabel}`;
 }
 
 function nextSetType(current: WorkoutSetType): WorkoutSetType {
@@ -608,6 +634,7 @@ export default function LogWorkoutScreen() {
   const { data } = useWorkouts();
   const { data: profile } = useProfile();
   const restTimer = useRestTimer();
+  const [pbToast, setPbToast] = useState<string | null>(null);
   const { data: libraryIndex } = useExerciseLibraryNameIndex();
   const personalExerciseNames = useMemo(
     () => getPersonalExerciseNames(data?.sessions ?? [], data?.exerciseLibrary ?? [], libraryIndex?.items ?? []),
@@ -941,6 +968,9 @@ export default function LogWorkoutScreen() {
         const setSummary = row && completedSet ? formatCompletedSetSummary(row, completedSet, setIdx) : null;
         restTimer.start(restTimerSeconds, row?.name || null, setSummary);
       }
+      const setForPbCheck = row?.setRows[setIdx];
+      const pbMessage = row && setForPbCheck ? checkForLivePb(data?.sessions, row, setForPbCheck) : null;
+      if (pbMessage) setPbToast(pbMessage);
     }
     updateSetRow(rowKey, setKey, { completed: !wasCompleted });
   }
@@ -1215,6 +1245,8 @@ export default function LogWorkoutScreen() {
           <Text style={styles.discardText}>Discard</Text>
         </Pressable>
       </View>
+
+      <PbToast message={pbToast} onDismiss={() => setPbToast(null)} />
 
       <KeyboardAwareScroll ref={scrollRef} contentContainerStyle={styles.scroll}>
           <TextField label="Title" value={title} onChangeText={(v) => update({ title: v })} placeholder="e.g. Lower Body Strength" />

@@ -223,6 +223,12 @@ export interface WorkoutDraft {
       AI workout review roughly what time of day this happened; cleared by
       resetTimer() (an explicit "start the clock over") and discard(). */
   firstStartedAtMs: number | null;
+  /** Overrides the profile's default rest-timer duration for auto-started
+      rests, for this workout only — set when the member picks a preset on
+      the full-screen rest timer mid-session. Null means "use the profile
+      default"; cleared by discard() like the rest of the draft, so it
+      never leaks into the next workout. */
+  restTimerOverrideSecs: number | null;
   format: WorkoutFormat;
   circuitConfig: CircuitConfig;
   amrapConfig: AmrapConfig;
@@ -247,6 +253,7 @@ function emptyDraft(): WorkoutDraft {
     accumulatedSecs: 0,
     startedAtMs: null,
     firstStartedAtMs: null,
+    restTimerOverrideSecs: null,
     format: "standard",
     circuitConfig: emptyCircuitConfig(),
     amrapConfig: emptyAmrapConfig(),

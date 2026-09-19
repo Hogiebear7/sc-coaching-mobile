@@ -22,6 +22,7 @@ import { hasAccess } from "@/lib/member-access";
 import { useAdvanceProgram, useMyProgram, useSetProgramStatus, type PrescribedExercise } from "@/lib/queries/programs";
 import { useMemberTier } from "@/lib/queries/profile";
 import { useRestTimer } from "@/lib/rest-timer";
+import { useWorkoutDraft } from "@/lib/workout-draft";
 import { type PersonalBest, useWorkouts } from "@/lib/queries/workouts";
 import {
   TREND_RANGES,
@@ -100,6 +101,12 @@ function AiCalloutModal({ visible, onDismiss }: { visible: boolean; onDismiss: (
 
 export default function WorkoutsScreen() {
   const router = useRouter();
+  // A resumable session already exists in the workout-draft context the
+  // moment any set/timer/title is present (see hasContent's own definition)
+  // — this screen just wasn't reading it, so "Log a workout" always showed
+  // even when tapping it would have resumed an in-progress session rather
+  // than started a new one, confusing testers who'd left the app mid-workout.
+  const { hasContent: hasActiveWorkout } = useWorkoutDraft();
   const { user } = useAuth();
   const restTimer = useRestTimer();
   const tier = useMemberTier();
@@ -318,8 +325,8 @@ export default function WorkoutsScreen() {
         <View style={styles.headerRow}>
           <Text style={styles.heading}>Workouts</Text>
           <Pressable onPress={() => router.push("/log-workout")} style={styles.logButton}>
-            <Ionicons name="add" size={18} color={Color.goldForeground} />
-            <Text style={styles.logButtonText}>Log</Text>
+            <Ionicons name={hasActiveWorkout ? "play" : "add"} size={18} color={Color.goldForeground} />
+            <Text style={styles.logButtonText}>{hasActiveWorkout ? "Continue" : "Log"}</Text>
           </Pressable>
         </View>
 
@@ -339,10 +346,16 @@ export default function WorkoutsScreen() {
               ))
             ) : (
               <EmptyState
-                icon="barbell-outline"
-                title={selectedDate === today ? "Nothing logged today" : "Nothing logged this day"}
-                body="Log a workout, or start a saved template from Workout Library."
-                actionLabel="Log a workout"
+                icon={hasActiveWorkout ? "play-circle-outline" : "barbell-outline"}
+                title={
+                  hasActiveWorkout
+                    ? "Workout in progress"
+                    : selectedDate === today
+                      ? "Nothing logged today"
+                      : "Nothing logged this day"
+                }
+                body={hasActiveWorkout ? "Pick up where you left off." : "Log a workout, or start a saved template from Workout Library."}
+                actionLabel={hasActiveWorkout ? "Continue Active Workout" : "Log a workout"}
                 onAction={() => router.push({ pathname: "/log-workout", params: { date: selectedDate } })}
                 variant="primary"
               />
@@ -678,10 +691,14 @@ export default function WorkoutsScreen() {
           {data.sessions.length === 0 ? (
             <Card tier="quiet">
               <EmptyState
-                icon="barbell-outline"
-                title="No workouts logged yet"
-                body="Log your first workout to start building your training history."
-                actionLabel="Log your first workout"
+                icon={hasActiveWorkout ? "play-circle-outline" : "barbell-outline"}
+                title={hasActiveWorkout ? "Workout in progress" : "No workouts logged yet"}
+                body={
+                  hasActiveWorkout
+                    ? "Pick up where you left off."
+                    : "Log your first workout to start building your training history."
+                }
+                actionLabel={hasActiveWorkout ? "Continue Active Workout" : "Log your first workout"}
                 onAction={() => router.push("/log-workout")}
                 variant="primary"
               />

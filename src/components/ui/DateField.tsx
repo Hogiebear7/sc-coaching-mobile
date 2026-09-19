@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View, type ViewStyle } from "react-native";
 
 import { Color, Radius, Spacing } from "@/constants/theme";
@@ -85,11 +85,28 @@ export function DateField({
   // narrowed to whatever min/maxDate the caller actually passed.
   const topYear = isoToParts(maxDate)?.y ?? todayParts.y;
   const bottomYear = isoToParts(minDate)?.y ?? todayParts.y - 120;
+  // Ascending (oldest top-left, newest bottom-right) — reads the way any
+  // chronological grid should. A birth year decades back or a goal year
+  // years out both land far from wherever this list happens to start, so
+  // rather than flip the sort per use case, the scroll effect below always
+  // brings the relevant year into view instead.
   const yearOptions = useMemo(() => {
     const years: number[] = [];
-    for (let y = topYear; y >= bottomYear; y--) years.push(y);
+    for (let y = bottomYear; y <= topYear; y++) years.push(y);
     return years;
   }, [topYear, bottomYear]);
+  const yearScrollRef = useRef<ScrollView | null>(null);
+  const YEAR_ROW_HEIGHT = 44;
+  const YEAR_VIEWPORT_HEIGHT = 260;
+  useEffect(() => {
+    if (mode !== "years") return;
+    const index = yearOptions.indexOf(viewY);
+    if (index === -1) return;
+    const rowIndex = Math.floor(index / 3);
+    const targetY = Math.max(0, rowIndex * YEAR_ROW_HEIGHT - YEAR_VIEWPORT_HEIGHT / 2 + YEAR_ROW_HEIGHT / 2);
+    yearScrollRef.current?.scrollTo({ y: targetY, animated: false });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode]);
 
   function openPicker() {
     const parts = isoToParts(value) ?? isoToParts(maxDate) ?? todayParts;
@@ -196,7 +213,7 @@ export function DateField({
             </View>
 
             {mode === "years" ? (
-              <ScrollView style={styles.yearScroll} contentContainerStyle={styles.yearGrid}>
+              <ScrollView ref={yearScrollRef} style={styles.yearScroll} contentContainerStyle={styles.yearGrid}>
                 {yearOptions.map((y) => {
                   const isSelected = y === viewY;
                   return (
@@ -220,31 +237,40 @@ export function DateField({
                   ))}
                 </View>
 
-                <View style={styles.grid}>
-                  {cells.map((d, i) => {
-                    if (d === null) return <View key={i} style={styles.cell} />;
-                    const disabled = isDisabled(d);
-                    const isSelected = !!selected && selected.y === viewY && selected.m === viewM && selected.d === d;
-                    const isToday = todayParts.y === viewY && todayParts.m === viewM && todayParts.d === d;
-                    return (
-                      <Pressable
-                        key={i}
-                        disabled={disabled}
-                        onPress={() => handleSelect(d)}
-                        style={[styles.cell, isSelected && styles.cellSelected, isToday && !isSelected && styles.cellToday]}
-                      >
-                        <Text
-                          style={[
-                            styles.cellText,
-                            disabled && styles.cellTextDisabled,
-                            isSelected && styles.cellTextSelected,
-                          ]}
-                        >
-                          {d}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
+                <View>
+                  {Array.from({ length: cells.length / 7 }, (_, row) => (
+                    <View key={row} style={styles.dayRow}>
+                      {cells.slice(row * 7, row * 7 + 7).map((d, i) => {
+                        if (d === null) return <View key={i} style={styles.cell} />;
+                        const disabled = isDisabled(d);
+                        const isSelected =
+                          !!selected && selected.y === viewY && selected.m === viewM && selected.d === d;
+                        const isToday = todayParts.y === viewY && todayParts.m === viewM && todayParts.d === d;
+                        return (
+                          <Pressable
+                            key={i}
+                            disabled={disabled}
+                            onPress={() => handleSelect(d)}
+                            style={[
+                              styles.cell,
+                              isSelected && styles.cellSelected,
+                              isToday && !isSelected && styles.cellToday,
+                            ]}
+                          >
+                            <Text
+                              style={[
+                                styles.cellText,
+                                disabled && styles.cellTextDisabled,
+                                isSelected && styles.cellTextSelected,
+                              ]}
+                            >
+                              {d}
+                            </Text>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                  ))}
                 </View>
               </>
             )}
@@ -316,9 +342,14 @@ const styles = StyleSheet.create({
   yearCellText: { fontSize: 14, color: Color.textSecondary },
   weekRow: { flexDirection: "row", marginBottom: Spacing.xs },
   weekLabel: { flex: 1, textAlign: "center", fontSize: 11, fontWeight: "600", color: Color.textFaint },
-  grid: { flexDirection: "row", flexWrap: "wrap" },
+  // Each week is its own row of exactly 7 flex:1 cells, matching the header
+  // row's sizing exactly — a `${100/7}%` width inside a flex-wrap grid was
+  // the source of a rounding bug where accumulated pixel rounding pushed
+  // the 7th cell (Sunday) onto the next line on some screen widths, see
+  // MonthDatePicker.tsx for the same fix applied first.
+  dayRow: { flexDirection: "row" },
   cell: {
-    width: `${100 / 7}%`,
+    flex: 1,
     aspectRatio: 1,
     alignItems: "center",
     justifyContent: "center",

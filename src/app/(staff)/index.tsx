@@ -244,32 +244,34 @@ function StaffClassesCalendar({ classesByDate }: { classesByDate: Record<string,
           ))}
         </View>
 
-        <View style={styles.grid}>
-          {cells.map((cell) => {
-            const dayClasses = classesByDate[cell.iso] ?? [];
-            const isToday = cell.iso === today;
-            const isSelected = cell.iso === selectedDate;
-            return (
-              <Pressable
-                key={cell.iso}
-                onPress={() => setSelectedDate(cell.iso)}
-                style={[
-                  styles.dayCell,
-                  isSelected && styles.dayCellSelected,
-                  !isSelected && isToday && styles.dayCellToday,
-                  !cell.inMonth && styles.dayCellOutside,
-                ]}
-              >
-                <Text style={[styles.dayCellText, isToday && styles.dayCellTextToday]}>{cell.day}</Text>
-                {dayClasses.length > 0 ? (
-                  <View style={styles.dayCellBadge}>
-                    <Text style={styles.dayCellBadgeText}>{dayClasses.length}</Text>
-                  </View>
-                ) : null}
-              </Pressable>
-            );
-          })}
-        </View>
+        {Array.from({ length: 6 }, (_, row) => (
+          <View key={row} style={styles.weekRow}>
+            {cells.slice(row * 7, row * 7 + 7).map((cell) => {
+              const dayClasses = classesByDate[cell.iso] ?? [];
+              const isToday = cell.iso === today;
+              const isSelected = cell.iso === selectedDate;
+              return (
+                <Pressable
+                  key={cell.iso}
+                  onPress={() => setSelectedDate(cell.iso)}
+                  style={[
+                    styles.dayCell,
+                    isSelected && styles.dayCellSelected,
+                    !isSelected && isToday && styles.dayCellToday,
+                    !cell.inMonth && styles.dayCellOutside,
+                  ]}
+                >
+                  <Text style={[styles.dayCellText, isToday && styles.dayCellTextToday]}>{cell.day}</Text>
+                  {dayClasses.length > 0 ? (
+                    <View style={styles.dayCellBadge}>
+                      <Text style={styles.dayCellBadgeText}>{dayClasses.length}</Text>
+                    </View>
+                  ) : null}
+                </Pressable>
+              );
+            })}
+          </View>
+        ))}
       </Card>
 
       <View style={styles.calendarDetail}>
@@ -466,9 +468,12 @@ const styles = StyleSheet.create({
   calTitle: { fontSize: 15, fontWeight: "700", color: Color.textPrimary },
   weekRow: { flexDirection: "row", marginBottom: Spacing.xs },
   weekLabel: { flex: 1, textAlign: "center", fontSize: 10, fontWeight: "600", color: Color.textFaint },
-  grid: { flexDirection: "row", flexWrap: "wrap" },
+  // flex:1 across each week's own row, not a `${100/7}%` width inside a
+  // flex-wrap grid — the percentage-rounding version silently dropped the
+  // 7th cell (Sunday) onto the next row on some screen widths. See
+  // MonthDatePicker.tsx, which established this fix first.
   dayCell: {
-    width: `${100 / 7}%`,
+    flex: 1,
     aspectRatio: 1,
     alignItems: "center",
     justifyContent: "center",

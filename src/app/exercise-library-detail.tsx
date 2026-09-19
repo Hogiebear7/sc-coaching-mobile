@@ -1,15 +1,18 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { StatCard } from "@/components/ui/StatCard";
 import { Color, Radius, Spacing } from "@/constants/theme";
 import { exerciseMatchesEquipmentSlugs } from "@/lib/equipment-matching";
 import { pickHeroMedia, useExerciseLibraryDetail } from "@/lib/queries/exercise-library";
 import { useEquipmentCatalog, useGymProfiles } from "@/lib/queries/gym-profiles";
+import { useWorkouts } from "@/lib/queries/workouts";
+import { getExerciseStats } from "@/lib/workout-formatters";
 
 function GifSlot({ url, name }: { url: string | null; name: string }) {
   const [loaded, setLoaded] = useState(false);
@@ -47,6 +50,17 @@ export default function ExerciseLibraryDetailScreen() {
   const { data, isLoading, isError, refetch } = useExerciseLibraryDetail(slug ?? "");
   const { data: gymProfilesData } = useGymProfiles();
   const { data: equipmentCatalogData } = useEquipmentCatalog();
+  // The library entry (this screen) and a member's own logged history
+  // (exercise-detail.tsx) are two separate screens keyed differently —
+  // slug here vs. free-text exercise name there, matched against the
+  // member's own workout-session data rather than the shared catalog.
+  // Reusing that same lookup here (by name) rather than merging the
+  // screens keeps this a small, additive change.
+  const { data: workoutsData } = useWorkouts();
+  const stats = useMemo(
+    () => (workoutsData && data ? getExerciseStats(workoutsData.sessions, data.exercise.name) : null),
+    [workoutsData, data]
+  );
 
   const activeProfile = gymProfilesData?.profiles.find((p) => p.id === gymProfilesData.activeGymProfileId) ?? null;
   const isAvailable =
@@ -84,6 +98,24 @@ export default function ExerciseLibraryDetailScreen() {
             onPress={() => router.push({ pathname: "/log-workout", params: { addExerciseName: data.exercise.name } })}
             style={{ marginTop: Spacing.md }}
           />
+
+          {stats && stats.sessionCount > 0 ? (
+            <>
+              <Text style={styles.sectionLabel}>YOUR HISTORY</Text>
+              <View style={styles.historyStatsRow}>
+                <StatCard label="HEAVIEST" value={stats.heaviestWeight ? stats.heaviestWeight.weightStr : "—"} />
+                <StatCard label="EST. 1RM" value={stats.estimatedOneRepMax ? `${stats.estimatedOneRepMax.value} kg` : "—"} />
+                <StatCard label="SESSIONS" value={String(stats.sessionCount)} />
+              </View>
+              <Pressable
+                onPress={() => router.push({ pathname: "/exercise-detail", params: { name: data.exercise.name } })}
+                style={styles.historyLink}
+              >
+                <Text style={styles.historyLinkText}>View full history &amp; trend</Text>
+                <Ionicons name="chevron-forward" size={14} color={Color.gold} />
+              </Pressable>
+            </>
+          ) : null}
 
           <View style={styles.chipRow}>
             {data.exercise.bodyPart ? (
@@ -183,6 +215,9 @@ const styles = StyleSheet.create({
   gif: { width: "100%", height: "100%" },
   gifPlaceholder: { alignItems: "center", justifyContent: "center", gap: Spacing.xs },
   gifPlaceholderText: { fontSize: 12, color: Color.textFaint },
+  historyStatsRow: { flexDirection: "row", gap: Spacing.sm },
+  historyLink: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 4, paddingVertical: Spacing.sm },
+  historyLinkText: { fontSize: 13, fontWeight: "600", color: Color.gold },
   chipRow: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.xs, marginTop: Spacing.md },
   chip: {
     borderRadius: Radius.pill,

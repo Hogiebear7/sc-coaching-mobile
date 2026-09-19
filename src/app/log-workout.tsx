@@ -26,6 +26,7 @@ import { DateField } from "@/components/ui/DateField";
 import { ExerciseAutocomplete } from "@/components/ui/ExerciseAutocomplete";
 import { KeyboardAwareScroll } from "@/components/ui/KeyboardAwareScroll";
 import { LogWorkoutTour } from "@/components/ui/LogWorkoutTour";
+import { RestTimerBar } from "@/components/ui/RestTimerBar";
 import { SupersetChips } from "@/components/ui/SupersetChips";
 import { TextField } from "@/components/ui/TextField";
 import { Color, Radius, Spacing } from "@/constants/theme";
@@ -901,15 +902,15 @@ export default function LogWorkoutScreen() {
         setTimeout(() => weightInputRefs.current[next.key]?.focus(), 50);
       }
       if (isLastInSupersetGroup) {
-        // The screen stays mounted underneath (this is a stack push, not a
-        // replace), so the focus() above still lands once the member comes
-        // back — they land straight on the next set with the rest already
-        // counted down. Starting the timer here (not on the rest-timer
-        // screen's own mount) means it keeps running and still notifies on
-        // completion even if they never open that screen at all, or leave it
-        // immediately — see lib/rest-timer.tsx for why that distinction matters.
+        // No navigation here — the RestTimerBar rendered at the bottom of
+        // this screen picks the countdown up automatically once it's
+        // running, so the member stays on the exercise list (next set,
+        // next weight) instead of being pushed to a full-screen timer.
+        // Starting the timer here (not on the rest-timer screen's own
+        // mount) means it keeps running and still notifies on completion
+        // even if that screen is never opened at all — see
+        // lib/rest-timer.tsx for why that distinction matters.
         restTimer.start(restTimerSeconds);
-        router.push({ pathname: "/rest-timer" });
       }
     }
     updateSetRow(rowKey, setKey, { completed: !wasCompleted });
@@ -1852,6 +1853,8 @@ export default function LogWorkoutScreen() {
             </Pressable>
           ) : null}
       </KeyboardAwareScroll>
+
+      <RestTimerBar onExpand={() => router.push({ pathname: "/rest-timer" })} />
 
       <HowDidYouFeelModal
         visible={feelModalOpen}

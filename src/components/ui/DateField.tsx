@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View, type ViewStyle } from "react-native";
 
 import { Color, Radius, Spacing } from "@/constants/theme";
@@ -85,11 +85,28 @@ export function DateField({
   // narrowed to whatever min/maxDate the caller actually passed.
   const topYear = isoToParts(maxDate)?.y ?? todayParts.y;
   const bottomYear = isoToParts(minDate)?.y ?? todayParts.y - 120;
+  // Ascending (oldest top-left, newest bottom-right) — reads the way any
+  // chronological grid should. A birth year decades back or a goal year
+  // years out both land far from wherever this list happens to start, so
+  // rather than flip the sort per use case, the scroll effect below always
+  // brings the relevant year into view instead.
   const yearOptions = useMemo(() => {
     const years: number[] = [];
-    for (let y = topYear; y >= bottomYear; y--) years.push(y);
+    for (let y = bottomYear; y <= topYear; y++) years.push(y);
     return years;
   }, [topYear, bottomYear]);
+  const yearScrollRef = useRef<ScrollView | null>(null);
+  const YEAR_ROW_HEIGHT = 44;
+  const YEAR_VIEWPORT_HEIGHT = 260;
+  useEffect(() => {
+    if (mode !== "years") return;
+    const index = yearOptions.indexOf(viewY);
+    if (index === -1) return;
+    const rowIndex = Math.floor(index / 3);
+    const targetY = Math.max(0, rowIndex * YEAR_ROW_HEIGHT - YEAR_VIEWPORT_HEIGHT / 2 + YEAR_ROW_HEIGHT / 2);
+    yearScrollRef.current?.scrollTo({ y: targetY, animated: false });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode]);
 
   function openPicker() {
     const parts = isoToParts(value) ?? isoToParts(maxDate) ?? todayParts;
@@ -196,7 +213,7 @@ export function DateField({
             </View>
 
             {mode === "years" ? (
-              <ScrollView style={styles.yearScroll} contentContainerStyle={styles.yearGrid}>
+              <ScrollView ref={yearScrollRef} style={styles.yearScroll} contentContainerStyle={styles.yearGrid}>
                 {yearOptions.map((y) => {
                   const isSelected = y === viewY;
                   return (

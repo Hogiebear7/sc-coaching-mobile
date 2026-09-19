@@ -1,9 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
-  findNodeHandle,
   Image,
   InteractionManager,
   Keyboard,
@@ -27,6 +26,7 @@ import { ExerciseAutocomplete } from "@/components/ui/ExerciseAutocomplete";
 import { KeyboardAwareScroll } from "@/components/ui/KeyboardAwareScroll";
 import { LogWorkoutTour } from "@/components/ui/LogWorkoutTour";
 import { PbToast } from "@/components/ui/PbToast";
+import { RestTimerBar } from "@/components/ui/RestTimerBar";
 import { SupersetChips } from "@/components/ui/SupersetChips";
 import { TextField } from "@/components/ui/TextField";
 import { Color, Radius, Spacing } from "@/constants/theme";
@@ -59,6 +59,7 @@ import {
   getExerciseStats,
   getLastExercisePerformance,
   getLastSetForIndex,
+  getPersonalExerciseNames,
   livePace,
   parseDuration,
   todayDateString,
@@ -128,6 +129,22 @@ function unitModeColumnLabel(mode: ExerciseRow["unitMode"]): string {
   if (mode === "time") return "Time";
   if (mode === "band") return "Band";
   return "Weight";
+}
+
+// The rest-timer notification's body — "Set 3 60kg ×8 done" — so the
+// content on the lock screen actually says what was just lifted, not just
+// a generic "time's up".
+function formatCompletedSetSummary(row: ExerciseRow, sr: SetRow, setIdx: number): string {
+  const parts = [`Set ${setIdx + 1}`];
+  if (sr.weight.trim()) parts.push(row.unitMode === "weight" ? `${sr.weight.trim()}kg` : sr.weight.trim());
+  const repsLabel =
+    sr.repsRight.trim() && sr.repsLeft.trim()
+      ? `R${sr.repsRight.trim()}/L${sr.repsLeft.trim()}`
+      : sr.reps.trim()
+        ? `×${sr.reps.trim()}`
+        : null;
+  if (repsLabel) parts.push(repsLabel);
+  return parts.join(" ");
 }
 
 // Live PB check against every session already logged for this exercise —
@@ -616,10 +633,13 @@ export default function LogWorkoutScreen() {
   }>();
   const { data } = useWorkouts();
   const { data: profile } = useProfile();
-  const restTimerSeconds = profile?.restTimerSeconds ?? 90;
   const restTimer = useRestTimer();
   const [pbToast, setPbToast] = useState<string | null>(null);
   const { data: libraryIndex } = useExerciseLibraryNameIndex();
+  const personalExerciseNames = useMemo(
+    () => getPersonalExerciseNames(data?.sessions ?? [], data?.exerciseLibrary ?? [], libraryIndex?.items ?? []),
+    [data?.sessions, data?.exerciseLibrary, libraryIndex?.items]
+  );
   const { data: program } = useMyProgram();
   const { data: templates } = useWorkoutTemplates();
   const create = useCreateWorkout();
@@ -627,6 +647,10 @@ export default function LogWorkoutScreen() {
 
   const { draft, hydrated, update, startTimer, pauseTimer, resetTimer, discard, elapsedSecsNow } = useWorkoutDraft();
   const { title, date, durationMins, notes, exerciseRows, runRows, isLive } = draft;
+  // A preset picked on the full-screen rest timer during this workout wins
+  // over the profile default for every rest that follows — see
+  // restTimerOverrideSecs in workout-draft.tsx.
+  const restTimerSeconds = draft.restTimerOverrideSecs ?? profile?.restTimerSeconds ?? 90;
   const [error, setError] = useState<string | null>(null);
   const [feelModalOpen, setFeelModalOpen] = useState(false);
   const [sessionRpe, setSessionRpe] = useState<number | null>(null);
@@ -805,7 +829,11 @@ export default function LogWorkoutScreen() {
   const addButtonsRef = useRef<View | null>(null);
 
   function scrollToAddButtons() {
-    const scrollNode = findNodeHandle(scrollRef.current);
+    // getNativeScrollRef() is the modern, cross-platform way to get the
+    // scroll view's underlying node for measureLayout — findNodeHandle is
+    // deprecated on native and was never implemented at all by
+    // react-native-web, which crashed this entire flow on web.
+    const scrollNode = scrollRef.current?.getNativeScrollRef();
     if (!scrollNode) return;
     addButtonsRef.current?.measureLayout(
       scrollNode,
@@ -928,15 +956,17 @@ export default function LogWorkoutScreen() {
         setTimeout(() => weightInputRefs.current[next.key]?.focus(), 50);
       }
       if (isLastInSupersetGroup) {
-        // The screen stays mounted underneath (this is a stack push, not a
-        // replace), so the focus() above still lands once the member comes
-        // back — they land straight on the next set with the rest already
-        // counted down. Starting the timer here (not on the rest-timer
-        // screen's own mount) means it keeps running and still notifies on
-        // completion even if they never open that screen at all, or leave it
-        // immediately — see lib/rest-timer.tsx for why that distinction matters.
-        restTimer.start(restTimerSeconds);
-        router.push({ pathname: "/rest-timer" });
+        // No navigation here — the RestTimerBar rendered at the bottom of
+        // this screen picks the countdown up automatically once it's
+        // running, so the member stays on the exercise list (next set,
+        // next weight) instead of being pushed to a full-screen timer.
+        // Starting the timer here (not on the rest-timer screen's own
+        // mount) means it keeps running and still notifies on completion
+        // even if that screen is never opened at all — see
+        // lib/rest-timer.tsx for why that distinction matters.
+        const completedSet = row?.setRows[setIdx];
+        const setSummary = row && completedSet ? formatCompletedSetSummary(row, completedSet, setIdx) : null;
+        restTimer.start(restTimerSeconds, row?.name || null, setSummary);
       }
       const setForPbCheck = row?.setRows[setIdx];
       const pbMessage = row && setForPbCheck ? checkForLivePb(data?.sessions, row, setForPbCheck) : null;
@@ -1567,6 +1597,7 @@ export default function LogWorkoutScreen() {
               <ExerciseAutocomplete
                 exercises={data?.exerciseLibrary ?? []}
                 libraryNames={libraryIndex?.items ?? []}
+                personalNames={personalExerciseNames}
                 value={row.name}
                 onChange={(name, exerciseId) => updateRow(row.key, { name, exerciseId })}
               />
@@ -1884,6 +1915,8 @@ export default function LogWorkoutScreen() {
             </Pressable>
           ) : null}
       </KeyboardAwareScroll>
+
+      <RestTimerBar onExpand={() => router.push({ pathname: "/rest-timer" })} />
 
       <HowDidYouFeelModal
         visible={feelModalOpen}

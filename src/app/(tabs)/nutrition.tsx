@@ -19,6 +19,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { BodyWeightCard } from "@/components/ui/BodyWeightCard";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { ContinueWorkoutPill } from "@/components/ui/ContinueWorkoutPill";
 import { InfoModal } from "@/components/ui/InfoModal";
 import { KeyboardAwareScroll } from "@/components/ui/KeyboardAwareScroll";
 import { MacroLegendRow, MacroPieChart, type MacroKind } from "@/components/ui/MacroPieChart";
@@ -538,6 +539,7 @@ export default function NutritionScreen() {
       >
           <View style={styles.headerRow}>
             <Text style={styles.heading}>Nutrition</Text>
+            <ContinueWorkoutPill />
           </View>
 
           <View style={styles.dateNavRow}>

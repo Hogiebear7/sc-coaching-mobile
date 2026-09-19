@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { KeyboardAwareScroll } from "@/components/ui/KeyboardAwareScroll";
 import { Stepper } from "@/components/ui/Stepper";
+import { TextField } from "@/components/ui/TextField";
 import { Color, Radius, Spacing } from "@/constants/theme";
 import { ApiError } from "@/lib/api-client";
 import { trackEvent } from "@/lib/analytics";
@@ -169,6 +170,19 @@ export default function LogFoodScreen() {
   const [selectedFood, setSelectedFood] = useState<{ food: FoodRecord; domain: FoodDomain } | null>(null);
   const [servingLabel, setServingLabel] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
+  // A typed exact-grams override for a SINGLE serving — kept separate from
+  // servingLabel/quantity rather than replacing them, since most catalog
+  // items only ever have a "100g" serving (Open Food Facts rarely gives a
+  // clean real package weight). This is the escape hatch for "I know the
+  // real per-unit weight, the catalog doesn't." The quantity stepper still
+  // multiplies on top of it — typing 50g then stepping to 1.5x gives 75g —
+  // so it's a correction to the base weight, not a one-off total. Empty
+  // string means no override. Switching serving chips clears it (a typed
+  // weight for "1 slice" is meaningless once the chip says "1 cup"), but
+  // the stepper deliberately does not.
+  const [gramsOverride, setGramsOverride] = useState("");
+  const overrideGramsValue = gramsOverride.trim() ? Number(gramsOverride) : null;
+  const overrideGrams = overrideGramsValue !== null && Number.isFinite(overrideGramsValue) && overrideGramsValue > 0 ? overrideGramsValue : null;
   const [foundViaScan, setFoundViaScan] = useState(false);
 
   const [name, setName] = useState("");
@@ -204,6 +218,11 @@ export default function LogFoodScreen() {
     setProteinG(String(f.proteinG));
     setCarbsG(String(f.carbsG));
     setFatG(String(f.fatG));
+    // Log it back into the meal it was actually eaten as, not whichever
+    // meal tab happens to be selected right now (which otherwise defaults
+    // by time of day) — a breakfast item tapped from Recents at 9pm should
+    // still log as breakfast.
+    setMealType(f.mealType);
     setAppliedFrom("recent");
     setFavoriteJustSaved(false);
   }
@@ -216,6 +235,9 @@ export default function LogFoodScreen() {
     setProteinG(String(f.proteinG));
     setCarbsG(String(f.carbsG));
     setFatG(String(f.fatG));
+    // Same reasoning as applyRecent — restore the meal it was saved under,
+    // not whatever's currently selected.
+    setMealType(f.mealType);
     setAppliedFrom("favorite");
     setFavoriteJustSaved(false);
     setFavoritesBrowserOpen(false);
@@ -239,7 +261,7 @@ export default function LogFoodScreen() {
         carbsG: carbsG.trim() ? parseInt(carbsG, 10) : 0,
         fatG: fatG.trim() ? parseInt(fatG, 10) : 0,
         servingLabel: selectedFood ? servingLabel : null,
-        servingGrams: selectedFood ? gramsForServing(selectedFood.food, servingLabel, 1) : null,
+        servingGrams: selectedFood ? (overrideGrams ?? gramsForServing(selectedFood.food, servingLabel, 1)) : null,
       },
       { onSuccess: () => setFavoriteJustSaved(true) }
     );
@@ -259,6 +281,7 @@ export default function LogFoodScreen() {
     setSelectedFood({ food, domain: food.domain });
     setServingLabel(food.defaultServing.label);
     setQuantity(1);
+    setGramsOverride("");
     setFoundViaScan(source === "scan");
     setName(food.brandName ? `${food.brandName} ${food.name}` : food.name);
     setSearchOpen(false);
@@ -295,19 +318,21 @@ export default function LogFoodScreen() {
   useEffect(() => {
     if (!selectedFood) return;
     if (!Number.isFinite(quantity) || quantity < 0) return;
-    const grams = gramsForServing(selectedFood.food, servingLabel, quantity);
+    const baseGrams = overrideGrams ?? gramsForServing(selectedFood.food, servingLabel, 1);
+    const grams = baseGrams * quantity;
     const nutrition = nutritionForGrams(selectedFood.food.nutrition100g, grams);
     setCalories(String(nutrition.calories));
     setProteinG(String(nutrition.proteinG));
     setCarbsG(String(nutrition.carbsG));
     setFatG(String(nutrition.fatG));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedFood, servingLabel, quantity]);
+  }, [selectedFood, servingLabel, quantity, overrideGrams]);
 
   function clearSelection() {
     setSelectedFood(null);
     setServingLabel(null);
     setQuantity(1);
+    setGramsOverride("");
     setFoundViaScan(false);
     setAppliedFrom(null);
     setFavoriteJustSaved(false);
@@ -325,6 +350,8 @@ export default function LogFoodScreen() {
       return;
     }
 
+    // A typed grams override replaces the per-serving base weight, not the
+    // final total — quantity still applies on top of it either way.
     const qty = selectedFood ? quantity : null;
 
     try {
@@ -339,7 +366,7 @@ export default function LogFoodScreen() {
         foodId: selectedFood?.food.id ?? null,
         foodDomain: selectedFood?.domain ?? null,
         servingLabel: selectedFood ? servingLabel : null,
-        servingGrams: selectedFood ? gramsForServing(selectedFood.food, servingLabel, 1) : null,
+        servingGrams: selectedFood ? (overrideGrams ?? gramsForServing(selectedFood.food, servingLabel, 1)) : null,
         quantity: qty,
       });
       tapFeedback();
@@ -497,15 +524,40 @@ export default function LogFoodScreen() {
                 {selectedFood.food.servings.map((s) => (
                   <Pressable
                     key={s.label}
-                    onPress={() => setServingLabel(s.label)}
+                    onPress={() => {
+                      setServingLabel(s.label);
+                      setGramsOverride("");
+                    }}
                     style={[styles.mealChip, servingLabel === s.label && styles.mealChipActive]}
                   >
                     <Text style={[styles.mealChipText, servingLabel === s.label && styles.mealChipTextActive]}>{s.label}</Text>
                   </Pressable>
                 ))}
               </View>
-              <Stepper label="Quantity" value={quantity} onChange={setQuantity} min={0.5} max={20} step={0.5} suffix="× serving" />
-              <Text style={styles.gramsTotal}>= {Math.round(gramsForServing(selectedFood.food, servingLabel, quantity))}g total</Text>
+              <Stepper
+                label="Quantity"
+                value={quantity}
+                onChange={setQuantity}
+                min={0.5}
+                max={20}
+                step={0.5}
+                suffix="× serving"
+              />
+              {/* Most catalog items only have a "100g" serving on record —
+                  this is the way to say "I know the real amount" when that
+                  default doesn't match what's actually in front of you.
+                  Quantity above still multiplies on top of this. */}
+              <TextField
+                label="Or enter exact grams per serving"
+                value={gramsOverride}
+                onChangeText={setGramsOverride}
+                placeholder={`${Math.round(gramsForServing(selectedFood.food, servingLabel, 1))}`}
+                keyboardType="decimal-pad"
+                style={styles.gramsOverrideInput}
+              />
+              <Text style={styles.gramsTotal}>
+                = {Math.round((overrideGrams ?? gramsForServing(selectedFood.food, servingLabel, 1)) * quantity)}g total
+              </Text>
             </Card>
           ) : !searchOpen ? (
             <>
@@ -550,20 +602,34 @@ export default function LogFoodScreen() {
                         return (
                           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: Spacing.xs, paddingTop: Spacing.sm }}>
                             {matches.map((f) => (
-                              <Pressable
-                                key={f.id}
-                                onPress={() => applyFavorite(f)}
-                                onLongPress={() => confirmRemoveFavorite(f)}
-                                style={styles.recentChip}
-                              >
-                                <Ionicons name="star" size={13} color={Color.gold} />
-                                <Text style={styles.recentChipText} numberOfLines={1}>
-                                  {f.name}
-                                </Text>
-                                <Text style={styles.recentChipSub} numberOfLines={1}>
-                                  {f.calories} kcal
-                                </Text>
-                              </Pressable>
+                              // A plain View wrapping two sibling Pressables, not
+                              // onLongPress on one Pressable — inside a horizontal
+                              // ScrollView, the scroll gesture's own responder
+                              // negotiation regularly swallows long-press
+                              // recognition entirely (confirmed: held far past the
+                              // long-press threshold, nothing fires, then release
+                              // registers as a plain tap). A always-visible delete
+                              // button sidesteps the flaky gesture and is
+                              // discoverable, which onLongPress never was.
+                              <View key={f.id} style={styles.recentChip}>
+                                <Pressable onPress={() => applyFavorite(f)} hitSlop={4}>
+                                  <Ionicons name="star" size={13} color={Color.gold} />
+                                  <Text style={styles.recentChipText} numberOfLines={1}>
+                                    {f.name}
+                                  </Text>
+                                  <Text style={styles.recentChipSub} numberOfLines={1}>
+                                    {f.calories} kcal
+                                  </Text>
+                                </Pressable>
+                                <Pressable
+                                  onPress={() => confirmRemoveFavorite(f)}
+                                  hitSlop={8}
+                                  style={styles.recentChipDelete}
+                                  accessibilityLabel={`Remove ${f.name} from favourites`}
+                                >
+                                  <Ionicons name="close-circle" size={16} color={Color.textFaint} />
+                                </Pressable>
+                              </View>
                             ))}
                           </ScrollView>
                         );
@@ -818,8 +884,10 @@ const styles = StyleSheet.create({
   servingFoodName: { fontSize: 14, fontWeight: "700", color: Color.textPrimary, flex: 1 },
   clearSelectionButton: { flexDirection: "row", alignItems: "center", gap: 2, paddingVertical: 2, paddingLeft: Spacing.sm },
   clearSelectionText: { fontSize: 12, fontWeight: "600", color: Color.textFaint },
+  gramsOverrideInput: { height: 40, fontSize: 14 },
   gramsTotal: { fontSize: 12, color: Color.textMuted, textAlign: "right", marginTop: -Spacing.sm },
   recentChip: {
+    position: "relative",
     width: 112,
     borderRadius: Radius.md,
     borderWidth: 1,
@@ -831,6 +899,7 @@ const styles = StyleSheet.create({
   recentChipIcon: { fontSize: 16, marginBottom: 4 },
   recentChipText: { fontSize: 12, fontWeight: "600", color: Color.textPrimary },
   recentChipSub: { fontSize: 10, color: Color.textMuted, marginTop: 2 },
+  recentChipDelete: { position: "absolute", top: 2, right: 2, padding: 2 },
   input: {
     height: 44,
     borderRadius: Radius.md,

@@ -134,6 +134,12 @@ export interface CreateWorkoutInput {
       Feeds the workout review and, eventually, the AI report. */
   sessionRpe?: number | null;
   feelingNotes?: string;
+  /** Device-local hour (0-23) the live workout timer was actually started —
+      already resolved to local time via Date.getHours() before it ever
+      leaves the device, so the server needs no timezone info to use it.
+      Omitted for a workout logged after the fact (no live timer run), since
+      there's no real moment to report — never backfilled or guessed. */
+  startedAtHour?: number | null;
   exercises: CreateWorkoutExerciseInput[];
   runs: CreateWorkoutRunInput[];
 }

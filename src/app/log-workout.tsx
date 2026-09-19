@@ -1189,6 +1189,11 @@ export default function LogWorkoutScreen() {
         runs,
         sessionRpe: finalRpe,
         feelingNotes: finalFeelingNotes.trim() || undefined,
+        // firstStartedAtMs (not startedAtMs, which pausing clears) survives
+        // pause/resume, so this is still populated for the common "stop the
+        // timer, fill in RPE, then submit" flow. getHours() resolves to the
+        // device's own local time, so the server needs no timezone math.
+        startedAtHour: draft.firstStartedAtMs !== null ? new Date(draft.firstStartedAtMs).getHours() : undefined,
       });
       const summary: WorkoutSummaryData = {
         id: result.id,

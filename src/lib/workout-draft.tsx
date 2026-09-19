@@ -217,6 +217,12 @@ export interface WorkoutDraft {
   // a setInterval counter would stall the moment the JS thread suspends.
   accumulatedSecs: number;
   startedAtMs: number | null;
+  /** The moment the live timer was FIRST started for this draft — unlike
+      startedAtMs above, pausing never clears this, so it survives the
+      pause/resume cycles a real workout goes through. Used only to tell the
+      AI workout review roughly what time of day this happened; cleared by
+      resetTimer() (an explicit "start the clock over") and discard(). */
+  firstStartedAtMs: number | null;
   /** Overrides the profile's default rest-timer duration for auto-started
       rests, for this workout only — set when the member picks a preset on
       the full-screen rest timer mid-session. Null means "use the profile
@@ -246,6 +252,7 @@ function emptyDraft(): WorkoutDraft {
     isLive: false,
     accumulatedSecs: 0,
     startedAtMs: null,
+    firstStartedAtMs: null,
     restTimerOverrideSecs: null,
     format: "standard",
     circuitConfig: emptyCircuitConfig(),
@@ -438,7 +445,11 @@ export function WorkoutDraftProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const startTimer = useCallback(() => {
-    setDraft((prev) => (prev.startedAtMs ? prev : { ...prev, startedAtMs: Date.now() }));
+    setDraft((prev) =>
+      prev.startedAtMs
+        ? prev
+        : { ...prev, startedAtMs: Date.now(), firstStartedAtMs: prev.firstStartedAtMs ?? Date.now() }
+    );
   }, []);
 
   const pauseTimer = useCallback(() => {
@@ -451,7 +462,7 @@ export function WorkoutDraftProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const resetTimer = useCallback(() => {
-    setDraft((prev) => ({ ...prev, accumulatedSecs: 0, startedAtMs: null }));
+    setDraft((prev) => ({ ...prev, accumulatedSecs: 0, startedAtMs: null, firstStartedAtMs: null }));
     void clearLiveNotification();
   }, []);
 

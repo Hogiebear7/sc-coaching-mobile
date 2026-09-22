@@ -162,7 +162,16 @@ export function useToggleWorkoutLike() {
         `/api/mobile/community/workouts/${workoutSessionId}/like`,
         { method: "POST" }
       ),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["community-feed"] }),
+    // Also invalidates this specific item's own query — used by
+    // community/workout/[id].tsx (the deep-link/detail screen), which
+    // doesn't read from the feed list at all. Invalidating only
+    // "community-feed" left a like made from the detail screen silently
+    // stuck showing the pre-like state even though the server had already
+    // recorded it (confirmed via direct API read).
+    onSuccess: (_data, workoutSessionId) => {
+      qc.invalidateQueries({ queryKey: ["community-feed"] });
+      qc.invalidateQueries({ queryKey: ["community-workout-item", workoutSessionId] });
+    },
   });
 }
 

@@ -79,8 +79,10 @@ export function MemberSearchSheet({
                 )}
               </View>
             ))}
-            {results && results.length === 0 && !isFetching ? (
-              <Text style={styles.empty}>No members found.</Text>
+            {!query.trim() ? (
+              <Text style={styles.empty}>Start typing a name to search.</Text>
+            ) : results && results.length === 0 && !isFetching ? (
+              <Text style={styles.empty}>No members found for &quot;{query.trim()}&quot;.</Text>
             ) : null}
           </ScrollView>
 

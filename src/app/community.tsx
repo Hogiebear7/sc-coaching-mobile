@@ -14,6 +14,14 @@ import { MemberSearchSheet } from "@/components/ui/MemberSearchSheet";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Color, Radius, Spacing } from "@/constants/theme";
 import { useAuth } from "@/lib/auth-context";
+import {
+  buildLeaderboardRows,
+  formatActivitySummary,
+  formatCommunityDate,
+  formatLeaderboardContextLabel,
+  formatPbHeadline,
+  formatWorkoutTitle,
+} from "@/lib/community-formatters";
 import { tapFeedback } from "@/lib/haptics";
 import {
   useCommunityFeed,
@@ -25,7 +33,7 @@ import {
   type LeaderboardMetric,
   type LeaderboardRange,
 } from "@/lib/queries/community";
-import { formatExerciseLoad, formatRun, todayDateString } from "@/lib/workout-formatters";
+import { todayDateString } from "@/lib/workout-formatters";
 
 // Emphasis order, top to bottom: wins/milestones, leaderboards, supporting
 // feed activity — comments/likes/mentions stay a tap away (the per-item
@@ -53,14 +61,11 @@ const RANGE_LABEL: Record<LeaderboardRange, string> = {
   custom: "Custom",
 };
 
-function formatDate(dateISO: string): string {
-  return new Date(dateISO).toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" });
-}
-
 const MAX_PREVIEW_LINES = 3;
 const MAX_WINS = 5;
 
 function WinRow({ item, isLast, onPress }: { item: CommunityFeedItem; isLast: boolean; onPress: () => void }) {
+  const headline = formatPbHeadline(item.authorName, item.personalBestExercise);
   return (
     <Pressable onPress={onPress} style={[styles.winRow, !isLast && styles.winRowDivider]}>
       <View style={styles.winIcon}>
@@ -68,9 +73,9 @@ function WinRow({ item, isLast, onPress }: { item: CommunityFeedItem; isLast: bo
       </View>
       <View style={{ flex: 1 }}>
         <Text style={styles.winText}>
-          <Text style={styles.winAuthor}>{item.authorName}</Text> hit a new {item.personalBestExercise} PB
+          <Text style={styles.winAuthor}>{headline.author}</Text> {headline.rest}
         </Text>
-        <Text style={styles.winDate}>{formatDate(item.date)}</Text>
+        <Text style={styles.winDate}>{formatCommunityDate(item.date, "short")}</Text>
       </View>
       <Ionicons name="chevron-forward" size={16} color={Color.textFaint} />
     </Pressable>
@@ -100,29 +105,37 @@ function SuggestedMemberRow({
 
 function FeedCard({ item, onOpenComments }: { item: CommunityFeedItem; onOpenComments: () => void }) {
   const toggleLike = useToggleWorkoutLike();
-  const previewExercises = item.exercises.slice(0, MAX_PREVIEW_LINES);
-  const remainingSlots = Math.max(0, MAX_PREVIEW_LINES - previewExercises.length);
-  const previewRuns = item.runs.slice(0, remainingSlots);
-  const hiddenCount = item.exercises.length + item.runs.length - previewExercises.length - previewRuns.length;
+  const summary = formatActivitySummary(item.exercises, item.runs, MAX_PREVIEW_LINES);
+  const isLiking = toggleLike.isPending && toggleLike.variables === item.id;
 
   return (
     <Card style={styles.feedCard}>
       <View style={styles.feedHeader}>
-        <Text style={styles.authorName}>{item.authorName}</Text>
-        <Text style={styles.feedDate}>{formatDate(item.date)}</Text>
+        <Text style={styles.authorName} numberOfLines={1}>
+          {item.authorName}
+        </Text>
+        <Text style={styles.feedDate}>{formatCommunityDate(item.date, "compact")}</Text>
       </View>
-      <Text style={styles.feedTitle}>{item.title}</Text>
-      {previewExercises.map((ex, i) => (
-        <Text key={`ex-${i}`} style={styles.feedLine} numberOfLines={1}>
-          {ex.name} — {formatExerciseLoad(ex) || "logged"}
+      <View style={styles.feedTitleRow}>
+        <Text style={styles.feedTitle} numberOfLines={1}>
+          {formatWorkoutTitle(item.title)}
+        </Text>
+        {/* Same trophy language as Member Wins above, so a card that's
+            ALSO the session where a PB happened reads as "this one is
+            notable," not as an unexplained duplicate of that section. */}
+        {item.isPersonalBest ? (
+          <View style={styles.feedPbBadge}>
+            <Ionicons name="trophy-outline" size={11} color={Color.gold} />
+            <Text style={styles.feedPbBadgeText}>PB</Text>
+          </View>
+        ) : null}
+      </View>
+      {summary.lines.map((line, i) => (
+        <Text key={i} style={styles.feedLine} numberOfLines={1}>
+          {line}
         </Text>
       ))}
-      {previewRuns.map((run, i) => (
-        <Text key={`run-${i}`} style={styles.feedLine} numberOfLines={1}>
-          Run — {formatRun(run)}
-        </Text>
-      ))}
-      {hiddenCount > 0 ? <Text style={styles.feedMore}>+{hiddenCount} more</Text> : null}
+      {summary.hiddenCount > 0 ? <Text style={styles.feedMore}>+{summary.hiddenCount} more</Text> : null}
 
       {/* Deliberately quiet — small muted icons + counts, never gold, never
           the visual headline of the card. A nod, not a like-count to chase. */}
@@ -132,8 +145,10 @@ function FeedCard({ item, onOpenComments }: { item: CommunityFeedItem; onOpenCom
             tapFeedback();
             toggleLike.mutate(item.id);
           }}
-          style={styles.feedActionButton}
+          disabled={isLiking}
+          style={[styles.feedActionButton, isLiking && styles.feedActionButtonPending]}
           hitSlop={8}
+          accessibilityLabel={item.likedByMe ? "Unlike this workout" : "Like this workout"}
         >
           <Ionicons
             name={item.likedByMe ? "heart" : "heart-outline"}
@@ -142,10 +157,16 @@ function FeedCard({ item, onOpenComments }: { item: CommunityFeedItem; onOpenCom
           />
           {item.likeCount > 0 ? <Text style={styles.feedActionText}>{item.likeCount}</Text> : null}
         </Pressable>
-        <Pressable onPress={onOpenComments} style={styles.feedActionButton} hitSlop={8}>
+        <Pressable
+          onPress={onOpenComments}
+          style={styles.feedActionButton}
+          hitSlop={8}
+          accessibilityLabel="View comments"
+        >
           <Ionicons name="chatbubble-outline" size={15} color={Color.textFaint} />
           {item.commentCount > 0 ? <Text style={styles.feedActionText}>{item.commentCount}</Text> : null}
         </Pressable>
+        {toggleLike.isError ? <Text style={styles.feedActionError}>Couldn&apos;t update — try again</Text> : null}
       </View>
     </Card>
   );
@@ -205,6 +226,11 @@ export default function CommunityScreen() {
   const suggested = useSuggestedMembers();
   const followUser = useFollowUser();
 
+  // A PB session still appears in Activity below (it's a real logged
+  // session, not exclusive content) — FeedCard flags it with the same
+  // trophy badge instead of hiding it there, so the two sections read as
+  // "headline wins" vs. "everything, in order, wins included" rather than
+  // one silently duplicating the other.
   const wins = (feed.data?.items ?? []).filter((i) => i.isPersonalBest).slice(0, MAX_WINS);
 
   const [noticeVisible, setNoticeVisible] = useState(false);
@@ -242,9 +268,17 @@ export default function CommunityScreen() {
           <Ionicons name="chevron-back" size={22} color={Color.textPrimary} />
         </Pressable>
         <Text style={styles.headerTitle}>Community</Text>
-        <Pressable onPress={() => setSearchOpen(true)} hitSlop={12} style={styles.followButton}>
+        {/* "Find people" not "People" — this opens a name search to follow
+            someone, never a browsable member directory, so the label should
+            say what it actually does. */}
+        <Pressable
+          onPress={() => setSearchOpen(true)}
+          hitSlop={12}
+          style={styles.followButton}
+          accessibilityLabel="Find people to follow"
+        >
           <Ionicons name="person-add-outline" size={15} color={Color.gold} />
-          <Text style={styles.followButtonText}>People</Text>
+          <Text style={styles.followButtonText}>Find people</Text>
         </Pressable>
       </View>
       <Text style={styles.subhead}>See who&apos;s training, where you rank, and who to follow.</Text>
@@ -328,34 +362,49 @@ export default function CommunityScreen() {
 
           {range === "custom" && !customStart && !customEnd ? (
             <Text style={styles.emptyLeaderboardText}>Pick a start and/or end date to see rankings for that range.</Text>
-          ) : leaderboard.isLoading ? (
-            <ActivityIndicator color={Color.gold} style={{ marginTop: Spacing.md }} />
-          ) : !leaderboard.data || leaderboard.data.entries.length === 0 ? (
-            <Card tier="quiet">
-              <Text style={styles.emptyLeaderboardText}>No entries yet — log a workout to appear here.</Text>
-            </Card>
           ) : (
-            <Card style={styles.leaderboardCard}>
-              {leaderboard.data.entries.map((entry, i) => {
-                const isMe = entry.userId === leaderboard.data!.myUserId;
-                return (
-                  <View key={entry.userId} style={[styles.leaderboardRow, i > 0 && styles.leaderboardRowDivider]}>
-                    <Text style={[styles.leaderboardRank, isMe && styles.leaderboardTextMe]}>{i + 1}</Text>
-                    <Text style={[styles.leaderboardName, isMe && styles.leaderboardTextMe]} numberOfLines={1}>
-                      {isMe ? "You" : entry.displayName}
-                    </Text>
-                    <View style={styles.leaderboardValueWrap}>
-                      <Text style={[styles.leaderboardValue, isMe && styles.leaderboardTextMe]}>
-                        {Math.round(entry.value).toLocaleString()} kg
+            <>
+              {/* Repeats the selected metric + range as one plain line right
+                  above the results — the chips above show which pill is
+                  active, but that's easy to miss once you've scrolled past
+                  them; this makes "what am I looking at" unambiguous next
+                  to the actual numbers. */}
+              <Text style={styles.leaderboardContextLabel}>
+                {formatLeaderboardContextLabel(metric, range, customStart || null, customEnd || null)}
+              </Text>
+              {leaderboard.isLoading ? (
+                <ActivityIndicator color={Color.gold} style={{ marginTop: Spacing.md }} />
+              ) : !leaderboard.data || leaderboard.data.entries.length === 0 ? (
+                <EmptyState
+                  icon="podium-outline"
+                  title="No rankings yet"
+                  body={
+                    range === "custom"
+                      ? "No one logged a qualifying workout in this date range."
+                      : "Log a workout to appear on this leaderboard."
+                  }
+                />
+              ) : (
+                <Card style={styles.leaderboardCard}>
+                  {buildLeaderboardRows(leaderboard.data.entries, leaderboard.data.myUserId).map((row, i) => (
+                    <View key={row.userId} style={[styles.leaderboardRow, i > 0 && styles.leaderboardRowDivider]}>
+                      <Text style={[styles.leaderboardRank, row.isMe && styles.leaderboardTextMe]}>{row.rank}</Text>
+                      <Text style={[styles.leaderboardName, row.isMe && styles.leaderboardTextMe]} numberOfLines={1}>
+                        {row.name}
                       </Text>
-                      {entry.bodyweightPct !== null ? (
-                        <Text style={styles.leaderboardPct}>{entry.bodyweightPct}% BW</Text>
-                      ) : null}
+                      <View style={styles.leaderboardValueWrap}>
+                        <Text style={[styles.leaderboardValue, row.isMe && styles.leaderboardTextMe]}>
+                          {row.valueLabel}
+                        </Text>
+                        {row.bodyweightLabel ? (
+                          <Text style={styles.leaderboardPct}>{row.bodyweightLabel}</Text>
+                        ) : null}
+                      </View>
                     </View>
-                  </View>
-                );
-              })}
-            </Card>
+                  ))}
+                </Card>
+              )}
+            </>
           )}
         </View>
 
@@ -509,22 +558,36 @@ const styles = StyleSheet.create({
   winAuthor: { fontWeight: "700", color: Color.textPrimary },
   winDate: { fontSize: 11, color: Color.textFaint, marginTop: 2 },
   feedCard: { padding: Spacing.md, marginBottom: Spacing.sm },
-  feedHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  authorName: { fontSize: 13, fontWeight: "700", color: Color.textPrimary },
+  feedHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: Spacing.sm },
+  authorName: { fontSize: 13, fontWeight: "700", color: Color.textPrimary, flexShrink: 1 },
   feedDate: { fontSize: 11, color: Color.textFaint },
-  feedTitle: { fontSize: 15, fontWeight: "600", color: Color.textPrimary, marginTop: 4 },
+  feedTitleRow: { flexDirection: "row", alignItems: "center", gap: Spacing.xs, marginTop: 4 },
+  feedTitle: { fontSize: 15, fontWeight: "600", color: Color.textPrimary, flexShrink: 1 },
+  feedPbBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    borderRadius: 999,
+    backgroundColor: Color.goldWeak,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  feedPbBadgeText: { fontSize: 10, fontWeight: "700", color: Color.gold },
   feedLine: { fontSize: 12, color: Color.textMuted, marginTop: 4 },
   feedMore: { fontSize: 11, color: Color.textFaint, marginTop: 2 },
   feedActions: {
     flexDirection: "row",
+    alignItems: "center",
     gap: Spacing.lg,
     marginTop: Spacing.sm,
     paddingTop: Spacing.sm,
     borderTopWidth: 1,
     borderTopColor: Color.borderSubtle,
   },
-  feedActionButton: { flexDirection: "row", alignItems: "center", gap: 4 },
+  feedActionButton: { flexDirection: "row", alignItems: "center", gap: 4, minHeight: 32, paddingVertical: 4 },
+  feedActionButtonPending: { opacity: 0.5 },
   feedActionText: { fontSize: 11, fontWeight: "500", color: Color.textFaint },
+  feedActionError: { fontSize: 11, color: Color.danger, marginLeft: "auto" },
   metricRow: {
     flexDirection: "row",
     gap: 2,
@@ -557,6 +620,12 @@ const styles = StyleSheet.create({
   rangeChipTextActive: { color: Color.gold },
   customRangeRow: { flexDirection: "row", gap: Spacing.sm, marginBottom: Spacing.sm },
   emptyLeaderboardText: { fontSize: 12, color: Color.textMuted, textAlign: "center", paddingVertical: Spacing.sm },
+  leaderboardContextLabel: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: Color.textFaint,
+    marginBottom: Spacing.xs,
+  },
   leaderboardCard: { padding: 0, overflow: "hidden" },
   leaderboardRow: {
     flexDirection: "row",

@@ -1,9 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
 import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 
 import { Color, Radius, Spacing } from "@/constants/theme";
 import { useAuth } from "@/lib/auth-context";
+import { formatCommunityDate } from "@/lib/community-formatters";
 import { tapFeedback } from "@/lib/haptics";
 import {
   useDeleteComment,
@@ -15,10 +17,6 @@ import {
 } from "@/lib/queries/community";
 
 import { MemberSearchSheet } from "./MemberSearchSheet";
-
-function formatTime(iso: string): string {
-  return new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "short" });
-}
 
 // Comment thread + composer for one workout session. Same plain-Modal
 // pattern as ExerciseSwapSheet — a single shared instance in the Community
@@ -95,81 +93,117 @@ export function CommentSheet({
     <>
       <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={handleClose}>
         <Pressable style={styles.backdrop} onPress={handleClose}>
-          <Pressable style={styles.card} onPress={(e) => e.stopPropagation()}>
-            <Text style={styles.title}>Comments</Text>
+          <KeyboardAvoidingView behavior="padding" style={styles.avoidingView}>
+            <Pressable style={styles.card} onPress={(e) => e.stopPropagation()}>
+              <Text style={styles.title}>Comments</Text>
 
-            {isLoading ? (
-              <ActivityIndicator color={Color.gold} style={{ marginVertical: Spacing.lg }} />
-            ) : (
-              <ScrollView style={styles.list} showsVerticalScrollIndicator={false}>
-                {(comments ?? []).length === 0 ? (
-                  <Text style={styles.empty}>No comments yet — be the first.</Text>
-                ) : (
-                  (comments as WorkoutComment[]).map((c) => (
-                    <View key={c.id} style={styles.commentRow}>
-                      <View style={styles.commentHeader}>
-                        <Text style={styles.commentAuthor}>{c.authorName}</Text>
-                        <Text style={styles.commentDate}>{formatTime(c.createdAt)}</Text>
-                      </View>
-                      <Text style={styles.commentBody}>{c.body}</Text>
-                      <View style={styles.commentActions}>
-                        {c.userId === user?.id ? (
-                          <Pressable onPress={() => deleteComment.mutate(c.id)} hitSlop={8}>
-                            <Text style={styles.commentActionText}>Delete</Text>
-                          </Pressable>
-                        ) : (
-                          <Pressable onPress={() => setReportingId(reportingId === c.id ? null : c.id)} hitSlop={8}>
-                            <Text style={styles.commentActionText}>Report</Text>
-                          </Pressable>
-                        )}
-                      </View>
-                      {reportingId === c.id ? (
-                        <View style={styles.reportRow}>
-                          <TextInput
-                            value={reportReason}
-                            onChangeText={setReportReason}
-                            placeholder="Why are you reporting this?"
-                            placeholderTextColor={Color.textFaint}
-                            style={styles.reportInput}
-                          />
-                          <Pressable onPress={() => handleSubmitReport(c.id)} hitSlop={8} style={styles.reportSubmit}>
-                            <Text style={styles.reportSubmitText}>Send</Text>
-                          </Pressable>
+              {isLoading ? (
+                <ActivityIndicator color={Color.gold} style={{ marginVertical: Spacing.lg }} />
+              ) : (
+                <ScrollView style={styles.list} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+                  {(comments ?? []).length === 0 ? (
+                    <Text style={styles.empty}>No comments yet — be the first.</Text>
+                  ) : (
+                    (comments as WorkoutComment[]).map((c) => {
+                      const isDeletingThis = deleteComment.isPending && deleteComment.variables === c.id;
+                      const isReportingThis =
+                        reportComment.isPending && reportComment.variables?.commentId === c.id;
+                      return (
+                        <View key={c.id} style={styles.commentRow}>
+                          <View style={styles.commentHeader}>
+                            <Text style={styles.commentAuthor} numberOfLines={1}>
+                              {c.authorName}
+                            </Text>
+                            <Text style={styles.commentDate}>{formatCommunityDate(c.createdAt, "compact")}</Text>
+                          </View>
+                          <Text style={styles.commentBody}>{c.body}</Text>
+                          <View style={styles.commentActions}>
+                            {c.userId === user?.id ? (
+                              <Pressable
+                                onPress={() => deleteComment.mutate(c.id)}
+                                disabled={isDeletingThis}
+                                hitSlop={8}
+                              >
+                                <Text style={[styles.commentActionText, isDeletingThis && styles.commentActionTextDisabled]}>
+                                  {isDeletingThis ? "Deleting…" : "Delete"}
+                                </Text>
+                              </Pressable>
+                            ) : (
+                              <Pressable onPress={() => setReportingId(reportingId === c.id ? null : c.id)} hitSlop={8}>
+                                <Text style={styles.commentActionText}>Report</Text>
+                              </Pressable>
+                            )}
+                          </View>
+                          {deleteComment.isError && deleteComment.variables === c.id ? (
+                            <Text style={styles.errorText}>{deleteComment.error?.message ?? "Couldn't delete that comment."}</Text>
+                          ) : null}
+                          {reportingId === c.id ? (
+                            <View style={styles.reportRow}>
+                              <TextInput
+                                value={reportReason}
+                                onChangeText={setReportReason}
+                                placeholder="Why are you reporting this?"
+                                placeholderTextColor={Color.textFaint}
+                                style={styles.reportInput}
+                                editable={!isReportingThis}
+                              />
+                              <Pressable
+                                onPress={() => handleSubmitReport(c.id)}
+                                disabled={isReportingThis || !reportReason.trim()}
+                                hitSlop={8}
+                                style={styles.reportSubmit}
+                              >
+                                {isReportingThis ? (
+                                  <ActivityIndicator color={Color.danger} size="small" />
+                                ) : (
+                                  <Text style={styles.reportSubmitText}>Send</Text>
+                                )}
+                              </Pressable>
+                            </View>
+                          ) : null}
+                          {reportComment.isError && reportComment.variables?.commentId === c.id ? (
+                            <Text style={styles.errorText}>{reportComment.error?.message ?? "Couldn't send that report."}</Text>
+                          ) : null}
                         </View>
-                      ) : null}
-                    </View>
-                  ))
-                )}
-              </ScrollView>
-            )}
+                      );
+                    })
+                  )}
+                </ScrollView>
+              )}
 
-            <View style={styles.composerRow}>
-              <TextInput
-                value={text}
-                onChangeText={handleChangeText}
-                placeholder="Add a comment… (type @ to mention)"
-                placeholderTextColor={Color.textFaint}
-                style={styles.composerInput}
-                multiline
-              />
-              <Pressable
-                onPress={handleSend}
-                disabled={postComment.isPending || !text.trim()}
-                hitSlop={8}
-                style={styles.sendButton}
-              >
-                <Ionicons
-                  name="send"
-                  size={18}
-                  color={text.trim() ? Color.gold : Color.textFaint}
+              <View style={styles.composerRow}>
+                <TextInput
+                  value={text}
+                  onChangeText={handleChangeText}
+                  placeholder="Add a comment… (type @ to mention)"
+                  placeholderTextColor={Color.textFaint}
+                  style={styles.composerInput}
+                  editable={!postComment.isPending}
+                  multiline
                 />
-              </Pressable>
-            </View>
+                <Pressable
+                  onPress={handleSend}
+                  disabled={postComment.isPending || !text.trim()}
+                  hitSlop={8}
+                  style={styles.sendButton}
+                  accessibilityLabel="Send comment"
+                >
+                  {postComment.isPending ? (
+                    <ActivityIndicator color={Color.gold} size="small" />
+                  ) : (
+                    <Ionicons name="send" size={18} color={text.trim() ? Color.gold : Color.textFaint} />
+                  )}
+                </Pressable>
+              </View>
+              {postComment.isError ? (
+                <Text style={styles.errorText}>{postComment.error?.message ?? "Couldn't post your comment."}</Text>
+              ) : null}
 
-            <Pressable onPress={handleClose} hitSlop={8} style={styles.closeButton}>
-              <Ionicons name="close" size={16} color={Color.textMuted} />
+              <Pressable onPress={handleClose} hitSlop={8} style={styles.closeButton}>
+                <Ionicons name="close" size={16} color={Color.textMuted} />
+              </Pressable>
             </Pressable>
-          </Pressable>
+          </KeyboardAvoidingView>
         </Pressable>
       </Modal>
 
@@ -191,6 +225,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     padding: Spacing.xl,
   },
+  avoidingView: { width: "100%", alignItems: "center" },
   card: {
     width: "100%",
     maxWidth: 400,
@@ -212,6 +247,8 @@ const styles = StyleSheet.create({
   commentBody: { fontSize: 13, color: Color.textSecondary, marginTop: 2, lineHeight: 18 },
   commentActions: { flexDirection: "row", marginTop: 4 },
   commentActionText: { fontSize: 11, fontWeight: "600", color: Color.textFaint },
+  commentActionTextDisabled: { opacity: 0.6 },
+  errorText: { fontSize: 11, color: Color.danger, marginTop: 4 },
   reportRow: { flexDirection: "row", gap: Spacing.xs, marginTop: Spacing.xs, alignItems: "center" },
   reportInput: {
     flex: 1,

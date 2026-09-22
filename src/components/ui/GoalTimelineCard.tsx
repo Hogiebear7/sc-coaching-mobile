@@ -110,22 +110,6 @@ export function GoalTimelineCard() {
     return { weightVal, bodyFatVal };
   }
 
-  async function handleSave() {
-    setError(null);
-    const parsed = parsedGoals();
-    if (!parsed) return;
-    try {
-      await saveGoal.mutateAsync({
-        goalWeightKg: parsed.weightVal,
-        goalBodyFatPct: parsed.bodyFatVal,
-        goalTargetDate: goalTargetDate || null,
-        trainingDaysPerWeek,
-      });
-    } catch {
-      setError("Could not save your goal. Please try again.");
-    }
-  }
-
   // Primary flow: weight/body-fat goal + training frequency in, a realistic
   // suggested date out — mirrors the web ProfileForm's handleGenerate.
   async function handleGenerate() {
@@ -160,6 +144,22 @@ export function GoalTimelineCard() {
     }
   }
 
+  // Persists goal weight/body-fat as soon as the member leaves the field —
+  // there's no separate "save" action on this card any more (Generate
+  // timeline is the one that also computes a suggested date; this is for
+  // anyone who just wants the number on record without generating one).
+  // Silently skips an empty or invalid field rather than erroring on blur —
+  // the member may still be mid-edit or genuinely means to leave it blank.
+  function saveWeightOrBodyFat(field: "weight" | "bodyFat") {
+    const raw = field === "weight" ? goalWeightKg : goalBodyFatPct;
+    const trimmed = raw.trim();
+    if (!trimmed) return;
+    const parsed = parseFloat(trimmed);
+    if (!Number.isFinite(parsed) || parsed <= 0) return;
+    if (field === "bodyFat" && parsed > 75) return;
+    saveGoal.mutate(field === "weight" ? { goalWeightKg: parsed } : { goalBodyFatPct: parsed });
+  }
+
   async function nudgeDate(days: number) {
     const next = shiftDate(goalTargetDate || todayDateString(), days);
     setGoalTargetDate(next);
@@ -185,6 +185,7 @@ export function GoalTimelineCard() {
           <TextInput
             value={goalWeightKg}
             onChangeText={setGoalWeightKg}
+            onBlur={() => saveWeightOrBodyFat("weight")}
             keyboardType="decimal-pad"
             placeholder="optional"
             placeholderTextColor={Color.textFaint}
@@ -196,6 +197,7 @@ export function GoalTimelineCard() {
           <TextInput
             value={goalBodyFatPct}
             onChangeText={setGoalBodyFatPct}
+            onBlur={() => saveWeightOrBodyFat("bodyFat")}
             keyboardType="decimal-pad"
             placeholder="optional"
             placeholderTextColor={Color.textFaint}
@@ -209,7 +211,10 @@ export function GoalTimelineCard() {
         {TRAINING_DAYS_OPTIONS.map((d) => (
           <Pressable
             key={d}
-            onPress={() => setTrainingDaysPerWeek(d)}
+            onPress={() => {
+              setTrainingDaysPerWeek(d);
+              saveGoal.mutate({ trainingDaysPerWeek: d });
+            }}
             style={[styles.dayChip, trainingDaysPerWeek === d && styles.dayChipActive]}
           >
             <Text style={[styles.dayChipText, trainingDaysPerWeek === d && styles.dayChipTextActive]}>{d}</Text>
@@ -227,7 +232,10 @@ export function GoalTimelineCard() {
       <DateField
         label="Target date"
         value={goalTargetDate}
-        onChange={setGoalTargetDate}
+        onChange={(iso) => {
+          setGoalTargetDate(iso);
+          saveGoal.mutate({ goalTargetDate: iso || null });
+        }}
         minDate={todayDateString()}
         maxDate={maxGoalDate()}
         style={{ marginTop: Spacing.sm }}
@@ -244,12 +252,6 @@ export function GoalTimelineCard() {
           </Pressable>
         </View>
       ) : null}
-
-      {/* Deliberately a quiet text link, not a Button — Generate timeline is
-          the one action this card wants to read as primary. */}
-      <Pressable onPress={handleSave} disabled={saveGoal.isPending} style={styles.saveLink} hitSlop={8}>
-        <Text style={styles.saveLinkText}>{saveGoal.isPending ? "Saving…" : "Save without generating"}</Text>
-      </Pressable>
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
@@ -296,8 +298,6 @@ const styles = StyleSheet.create({
     borderColor: Color.borderSubtle,
   },
   adjustChipText: { fontSize: 12, color: Color.textMuted },
-  saveLink: { alignItems: "center", marginTop: Spacing.md, paddingVertical: 8 },
-  saveLinkText: { fontSize: 13, fontWeight: "600", color: Color.textMuted },
   error: { fontSize: 12, color: Color.danger, marginTop: Spacing.sm },
   chipRow: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.xs },
   dayChip: {

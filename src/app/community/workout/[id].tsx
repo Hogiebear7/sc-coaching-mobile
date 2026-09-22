@@ -93,6 +93,13 @@ export default function CommunityWorkoutScreen() {
               </Pressable>
             </View>
           </Card>
+
+          <Button
+            title="View Community"
+            variant="secondary"
+            onPress={() => router.push("/community")}
+            style={{ marginTop: Spacing.md }}
+          />
         </View>
       )}
 

@@ -270,15 +270,22 @@ export default function RootLayout() {
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
             <TourProvider>
-              <WorkoutDraftProvider>
-                <RestTimerProvider>
+              {/* RestTimerProvider outermost (was nested inside
+                  WorkoutDraftProvider) so WorkoutDraftProvider's own live-
+                  notification scheduling can read rest-timer state and
+                  avoid stacking a "Workout in progress" notification on top
+                  of the more specific "Resting — X" one. rest-timer.tsx
+                  doesn't depend on workout-draft.tsx at all, so this
+                  ordering has no other effect. */}
+              <RestTimerProvider>
+                <WorkoutDraftProvider>
                   <StatusBar barStyle="light-content" backgroundColor={Color.bg0} />
                   <View style={styles.root}>
                     <AuthGate />
                     <TourHost />
                   </View>
-                </RestTimerProvider>
-              </WorkoutDraftProvider>
+                </WorkoutDraftProvider>
+              </RestTimerProvider>
             </TourProvider>
           </AuthProvider>
         </QueryClientProvider>

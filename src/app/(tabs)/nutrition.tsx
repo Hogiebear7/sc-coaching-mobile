@@ -4,6 +4,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Animated,
   Easing,
   Pressable,
@@ -29,7 +30,7 @@ import { Color, Radius, Spacing } from "@/constants/theme";
 import { ApiError } from "@/lib/auth-context";
 import { tapFeedback } from "@/lib/haptics";
 import { hasAccess } from "@/lib/member-access";
-import { useFoodFavorites, type FoodFavorite } from "@/lib/queries/food-favorites";
+import { useFoodFavorites, useRemoveFoodFavorite, type FoodFavorite } from "@/lib/queries/food-favorites";
 import { useMemberTier } from "@/lib/queries/profile";
 import { useReduceMotionPref } from "@/lib/use-reduce-motion";
 import {
@@ -465,8 +466,21 @@ export default function NutritionScreen() {
   const { data: diary } = useNutritionDiary(selectedDate);
   const { data: recentFoods } = useRecentFoods();
   const { data: favorites } = useFoodFavorites();
+  const removeFavorite = useRemoveFoodFavorite();
   const createEntry = useCreateFoodEntry();
   const deleteEntry = useDeleteFoodEntry();
+
+  // Always-visible delete button, not onLongPress — inside a horizontal
+  // ScrollView, the scroll gesture's own responder negotiation regularly
+  // swallows long-press recognition entirely (confirmed elsewhere in this
+  // app, see log-food.tsx's favourites chips, which hit the exact same
+  // issue first).
+  function confirmRemoveFavorite(f: FoodFavorite) {
+    Alert.alert("Remove favourite?", `"${f.name}" will be removed from your favourites.`, [
+      { text: "Cancel", style: "cancel" },
+      { text: "Remove", style: "destructive", onPress: () => removeFavorite.mutate(f.id) },
+    ]);
+  }
 
   function toggleMealExpanded(mealType: MealType) {
     tapFeedback();
@@ -672,12 +686,22 @@ export default function NutritionScreen() {
               ) : (favorites?.length ?? 0) > 0 ? (
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: Spacing.xs }}>
                   {favorites!.map((f: FoodFavorite) => (
-                    <Pressable key={f.id} onPress={() => handleQuickAdd(f)} style={styles.quickAddChip}>
-                      <Text style={styles.quickAddChipText} numberOfLines={1} ellipsizeMode="tail">
-                        {f.name}
-                      </Text>
-                      <Text style={styles.quickAddChipSub}>{f.calories} kcal</Text>
-                    </Pressable>
+                    <View key={f.id} style={styles.quickAddChip}>
+                      <Pressable onPress={() => handleQuickAdd(f)}>
+                        <Text style={styles.quickAddChipText} numberOfLines={1} ellipsizeMode="tail">
+                          {f.name}
+                        </Text>
+                        <Text style={styles.quickAddChipSub}>{f.calories} kcal</Text>
+                      </Pressable>
+                      <Pressable
+                        onPress={() => confirmRemoveFavorite(f)}
+                        hitSlop={8}
+                        style={styles.quickAddChipDelete}
+                        accessibilityLabel={`Remove ${f.name} from favourites`}
+                      >
+                        <Ionicons name="close-circle" size={16} color={Color.textFaint} />
+                      </Pressable>
+                    </View>
                   ))}
                 </ScrollView>
               ) : (
@@ -872,6 +896,7 @@ const styles = StyleSheet.create({
   macroLegend: { flex: 1 },
   section: { marginBottom: Spacing.xl },
   quickAddChip: {
+    position: "relative",
     borderRadius: Radius.md,
     borderWidth: 1,
     borderColor: Color.borderSubtle,
@@ -882,6 +907,7 @@ const styles = StyleSheet.create({
   },
   quickAddChipText: { fontSize: 12, fontWeight: "600", color: Color.textPrimary },
   quickAddChipSub: { fontSize: 10, color: Color.textMuted, marginTop: 2 },
+  quickAddChipDelete: { position: "absolute", top: 2, right: 2, padding: 2 },
   quickAddTabRow: { flexDirection: "row", gap: Spacing.xs, marginBottom: Spacing.sm },
   quickAddTab: {
     borderRadius: Radius.pill,

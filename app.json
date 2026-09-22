@@ -75,7 +75,6 @@
     },
     "extra": {
       "router": {},
-      "buildLabel": "2026-08-31-favourites-crashfix-v8",
       "eas": {
         "projectId": "e91de324-82a4-437a-9344-1b8a89102f72"
       }

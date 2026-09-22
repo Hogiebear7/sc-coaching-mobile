@@ -6,6 +6,11 @@ import type { WorkoutExerciseEntry, WorkoutRunEntry } from "@/lib/queries/workou
 // Mirrors gym-app's lib/leaderboard.ts.
 export type LeaderboardMetric = "volume" | "squat" | "bench" | "deadlift";
 
+// week/month/year are trailing windows ending today, not calendar-aligned
+// periods — see gym-app's lib/leaderboard.ts for why (fairness for a member
+// who joined partway through everyone else's tenure).
+export type LeaderboardRange = "week" | "month" | "year" | "all" | "custom";
+
 export interface LeaderboardEntry {
   userId: string;
   displayName: string;
@@ -13,13 +18,28 @@ export interface LeaderboardEntry {
   bodyweightPct: number | null;
 }
 
-export function useLeaderboard(metric: LeaderboardMetric) {
+export function useLeaderboard(
+  metric: LeaderboardMetric,
+  range: LeaderboardRange = "all",
+  customStartISO?: string | null,
+  customEndISO?: string | null
+) {
   return useQuery({
-    queryKey: ["community-leaderboard", metric],
-    queryFn: () =>
-      apiFetch<{ success: true; data: { entries: LeaderboardEntry[]; myUserId: string } }>(
-        `/api/mobile/community/leaderboard?metric=${metric}`
-      ).then((r) => r.data),
+    queryKey: ["community-leaderboard", metric, range, customStartISO, customEndISO],
+    queryFn: () => {
+      const params = new URLSearchParams({ metric, range });
+      if (range === "custom") {
+        if (customStartISO) params.set("start", customStartISO);
+        if (customEndISO) params.set("end", customEndISO);
+      }
+      return apiFetch<{ success: true; data: { entries: LeaderboardEntry[]; myUserId: string } }>(
+        `/api/mobile/community/leaderboard?${params.toString()}`
+      ).then((r) => r.data);
+    },
+    // A custom range with neither bound picked yet isn't a meaningful query
+    // — avoid firing it (and showing a misleading "no entries" flash) until
+    // at least one bound is set.
+    enabled: range !== "custom" || !!customStartISO || !!customEndISO,
   });
 }
 

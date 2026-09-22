@@ -1,11 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Color, Radius, Spacing } from "@/constants/theme";
 import { tapFeedback } from "@/lib/haptics";
 import { useRestTimer } from "@/lib/rest-timer";
+import { useTickingValue } from "@/lib/use-ticker";
 
 function formatClock(secs: number): string {
   const m = Math.floor(secs / 60);
@@ -24,25 +24,29 @@ function formatClock(secs: number): string {
 export function RestTimerBar({ onExpand }: { onExpand: () => void }) {
   const timer = useRestTimer();
   const insets = useSafeAreaInsets();
-  const [, forceTick] = useState(0);
-
-  useEffect(() => {
-    if (!timer.isRunning) return;
-    const id = setInterval(() => forceTick((t) => t + 1), 250);
-    return () => clearInterval(id);
-  }, [timer.isRunning]);
-
-  const remaining = timer.remainingNow();
-  // A countdown counts as "active" here whether it's ticking or paused
-  // mid-way through — but not in its default/freshly-reset state, where
-  // remainingAtPauseSecs always equals durationSecs (see lib/rest-timer.tsx:
-  // start/reset always set both together). That's what keeps this bar
-  // hidden until a rest is genuinely underway.
+  const remaining = useTickingValue(() => timer.remainingNow(), timer.isRunning, 250);
+  const preCountdownRemaining = useTickingValue(() => timer.preCountdownRemaining(), timer.isPreCountingDown, 250);
+  // A countdown counts as "active" here whether it's ticking, paused
+  // mid-way through, or still in its pre-start get-ready window — but not
+  // in its default/freshly-reset state, where remainingAtPauseSecs always
+  // equals durationSecs (see lib/rest-timer.tsx: start/reset always set
+  // both together). That's what keeps this bar hidden until a rest is
+  // genuinely underway or about to be.
   const active =
-    timer.state.mode === "countdown" &&
-    (timer.isRunning || (timer.state.remainingAtPauseSecs > 0 && timer.state.remainingAtPauseSecs < timer.state.durationSecs));
+    timer.isPreCountingDown ||
+    (timer.state.mode === "countdown" &&
+      (timer.isRunning || (timer.state.remainingAtPauseSecs > 0 && timer.state.remainingAtPauseSecs < timer.state.durationSecs)));
 
   if (!active) return null;
+
+  if (timer.isPreCountingDown) {
+    return (
+      <View style={[styles.bar, styles.barGetReady, { paddingBottom: Math.max(insets.bottom, Spacing.sm) }]}>
+        <Text style={styles.getReadyText}>GET READY</Text>
+        <Text style={styles.getReadyClock}>{preCountdownRemaining}</Text>
+      </View>
+    );
+  }
 
   const done = timer.isRunning && remaining <= 0;
 
@@ -101,6 +105,9 @@ const styles = StyleSheet.create({
     borderTopColor: Color.goldBorder,
     backgroundColor: Color.surface1,
   },
+  barGetReady: { justifyContent: "center", gap: Spacing.sm },
+  getReadyText: { fontSize: 12, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted },
+  getReadyClock: { fontSize: 22, fontWeight: "700", color: Color.gold, fontVariant: ["tabular-nums"] },
   adjustButton: {
     paddingHorizontal: Spacing.sm,
     paddingVertical: 6,

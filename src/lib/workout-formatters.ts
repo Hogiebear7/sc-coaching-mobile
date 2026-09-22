@@ -413,27 +413,30 @@ export interface ExerciseStats {
 // already fetched: there's no per-user table anywhere, this just diffs
 // their own session history against the two shared lists on the fly, so a
 // name typed once suggests again for THEM without ever being written
-// anywhere another member's suggestions could read from. Most-recent-first,
-// since sessions are already sorted newest-first.
+// anywhere another member's suggestions could read from. Ranked by how many
+// distinct sessions include the name (most-used first, not per-set count,
+// so one high-set-count session can't dominate), with ties broken
+// most-recent-first since sessions are already sorted newest-first.
 export function getPersonalExerciseNames(
   sessions: WorkoutSessionSummary[],
   exercises: { name: string }[],
   libraryNames: { name: string }[]
 ): string[] {
   const known = new Set([...exercises, ...libraryNames].map((e) => e.name.trim().toLowerCase()));
-  const seen = new Set<string>();
-  const result: string[] = [];
+  const countByLower = new Map<string, number>();
+  const displayByLower = new Map<string, string>();
   for (const session of sessions) {
-    for (const ex of session.exercises) {
-      const trimmed = ex.name.trim();
-      if (!trimmed) continue;
+    const namesThisSession = new Set(session.exercises.map((ex) => ex.name.trim()).filter(Boolean));
+    for (const trimmed of namesThisSession) {
       const lower = trimmed.toLowerCase();
-      if (known.has(lower) || seen.has(lower)) continue;
-      seen.add(lower);
-      result.push(trimmed);
+      if (known.has(lower)) continue;
+      countByLower.set(lower, (countByLower.get(lower) ?? 0) + 1);
+      if (!displayByLower.has(lower)) displayByLower.set(lower, trimmed);
     }
   }
-  return result;
+  return Array.from(countByLower.entries())
+    .sort((a, b) => b[1] - a[1])
+    .map(([lower]) => displayByLower.get(lower)!);
 }
 
 // The full stat line for one exercise across every logged session —

@@ -473,9 +473,17 @@ export default function SettingsScreen() {
               when diagnosing "is this actually the build I sent you" during
               a bug report, since Android will happily reinstall over an
               existing app without any visible confirmation of which
-              version ended up on the device. */}
+              version ended up on the device. Reads the actual installed
+              native binary's version/build (nativeApplicationVersion /
+              nativeBuildVersion), not a hand-maintained label — the label
+              this used to read (app.json's extra.buildLabel) was last
+              updated 2026-08-31 and silently went stale for every build
+              since, which is exactly the failure this line exists to
+              prevent. Both are null in Expo Go (no native binary), hence
+              the "dev" fallback. */}
           <Text style={styles.buildInfo}>
-            Version {Constants.expoConfig?.extra?.buildLabel ?? "dev"}
+            Version {Constants.nativeApplicationVersion ?? "dev"}
+            {Constants.nativeBuildVersion ? ` (${Constants.nativeBuildVersion})` : ""}
           </Text>
         </ScrollView>
       )}

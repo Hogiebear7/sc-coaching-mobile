@@ -8,6 +8,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { CommentSheet } from "@/components/ui/CommentSheet";
+import { DateField } from "@/components/ui/DateField";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { MemberSearchSheet } from "@/components/ui/MemberSearchSheet";
 import { SectionHeader } from "@/components/ui/SectionHeader";
@@ -22,8 +23,9 @@ import {
   useToggleWorkoutLike,
   type CommunityFeedItem,
   type LeaderboardMetric,
+  type LeaderboardRange,
 } from "@/lib/queries/community";
-import { formatExerciseLoad, formatRun } from "@/lib/workout-formatters";
+import { formatExerciseLoad, formatRun, todayDateString } from "@/lib/workout-formatters";
 
 // Emphasis order, top to bottom: wins/milestones, leaderboards, supporting
 // feed activity — comments/likes/mentions stay a tap away (the per-item
@@ -38,6 +40,17 @@ const METRIC_LABEL: Record<LeaderboardMetric, string> = {
   squat: "Squat",
   bench: "Bench",
   deadlift: "Deadlift",
+};
+
+// "All time" first — the existing/default behaviour — then shortest to
+// longest trailing window, "Custom" last since it opens extra UI.
+const LEADERBOARD_RANGES: LeaderboardRange[] = ["all", "week", "month", "year", "custom"];
+const RANGE_LABEL: Record<LeaderboardRange, string> = {
+  all: "All time",
+  week: "Week",
+  month: "Month",
+  year: "Year",
+  custom: "Custom",
 };
 
 function formatDate(dateISO: string): string {
@@ -178,6 +191,9 @@ export default function CommunityScreen() {
   const { user } = useAuth();
   const params = useLocalSearchParams<{ tab?: string }>();
   const [metric, setMetric] = useState<LeaderboardMetric>("volume");
+  const [range, setRange] = useState<LeaderboardRange>("all");
+  const [customStart, setCustomStart] = useState("");
+  const [customEnd, setCustomEnd] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [activeItem, setActiveItem] = useState<CommunityFeedItem | null>(null);
   const scrollRef = useRef<ScrollView>(null);
@@ -185,7 +201,7 @@ export default function CommunityScreen() {
   const hasScrolledToLeaderboard = useRef(false);
 
   const feed = useCommunityFeed();
-  const leaderboard = useLeaderboard(metric);
+  const leaderboard = useLeaderboard(metric, range, customStart || null, customEnd || null);
   const suggested = useSuggestedMembers();
   const followUser = useFollowUser();
 
@@ -273,7 +289,46 @@ export default function CommunityScreen() {
             ))}
           </View>
 
-          {leaderboard.isLoading ? (
+          {/* Trailing windows, not calendar periods — someone who joined a
+              month after everyone else still gets a genuinely equal-length
+              week/month/year to be ranked within. See lib/queries/community.ts. */}
+          <View style={styles.rangeRow}>
+            {LEADERBOARD_RANGES.map((r) => (
+              <Pressable
+                key={r}
+                onPress={() => setRange(r)}
+                style={[styles.rangeChip, range === r && styles.rangeChipActive]}
+              >
+                <Text style={[styles.rangeChipText, range === r && styles.rangeChipTextActive]}>
+                  {RANGE_LABEL[r]}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+
+          {range === "custom" ? (
+            <View style={styles.customRangeRow}>
+              <DateField
+                label="From"
+                value={customStart}
+                onChange={setCustomStart}
+                maxDate={customEnd || todayDateString()}
+                style={{ flex: 1 }}
+              />
+              <DateField
+                label="To"
+                value={customEnd}
+                onChange={setCustomEnd}
+                minDate={customStart || undefined}
+                maxDate={todayDateString()}
+                style={{ flex: 1 }}
+              />
+            </View>
+          ) : null}
+
+          {range === "custom" && !customStart && !customEnd ? (
+            <Text style={styles.emptyLeaderboardText}>Pick a start and/or end date to see rankings for that range.</Text>
+          ) : leaderboard.isLoading ? (
             <ActivityIndicator color={Color.gold} style={{ marginTop: Spacing.md }} />
           ) : !leaderboard.data || leaderboard.data.entries.length === 0 ? (
             <Card tier="quiet">
@@ -489,6 +544,18 @@ const styles = StyleSheet.create({
   metricChipActive: { backgroundColor: Color.gold },
   metricChipText: { fontSize: 11, fontWeight: "600", color: Color.textFaint },
   metricChipTextActive: { color: Color.goldForeground, fontWeight: "700" },
+  rangeRow: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: Spacing.sm },
+  rangeChip: {
+    borderRadius: Radius.pill,
+    borderWidth: 1,
+    borderColor: Color.borderSubtle,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 5,
+  },
+  rangeChipActive: { borderColor: Color.goldBorder, backgroundColor: Color.goldWeak },
+  rangeChipText: { fontSize: 11, fontWeight: "600", color: Color.textFaint },
+  rangeChipTextActive: { color: Color.gold },
+  customRangeRow: { flexDirection: "row", gap: Spacing.sm, marginBottom: Spacing.sm },
   emptyLeaderboardText: { fontSize: 12, color: Color.textMuted, textAlign: "center", paddingVertical: Spacing.sm },
   leaderboardCard: { padding: 0, overflow: "hidden" },
   leaderboardRow: {

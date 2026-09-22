@@ -1,8 +1,9 @@
 import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { KeyboardAwareScroll } from "@/components/ui/KeyboardAwareScroll";
+import type { KeyboardAwareScrollViewRef } from "react-native-keyboard-controller";
 
 import { BrandMark } from "@/components/ui/BrandMark";
 import { Button } from "@/components/ui/Button";
@@ -31,6 +32,7 @@ export default function CompleteMembershipScreen() {
   const [name2, setName2] = useState("");
   const [phone2, setPhone2] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const scrollRef = useRef<KeyboardAwareScrollViewRef | null>(null);
 
   useEffect(() => {
     if (!profile) return;
@@ -39,6 +41,23 @@ export default function CompleteMembershipScreen() {
     setName2(profile.emergencyContact2Name ?? "");
     setPhone2(profile.emergencyContact2Phone ?? "");
   }, [profile]);
+
+  // The second phone field only mounts once name2 has something in it —
+  // right below whichever field the member is still typing into, so it
+  // appeared off-screen behind the keyboard with no scroll to bring it into
+  // view (a newly-mounted field below the focused one doesn't trigger the
+  // scroll view's own focus-tracking). Scroll it into view the moment it
+  // first mounts — a ref (not just checking name2 is non-empty) so this
+  // fires once, not on every keystroke while it's already visible.
+  const hasScrolledForPhone2 = useRef(false);
+  useEffect(() => {
+    if (name2.trim() && !hasScrolledForPhone2.current) {
+      hasScrolledForPhone2.current = true;
+      scrollRef.current?.scrollToEnd({ animated: true });
+    } else if (!name2.trim()) {
+      hasScrolledForPhone2.current = false;
+    }
+  }, [name2]);
 
   function skip() {
     dismissEmergencyContactReminder();
@@ -101,7 +120,7 @@ export default function CompleteMembershipScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
-      <KeyboardAwareScroll contentContainerStyle={styles.scroll}>
+      <KeyboardAwareScroll ref={scrollRef} contentContainerStyle={styles.scroll}>
         <BrandMark height={28} style={styles.logo} />
         <Text style={styles.eyebrow}>MEMBERSHIP</Text>
         <Text style={styles.title}>Add an emergency contact</Text>

@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
@@ -8,6 +9,7 @@ import { Card } from "@/components/ui/Card";
 import { Collapsible } from "@/components/ui/Collapsible";
 import { ContinueWorkoutPill } from "@/components/ui/ContinueWorkoutPill";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { InfoModal } from "@/components/ui/InfoModal";
 import { ReadinessRing } from "@/components/ui/ReadinessRing";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Stepper } from "@/components/ui/Stepper";
@@ -125,6 +127,7 @@ export default function RecoveryScreen() {
   const parsedPrefillSleepHours = prefillSleepHours ? Number(prefillSleepHours) : NaN;
   const { data, isLoading, isError, refetch, isRefetching } = useRecovery();
   const [editingDate, setEditingDate] = useState<string | null>(null);
+  const [loadInfoOpen, setLoadInfoOpen] = useState(false);
 
   if (isLoading) {
     return (
@@ -163,9 +166,14 @@ export default function RecoveryScreen() {
 
         <Card style={styles.summaryCard} tier="hero">
           <View style={styles.summaryRow}>
-            <ReadinessRing score={data.latestReadinessScore} size={88} />
+            {/* latestReadinessScore/latestGuidance are the most recent
+                check-in EVER, not necessarily today's — showing them
+                unconditionally meant the ring displayed a fully-formed score
+                before the member had checked in today. hasLoggedToday is
+                what actually answers "is this score for today." */}
+            <ReadinessRing score={data.hasLoggedToday ? data.latestReadinessScore : null} size={88} />
             <View style={{ flex: 1 }}>
-              {data.latestGuidance ? (
+              {data.hasLoggedToday && data.latestGuidance ? (
                 <Text style={styles.guidance}>{data.latestGuidance}</Text>
               ) : (
                 <Text style={styles.guidance}>
@@ -176,7 +184,12 @@ export default function RecoveryScreen() {
             </View>
           </View>
           <View style={styles.loadRow}>
-            <Text style={styles.loadLabel}>7-day load</Text>
+            <View style={styles.loadLabelRow}>
+              <Text style={styles.loadLabel}>7-day load</Text>
+              <Pressable onPress={() => setLoadInfoOpen(true)} hitSlop={8}>
+                <Ionicons name="information-circle-outline" size={14} color={Color.textFaint} />
+              </Pressable>
+            </View>
             <Text style={styles.loadValue}>
               {data.rollingLoad.daysWithLoad > 0 ? data.rollingLoad.sevenDaySum : "—"}
             </Text>
@@ -204,6 +217,27 @@ export default function RecoveryScreen() {
             </Text>
           </Collapsible>
         </Card>
+
+        <InfoModal
+          visible={loadInfoOpen}
+          onClose={() => setLoadInfoOpen(false)}
+          title="7-Day Load"
+          body={
+            "Training duration × RPE, added up over a rolling 7-day window ending today. Pulled from your logged " +
+            "workouts (duration and how-did-that-feel RPE), or your recovery check-in's own numbers if you filled " +
+            "those in instead. Days you don't log anything simply add nothing — a quiet week, a rest day, or a " +
+            "brand-new account all show a lower number rather than a broken one. It resets naturally as old days " +
+            "roll out of the window, so you're always seeing your most recent week, not a running total.\n\n" +
+            "Where you land:\n" +
+            "· Under 1,000 — Light. A couple of easy sessions or a deload week.\n" +
+            "· 1,000–2,399 — Moderate. A normal, sustainable training week.\n" +
+            "· 2,400+ — High. Roughly five hard hour-long sessions — a big week.\n\n" +
+            "A high number isn't automatically a bad thing — it just means you've accumulated a lot of work. What " +
+            "matters is how it sits against your readiness: a high load paired with low readiness is the combination " +
+            "the app watches for and trims your next session down for, since that's when the injury/burnout risk " +
+            "actually shows up."
+          }
+        />
 
         {editingDate === null ? (
           <>
@@ -312,6 +346,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: Color.borderSubtle,
   },
+  loadLabelRow: { flexDirection: "row", alignItems: "center", gap: 4 },
   loadLabel: { fontSize: 11, color: Color.textMuted, fontWeight: "600" },
   loadValue: { fontSize: 16, fontWeight: "700", color: Color.textPrimary, fontVariant: ["tabular-nums"] },
   scoreHelp: { fontSize: 11, color: Color.textFaint, lineHeight: 15, marginTop: Spacing.sm },

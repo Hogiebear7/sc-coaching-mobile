@@ -1,18 +1,28 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useRef } from "react";
-import { Pressable, StyleSheet, Text } from "react-native";
+import { Animated, Pressable, StyleSheet, Text } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Color, Radius, Spacing } from "@/constants/theme";
 import { successFeedback } from "@/lib/haptics";
 
-const AUTO_DISMISS_MS = 3500;
+const VISIBLE_MS = 5000;
+const FADE_MS = 400;
+// Clears RestTimerBar's own height (its content + top padding + the
+// device's bottom safe-area inset, which this adds on top of separately)
+// plus a small gap — a live PB is typically hit in the same tap that also
+// starts a rest, so the two are very likely on screen at the same time.
+const BOTTOM_CLEARANCE = 70;
 
 /**
  * A brief celebratory banner for a live PB during a workout — pinned near
- * the top of the screen so it never collides with the RestTimerBar at the
- * bottom. Auto-dismisses after AUTO_DISMISS_MS; also dismissible by tap.
+ * the bottom of the screen, above where RestTimerBar sits when a rest is
+ * running. Fades in, holds for VISIBLE_MS, fades out; also dismissible by
+ * tap.
  */
 export function PbToast({ message, onDismiss }: { message: string | null; onDismiss: () => void }) {
+  const insets = useSafeAreaInsets();
+  const opacity = useRef(new Animated.Value(0)).current;
   // Read via ref rather than depending on `onDismiss` directly — this
   // screen re-renders every second while a live workout timer is running,
   // which would otherwise hand the effect a new function identity each
@@ -22,31 +32,47 @@ export function PbToast({ message, onDismiss }: { message: string | null; onDism
     onDismissRef.current = onDismiss;
   });
 
+  function fadeOutAndDismiss() {
+    Animated.timing(opacity, { toValue: 0, duration: FADE_MS, useNativeDriver: true }).start(({ finished }) => {
+      if (finished) onDismissRef.current();
+    });
+  }
+
   useEffect(() => {
     if (!message) return;
     successFeedback();
-    const id = setTimeout(() => onDismissRef.current(), AUTO_DISMISS_MS);
+    opacity.setValue(0);
+    Animated.timing(opacity, { toValue: 1, duration: FADE_MS, useNativeDriver: true }).start();
+    const id = setTimeout(fadeOutAndDismiss, VISIBLE_MS);
     return () => clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [message]);
 
   if (!message) return null;
 
   return (
-    <Pressable onPress={onDismiss} style={styles.toast}>
-      <Ionicons name="trophy" size={16} color={Color.bg0} />
-      <Text style={styles.text} numberOfLines={2}>
-        {message}
-      </Text>
-    </Pressable>
+    <Animated.View
+      pointerEvents="box-none"
+      style={[styles.wrap, { bottom: insets.bottom + BOTTOM_CLEARANCE, opacity }]}
+    >
+      <Pressable onPress={fadeOutAndDismiss} style={styles.toast}>
+        <Ionicons name="trophy" size={16} color={Color.bg0} />
+        <Text style={styles.text} numberOfLines={2}>
+          {message}
+        </Text>
+      </Pressable>
+    </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
-  toast: {
+  wrap: {
     position: "absolute",
-    top: Spacing.sm,
     left: Spacing.md,
     right: Spacing.md,
+    zIndex: 20,
+  },
+  toast: {
     flexDirection: "row",
     alignItems: "center",
     gap: Spacing.sm,
@@ -54,7 +80,6 @@ const styles = StyleSheet.create({
     borderRadius: Radius.md,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
-    zIndex: 20,
     elevation: 6,
     shadowColor: "#000",
     shadowOpacity: 0.2,

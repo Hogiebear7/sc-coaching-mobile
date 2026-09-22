@@ -113,24 +113,55 @@ async function cancelDoneNotification(): Promise<void> {
   }
 }
 
+// Every timer in the app — countdown or stopwatch — gets a 3-second "get
+// ready" window before it actually starts counting, so a member who just
+// tapped Start has a moment to get into position (grab the ropes, set up
+// for a plank) before the clock they're being judged against begins. Only
+// a genuinely FRESH start gets this: resuming an already-paused countdown,
+// or a stopwatch that already has accumulated time, means the member is
+// already mid-exercise and just paused briefly — there's nothing to get
+// ready for, so those stay instant.
+const PRE_COUNTDOWN_SECS = 3;
+
+interface PendingStart {
+  endsAtMs: number;
+  kind: "countdown" | "stopwatch";
+  countdownSecs?: number;
+  label: string | null;
+  setSummary?: string | null;
+}
+
 interface RestTimerContextValue {
   state: RestTimerState;
   hydrated: boolean;
   isRunning: boolean;
   isStopwatchRunning: boolean;
+  /** True for the 3-second "get ready" window before a fresh start
+   *  actually begins — see PRE_COUNTDOWN_SECS above. */
+  isPreCountingDown: boolean;
+  /** Whole seconds left in the pre-countdown (3, 2, 1, 0) — 0 when not
+   *  pre-counting down. */
+  preCountdownRemaining: () => number;
   remainingNow: () => number;
   stopwatchElapsedNow: () => number;
-  /** Starts fresh at `seconds` (running immediately). Used for auto-start
-   *  on set-complete and for a deliberate preset/duration change.
-   *  `setSummary` (e.g. "Set 3 60kg ×8") only affects the immediate
-   *  start notification's body — it's not persisted in state. */
-  start: (seconds: number, label?: string | null, setSummary?: string | null) => void;
+  /** Starts fresh at `seconds`. `setSummary` (e.g. "Set 3 60kg ×8") only
+   *  affects the immediate start notification's body — it's not persisted
+   *  in state. `getReady`: opt in to the 3-second get-ready window before
+   *  the countdown actually begins — used by the "Start timer" button on a
+   *  genuinely timed exercise, not by the auto-started rest between sets
+   *  (nothing to physically get ready for there). Defaults to false. */
+  start: (seconds: number, label?: string | null, setSummary?: string | null, getReady?: boolean) => void;
   /** Resumes from remainingAtPauseSecs — the play button on an already
-   *  paused timer, as opposed to starting a new one. */
+   *  paused timer, as opposed to starting a new one. No get-ready window:
+   *  the member was already mid-rest/mid-exercise. */
   resume: () => void;
+  /** Also cancels a pending (not-yet-committed) fresh start. */
   pause: () => void;
   reset: (seconds: number, label?: string | null) => void;
   adjust: (deltaSecs: number) => void;
+  /** Get-ready window applies only on a genuinely fresh start
+   *  (stopwatchAccumulatedSecs === 0) — resuming a paused stopwatch is
+   *  instant, same reasoning as countdown's resume(). */
   startStopwatch: (label?: string | null) => void;
   pauseStopwatch: () => void;
   resetStopwatch: (label?: string | null) => void;
@@ -142,6 +173,10 @@ const RestTimerContext = createContext<RestTimerContextValue | null>(null);
 export function RestTimerProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<RestTimerState>(initialState());
   const [hydrated, setHydrated] = useState(false);
+  // Ephemeral, never persisted — 3 seconds is far too short a window to
+  // worry about surviving an app kill/restart; worst case the member just
+  // taps Start again.
+  const [pending, setPending] = useState<PendingStart | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -182,7 +217,12 @@ export function RestTimerProvider({ children }: { children: ReactNode }) {
     return state.stopwatchAccumulatedSecs + Math.floor((Date.now() - state.stopwatchStartedAtMs) / 1000);
   }, [state]);
 
-  const start = useCallback((seconds: number, label: string | null = null, setSummary: string | null = null) => {
+  const preCountdownRemaining = useCallback(() => {
+    if (!pending) return 0;
+    return Math.max(0, Math.ceil((pending.endsAtMs - Date.now()) / 1000));
+  }, [pending]);
+
+  const commitCountdownStart = useCallback((seconds: number, label: string | null, setSummary: string | null) => {
     const endsAtMs = Date.now() + seconds * 1000;
     setState((prev) => ({
       ...prev,
@@ -196,6 +236,49 @@ export function RestTimerProvider({ children }: { children: ReactNode }) {
     void scheduleDoneNotification(seconds, label);
   }, []);
 
+  const commitStopwatchStart = useCallback((label: string | null) => {
+    setState((prev) => ({ ...prev, mode: "stopwatch", label, stopwatchStartedAtMs: Date.now() }));
+  }, []);
+
+  // Fires the real start once the get-ready window elapses. A ref (not the
+  // `pending` state itself) drives the actual setTimeout delay so a
+  // re-render mid-countdown (e.g. from the ticking UI reading
+  // preCountdownRemaining()) can't retrigger this effect and restart the
+  // window from 3 again — it only ever depends on which PendingStart object
+  // is active, not on time passing.
+  useEffect(() => {
+    if (!pending) return;
+    const id = setTimeout(() => {
+      if (pending.kind === "countdown") commitCountdownStart(pending.countdownSecs ?? 0, pending.label, pending.setSummary ?? null);
+      else commitStopwatchStart(pending.label);
+      setPending(null);
+    }, Math.max(0, pending.endsAtMs - Date.now()));
+    return () => clearTimeout(id);
+  }, [pending, commitCountdownStart, commitStopwatchStart]);
+
+  // `getReady` is opt-in, not the default: resting between sets needs no
+  // moment to prepare (there's nothing to physically set up for), so the
+  // auto-started rest after a completed set starts immediately. A member
+  // starting a genuinely timed EXERCISE (a plank, battle ropes) via the
+  // dedicated "Start timer" button does ask for it explicitly — that's the
+  // one call site that passes true.
+  const start = useCallback(
+    (seconds: number, label: string | null = null, setSummary: string | null = null, getReady: boolean = false) => {
+      if (!getReady) {
+        commitCountdownStart(seconds, label, setSummary);
+        return;
+      }
+      setPending({
+        endsAtMs: Date.now() + PRE_COUNTDOWN_SECS * 1000,
+        kind: "countdown",
+        countdownSecs: seconds,
+        label,
+        setSummary,
+      });
+    },
+    [commitCountdownStart]
+  );
+
   const resume = useCallback(() => {
     setState((prev) => {
       const remaining = prev.remainingAtPauseSecs > 0 ? prev.remainingAtPauseSecs : prev.durationSecs;
@@ -206,6 +289,10 @@ export function RestTimerProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const pause = useCallback(() => {
+    setPending((p) => {
+      if (p) return null; // cancel a pending fresh start instead of committing it
+      return p;
+    });
     setState((prev) => {
       if (prev.endsAtMs === null) return prev;
       const remaining = Math.max(0, Math.round((prev.endsAtMs - Date.now()) / 1000));
@@ -215,6 +302,7 @@ export function RestTimerProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const reset = useCallback((seconds: number, label: string | null = null) => {
+    setPending((p) => (p?.kind === "countdown" ? null : p));
     setState((prev) => ({ ...prev, mode: "countdown", label, durationSecs: seconds, endsAtMs: null, remainingAtPauseSecs: seconds }));
     void cancelDoneNotification();
   }, []);
@@ -245,16 +333,23 @@ export function RestTimerProvider({ children }: { children: ReactNode }) {
   // Stopwatch counts up with no target and never notifies on its own — it
   // only stops when the member says so — so unlike countdown, no scheduled
   // notification bookkeeping is needed at all.
-  const startStopwatch = useCallback((label: string | null = null) => {
-    setState((prev) => ({
-      ...prev,
-      mode: "stopwatch",
-      label,
-      stopwatchStartedAtMs: prev.stopwatchStartedAtMs ?? Date.now(),
-    }));
-  }, []);
+  const startStopwatch = useCallback(
+    (label: string | null = null) => {
+      if (state.stopwatchStartedAtMs !== null) return; // already running
+      if (state.stopwatchAccumulatedSecs === 0) {
+        // Genuinely fresh — get-ready window first.
+        setPending({ endsAtMs: Date.now() + PRE_COUNTDOWN_SECS * 1000, kind: "stopwatch", label });
+      } else {
+        // Resuming after a pause — already mid-exercise, nothing to get
+        // ready for, so this stays instant.
+        setState((prev) => ({ ...prev, mode: "stopwatch", label, stopwatchStartedAtMs: Date.now() }));
+      }
+    },
+    [state.stopwatchStartedAtMs, state.stopwatchAccumulatedSecs]
+  );
 
   const pauseStopwatch = useCallback(() => {
+    setPending((p) => (p?.kind === "stopwatch" ? null : p));
     setState((prev) => {
       if (prev.stopwatchStartedAtMs === null) return prev;
       const elapsed = prev.stopwatchAccumulatedSecs + Math.floor((Date.now() - prev.stopwatchStartedAtMs) / 1000);
@@ -263,6 +358,7 @@ export function RestTimerProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const resetStopwatch = useCallback((label: string | null = null) => {
+    setPending((p) => (p?.kind === "stopwatch" ? null : p));
     setState((prev) => ({ ...prev, mode: "stopwatch", label, stopwatchStartedAtMs: null, stopwatchAccumulatedSecs: 0 }));
   }, []);
 
@@ -273,12 +369,16 @@ export function RestTimerProvider({ children }: { children: ReactNode }) {
   const isRunning = state.endsAtMs !== null;
   const isStopwatchRunning = state.stopwatchStartedAtMs !== null;
 
+  const isPreCountingDown = pending !== null;
+
   const value = useMemo(
     () => ({
       state,
       hydrated,
       isRunning,
       isStopwatchRunning,
+      isPreCountingDown,
+      preCountdownRemaining,
       remainingNow,
       stopwatchElapsedNow,
       start,
@@ -296,6 +396,8 @@ export function RestTimerProvider({ children }: { children: ReactNode }) {
       hydrated,
       isRunning,
       isStopwatchRunning,
+      isPreCountingDown,
+      preCountdownRemaining,
       remainingNow,
       stopwatchElapsedNow,
       start,

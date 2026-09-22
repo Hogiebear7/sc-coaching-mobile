@@ -13,6 +13,8 @@ import {
 import { AppState, Platform } from "react-native";
 
 import type { WorkoutSetType } from "@/lib/queries/workouts";
+import { useRestTimer } from "@/lib/rest-timer";
+import { todayDateString } from "@/lib/workout-formatters";
 
 const STORAGE_KEY = "workout-draft-v1";
 const LIVE_NOTIFICATION_ID = "workout-draft-live";
@@ -335,6 +337,23 @@ function normalizeDraft(raw: Partial<WorkoutDraft>): WorkoutDraft {
   };
 }
 
+// A draft's `date` is set once, when it's first created (see log-workout.tsx's
+// seed effect), and never touched again. That's correct for a manual backfill
+// entry (no timer engaged — the member is deliberately logging a past date),
+// but wrong for a genuinely LIVE (timed) workout that stays open across real
+// days — e.g. resumed later via the "Continue workout" pill. Left alone, that
+// silently submits under whatever day it happened to be started, not the day
+// it's actually finished. Only ever rolls a draft with an active/paused timer
+// forward to today — a deliberately-backdated log entry (no timer) is
+// untouched, so an intentional past-date backfill is never overridden.
+function rollLiveDraftDateForward(draft: WorkoutDraft): WorkoutDraft {
+  const isTimedSession = draft.startedAtMs !== null || draft.accumulatedSecs > 0;
+  if (!isTimedSession || !draft.date) return draft;
+  const today = todayDateString();
+  if (draft.date === today) return draft;
+  return { ...draft, date: today };
+}
+
 async function scheduleLiveNotification(elapsedSecs: number): Promise<void> {
   if (Platform.OS === "web") return;
   const mins = Math.floor(elapsedSecs / 60);
@@ -383,13 +402,14 @@ export function WorkoutDraftProvider({ children }: { children: ReactNode }) {
   const [draft, setDraft] = useState<WorkoutDraft>(emptyDraft());
   const [hydrated, setHydrated] = useState(false);
   const notificationTickRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const restTimer = useRestTimer();
 
   // Load any draft left over from a previous session (app was killed mid-workout).
   useEffect(() => {
     (async () => {
       try {
         const raw = await AsyncStorage.getItem(STORAGE_KEY);
-        if (raw) setDraft(normalizeDraft(JSON.parse(raw)));
+        if (raw) setDraft(rollLiveDraftDateForward(normalizeDraft(JSON.parse(raw))));
       } catch {
         // Corrupt/unreadable draft — start fresh rather than crash.
       } finally {
@@ -413,10 +433,16 @@ export function WorkoutDraftProvider({ children }: { children: ReactNode }) {
   // Keep the live notification's elapsed time roughly current while the
   // timer runs — refreshed periodically rather than every second, since the
   // notification tray doesn't need second-level precision and frequent
-  // re-scheduling is wasted battery/work.
+  // re-scheduling is wasted battery/work. Suppressed entirely while a rest
+  // countdown is running: "Resting — X, back to it in Y" already conveys
+  // the workout is in progress and is more specific, so showing both at
+  // once was just tray clutter. Restored the moment the rest ends (or is
+  // skipped/paused), same as if it had never stopped.
   useEffect(() => {
-    if (!draft.startedAtMs) {
+    const restActiveOrArming = restTimer.isRunning || restTimer.isPreCountingDown;
+    if (!draft.startedAtMs || restActiveOrArming) {
       if (notificationTickRef.current) clearInterval(notificationTickRef.current);
+      if (restActiveOrArming) void clearLiveNotification();
       return;
     }
     void scheduleLiveNotification(elapsedSecsNow());
@@ -427,18 +453,28 @@ export function WorkoutDraftProvider({ children }: { children: ReactNode }) {
       if (notificationTickRef.current) clearInterval(notificationTickRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [draft.startedAtMs]);
+  }, [draft.startedAtMs, restTimer.isRunning, restTimer.isPreCountingDown]);
 
   // Also refresh immediately when the app comes back from the background,
   // so the notification (and any UI reading elapsedSecsNow) doesn't show
-  // stale time from before backgrounding.
+  // stale time from before backgrounding. Same trigger also catches a draft
+  // that's been sitting open (app merely backgrounded, never killed) across
+  // a real day boundary — hydration alone wouldn't re-run in that case, so
+  // the date-rollover fix needs this second hook too. Skipped while resting,
+  // same reasoning as the effect above — don't resurrect the live
+  // notification over the more specific rest one just because the app came
+  // back to the foreground mid-rest.
   useEffect(() => {
     const sub = AppState.addEventListener("change", (state) => {
-      if (state === "active" && draft.startedAtMs) void scheduleLiveNotification(elapsedSecsNow());
+      if (state !== "active") return;
+      if (draft.startedAtMs && !restTimer.isRunning && !restTimer.isPreCountingDown) {
+        void scheduleLiveNotification(elapsedSecsNow());
+      }
+      setDraft((prev) => rollLiveDraftDateForward(prev));
     });
     return () => sub.remove();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [draft.startedAtMs, draft.accumulatedSecs]);
+  }, [draft.startedAtMs, draft.accumulatedSecs, restTimer.isRunning, restTimer.isPreCountingDown]);
 
   const update = useCallback((patch: Partial<WorkoutDraft>) => {
     setDraft((prev) => ({ ...prev, ...patch }));

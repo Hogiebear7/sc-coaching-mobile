@@ -10,11 +10,38 @@ import { MuscleMap } from "@/components/ui/MuscleMap";
 import { StatCard } from "@/components/ui/StatCard";
 import { Color, Radius, Spacing } from "@/constants/theme";
 import { tapFeedback } from "@/lib/haptics";
-import { useDeleteWorkoutSession, useSetWorkoutVisibility, useWorkouts } from "@/lib/queries/workouts";
+import type { PrescribedExercise } from "@/lib/queries/programs";
+import { useDeleteWorkoutSession, useSetWorkoutVisibility, useWorkouts, type WorkoutExerciseEntry } from "@/lib/queries/workouts";
+import { setPendingWorkoutTemplateSeed } from "@/lib/workout-template-seed";
 import { computeExerciseSetTotals, computeSessionTotals, formatExerciseSetLabels, formatRun } from "@/lib/workout-formatters";
 
 function formatLongDate(dateISO: string): string {
   return new Date(`${dateISO}T00:00:00`).toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+}
+
+let templateKeySeq = 0;
+function nextTemplateKey(): string {
+  templateKeySeq += 1;
+  return `${Date.now()}-${templateKeySeq}`;
+}
+
+// Same target-shape conversion as log-workout.tsx's own "Save as template"
+// (handleSaveAsTemplate) — this is the same action, just reachable from a
+// past session instead of only while actively logging one.
+function toPrescribedExercise(ex: WorkoutExerciseEntry): PrescribedExercise {
+  return {
+    id: nextTemplateKey(),
+    exerciseId: ex.exerciseId,
+    name: ex.name,
+    muscleTags: [],
+    targetSets: ex.sets,
+    targetReps: ex.perSide && ex.reps !== null ? `R${ex.reps} / L${ex.reps}` : ex.reps !== null ? String(ex.reps) : null,
+    targetWeight: ex.weight,
+    setType: ex.setType ?? null,
+    sets: null,
+    supersetGroup: ex.supersetGroup ?? null,
+    notes: ex.notes,
+  };
 }
 
 export default function SessionDetailScreen() {
@@ -30,6 +57,16 @@ export default function SessionDetailScreen() {
     () => new Map((data?.exerciseLibrary ?? []).map((e) => [e.id, e.section])),
     [data]
   );
+
+  function handleSaveAsTemplate() {
+    if (!session) return;
+    tapFeedback();
+    setPendingWorkoutTemplateSeed({
+      name: session.title,
+      exercises: session.exercises.map(toPrescribedExercise),
+    });
+    router.push("/workout-template-builder");
+  }
 
   function handleDelete() {
     if (!session) return;
@@ -67,6 +104,18 @@ export default function SessionDetailScreen() {
               hitSlop={12}
             >
               <Text style={styles.editLink}>Edit</Text>
+            </Pressable>
+            <Pressable
+              onPress={handleSaveAsTemplate}
+              hitSlop={12}
+              accessibilityLabel="Save as template"
+              disabled={session.exercises.length === 0}
+            >
+              <Ionicons
+                name="bookmark-outline"
+                size={18}
+                color={session.exercises.length === 0 ? Color.textFaint : Color.gold}
+              />
             </Pressable>
             <Pressable
               onPress={() => {

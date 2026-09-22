@@ -77,8 +77,22 @@ export function DateField({
   const [mode, setMode] = useState<"days" | "years">("days");
   const now = new Date();
   const todayParts = { y: now.getFullYear(), m: now.getMonth() + 1, d: now.getDate() };
-  const [viewY, setViewY] = useState(() => isoToParts(value)?.y ?? isoToParts(maxDate)?.y ?? todayParts.y);
-  const [viewM, setViewM] = useState(() => isoToParts(value)?.m ?? isoToParts(maxDate)?.m ?? todayParts.m);
+  // With no value yet, the picker should open on today's month — not drift
+  // to maxDate's year just because a caller widened the *selectable* range
+  // (e.g. GoalTimelineCard's 5-years-out maxDate for a target date, which
+  // used to default a fresh picker straight to that far year instead of
+  // today). Only falls back to a bound when today itself sits outside
+  // [minDate, maxDate] — a DOB field with maxDate=today never hits that.
+  const defaultViewParts = (() => {
+    if (isoToParts(value)) return isoToParts(value)!;
+    const max = isoToParts(maxDate);
+    const min = isoToParts(minDate);
+    if (max && (todayParts.y > max.y || (todayParts.y === max.y && todayParts.m > max.m))) return max;
+    if (min && (todayParts.y < min.y || (todayParts.y === min.y && todayParts.m < min.m))) return min;
+    return todayParts;
+  })();
+  const [viewY, setViewY] = useState(defaultViewParts.y);
+  const [viewM, setViewM] = useState(defaultViewParts.m);
 
   // Generous fallback bounds so a birth date decades back (or a member
   // tracking cycles years back) is a scroll away, not hundreds of taps —

@@ -139,7 +139,18 @@ export default function WeeklyTrainingScreen() {
 
   async function handleSave() {
     setError(null);
-    const payload = sessions.filter((s) => s.label.trim()).map((s) => ({ ...s, label: s.label.trim() }));
+    // A session with no title used to be silently dropped from the save
+    // payload — the request "succeeded" with fewer sessions than the member
+    // saw on screen, and nothing told them why it wasn't there when they
+    // came back. Block the save instead and point at exactly which one needs
+    // a title, jumping to its day if it's not the one currently shown.
+    const missingTitle = sessions.find((s) => !s.label.trim());
+    if (missingTitle) {
+      setError(`Give your ${DAY_LABEL[missingTitle.dayOfWeek]} session a title before saving.`);
+      if (view === "week") setSelectedDay(missingTitle.dayOfWeek);
+      return;
+    }
+    const payload = sessions.map((s) => ({ ...s, label: s.label.trim() }));
     try {
       await updateSchedule.mutateAsync(payload);
       tapFeedback();

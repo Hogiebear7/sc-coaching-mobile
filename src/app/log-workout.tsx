@@ -29,6 +29,7 @@ import { PbToast } from "@/components/ui/PbToast";
 import { RestTimerBar } from "@/components/ui/RestTimerBar";
 import { SupersetChips } from "@/components/ui/SupersetChips";
 import { TextField } from "@/components/ui/TextField";
+import { TimeWheelPicker } from "@/components/ui/TimeWheelPicker";
 import { Color, Radius, Spacing } from "@/constants/theme";
 import { successFeedback, tapFeedback } from "@/lib/haptics";
 import { ApiError } from "@/lib/api-client";
@@ -635,6 +636,11 @@ export default function LogWorkoutScreen() {
   const { data: profile } = useProfile();
   const restTimer = useRestTimer();
   const [pbToast, setPbToast] = useState<string | null>(null);
+  // Tapping a timed set's duration field opens this instead of the keyboard
+  // — one shared modal for every set row rather than one picker instance
+  // per row, which would mean dozens of live scroll-wheel components
+  // mounted (and ticking their own scroll math) at once for a long workout.
+  const [timePickerTarget, setTimePickerTarget] = useState<{ rowKey: string; setKey: string; secs: number } | null>(null);
   const { data: libraryIndex } = useExerciseLibraryNameIndex();
   const personalExerciseNames = useMemo(
     () => getPersonalExerciseNames(data?.sessions ?? [], data?.exerciseLibrary ?? [], libraryIndex?.items ?? []),
@@ -821,7 +827,6 @@ export default function LogWorkoutScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hydrated, prefillRunTitle, prefillRunDurationMins, prefillRunDistanceKm, runRows.length]);
 
-  const weightInputRefs = useRef<Record<string, TextInput | null>>({});
   const scrollRef = useRef<KeyboardAwareScrollViewRef | null>(null);
   // The "+ Exercise"/"+ Run" row always sits right after the last entry (see
   // render below) — scrolling to bring IT into view is what actually shows
@@ -951,10 +956,12 @@ export default function LogWorkoutScreen() {
       tapFeedback();
     } else {
       successFeedback();
-      const next = row?.setRows[setIdx + 1];
-      if (next) {
-        setTimeout(() => weightInputRefs.current[next.key]?.focus(), 50);
-      }
+      // Used to auto-focus the next set's weight field here, which pops the
+      // keyboard the instant a set is checked off — surprising and unwanted
+      // when, as is typical, that weight already carries over from the row
+      // above and there's nothing to type. Marking a set complete now only
+      // marks it complete; the member taps in when they actually want to
+      // change a value.
       if (isLastInSupersetGroup) {
         // No navigation here — the RestTimerBar rendered at the bottom of
         // this screen picks the countdown up automatically once it's
@@ -1649,23 +1656,12 @@ export default function LogWorkoutScreen() {
                 </View>
               </View>
 
-              {row.unitMode === "time" ? (
-                <Pressable
-                  onPress={() => {
-                    if (!restTimer.isRunning) restTimer.reset(60, row.name || null);
-                    router.push({ pathname: "/rest-timer" });
-                  }}
-                  style={styles.holdTimerHint}
-                >
-                  <Ionicons name="hourglass-outline" size={13} color={Color.gold} />
-                  <Text style={styles.holdTimerHintText}>Use the countdown timer for holds like planks or wall sits</Text>
-                </Pressable>
-              ) : null}
-
               <View style={styles.setColumnHeader}>
                 <Text style={[styles.setColumnLabel, { width: 40 }]}>Set</Text>
                 <Text style={[styles.setColumnLabel, { flex: 1 }]}>{unitModeColumnLabel(row.unitMode)}</Text>
-                <Text style={[styles.setColumnLabel, { flex: 1 }]}>{row.perSide ? "Reps (R/L)" : "Reps"}</Text>
+                <Text style={[styles.setColumnLabel, { flex: 1 }]}>
+                  {row.unitMode === "time" ? "" : row.perSide ? "Reps (R/L)" : "Reps"}
+                </Text>
                 <View style={{ width: 32 }} />
               </View>
 
@@ -1684,22 +1680,64 @@ export default function LogWorkoutScreen() {
                         </Text>
                       ) : null}
                     </Pressable>
-                    <TextInput
-                      ref={(el) => {
-                        weightInputRefs.current[set.key] = el;
-                      }}
-                      value={set.weight}
-                      onChangeText={(v) => updateFirstSetField(row.key, set.key, "weight", v)}
-                      onBlur={() => {
-                        if (row.unitMode === "band") return;
-                        const formatted = row.unitMode === "time" ? formatAsMmSs(set.weight) : formatAsKg(set.weight);
-                        if (formatted !== set.weight) updateSetRow(row.key, set.key, { weight: formatted });
-                      }}
-                      placeholder={lastSet?.weight ?? (row.unitMode === "time" ? "1:30" : row.unitMode === "band" ? "e.g. Purple" : "60")}
-                      placeholderTextColor={Color.textFaint}
-                      style={[styles.setInput, set.completed && styles.setInputCompleted, { flex: 1 }]}
-                    />
-                    {row.perSide ? (
+                    {row.unitMode === "time" ? (
+                      // A wheel picker instead of a keyboard — typing "0:45"
+                      // on a phone keypad is fiddly; scrolling two columns
+                      // isn't.
+                      <Pressable
+                        onPress={() => {
+                          Keyboard.dismiss();
+                          setTimePickerTarget({ rowKey: row.key, setKey: set.key, secs: parseDuration(set.weight) ?? 90 });
+                        }}
+                        style={[styles.setInput, set.completed && styles.setInputCompleted, { flex: 1, justifyContent: "center" }]}
+                      >
+                        <Text style={set.weight ? styles.timePickerValue : styles.timePickerPlaceholder}>
+                          {set.weight || lastSet?.weight || "1:30"}
+                        </Text>
+                      </Pressable>
+                    ) : (
+                      <TextInput
+                        value={set.weight}
+                        onChangeText={(v) => updateFirstSetField(row.key, set.key, "weight", v)}
+                        onBlur={() => {
+                          if (row.unitMode === "band") return;
+                          const formatted = formatAsKg(set.weight);
+                          if (formatted !== set.weight) updateSetRow(row.key, set.key, { weight: formatted });
+                        }}
+                        placeholder={lastSet?.weight ?? (row.unitMode === "band" ? "e.g. Purple" : "60")}
+                        placeholderTextColor={Color.textFaint}
+                        style={[styles.setInput, set.completed && styles.setInputCompleted, { flex: 1 }]}
+                      />
+                    )}
+                    {row.unitMode === "time" ? (
+                      // A timed hold/exercise has no rep count — this set's
+                      // own duration (the field to its left) drives a real
+                      // countdown, so the member gets an actual timer
+                      // instead of self-timing and typing in a guess after
+                      // the fact.
+                      <Pressable
+                        onPress={() => {
+                          const targetSecs = parseDuration(set.weight) || 60;
+                          router.push({
+                            pathname: "/rest-timer",
+                            params: {
+                              autostart: "1",
+                              seconds: String(targetSecs),
+                              label: row.name || undefined,
+                              // A timed exercise gets the 3-second get-ready
+                              // window (there's something to physically set
+                              // up for); resting between sets doesn't — see
+                              // lib/rest-timer.tsx's start().
+                              getReady: "1",
+                            },
+                          });
+                        }}
+                        style={[styles.startTimerButton, { flex: 1 }]}
+                      >
+                        <Ionicons name="play" size={13} color={Color.goldForeground} />
+                        <Text style={styles.startTimerButtonText}>Start timer</Text>
+                      </Pressable>
+                    ) : row.perSide ? (
                       <View style={{ flex: 1, flexDirection: "row", gap: 4 }}>
                         <TextInput
                           value={set.repsRight ?? ""}
@@ -1933,6 +1971,32 @@ export default function LogWorkoutScreen() {
         onSubmit={() => void handleSubmit(sessionRpe, feelingNotes)}
         submitting={create.isPending}
       />
+
+      <Modal visible={timePickerTarget !== null} transparent animationType="fade" onRequestClose={() => setTimePickerTarget(null)}>
+        <Pressable style={feelStyles.backdrop} onPress={() => setTimePickerTarget(null)}>
+          <Pressable style={styles.timePickerCard} onPress={(e) => e.stopPropagation()}>
+            <Text style={styles.timePickerTitle}>Set duration</Text>
+            {timePickerTarget ? (
+              <TimeWheelPicker
+                totalSecs={timePickerTarget.secs}
+                onChange={(secs) => setTimePickerTarget((prev) => (prev ? { ...prev, secs } : prev))}
+              />
+            ) : null}
+            <Button
+              title="Done"
+              onPress={() => {
+                if (timePickerTarget) {
+                  const m = Math.floor(timePickerTarget.secs / 60);
+                  const s = timePickerTarget.secs % 60;
+                  updateFirstSetField(timePickerTarget.rowKey, timePickerTarget.setKey, "weight", `${m}:${String(s).padStart(2, "0")}`);
+                }
+                setTimePickerTarget(null);
+              }}
+              style={{ marginTop: Spacing.lg }}
+            />
+          </Pressable>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -2065,8 +2129,16 @@ const styles = StyleSheet.create({
   unitChipActive: { backgroundColor: Color.goldWeak },
   unitChipText: { fontSize: 10, fontWeight: "700", color: Color.textMuted },
   unitChipTextActive: { color: Color.gold },
-  holdTimerHint: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: Spacing.xs },
-  holdTimerHintText: { fontSize: 10, color: Color.textMuted, flex: 1 },
+  startTimerButton: {
+    height: 40,
+    borderRadius: Radius.md,
+    backgroundColor: Color.gold,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 4,
+  },
+  startTimerButtonText: { fontSize: 12, fontWeight: "700", color: Color.goldForeground },
   linkText: { fontSize: 12, fontWeight: "600", color: Color.gold, marginTop: Spacing.sm },
   linkTextMuted: { fontSize: 12, color: Color.textMuted, marginTop: 4 },
   setColumnHeader: { flexDirection: "row", alignItems: "center", gap: Spacing.xs, marginTop: Spacing.md, paddingHorizontal: 2 },
@@ -2093,6 +2165,19 @@ const styles = StyleSheet.create({
     color: Color.textPrimary,
   },
   setInputCompleted: { borderColor: Color.successWeak, color: Color.textSecondary },
+  timePickerValue: { fontSize: 14, color: Color.textPrimary },
+  timePickerPlaceholder: { fontSize: 14, color: Color.textFaint },
+  timePickerCard: {
+    width: "100%",
+    maxWidth: 360,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    borderColor: Color.borderSubtle,
+    backgroundColor: Color.surface1,
+    padding: Spacing.lg,
+    alignItems: "center",
+  },
+  timePickerTitle: { fontSize: 15, fontWeight: "700", color: Color.textPrimary, marginBottom: Spacing.md },
   setCheckWrap: { width: 32, alignItems: "center", justifyContent: "center" },
   setCheck: {
     width: 26,
@@ -2242,6 +2327,21 @@ const feelStyles = StyleSheet.create({
   rpeChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
   rpeChipText: { fontSize: 13, fontWeight: "600", color: Color.textSecondary },
   rpeChipTextActive: { color: Color.gold },
-  notesInput: { marginTop: Spacing.xs, minHeight: 64 },
+  // Unlike log-workout's other Notes fields (styles.smallInput or the
+  // TextField component), this one is a bare TextInput with no wrapper
+  // supplying background/border/text color — RN falls back to platform
+  // defaults for all three, which on this screen meant black text on the
+  // card's dark background: readable cursor, invisible characters.
+  notesInput: {
+    marginTop: Spacing.xs,
+    minHeight: 64,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: Color.borderSubtle,
+    backgroundColor: Color.surface2,
+    paddingHorizontal: Spacing.sm,
+    fontSize: 13,
+    color: Color.textPrimary,
+  },
   actions: { flexDirection: "row", gap: Spacing.sm, marginTop: Spacing.lg },
 });

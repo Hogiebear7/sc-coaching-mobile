@@ -116,6 +116,18 @@ function formatTodayLabel(): string {
   });
 }
 
+// Device's own local time, same as every other local-clock read in this
+// app (see workout-draft.tsx's startedAtHour) — no timezone math needed.
+// 05:00–11:59 Morning, 12:00–16:59 Afternoon, 17:00–22:59 Evening,
+// 23:00–04:59 falls back to the plain greeting.
+function greetingPrefix(): string {
+  const hour = new Date().getHours();
+  if (hour >= 5 && hour < 12) return "Morning";
+  if (hour >= 12 && hour < 17) return "Afternoon";
+  if (hour >= 17 && hour < 23) return "Evening";
+  return "Hi";
+}
+
 function formatClassDate(dateISO: string): string {
   const d = new Date(dateISO);
   const today = new Date();
@@ -179,10 +191,11 @@ export default function DashboardScreen() {
             <BrandMark height={22} style={styles.headerLogo} />
             <View style={{ flex: 1 }}>
               <Text style={styles.eyebrow}>{formatTodayLabel().toUpperCase()}</Text>
-              <Text style={styles.greeting}>Hi {data.firstName}</Text>
+              <Text style={styles.greeting} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
+                {greetingPrefix()} {data.firstName}
+              </Text>
             </View>
             <View style={styles.headerActions}>
-              <ContinueWorkoutPill />
               <Pressable
                 onPress={() => router.push("/notifications")}
                 hitSlop={8}
@@ -203,6 +216,13 @@ export default function DashboardScreen() {
                 )}
               </Pressable>
             </View>
+          </View>
+          {/* Own row, right-aligned under the bell/avatar — sharing the top
+              row with the greeting squeezed the name's available width
+              (and wrapped it) whenever a workout was in progress. Renders
+              nothing itself when there's no active draft. */}
+          <View style={styles.continueRow}>
+            <ContinueWorkoutPill />
           </View>
           <Text style={styles.subGreeting}>Ready when you are.</Text>
         </View>
@@ -579,6 +599,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: Spacing.md,
+  },
+  continueRow: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    marginTop: Spacing.sm,
   },
   bellWrap: {
     position: "relative",

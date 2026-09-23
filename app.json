@@ -13,11 +13,11 @@
         "CFBundleDisplayName": "S&C Performance",
         "ITSAppUsesNonExemptEncryption": false
       },
-      "buildNumber": "6"
+      "buildNumber": "7"
     },
     "android": {
       "package": "com.sandcperformancecoaching.app",
-      "versionCode": 67,
+      "versionCode": 68,
       "adaptiveIcon": {
         "backgroundColor": "#0a1526",
         "foregroundImage": "./assets/images/android-icon-foreground.png",

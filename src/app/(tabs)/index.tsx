@@ -510,21 +510,27 @@ export default function DashboardScreen() {
               </View>
               <Ionicons name="chevron-forward" size={18} color={Color.textFaint} />
             </Pressable>
-            {/* Community — one quiet pointer, never a feed preview. The
-                title carries whatever's actually worth surfacing today
-                (a win, a leaderboard position, or a plain invitation when
-                there's nothing yet); "Community" itself is just the small
-                sub-label. Sits last, lowest-priority row on Home — see the
-                Community entry-point plan for why this isn't a bottom tab. */}
-            <Pressable onPress={() => router.push((communityHighlight?.href ?? "/community") as never)} style={styles.rowCard}>
+            {/* Community — one quiet pointer, never a feed preview. Always
+                opens the Community hub itself now, not whatever specific
+                win/leaderboard spot the highlight points at — tapping a
+                row titled "View your community" landing on a single
+                stranger's workout page read as broken, not personalized.
+                The highlight (when there is one) still shows, just as the
+                smaller second line, so the nudge survives without being
+                the thing you tap into. Sits last, lowest-priority row on
+                Home — see the Community entry-point plan for why this
+                isn't a bottom tab. */}
+            <Pressable onPress={() => router.push("/community")} style={styles.rowCard}>
               <View style={styles.rowCardIcon}>
                 <Ionicons name="people-outline" size={18} color={Color.gold} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.rowCardTitle} numberOfLines={1}>
+                  View your community
+                </Text>
+                <Text style={styles.rowCardSub} numberOfLines={1}>
                   {communityHighlight?.text ?? "See member wins and leaderboards"}
                 </Text>
-                <Text style={styles.rowCardSub}>Community</Text>
               </View>
               <Ionicons name="chevron-forward" size={18} color={Color.textFaint} />
             </Pressable>

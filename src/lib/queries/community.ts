@@ -62,12 +62,39 @@ export interface CommunityFeedItem {
   createdAt: string;
 }
 
-export function useCommunityFeed() {
+// `limit` is left off the query string when omitted — the backend's own
+// default (20) applies, same as before this param existed. Passed
+// explicitly by the "See more" Activity screen (20/50/100); the Community
+// hub's own inline preview still calls this with no argument.
+export function useCommunityFeed(limit?: number) {
   return useQuery({
-    queryKey: ["community-feed"],
+    queryKey: ["community-feed", limit ?? null],
     queryFn: () =>
       apiFetch<{ success: true; data: { items: CommunityFeedItem[]; hasMore: boolean } }>(
-        "/api/mobile/community/feed"
+        `/api/mobile/community/feed${limit ? `?limit=${limit}` : ""}`
+      ).then((r) => r.data),
+  });
+}
+
+export interface CommunityWinEntry {
+  id: string;
+  userId: string;
+  authorName: string;
+  date: string;
+  personalBestExercise: string;
+}
+
+// Every personal-best session across everyone the member follows, most
+// recent first — unlike useCommunityFeed, which only ever looks at each
+// author's most recent activity page, this scans full history server-side
+// (see gym-app's wins route), so a win from months back still shows up
+// here once it's scrolled off Activity.
+export function useCommunityWins(limit: 20 | 50 | 100 = 20) {
+  return useQuery({
+    queryKey: ["community-wins", limit],
+    queryFn: () =>
+      apiFetch<{ success: true; data: { wins: CommunityWinEntry[]; hasMore: boolean } }>(
+        `/api/mobile/community/wins?limit=${limit}`
       ).then((r) => r.data),
   });
 }

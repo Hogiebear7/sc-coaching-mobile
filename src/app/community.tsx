@@ -8,28 +8,22 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { CommentSheet } from "@/components/ui/CommentSheet";
+import { CommunityFeedCard } from "@/components/ui/CommunityFeedCard";
+import { CommunityWinRow } from "@/components/ui/CommunityWinRow";
 import { DateField } from "@/components/ui/DateField";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { MemberSearchSheet } from "@/components/ui/MemberSearchSheet";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Color, Radius, Spacing } from "@/constants/theme";
 import { useAuth } from "@/lib/auth-context";
-import {
-  buildLeaderboardRows,
-  formatActivitySummary,
-  formatCommunityDate,
-  formatLeaderboardContextLabel,
-  formatPbHeadline,
-  formatWorkoutTitle,
-} from "@/lib/community-formatters";
+import { buildLeaderboardRows, formatLeaderboardContextLabel } from "@/lib/community-formatters";
 import { tapFeedback } from "@/lib/haptics";
 import {
   useCommunityFeed,
+  useCommunityWins,
   useFollowUser,
   useLeaderboard,
   useSuggestedMembers,
-  useToggleWorkoutLike,
-  type CommunityFeedItem,
   type LeaderboardMetric,
   type LeaderboardRange,
 } from "@/lib/queries/community";
@@ -61,26 +55,11 @@ const RANGE_LABEL: Record<LeaderboardRange, string> = {
   custom: "Custom",
 };
 
-const MAX_PREVIEW_LINES = 3;
-const MAX_WINS = 5;
-
-function WinRow({ item, isLast, onPress }: { item: CommunityFeedItem; isLast: boolean; onPress: () => void }) {
-  const headline = formatPbHeadline(item.authorName, item.personalBestExercise);
-  return (
-    <Pressable onPress={onPress} style={[styles.winRow, !isLast && styles.winRowDivider]}>
-      <View style={styles.winIcon}>
-        <Ionicons name="trophy-outline" size={16} color={Color.gold} />
-      </View>
-      <View style={{ flex: 1 }}>
-        <Text style={styles.winText}>
-          <Text style={styles.winAuthor}>{headline.author}</Text> {headline.rest}
-        </Text>
-        <Text style={styles.winDate}>{formatCommunityDate(item.date, "short")}</Text>
-      </View>
-      <Ionicons name="chevron-forward" size={16} color={Color.textFaint} />
-    </Pressable>
-  );
-}
+// Inline preview counts on the hub — deliberately small, "See more" opens
+// the dedicated full list (/community/wins, /community/activity) rather
+// than growing this page into an infinite scroll.
+const MAX_WINS_PREVIEW = 3;
+const MAX_ACTIVITY_PREVIEW = 5;
 
 function SuggestedMemberRow({
   fullName,
@@ -100,75 +79,6 @@ function SuggestedMemberRow({
       </Text>
       <Button title="Follow" onPress={onFollow} loading={pending} style={styles.suggestedFollowButton} />
     </View>
-  );
-}
-
-function FeedCard({ item, onOpenComments }: { item: CommunityFeedItem; onOpenComments: () => void }) {
-  const toggleLike = useToggleWorkoutLike();
-  const summary = formatActivitySummary(item.exercises, item.runs, MAX_PREVIEW_LINES);
-  const isLiking = toggleLike.isPending && toggleLike.variables === item.id;
-
-  return (
-    <Card style={styles.feedCard}>
-      <View style={styles.feedHeader}>
-        <Text style={styles.authorName} numberOfLines={1}>
-          {item.authorName}
-        </Text>
-        <Text style={styles.feedDate}>{formatCommunityDate(item.date, "compact")}</Text>
-      </View>
-      <View style={styles.feedTitleRow}>
-        <Text style={styles.feedTitle} numberOfLines={1}>
-          {formatWorkoutTitle(item.title)}
-        </Text>
-        {/* Same trophy language as Member Wins above, so a card that's
-            ALSO the session where a PB happened reads as "this one is
-            notable," not as an unexplained duplicate of that section. */}
-        {item.isPersonalBest ? (
-          <View style={styles.feedPbBadge}>
-            <Ionicons name="trophy-outline" size={11} color={Color.gold} />
-            <Text style={styles.feedPbBadgeText}>PB</Text>
-          </View>
-        ) : null}
-      </View>
-      {summary.lines.map((line, i) => (
-        <Text key={i} style={styles.feedLine} numberOfLines={1}>
-          {line}
-        </Text>
-      ))}
-      {summary.hiddenCount > 0 ? <Text style={styles.feedMore}>+{summary.hiddenCount} more</Text> : null}
-
-      {/* Deliberately quiet — small muted icons + counts, never gold, never
-          the visual headline of the card. A nod, not a like-count to chase. */}
-      <View style={styles.feedActions}>
-        <Pressable
-          onPress={() => {
-            tapFeedback();
-            toggleLike.mutate(item.id);
-          }}
-          disabled={isLiking}
-          style={[styles.feedActionButton, isLiking && styles.feedActionButtonPending]}
-          hitSlop={8}
-          accessibilityLabel={item.likedByMe ? "Unlike this workout" : "Like this workout"}
-        >
-          <Ionicons
-            name={item.likedByMe ? "heart" : "heart-outline"}
-            size={16}
-            color={item.likedByMe ? Color.textSecondary : Color.textFaint}
-          />
-          {item.likeCount > 0 ? <Text style={styles.feedActionText}>{item.likeCount}</Text> : null}
-        </Pressable>
-        <Pressable
-          onPress={onOpenComments}
-          style={styles.feedActionButton}
-          hitSlop={8}
-          accessibilityLabel="View comments"
-        >
-          <Ionicons name="chatbubble-outline" size={15} color={Color.textFaint} />
-          {item.commentCount > 0 ? <Text style={styles.feedActionText}>{item.commentCount}</Text> : null}
-        </Pressable>
-        {toggleLike.isError ? <Text style={styles.feedActionError}>Couldn&apos;t update — try again</Text> : null}
-      </View>
-    </Card>
   );
 }
 
@@ -216,22 +126,26 @@ export default function CommunityScreen() {
   const [customStart, setCustomStart] = useState("");
   const [customEnd, setCustomEnd] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
-  const [activeItem, setActiveItem] = useState<CommunityFeedItem | null>(null);
+  // Just the session id being commented on — every card/row that can open
+  // the sheet only ever needs this, so neither WinRow nor FeedCard has to
+  // hand back a full CommunityFeedItem just to identify which one it was.
+  const [activeCommentId, setActiveCommentId] = useState<string | null>(null);
   const scrollRef = useRef<ScrollView>(null);
   const leaderboardY = useRef(0);
   const hasScrolledToLeaderboard = useRef(false);
 
   const feed = useCommunityFeed();
+  // Full-history wins (see gym-app's wins route) — not derived from the
+  // capped Activity feed, so a win from further back than the last 20
+  // sessions still shows up here instead of Community Wins going quiet
+  // just because nobody's most recent activity happens to include one.
+  const wins = useCommunityWins(20);
   const leaderboard = useLeaderboard(metric, range, customStart || null, customEnd || null);
   const suggested = useSuggestedMembers();
   const followUser = useFollowUser();
 
-  // A PB session still appears in Activity below (it's a real logged
-  // session, not exclusive content) — FeedCard flags it with the same
-  // trophy badge instead of hiding it there, so the two sections read as
-  // "headline wins" vs. "everything, in order, wins included" rather than
-  // one silently duplicating the other.
-  const wins = (feed.data?.items ?? []).filter((i) => i.isPersonalBest).slice(0, MAX_WINS);
+  const winsPreview = (wins.data?.wins ?? []).slice(0, MAX_WINS_PREVIEW);
+  const activityPreview = (feed.data?.items ?? []).slice(0, MAX_ACTIVITY_PREVIEW);
 
   const [noticeVisible, setNoticeVisible] = useState(false);
   const noticeKey = user ? DISCOVERABILITY_NOTICE_KEY_PREFIX + user.id : null;
@@ -290,12 +204,20 @@ export default function CommunityScreen() {
           <RefreshControl refreshing={feed.isRefetching} onRefresh={() => feed.refetch()} tintColor={Color.gold} />
         }
       >
-        {wins.length > 0 ? (
+        {winsPreview.length > 0 ? (
           <View style={styles.section}>
-            <SectionHeader label="MEMBER WINS" />
+            <SectionHeader
+              label="COMMUNITY WINS"
+              action={{ label: "See more", onPress: () => router.push("/community/wins") }}
+            />
             <Card style={styles.winsCard}>
-              {wins.map((item, i) => (
-                <WinRow key={item.id} item={item} isLast={i === wins.length - 1} onPress={() => setActiveItem(item)} />
+              {winsPreview.map((item, i) => (
+                <CommunityWinRow
+                  key={item.id}
+                  item={item}
+                  isLast={i === winsPreview.length - 1}
+                  onPress={() => setActiveCommentId(item.id)}
+                />
               ))}
             </Card>
           </View>
@@ -409,7 +331,14 @@ export default function CommunityScreen() {
         </View>
 
         <View style={styles.section}>
-          <SectionHeader label="ACTIVITY" />
+          <SectionHeader
+            label="ACTIVITY"
+            action={
+              activityPreview.length > 0
+                ? { label: "See more", onPress: () => router.push("/community/activity") }
+                : undefined
+            }
+          />
           {feed.isLoading ? (
             <ActivityIndicator color={Color.gold} style={{ marginTop: Spacing.md }} />
           ) : !feed.data || feed.data.items.length === 0 ? (
@@ -442,8 +371,8 @@ export default function CommunityScreen() {
               )}
             </>
           ) : (
-            feed.data.items.map((item) => (
-              <FeedCard key={item.id} item={item} onOpenComments={() => setActiveItem(item)} />
+            activityPreview.map((item) => (
+              <CommunityFeedCard key={item.id} item={item} onOpenComments={() => setActiveCommentId(item.id)} />
             ))
           )}
         </View>
@@ -451,9 +380,9 @@ export default function CommunityScreen() {
 
       <MemberSearchSheet visible={searchOpen} onClose={() => setSearchOpen(false)} mode="follow" />
       <CommentSheet
-        visible={activeItem !== null}
-        onClose={() => setActiveItem(null)}
-        workoutSessionId={activeItem?.id ?? ""}
+        visible={activeCommentId !== null}
+        onClose={() => setActiveCommentId(null)}
+        workoutSessionId={activeCommentId ?? ""}
       />
       <DiscoverabilityNotice
         visible={noticeVisible}
@@ -544,50 +473,6 @@ const styles = StyleSheet.create({
   scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
   section: { marginBottom: Spacing.xl },
   winsCard: { padding: 0, overflow: "hidden" },
-  winRow: { flexDirection: "row", alignItems: "center", gap: Spacing.sm, padding: Spacing.md },
-  winRowDivider: { borderBottomWidth: 1, borderBottomColor: Color.borderSubtle },
-  winIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    backgroundColor: Color.goldWeak,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  winText: { fontSize: 13, color: Color.textSecondary, lineHeight: 18 },
-  winAuthor: { fontWeight: "700", color: Color.textPrimary },
-  winDate: { fontSize: 11, color: Color.textFaint, marginTop: 2 },
-  feedCard: { padding: Spacing.md, marginBottom: Spacing.sm },
-  feedHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: Spacing.sm },
-  authorName: { fontSize: 13, fontWeight: "700", color: Color.textPrimary, flexShrink: 1 },
-  feedDate: { fontSize: 11, color: Color.textFaint },
-  feedTitleRow: { flexDirection: "row", alignItems: "center", gap: Spacing.xs, marginTop: 4 },
-  feedTitle: { fontSize: 15, fontWeight: "600", color: Color.textPrimary, flexShrink: 1 },
-  feedPbBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 3,
-    borderRadius: 999,
-    backgroundColor: Color.goldWeak,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-  },
-  feedPbBadgeText: { fontSize: 10, fontWeight: "700", color: Color.gold },
-  feedLine: { fontSize: 12, color: Color.textMuted, marginTop: 4 },
-  feedMore: { fontSize: 11, color: Color.textFaint, marginTop: 2 },
-  feedActions: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.lg,
-    marginTop: Spacing.sm,
-    paddingTop: Spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: Color.borderSubtle,
-  },
-  feedActionButton: { flexDirection: "row", alignItems: "center", gap: 4, minHeight: 32, paddingVertical: 4 },
-  feedActionButtonPending: { opacity: 0.5 },
-  feedActionText: { fontSize: 11, fontWeight: "500", color: Color.textFaint },
-  feedActionError: { fontSize: 11, color: Color.danger, marginLeft: "auto" },
   metricRow: {
     flexDirection: "row",
     gap: 2,

@@ -3,9 +3,12 @@ import { clearToken, getToken } from "./token-store";
 
 export class ApiError extends Error {
   status: number;
-  constructor(status: number, message: string) {
+  /** The server's stable machine-readable code, when the response carried one (billing routes do). */
+  code: string | null;
+  constructor(status: number, message: string, code: string | null = null) {
     super(message);
     this.status = status;
+    this.code = code;
     this.name = "ApiError";
   }
 }
@@ -58,7 +61,8 @@ export async function apiFetch<T>(
       json && typeof json === "object" && "message" in json && typeof json.message === "string"
         ? json.message
         : `Request failed (${res.status}).`;
-    throw new ApiError(res.status, message);
+    const code = json && typeof json === "object" && "code" in json && typeof json.code === "string" ? json.code : null;
+    throw new ApiError(res.status, message, code);
   }
 
   return json as T;

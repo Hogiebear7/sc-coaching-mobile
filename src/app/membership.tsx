@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 import { ActivityIndicator, Linking, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { AppSubscriptionCard } from "@/components/billing/AppSubscriptionCard";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { API_BASE_URL } from "@/constants/config";
@@ -139,6 +140,10 @@ export default function MembershipScreen() {
             Plan changes, pass packs, and billing open in your browser — full checkout is coming to the app
             itself soon.
           </Text>
+
+          {/* The digital App Subscription (not the gym Membership) is the only thing sold in-app. The card renders
+              nothing unless this build includes Google Play Billing. See docs/android-play-billing.md. */}
+          <AppSubscriptionCard />
         </ScrollView>
       )}
     </SafeAreaView>

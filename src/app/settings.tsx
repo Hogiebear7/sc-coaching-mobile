@@ -262,6 +262,15 @@ export default function SettingsScreen() {
                 )
               }
             />
+            {user?.role === "member" ? (
+              <Row
+                icon="trash-outline"
+                title="Delete account"
+                sub="Permanently delete your account and data"
+                onPress={() => router.push("/delete-account")}
+                right={<Ionicons name="chevron-forward" size={16} color={Color.textFaint} />}
+              />
+            ) : null}
           </Card>
 
           <SectionLabel>Membership</SectionLabel>

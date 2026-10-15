@@ -224,6 +224,19 @@ export function useRequestPasswordReset() {
   });
 }
 
+// Permanently deletes the signed-in member's own account (POST /api/account/delete). Re-authenticates with the current password and the typed
+// confirmation word. A wrong password comes back as 403, never 401, so apiFetch does not treat it as an expired session. No cache invalidation:
+// the caller signs the member out on success, which is the only navigation that follows.
+export function useDeleteAccount() {
+  return useMutation({
+    mutationFn: (input: { password: string; confirm: string }) =>
+      apiFetch<{ success: true; message: string }>("/api/account/delete", {
+        method: "POST",
+        body: input,
+      }),
+  });
+}
+
 // Sends a confirmation link to newEmail — the account's email only actually
 // changes once that link is opened and confirmed (see useConfirmEmailChange
 // and gym-app's /api/profile/change-email/confirm).

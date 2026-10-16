@@ -11,6 +11,7 @@ import { Color, FontSize, Radius, Spacing } from "@/constants/theme";
 import { useBillingController, useBillingSnapshot } from "@/lib/billing/billing-context";
 import { autoRenewDisclosure, describePlanEnd, DIGITAL_PLAN_FEATURES, manageSubscriptionLabel, RESTORE_LABEL, SEPARATE_FROM_MEMBERSHIP } from "@/lib/billing/copy";
 import type { StorePlan } from "@/lib/billing/types";
+import { OUT_OF_DATE_SERVER_MESSAGE } from "@/lib/profile-access";
 import { useProfile } from "@/lib/queries/profile";
 import { CAN_SELL_DIGITAL_PLAN } from "@/lib/upsell-config";
 
@@ -24,13 +25,14 @@ export default function SubscribeScreen() {
   const controller = useBillingController();
   const snapshot = useBillingSnapshot(controller);
   const { data: profile } = useProfile();
+  const serverTooOld = !!profile && !profile.accessSupported;
   const [selected, setSelected] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!controller) return;
+    if (!controller || serverTooOld) return;
     void controller.load();
     return () => controller.leave();
-  }, [controller]);
+  }, [controller, serverTooOld]);
 
   // The member's own pick, or the first (shortest) plan until they pick one. Derived, not copied into state.
   const selectedId = selected ?? snapshot.plans[0]?.billingOptionId ?? null;
@@ -52,7 +54,12 @@ export default function SubscribeScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.scroll}>
-        {!CAN_SELL_DIGITAL_PLAN || !controller ? (
+        {serverTooOld ? (
+          <Card style={styles.card}>
+            <Text style={styles.cardTitle}>Subscriptions are switched off</Text>
+            <Text style={styles.body}>{OUT_OF_DATE_SERVER_MESSAGE}</Text>
+          </Card>
+        ) : !CAN_SELL_DIGITAL_PLAN || !controller ? (
           <Card style={styles.card}>
             <Text style={styles.cardTitle}>Not available in this version</Text>
             <Text style={styles.body}>The App Subscription can&apos;t be bought from this version of the app.</Text>
@@ -146,7 +153,7 @@ export default function SubscribeScreen() {
           </>
         )}
 
-        {CAN_SELL_DIGITAL_PLAN && controller ? (
+        {CAN_SELL_DIGITAL_PLAN && controller && !serverTooOld ? (
           <View style={styles.footer}>
             <Button title={RESTORE_LABEL} variant="secondary" onPress={() => void controller.restore()} disabled={busy} />
             {snapshot.restoreMessage ? (

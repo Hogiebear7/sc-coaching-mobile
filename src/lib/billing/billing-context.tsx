@@ -44,7 +44,8 @@ export function BillingProvider({ children }: { children: ReactNode }) {
   // Quiet recovery of a purchase that was paid for but never delivered. Bounded: once per session, only when the member has no digital access.
   const { data: profile } = useProfile({ enabled: !!controller });
   useEffect(() => {
-    if (controller && profile) void controller.recover(profile.memberAccess.digital);
+    // Never on a server that did not confirm the member's access with the new rules: it could not verify a purchase either.
+    if (controller && profile?.accessSupported) void controller.recover(profile.memberAccess.digital);
   }, [controller, profile]);
 
   return <BillingContext.Provider value={controller}>{children}</BillingContext.Provider>;

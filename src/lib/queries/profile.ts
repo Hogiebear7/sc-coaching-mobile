@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { apiFetch } from "@/lib/api-client";
 import { NO_ACCESS, type MemberAccess, tierFromAccess, type MemberTier } from "@/lib/member-access";
+import { readProfileAccess } from "@/lib/profile-access";
 
 export type Gender = "Male" | "Female" | "Other";
 export type PrimaryGoal =
@@ -63,6 +64,8 @@ export interface ProfileData {
   memberAccess: MemberAccess;
   /** The member's live digital plan, for display (which store manages it, when it ends or renews), or null. */
   digitalPlan: DigitalPlanSummary | null;
+  /** False when the server did not send valid access fields (an older server): access is then NONE and billing is unsupported. Set by the app, never by the server. */
+  accessSupported: boolean;
 }
 
 export interface DigitalPlanSummary {
@@ -81,7 +84,11 @@ interface ProfileResponse {
 export function useProfile(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ["profile"],
-    queryFn: () => apiFetch<ProfileResponse>("/api/mobile/profile").then((r) => r.data),
+    queryFn: () =>
+      apiFetch<ProfileResponse>("/api/mobile/profile").then((r) => {
+        const access = readProfileAccess(r.data);
+        return { ...r.data, memberAccess: access.memberAccess, digitalPlan: access.digitalPlan as DigitalPlanSummary | null, accessSupported: access.accessSupported };
+      }),
     enabled: options?.enabled ?? true,
   });
 }

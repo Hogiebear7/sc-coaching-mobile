@@ -34,7 +34,7 @@ import { ApiError } from "@/lib/auth-context";
 import { selectionFeedback, successFeedback, tapFeedback, warningFeedback } from "@/lib/haptics";
 import { hasAccess } from "@/lib/member-access";
 import { useFoodFavorites, useRemoveFoodFavorite, type FoodFavorite } from "@/lib/queries/food-favorites";
-import { useMemberTier } from "@/lib/queries/profile";
+import { useMemberAccess } from "@/lib/queries/profile";
 import { useReduceMotionPref } from "@/lib/use-reduce-motion";
 import {
   MEAL_TYPE_OPTIONS,
@@ -360,7 +360,7 @@ function CoachChat({
   const send = useSendNutritionCoachMessage();
   const applyOverride = useApplyNutritionTargetOverride();
   const seeded = useRef(false);
-  const tier = useMemberTier();
+  const access = useMemberAccess();
 
   async function handleApplyProposal(msgId: string, proposal: TargetProposal) {
     setApplyingMsgId(msgId);
@@ -396,7 +396,7 @@ function CoachChat({
     }
   }
 
-  if (!hasAccess(tier, "aiNutritionCoachChat")) {
+  if (!hasAccess(access, "aiNutritionCoachChat")) {
     return (
       <UpsellCard
         icon="chatbubble-ellipses-outline"
@@ -485,7 +485,7 @@ export default function NutritionScreen() {
   const styles = useStyles();
   const { colors, data: dc } = useAppTheme();
   const router = useRouter();
-  const tier = useMemberTier();
+  const access = useMemberAccess();
   const today = todayDateString();
   const [selectedDate, setSelectedDate] = useState(today);
   const [macroInfo, setMacroInfo] = useState<MacroKind | null>(null);
@@ -869,7 +869,7 @@ export default function NutritionScreen() {
           {/* Tools */}
           <View style={styles.section}>
             <SectionTitle title="More tools" />
-            {hasAccess(tier, "nutritionMoreTools") ? (
+            {hasAccess(access, "nutritionMoreTools") ? (
               <View style={styles.list}>
                 {TOOL_ROWS.map((r, i) => (
                   <Pressable

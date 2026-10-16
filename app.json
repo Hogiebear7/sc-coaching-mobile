@@ -50,6 +50,7 @@
       ],
       "expo-secure-store",
       "expo-notifications",
+      "expo-iap",
       [
         "expo-camera",
         {

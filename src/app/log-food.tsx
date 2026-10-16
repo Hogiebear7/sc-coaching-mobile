@@ -27,7 +27,7 @@ import { selectionFeedback, tapFeedback } from "@/lib/haptics";
 import { hasAccess } from "@/lib/member-access";
 import { useAddFoodFavorite, useFoodFavorites, useRemoveFoodFavorite, type FoodFavorite } from "@/lib/queries/food-favorites";
 import { MEAL_TYPE_OPTIONS, useCreateFoodEntry, useRecentFoods, type MealType } from "@/lib/queries/nutrition-diary";
-import { useMemberTier } from "@/lib/queries/profile";
+import { useMemberAccess } from "@/lib/queries/profile";
 import { todayDateString } from "@/lib/workout-formatters";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
@@ -107,8 +107,8 @@ export default function LogFoodScreen() {
   const Color = useLegacyColors();
   const router = useRouter();
   const { user } = useAuth();
-  const tier = useMemberTier();
-  const canSearch = hasAccess(tier, "foodSearch");
+  const access = useMemberAccess();
+  const canSearch = hasAccess(access, "foodSearch");
 
   const [photoCalloutVisible, setPhotoCalloutVisible] = useState(false);
   const photoCalloutKey = user ? PHOTO_CALLOUT_KEY_PREFIX + user.id : null;

@@ -18,15 +18,14 @@ import { ApiError } from "@/lib/api-client";
 import { useAuth } from "@/lib/auth-context";
 import { isBatteryOptimizationRelevant, openBatteryOptimizationSettings } from "@/lib/battery-optimization";
 import { hapticsEnabled, setHapticsEnabled, tapFeedback } from "@/lib/haptics";
-import { hasAccess } from "@/lib/member-access";
+import { hasAccess, tierFromAccess } from "@/lib/member-access";
 import { useAiConsent, useSetAiConsent } from "@/lib/queries/ai-consent";
-import { CAN_PROMOTE_PURCHASE } from "@/lib/upsell-config";
 import { setTabChoice, useTabChoice } from "@/lib/tab-choice";
 import { canChooseTabs, normaliseChoice, TAB_PAIR_OPTIONS } from "@/lib/tab-config";
 import { LIGHT_MODE_AVAILABLE, makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 import { useTour } from "@/lib/tour-context";
 import {
-  useMemberTier,
+  useMemberAccess,
   useProfile,
   useRequestPasswordReset,
   useSetAvatar,
@@ -37,6 +36,7 @@ import {
   useSetUnits,
   type MeasurementUnits,
 } from "@/lib/queries/profile";
+import { CAN_LINK_GYM_MEMBERSHIP } from "@/lib/upsell-config";
 
 const REMINDER_PRESETS = [
   { label: "24 hours before", mins: 1440 },
@@ -91,12 +91,13 @@ export default function SettingsScreen() {
   const { user } = useAuth();
   const { restartTour } = useTour();
   const [haptics, setHaptics] = useState(hapticsEnabled());
-  const tier = useMemberTier();
+  const access = useMemberAccess();
   const aiConsent = useAiConsent();
   const setAiConsent = useSetAiConsent();
+  const tier = tierFromAccess(access);
   const tabChoice = normaliseChoice(useTabChoice(), tier);
-  const canUseNotifications = hasAccess(tier, "notifications");
-  const canUseGymProfiles = hasAccess(tier, "gymProfiles");
+  const canUseNotifications = hasAccess(access, "notifications");
+  const canUseGymProfiles = hasAccess(access, "gymProfiles");
   const { data, isLoading } = useProfile();
   const setPush = useSetPushNotifications();
   const setEmail = useSetEmailNotifications();
@@ -288,7 +289,7 @@ export default function SettingsScreen() {
             <Row
               icon="card-outline"
               title="Manage membership"
-              sub={CAN_PROMOTE_PURCHASE ? "Plan, billing, and payment method" : "Your current plan and status"}
+              sub={CAN_LINK_GYM_MEMBERSHIP ? "Plan, billing, and payment method" : "Your current plan and status"}
               onPress={() => router.push("/membership")}
             />
           </Card>

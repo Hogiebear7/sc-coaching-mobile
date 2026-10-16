@@ -29,7 +29,7 @@ import {
   type ActivityLevel,
   type CalorieDistribution,
 } from "@/lib/queries/nutrition-diary";
-import { useMemberTier, useProfile } from "@/lib/queries/profile";
+import { useMemberAccess, useMemberTier, useProfile } from "@/lib/queries/profile";
 import { setTabChoice } from "@/lib/tab-choice";
 import { canChooseTabs, MAIN_USE_TABS, type MainUse } from "@/lib/tab-config";
 import { makeStyles, useAppTheme } from "@/lib/theme";
@@ -196,8 +196,9 @@ export default function OnboardingScreen() {
   const firstName = profile?.fullName?.split(" ")[0] ?? "";
   const weightTimeline = timeline?.weightTimeline ?? null;
   const pace = weightTimeline?.clampedWeeklyRate ?? null;
-  const canGymProfile = hasAccess(tier, "gymProfiles");
-  const canGenerate = hasAccess(tier, "workoutGenerate");
+  const access = useMemberAccess();
+  const canGymProfile = hasAccess(access, "gymProfiles");
+  const canGenerate = hasAccess(access, "workoutGenerate");
 
   let body: ReactNode = null;
   let primary: { label: string; onPress: () => void; disabled?: boolean } | null = null;

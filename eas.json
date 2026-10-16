@@ -27,7 +27,8 @@
         "buildType": "apk"
       },
       "env": {
-        "EAS_ACCOUNT_TARGET": "hogiebear777"
+        "EAS_ACCOUNT_TARGET": "hogiebear777",
+        "EXPO_PUBLIC_UPSELL_MODE": "store_purchase"
       }
     },
     "apkpure": {
@@ -43,7 +44,8 @@
     "production": {
       "autoIncrement": true,
       "env": {
-        "EAS_ACCOUNT_TARGET": "sandcmails-team"
+        "EAS_ACCOUNT_TARGET": "sandcmails-team",
+        "EXPO_PUBLIC_UPSELL_MODE": "store_purchase"
       }
     }
   },

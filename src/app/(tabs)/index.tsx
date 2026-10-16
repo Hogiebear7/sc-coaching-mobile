@@ -18,6 +18,7 @@ import { useNotifications } from "@/lib/queries/notifications";
 import { useProfile } from "@/lib/queries/profile";
 import { useTour } from "@/lib/tour-context";
 import { makeStyles, useAppTheme, useLegacyColors } from "@/lib/theme";
+import { NO_ACCESS } from "@/lib/member-access";
 
 // Shown once, right after a member's very first signup — offers the two
 // setup steps that meaningfully improve day-one use of Workouts (an
@@ -123,7 +124,7 @@ export default function DashboardScreen() {
   const { data: weights } = useBodyWeightLogs();
   const unreadCount = notifications?.filter((n) => n.readAt === null).length ?? 0;
   const { data: profile } = useProfile();
-  const memberTier = profile?.memberTier ?? "free";
+  const access = profile?.memberAccess ?? NO_ACCESS;
 
   const onRefresh = useCallback(() => {
     refetch();
@@ -219,10 +220,10 @@ export default function DashboardScreen() {
         <View style={styles.section}>
           <SectionTitle
             title="Up next"
-            action={memberTier === "membership" ? "Schedule" : undefined}
+            action={access.gymMembership ? "Schedule" : undefined}
             onAction={() => router.push("/(tabs)/schedule")}
           />
-          {memberTier === "membership" ? (
+          {access.gymMembership ? (
             data.nextSession ? (
               <Pressable onPress={() => router.push("/(tabs)/schedule")} style={styles.nextCard} accessibilityRole="button">
                 <View style={styles.nextTime}>
@@ -249,7 +250,7 @@ export default function DashboardScreen() {
                 <PillButton title="Book" variant="secondary" onPress={() => router.push("/(tabs)/schedule")} />
               </View>
             )
-          ) : memberTier === "app_subscription" ? (
+          ) : access.digital ? (
             <Pressable onPress={() => router.push("/(tabs)/workouts")} style={styles.nextCard} accessibilityRole="button">
               <View style={{ flex: 1 }}>
                 <Text style={styles.nextTitle}>Today&apos;s workout</Text>

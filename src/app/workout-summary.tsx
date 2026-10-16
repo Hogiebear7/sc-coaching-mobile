@@ -11,7 +11,7 @@ import { UpsellCard } from "@/components/ui/Upsell";
 import { AppRadius, AppSpace, appTitle } from "@/constants/theme";
 import { celebrateFeedback } from "@/lib/haptics";
 import { hasAccess } from "@/lib/member-access";
-import { useMemberTier } from "@/lib/queries/profile";
+import { useMemberAccess } from "@/lib/queries/profile";
 import { makeStyles, useAppTheme } from "@/lib/theme";
 import { notInPlanCopy } from "@/lib/upsell-config";
 import { takePendingWorkoutSummary } from "@/lib/workout-summary-handoff";
@@ -36,7 +36,7 @@ export default function WorkoutSummaryScreen() {
   const styles = useStyles();
   const { colors, data: dc } = useAppTheme();
   const router = useRouter();
-  const tier = useMemberTier();
+  const access = useMemberAccess();
   // Lazy initializer so this read-once handoff is only taken on the first
   // render of this screen instance, not on every re-render.
   const [summary] = useState<WorkoutSummaryData | null>(() => takePendingWorkoutSummary());
@@ -134,7 +134,7 @@ export default function WorkoutSummaryScreen() {
 
         <WatchDataCard sessionId={summary.id} />
 
-        {hasAccess(tier, "workoutReview") ? (
+        {hasAccess(access, "workoutReview") ? (
           <Button title="View your session review" onPress={() => router.push({ pathname: "/workout-review", params: { id: summary.id } })} />
         ) : (
           <UpsellCard icon="analytics-outline" title="Session review" body={notInPlanCopy("Session review")} />

@@ -5,20 +5,20 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Radius, Spacing } from "@/constants/theme";
 import { FREE_CUSTOM_FOOD_LIMIT, hasAccess } from "@/lib/member-access";
-import { CAN_PROMOTE_PURCHASE } from "@/lib/upsell-config";
 import { getFoodSubmissionEligibility, useMyCustomFoods, useMySubmissions, type FoodRecord } from "@/lib/queries/food-catalog";
-import { useMemberTier } from "@/lib/queries/profile";
+import { useMemberAccess } from "@/lib/queries/profile";
 import { SUBMISSION_STATUS_COPY } from "@/lib/submission-status";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
+import { CAN_SELL_DIGITAL_PLAN, DIGITAL_PLAN_ROUTE } from "@/lib/upsell-config";
 
 export default function MyFoodsScreen() {
   const styles = useStyles();
   const Color = useLegacyColors();
   const router = useRouter();
-  const tier = useMemberTier();
+  const access = useMemberAccess();
   const { data: foods, isLoading } = useMyCustomFoods();
   const { data: submissions } = useMySubmissions();
-  const unlimitedFoods = hasAccess(tier, "unlimitedCustomFoods");
+  const unlimitedFoods = hasAccess(access, "unlimitedCustomFoods");
   const atFreeLimit = !unlimitedFoods && (foods?.length ?? 0) >= FREE_CUSTOM_FOOD_LIMIT;
 
   function renderItem({ item }: { item: FoodRecord }) {
@@ -64,7 +64,7 @@ export default function MyFoodsScreen() {
         <Pressable
           onPress={() => {
             if (atFreeLimit) {
-              if (CAN_PROMOTE_PURCHASE) router.push("/membership");
+              if (CAN_SELL_DIGITAL_PLAN) router.push(DIGITAL_PLAN_ROUTE as never);
               return;
             }
             router.push("/custom-food");
@@ -79,7 +79,7 @@ export default function MyFoodsScreen() {
         <View style={styles.limitBanner}>
           <Text style={styles.limitBannerText}>
             {(foods?.length ?? 0)}/{FREE_CUSTOM_FOOD_LIMIT} saved on the Free tier
-            {atFreeLimit ? (CAN_PROMOTE_PURCHASE ? " — upgrade for unlimited." : " — limit reached.") : "."}
+            {atFreeLimit ? (CAN_SELL_DIGITAL_PLAN ? " — upgrade for unlimited." : " — limit reached.") : "."}
           </Text>
         </View>
       ) : null}

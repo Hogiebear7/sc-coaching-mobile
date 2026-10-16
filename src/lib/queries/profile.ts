@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { apiFetch } from "@/lib/api-client";
-import type { MemberTier } from "@/lib/member-access";
+import { NO_ACCESS, type MemberAccess, tierFromAccess, type MemberTier } from "@/lib/member-access";
 
 export type Gender = "Male" | "Female" | "Other";
 export type PrimaryGoal =
@@ -59,7 +59,18 @@ export interface ProfileData {
   avatarDataUrl: string | null;
   cycleTrackingEligible: boolean;
   allTimeStats: { classesCompleted: number; totalWeightKg: number; totalDistanceKm: number };
-  memberTier: MemberTier;
+  /** Two independent flags: a gym Membership does not include the digital features (see src/lib/member-access.ts). The SERVER decides access on every request; this only drives what the app draws. */
+  memberAccess: MemberAccess;
+  /** The member's live digital plan, for display (which store manages it, when it ends or renews), or null. */
+  digitalPlan: DigitalPlanSummary | null;
+}
+
+export interface DigitalPlanSummary {
+  source: "google_play" | "app_store" | "staff_grant";
+  status: "active" | "canceled" | "in_grace_period" | "on_hold" | "paused" | "expired" | "revoked";
+  currentPeriodEnd: string | null;
+  autoRenewing: boolean;
+  environment: "production" | "sandbox" | null;
 }
 
 interface ProfileResponse {
@@ -75,13 +86,16 @@ export function useProfile(options?: { enabled?: boolean }) {
   });
 }
 
-// Reads tier off the same profile fetch every screen already makes rather
-// than a dedicated round-trip. Defaults to "free" while loading/erroring —
-// gated UI stays hidden rather than briefly flashing a feature that then
-// gets pulled away once the real tier loads.
+// Reads access off the same profile fetch every screen already makes rather than a dedicated round-trip. Defaults to NO access while
+// loading/erroring: gated UI stays hidden rather than briefly flashing a feature that then gets pulled away once the real answer loads.
+/** The access flags as the tab bar's single tier (see tierFromAccess). */
 export function useMemberTier(): MemberTier {
+  return tierFromAccess(useMemberAccess());
+}
+
+export function useMemberAccess(): MemberAccess {
   const { data } = useProfile();
-  return data?.memberTier ?? "free";
+  return data?.memberAccess ?? NO_ACCESS;
 }
 
 export interface ProfileUpdateInput {

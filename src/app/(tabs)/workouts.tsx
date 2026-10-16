@@ -19,7 +19,7 @@ import { useAuth } from "@/lib/auth-context";
 import { impactFeedback, selectionFeedback, tapFeedback } from "@/lib/haptics";
 import { hasAccess } from "@/lib/member-access";
 import { useAdvanceProgram, useMyProgram, useSetProgramStatus, type PrescribedExercise } from "@/lib/queries/programs";
-import { useMemberTier } from "@/lib/queries/profile";
+import { useMemberAccess } from "@/lib/queries/profile";
 import { useRestTimer } from "@/lib/rest-timer";
 import { useWorkoutDraft } from "@/lib/workout-draft";
 import { type PersonalBest, useWorkouts } from "@/lib/queries/workouts";
@@ -33,7 +33,7 @@ import {
   type ExerciseMetricKey,
 } from "@/lib/workout-formatters";
 import { makeStyles, useAppTheme } from "@/lib/theme";
-import { CAN_PROMOTE_PURCHASE } from "@/lib/upsell-config";
+import { CAN_SELL_DIGITAL_PLAN, DIGITAL_PLAN_ROUTE } from "@/lib/upsell-config";
 
 // A deliberately narrow slice of the full EXERCISE_METRICS list (which also
 // has Volume/Best Set Vol./Sets) — this compact widget covers just
@@ -113,8 +113,8 @@ export default function WorkoutsScreen() {
   const { hasContent: hasActiveWorkout } = useWorkoutDraft();
   const { user } = useAuth();
   const restTimer = useRestTimer();
-  const tier = useMemberTier();
-  const canGenerate = hasAccess(tier, "workoutGenerate");
+  const access = useMemberAccess();
+  const canGenerate = hasAccess(access, "workoutGenerate");
   const { data, isLoading, isError, refetch, isRefetching } = useWorkouts();
   const { data: program } = useMyProgram();
   const advanceProgram = useAdvanceProgram();
@@ -320,7 +320,7 @@ export default function WorkoutsScreen() {
     );
   }
 
-  const canImport = hasAccess(tier, "trackerImport");
+  const canImport = hasAccess(access, "trackerImport");
 
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
@@ -519,13 +519,13 @@ export default function WorkoutsScreen() {
                 icon="sparkles-outline"
                 label="Generate"
                 locked={!canGenerate}
-                onPress={() => (canGenerate ? router.push("/workout-generator") : CAN_PROMOTE_PURCHASE && router.push("/membership"))}
+                onPress={() => (canGenerate ? router.push("/workout-generator") : CAN_SELL_DIGITAL_PLAN && router.push(DIGITAL_PLAN_ROUTE as never))}
               />
               <ToolButton
                 icon="watch-outline"
                 label="Import"
                 locked={!canImport}
-                onPress={() => (canImport ? router.push("/tracker-import") : CAN_PROMOTE_PURCHASE && router.push("/membership"))}
+                onPress={() => (canImport ? router.push("/tracker-import") : CAN_SELL_DIGITAL_PLAN && router.push(DIGITAL_PLAN_ROUTE as never))}
               />
             </View>
           </View>
@@ -788,7 +788,7 @@ function ToolButton({
       }}
       style={({ pressed }) => [styles.tool, pressed && styles.pressed]}
       accessibilityRole="button"
-      accessibilityLabel={locked ? (CAN_PROMOTE_PURCHASE ? `${label}, upgrade to unlock` : `${label}, not included in your plan`) : label}
+      accessibilityLabel={locked ? (CAN_SELL_DIGITAL_PLAN ? `${label}, upgrade to unlock` : `${label}, not included in your plan`) : label}
     >
       <View style={styles.toolIcon}>
         <Ionicons name={icon} size={24} color={locked ? colors.textMuted : colors.text} />

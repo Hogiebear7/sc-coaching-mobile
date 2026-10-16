@@ -5,7 +5,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Radius, Spacing, FontSize } from "@/constants/theme";
 import { Card } from "./Card";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
-import { CAN_PROMOTE_PURCHASE } from "@/lib/upsell-config";
+import { CAN_SELL_DIGITAL_PLAN, DIGITAL_PLAN_ROUTE } from "@/lib/upsell-config";
 
 // Shared "you don't have this yet" treatment for Free-tier gating (see
 // src/lib/member-access.ts) — used wherever a feature is shown but disabled
@@ -30,7 +30,7 @@ const UPGRADE_COPY: Record<"appSubscription" | "membership", string> = {
 // member's current plan, shows a plain "Locked" badge instead of "Upgrade",
 // and does not navigate anywhere.
 const NOT_INCLUDED_COPY = "Not included in your current plan";
-const lockedCopy = (variant: "appSubscription" | "membership") => (CAN_PROMOTE_PURCHASE ? UPGRADE_COPY[variant] : NOT_INCLUDED_COPY);
+const lockedCopy = (variant: "appSubscription" | "membership") => (CAN_SELL_DIGITAL_PLAN ? UPGRADE_COPY[variant] : NOT_INCLUDED_COPY);
 
 function LockBadge() {
   const styles = useStyles();
@@ -38,7 +38,7 @@ function LockBadge() {
   return (
     <View style={styles.badge}>
       <Ionicons name="lock-closed" size={11} color={Color.gold} />
-      <Text style={styles.badgeText}>{CAN_PROMOTE_PURCHASE ? "Upgrade" : "Locked"}</Text>
+      <Text style={styles.badgeText}>{CAN_SELL_DIGITAL_PLAN ? "Upgrade" : "Locked"}</Text>
     </View>
   );
 }
@@ -59,7 +59,7 @@ export function UpsellRow({
   const router = useRouter();
 
   return (
-    <Pressable onPress={CAN_PROMOTE_PURCHASE ? () => router.push("/membership") : undefined} disabled={!CAN_PROMOTE_PURCHASE} style={styles.row}>
+    <Pressable onPress={CAN_SELL_DIGITAL_PLAN ? () => router.push(DIGITAL_PLAN_ROUTE as never) : undefined} disabled={!CAN_SELL_DIGITAL_PLAN} style={styles.row}>
       <View style={styles.rowIcon}>
         <Ionicons name={icon} size={16} color={Color.textFaint} />
       </View>
@@ -90,7 +90,7 @@ export function UpsellCard({
   const router = useRouter();
 
   return (
-    <Pressable onPress={CAN_PROMOTE_PURCHASE ? () => router.push("/membership") : undefined} disabled={!CAN_PROMOTE_PURCHASE}>
+    <Pressable onPress={CAN_SELL_DIGITAL_PLAN ? () => router.push(DIGITAL_PLAN_ROUTE as never) : undefined} disabled={!CAN_SELL_DIGITAL_PLAN}>
       <Card tier="compact" style={styles.card}>
         <View style={styles.cardIcon}>
           <Ionicons name={icon} size={18} color={Color.textFaint} />
@@ -121,7 +121,7 @@ export function UpsellTile({
 
   return (
     <Card tier="compact" style={style}>
-      <Pressable onPress={CAN_PROMOTE_PURCHASE ? () => router.push("/membership") : undefined} disabled={!CAN_PROMOTE_PURCHASE} style={styles.tileInner}>
+      <Pressable onPress={CAN_SELL_DIGITAL_PLAN ? () => router.push(DIGITAL_PLAN_ROUTE as never) : undefined} disabled={!CAN_SELL_DIGITAL_PLAN} style={styles.tileInner}>
         <Ionicons name="lock-closed" size={14} color={Color.textFaint} />
         <Text style={styles.tileText}>{title}</Text>
       </Pressable>

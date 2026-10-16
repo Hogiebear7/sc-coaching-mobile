@@ -12,9 +12,10 @@ import { Button } from "@/components/ui/Button";
 import { TourHost } from "@/components/ui/TourOverlay";
 import { Radius, Spacing } from "@/constants/theme";
 import { AuthProvider, useAuth } from "@/lib/auth-context";
+import { BillingProvider } from "@/lib/billing/billing-context";
 import { clearLastCrash, getLastCrash, installGlobalCrashHandler, type CrashRecord } from "@/lib/crash-log";
 import { isEmergencyContactReminderDismissed } from "@/lib/emergency-contact-reminder";
-import { isMembershipTier } from "@/lib/member-access";
+import { hasGymMembership } from "@/lib/member-access";
 import { addNotificationTapListener, mapLinkHrefToRoute } from "@/lib/push-notifications";
 import { useProfile } from "@/lib/queries/profile";
 import { RestTimerProvider } from "@/lib/rest-timer";
@@ -108,7 +109,7 @@ function AuthGate() {
   // flag.
   const { data: profile } = useProfile({ enabled: status === "signedIn" && !isStaffRole });
   const needsEmergencyContact =
-    !!profile && isMembershipTier(profile.memberTier) && !profile.emergencyContactName;
+    !!profile && hasGymMembership(profile.memberAccess) && !profile.emergencyContactName;
 
   // Auth status alone can resolve in well under SPLASH_MIN_HOLD_MS on a warm
   // cache, which would otherwise make the branded splash barely flash before
@@ -171,6 +172,7 @@ function AuthGate() {
       <Stack.Screen name="find-a-coach" options={{ presentation: "card" }} />
       <Stack.Screen name="gym" options={{ presentation: "card" }} />
       <Stack.Screen name="membership" options={{ presentation: "card" }} />
+      <Stack.Screen name="subscribe" options={{ presentation: "card" }} />
       <Stack.Screen name="messages" options={{ presentation: "card" }} />
       <Stack.Screen name="notifications" options={{ presentation: "card" }} />
       <Stack.Screen name="exercise-library-detail" options={{ presentation: "card" }} />
@@ -295,7 +297,9 @@ export default function RootLayout() {
                   <WorkoutDraftProvider>
                     <ThemedStatusBar />
                     <View style={styles.root}>
-                      <AuthGate />
+                      <BillingProvider>
+                        <AuthGate />
+                      </BillingProvider>
                       <TourHost />
                       <AiConsentHost />
                     </View>

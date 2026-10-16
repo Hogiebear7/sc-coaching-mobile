@@ -19,7 +19,7 @@ import { Card } from "@/components/ui/Card";
 import { UpsellCard } from "@/components/ui/Upsell";
 import { LiveColor as Color, Radius, Spacing } from "@/constants/theme";
 import { ApiError } from "@/lib/api-client";
-import { hasAccess, isMembershipTier } from "@/lib/member-access";
+import { hasAccess, hasGymMembership } from "@/lib/member-access";
 import {
   useMessages,
   useSendAiCoachMessage,
@@ -27,7 +27,7 @@ import {
   type AiMessage,
   type CoachMessage,
 } from "@/lib/queries/messages";
-import { useMemberTier } from "@/lib/queries/profile";
+import { useMemberAccess } from "@/lib/queries/profile";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 import { notInPlanCopy } from "@/lib/upsell-config";
 
@@ -63,7 +63,7 @@ function AiCoachTab({
   const send = useSendAiCoachMessage();
   const seeded = useRef(false);
   const scrollRef = useRef<ScrollView>(null);
-  const tier = useMemberTier();
+  const access = useMemberAccess();
 
   useEffect(() => {
     if (!seeded.current && initialMessages.length > 0) {
@@ -72,7 +72,7 @@ function AiCoachTab({
     }
   }, [initialMessages]);
 
-  if (!hasAccess(tier, "aiCoachChat")) {
+  if (!hasAccess(access, "aiCoachChat")) {
     return (
       <View style={{ margin: Spacing.lg }}>
         <UpsellCard icon="chatbubble-ellipses-outline" title="AI Coach" body={notInPlanCopy("Chat with the AI Coach")} />
@@ -192,11 +192,11 @@ function CoachTab({ messages }: { messages: CoachMessage[] }) {
   const [error, setError] = useState<string | null>(null);
   const send = useSendCoachMessage();
   const scrollRef = useRef<ScrollView>(null);
-  const tier = useMemberTier();
+  const access = useMemberAccess();
 
   // Server-enforced in app/api/messages/send/route.ts (gym-app) — this is
   // UX only, so a non-Membership member never even sees the composer.
-  if (!isMembershipTier(tier)) {
+  if (!hasGymMembership(access)) {
     return (
       <View style={{ margin: Spacing.lg }}>
         <UpsellCard

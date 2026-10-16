@@ -15,7 +15,7 @@ import { AppRadius, AppSpace, appTitle, readinessColor } from "@/constants/theme
 import { ApiError } from "@/lib/auth-context";
 import { successFeedback, tapFeedback } from "@/lib/haptics";
 import { hasAccess } from "@/lib/member-access";
-import { useMemberTier } from "@/lib/queries/profile";
+import { useMemberAccess } from "@/lib/queries/profile";
 import { useLogRecovery, useRecovery, type RecoveryLogSummary } from "@/lib/queries/recovery";
 import { makeStyles, useAppTheme } from "@/lib/theme";
 
@@ -116,7 +116,7 @@ export default function RecoveryScreen() {
   const styles = useStyles();
   const { colors, data: dc } = useAppTheme();
   const router = useRouter();
-  const tier = useMemberTier();
+  const access = useMemberAccess();
   const { prefillSleepHours } = useLocalSearchParams<{ prefillSleepHours?: string }>();
   const parsedPrefillSleepHours = prefillSleepHours ? Number(prefillSleepHours) : NaN;
   const { data, isLoading, isError, refetch, isRefetching } = useRecovery();
@@ -278,7 +278,7 @@ export default function RecoveryScreen() {
           <View style={styles.section}>
             <SectionTitle
               title={editingDate === null ? "Check in" : "Edit check-in"}
-              action={editingDate === null && hasAccess(tier, "trackerImport") ? "Import sleep" : undefined}
+              action={editingDate === null && hasAccess(access, "trackerImport") ? "Import sleep" : undefined}
               onAction={() => router.push("/tracker-import")}
             />
             {editingDate === null ? (

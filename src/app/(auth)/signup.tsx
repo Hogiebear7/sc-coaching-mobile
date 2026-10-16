@@ -184,30 +184,36 @@ export default function SignupScreen() {
   const { setSession } = useAuth();
   const [values, setValues] = useState<FormValues>(INITIAL_VALUES);
   const [errors, setErrors] = useState<FormErrors>({});
-  const [step, setStep] = useState(0);
+  // The step the member navigated to. The step actually shown is clamped to the steps that exist (see `step` below): the cycle step disappears when the
+  // gender answer changes, and a derived value cannot be left pointing past the end.
+  const [requestedStep, setStep] = useState(0);
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [agreedToPrivacy, setAgreedToPrivacy] = useState(false);
-  const [emailStatus, setEmailStatus] = useState<"idle" | "checking" | "available" | "taken">("idle");
+  // The outcome of the availability check, for the email it was run on. The status shown is derived from it: not an email yet = idle; an email with no outcome
+  // yet = checking; so nothing has to set state synchronously inside the effect below.
+  const [emailCheck, setEmailCheck] = useState<{ email: string; status: "idle" | "available" | "taken" } | null>(null);
+  const trimmedEmail = values.email.trim();
+  const emailStatus: "idle" | "checking" | "available" | "taken" = !EMAIL_RE.test(trimmedEmail)
+    ? "idle"
+    : emailCheck?.email === trimmedEmail
+      ? emailCheck.status
+      : "checking";
 
   useEffect(() => {
     const email = values.email.trim();
-    if (!EMAIL_RE.test(email)) {
-      setEmailStatus("idle");
-      return;
-    }
-    setEmailStatus("checking");
+    if (!EMAIL_RE.test(email)) return;
     let cancelled = false;
     const timer = setTimeout(() => {
       apiFetch<{ available?: boolean }>(`/api/auth/check-email?email=${encodeURIComponent(email)}`, {
         skipAuth: true,
       })
         .then((data) => {
-          if (!cancelled) setEmailStatus(data.available === false ? "taken" : "available");
+          if (!cancelled) setEmailCheck({ email, status: data.available === false ? "taken" : "available" });
         })
         .catch(() => {
-          if (!cancelled) setEmailStatus("idle");
+          if (!cancelled) setEmailCheck({ email, status: "idle" });
         });
     }, 400);
     return () => {
@@ -233,15 +239,12 @@ export default function SignupScreen() {
   }, [cycleEligible]);
 
   const totalSteps = stepTitles.length;
+  const step = Math.min(requestedStep, totalSteps - 1);
   const isAccountStep = step === 0;
   const isBasicProfileStep = step === 1;
   const isGoalsStep = step === 2;
   const isCycleStep = cycleEligible && step === 3;
   const isReviewStep = cycleEligible ? step === 4 : step === 3;
-
-  useEffect(() => {
-    if (step > totalSteps - 1) setStep(totalSteps - 1);
-  }, [step, totalSteps]);
 
   function validateStep(currentStep: number): boolean {
     const next: FormErrors = {};
@@ -294,11 +297,11 @@ export default function SignupScreen() {
 
   function goNext() {
     if (!validateStep(step)) return;
-    setStep((prev) => Math.min(prev + 1, totalSteps - 1));
+    setStep(Math.min(step + 1, totalSteps - 1));
   }
 
   function goBack() {
-    setStep((prev) => Math.max(prev - 1, 0));
+    setStep(Math.max(step - 1, 0));
   }
 
   async function handleSubmit() {

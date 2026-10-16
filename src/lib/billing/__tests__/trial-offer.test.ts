@@ -8,8 +8,11 @@ import layoutSource from "@/app/_layout.tsx?raw";
 import settingsSource from "@/app/settings.tsx?raw";
 import subscribeSource from "@/app/subscribe.tsx?raw";
 import offerScreenSource from "@/app/trial-offer.tsx?raw";
+// The same file is imported twice on purpose: once as text (source checks below), once as code.
+/* eslint-disable import/no-duplicates */
 import offerLogicSource from "@/lib/billing/trial-offer.ts?raw";
 import { trialOfferView } from "@/lib/billing/trial-offer";
+/* eslint-enable import/no-duplicates */
 import type { StorePlan } from "@/lib/billing/types";
 
 const plan = (over: Partial<StorePlan> = {}): StorePlan => ({
@@ -130,5 +133,23 @@ describe("it never blocks, never buys, never pressures", () => {
 
   it("the screen is registered in the root stack as a normal, dismissible card", () => {
     expect(code(layoutSource)).toContain('<Stack.Screen name="trial-offer" options={{ presentation: "card" }} />');
+  });
+});
+
+describe("signup keeps its behaviour after the two lint fixes (set-state-in-effect)", () => {
+  const signup = code(signupSource);
+
+  it("the shown step is clamped to the steps that exist, derived instead of corrected inside an effect", () => {
+    expect(signup).toContain("const step = Math.min(requestedStep, totalSteps - 1);");
+    expect(signup).not.toMatch(/if \(step > totalSteps - 1\) setStep/);
+    expect(signup).toContain("setStep(Math.min(step + 1, totalSteps - 1))");
+    expect(signup).toContain("setStep(Math.max(step - 1, 0))");
+  });
+
+  it("the email status is derived: idle until it looks like an email, checking until the outcome for THAT email arrives, and a failed check is idle", () => {
+    expect(signup).not.toContain("setEmailStatus");
+    expect(signup).toMatch(/!EMAIL_RE\.test\(trimmedEmail\)\s*\?\s*"idle"\s*:\s*emailCheck\?\.email === trimmedEmail\s*\?\s*emailCheck\.status\s*:\s*"checking"/);
+    expect(signup).toContain('setEmailCheck({ email, status: "idle" })');
+    expect(signup).toContain('data.available === false ? "taken" : "available"');
   });
 });

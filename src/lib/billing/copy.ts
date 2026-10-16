@@ -19,6 +19,7 @@ const SERVER_CODE_COPY: Record<string, string> = {
   other_store_active: "Your App Subscription is already active through a different app store. Manage or cancel it there; you can subscribe here once it has ended.",
   environment_not_accepted: "This purchase can't be used with this version of the app.",
   invalid_request: "We couldn't read this purchase. Please try again.",
+  trial_unavailable: "Free trials are temporarily unavailable. Please try again later.",
 };
 
 const GENERIC_FAILURE = "Something went wrong with your purchase. If you were charged, contact support and we'll put it right.";
@@ -110,9 +111,11 @@ export const DIGITAL_PLAN_FEATURES: readonly string[] = [
 export const AI_ALLOWANCE_NOTE =
   "AI features have an allowance, measured over a rolling 30 days. A free trial has one allowance for the whole trial, and your paid allowance starts when the trial becomes a paid plan. If you reach it, only the AI features pause until more frees up. Your subscription and the rest of the app are unaffected.";
 
-/** Shown on a plan the store would start a free trial on while the server cannot honour trial AI. Never promotes the trial; says what to expect. */
-export const TRIAL_AI_UNAVAILABLE_NOTE =
-  "A free trial from the store may apply to this plan. AI features aren't available during a trial right now; they start when the paid subscription begins. Everything else in the app works.";
+/** Shown instead of a trial offer when the server cannot honour one. The Free tier stays usable; nothing is bought. */
+export const TRIALS_UNAVAILABLE_MESSAGE = "Free trials are temporarily unavailable. Please try again later.";
+
+/** The explicit, separate paid choice on Android while trials are unavailable. It names the price and period and says plainly that there is no trial. */
+export const withoutTrialLabel = (displayPrice: string, period: string) => `Subscribe without a free trial — ${displayPrice} ${period}`.trim();
 
 /** The server's code when a member has used their AI allowance (HTTP 429). It is not a subscription problem and must never be shown as one. */
 export const AI_ALLOWANCE_REACHED_CODE = "ai_allowance_reached";

@@ -14,7 +14,7 @@
 //     different, honest answers. Restoring never changes anything by itself.
 //  6. Recovery at launch is quiet and bounded: once per session, only when the member has no digital access, and it never nags about a refusal.
 
-import { isAlreadyActiveCode, isRetryableServerCode, messageForServerCode } from "./copy";
+import { isAlreadyActiveCode, isRetryableServerCode, messageForServerCode, TRIALS_UNAVAILABLE_MESSAGE } from "./copy";
 import {
   BillingError,
   ServerBillingError,
@@ -202,14 +202,28 @@ export class BillingController {
 
   // ── Buying ───────────────────────────────────────────────────────────────────────────────────────────
 
-  async buy(plan: StorePlan): Promise<void> {
+  async buy(plan: StorePlan, options: { withoutTrial?: boolean } = {}): Promise<void> {
     if (this.state.phase === "purchasing" || this.state.phase === "verifying") return;
     this.set({ message: null, retryable: false });
 
+    // A plan the store would start a trial on while the server cannot honour one is never bought as it stands: iOS would apply the offer on its own, and nothing is
+    // silently turned into a paid purchase. Only Android, and only when the member explicitly chose "without a free trial", may buy the regular offer.
+    if (plan.trialBlocked && !(this.billing.platform === "android" && options.withoutTrial)) {
+      this.set({ message: TRIALS_UNAVAILABLE_MESSAGE, retryable: false });
+      return;
+    }
+
     let binding;
     try {
-      binding = await this.api.getBinding(this.billing.platform);
+      // Starting a trial: the server claims its AI capacity BEFORE the store sheet opens. A paid purchase (no trial) claims nothing.
+      binding = await this.api.getBinding(this.billing.platform, { trial: !!plan.trial });
     } catch (error) {
+      if (error instanceof ServerBillingError && error.code === "trial_unavailable") {
+        // No capacity: nothing opens, nothing is bought. Refresh the plans (the catalog now says the trial is unavailable) and tell the member plainly.
+        await this.load();
+        this.set({ phase: this.state.plans.length ? "ready" : this.state.phase, message: TRIALS_UNAVAILABLE_MESSAGE, retryable: false });
+        return;
+      }
       const failure = this.describeServerFailure(error);
       // The server refuses to start a second purchase for an account that already has one: say so, do not open the sheet.
       this.set({ phase: failure.alreadyActive ? "ready" : "failed", message: failure.message, retryable: failure.retryable });

@@ -21,12 +21,13 @@ export function createBillingApi(): BillingApi {
       return res.data.plans;
     },
 
-    async getBinding(platform: StorePlatform): Promise<PurchaseBinding> {
+    async getBinding(platform: StorePlatform, options: { trial?: boolean } = {}): Promise<PurchaseBinding> {
+      const query = options.trial ? "?trial=1" : "";
       if (platform === "ios") {
-        const res = await call<{ success: true; data: { appAccountToken: string } }>("/api/mobile/billing/app-store/purchase-context");
+        const res = await call<{ success: true; data: { appAccountToken: string } }>(`/api/mobile/billing/app-store/purchase-context${query}`);
         return { platform: "ios", appAccountToken: res.data.appAccountToken };
       }
-      const res = await call<{ success: true; data: { obfuscatedAccountId: string } }>("/api/mobile/billing/google-play/purchase-context");
+      const res = await call<{ success: true; data: { obfuscatedAccountId: string } }>(`/api/mobile/billing/google-play/purchase-context${query}`);
       return { platform: "android", obfuscatedAccountId: res.data.obfuscatedAccountId };
     },
 

@@ -45,8 +45,8 @@ export function matchStorePlans(platform: StorePlatform, catalog: CatalogPlan[],
     // A trial is only promised when the SERVER also says it can honour one (its shared trial pool has room). Unknown (an older server) is "no".
     const trialPromised = entry.trialAvailable === true;
     let trial: TrialPeriod | null = platform === "ios" && trialPromised ? product.freeTrial ?? null : null;
-    // iOS applies an introductory offer the member is eligible for on its own; we cannot suppress it, so say so instead of pretending it is not there.
-    let trialAiUnavailable = platform === "ios" && !trialPromised && !!product.freeTrial;
+    // The store would give this member a trial the server cannot honour: blocked, not promoted and not silently converted into a paid purchase.
+    let trialBlocked = platform === "ios" && !trialPromised && !!product.freeTrial;
 
     if (platform === "android") {
       // One Play product carries several base plans (monthly, 6 months, yearly). Take THIS entry's base plan, and its regular (non-promotional) offer.
@@ -60,7 +60,7 @@ export function matchStorePlans(platform: StorePlatform, catalog: CatalogPlan[],
       offerToken = offer.offerToken;
       basePlanId = entry.googlePlayBasePlanId;
       trial = trialPromised ? offer.freeTrial ?? null : null;
-      trialAiUnavailable = false;
+      trialBlocked = !trialPromised && forBasePlan.some((o) => o.freeTrial && o.offerToken);
     }
 
     if (!displayPrice) continue; // never show a plan without the store's price
@@ -76,7 +76,7 @@ export function matchStorePlans(platform: StorePlatform, catalog: CatalogPlan[],
       basePlanId,
       offerToken,
       trial: trial ? { label: trialLabel(trial) } : null,
-      trialAiUnavailable,
+      trialBlocked,
     });
   }
 

@@ -13,7 +13,8 @@ import {
   SEPARATE_FROM_MEMBERSHIP,
   trialHeadline,
   trialLabel,
-  TRIAL_AI_UNAVAILABLE_NOTE,
+  TRIALS_UNAVAILABLE_MESSAGE,
+  withoutTrialLabel,
 } from "@/lib/billing/copy";
 import { matchStorePlans, type RawStoreProduct } from "@/lib/billing/plans";
 import type { CatalogPlan } from "@/lib/billing/types";
@@ -198,7 +199,7 @@ describe("free trial display: only what the store says this member is eligible f
     expect(plans[0]).toMatchObject({ offerToken: "tok-base", trial: null });
   });
 
-  describe("when the server cannot honour a trial's AI (shared trial pool unavailable), or does not say", () => {
+  describe("when the server cannot honour a trial (trial capacity unavailable), or does not say", () => {
     const unavailable = catalog.map((c) => ({ ...c, trialAvailable: false }));
     const unknown = catalog.map(({ trialAvailable: _omit, ...c }) => c as CatalogPlan);
     const iosProducts = [
@@ -217,30 +218,30 @@ describe("free trial display: only what the store says this member is eligible f
       },
     ];
 
-    it("iOS: the app does not promote a trial, and says AI is not available during the one the store may still apply", () => {
+    it("iOS: the plan is BLOCKED (the store would apply its trial on its own, so it cannot be bought through us), and no trial is promoted", () => {
       for (const c of [unavailable, unknown]) {
         const plans = matchStorePlans("ios", c, iosProducts);
         expect(plans.map((p) => p.trial)).toEqual([null, null]);
-        expect(plans.every((p) => p.trialAiUnavailable === true)).toBe(true);
+        expect(plans.every((p) => p.trialBlocked === true)).toBe(true);
       }
     });
 
-    it("Android: the plan is bought with the REGULAR base-plan offer (no trial token), so no trial starts and nothing is promised", () => {
+    it("Android: the plan is blocked as it stands, and carries the REGULAR base-plan token only for an explicit 'without a free trial' choice", () => {
       for (const c of [unavailable, unknown]) {
         const monthly = matchStorePlans("android", c, androidProducts).find((p) => p.billingOptionId === "m")!;
-        expect(monthly).toMatchObject({ offerToken: "tok-base", trial: null, trialAiUnavailable: false });
+        expect(monthly).toMatchObject({ offerToken: "tok-base", trial: null, trialBlocked: true });
       }
     });
 
-    it("no trial offered by the store at all: nothing to warn about", () => {
+    it("no trial offered by the store at all: nothing is blocked, the plan is the ordinary paid purchase", () => {
       const plans = matchStorePlans("ios", unavailable, [{ id: "apple.monthly", title: "S&C", displayPrice: "€12.99", freeTrial: null }]);
-      expect(plans[0]).toMatchObject({ trial: null, trialAiUnavailable: false });
+      expect(plans[0]).toMatchObject({ trial: null, trialBlocked: false });
     });
 
-    it("the note never promotes the trial and keeps the rest of the app in view", () => {
-      expect(TRIAL_AI_UNAVAILABLE_NOTE).toMatch(/AI features aren't available during a trial right now/);
-      expect(TRIAL_AI_UNAVAILABLE_NOTE).toMatch(/Everything else in the app works/);
-      expect(TRIAL_AI_UNAVAILABLE_NOTE).not.toMatch(/start your|try .* free|free for/i);
+    it("the copy is the plain message, and the separate paid choice names the store's price and says there is no trial", () => {
+      expect(TRIALS_UNAVAILABLE_MESSAGE).toBe("Free trials are temporarily unavailable. Please try again later.");
+      expect(withoutTrialLabel("€12.99", "per month")).toBe("Subscribe without a free trial — €12.99 per month");
+      expect(messageForServerCode("trial_unavailable")).toBe(TRIALS_UNAVAILABLE_MESSAGE);
     });
   });
 

@@ -93,8 +93,10 @@ class FakeApi implements BillingApi {
     if (this.catalogError) throw this.catalogError;
     return CATALOG;
   }
-  async getBinding(platform: StorePlatform) {
+  readonly bindingOptions: { trial?: boolean }[] = [];
+  async getBinding(platform: StorePlatform, options: { trial?: boolean } = {}) {
     this.order.push(`binding:${platform}`);
+    this.bindingOptions.push(options);
     if (this.bindingError) throw this.bindingError;
     return this.bindingFor;
   }
@@ -415,5 +417,62 @@ describe("leaving the paywall", () => {
     await controller.dispose();
     expect(billing.listenerCount).toBe(0);
     expect(billing.log).toContain("disconnect");
+  });
+});
+
+describe("trial capacity: claimed on the server before any store sheet, never substituted with a paid purchase", () => {
+  const TRIAL_PLAN: StorePlan = { ...PLAN, trial: { label: "7 days" } };
+  const BLOCKED_PLAN: StorePlan = { ...PLAN, trial: null, trialBlocked: true, offerToken: "tok-base" };
+
+  it("starting a trial asks the server for the trial claim FIRST, then opens the store", async () => {
+    billing.plans = [TRIAL_PLAN];
+    await controller.load();
+    await controller.buy(TRIAL_PLAN);
+    expect(api.bindingOptions).toEqual([{ trial: true }]);
+    expect(billing.started).toHaveLength(1);
+  });
+
+  it("a paid purchase (no trial) claims no trial capacity", async () => {
+    await controller.load();
+    await controller.buy(PLAN);
+    expect(api.bindingOptions).toEqual([{ trial: false }]);
+  });
+
+  it("when the server has no trial capacity the store sheet NEVER opens, nothing is bought, the plans are refreshed, and the member is told plainly", async () => {
+    billing.plans = [TRIAL_PLAN];
+    await controller.load();
+    api.bindingError = server(409, "trial_unavailable");
+    await controller.buy(TRIAL_PLAN);
+    expect(billing.log).not.toContain("startPurchase");
+    expect(billing.started).toHaveLength(0);
+    expect(controller.snapshot()).toMatchObject({ phase: "ready", message: "Free trials are temporarily unavailable. Please try again later.", retryable: false });
+    expect(api.verified).toEqual([]);
+  });
+
+  it("a blocked plan is never bought as it stands (iOS applies the store's trial on its own): no server call, no store sheet", async () => {
+    billing.plans = [BLOCKED_PLAN];
+    await controller.load();
+    await controller.buy(BLOCKED_PLAN);
+    expect(api.order).toEqual([]);
+    expect(billing.log).not.toContain("startPurchase");
+    expect(controller.snapshot().message).toBe("Free trials are temporarily unavailable. Please try again later.");
+  });
+
+  it("iOS never allows 'without a trial' on a blocked plan, even if asked", async () => {
+    await controller.load();
+    await controller.buy(BLOCKED_PLAN, { withoutTrial: true });
+    expect(billing.log).not.toContain("startPurchase");
+  });
+
+  it("Android: only the member's EXPLICIT 'without a free trial' choice buys the regular offer, and it claims no trial capacity", async () => {
+    billing.platform = "android";
+    api.bindingFor = { platform: "android", obfuscatedAccountId: "obf" };
+    billing.plans = [BLOCKED_PLAN];
+    await controller.load();
+    await controller.buy(BLOCKED_PLAN); // not explicit: refused
+    expect(billing.started).toHaveLength(0);
+    await controller.buy(BLOCKED_PLAN, { withoutTrial: true });
+    expect(api.bindingOptions).toEqual([{ trial: false }]);
+    expect(billing.started).toMatchObject([{ plan: { offerToken: "tok-base", trial: null } }]);
   });
 });

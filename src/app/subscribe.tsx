@@ -9,7 +9,7 @@ import { Card } from "@/components/ui/Card";
 import { API_BASE_URL } from "@/constants/config";
 import { Color, FontSize, Radius, Spacing } from "@/constants/theme";
 import { useBillingController, useBillingSnapshot } from "@/lib/billing/billing-context";
-import { AI_ALLOWANCE_NOTE, TRIAL_AI_UNAVAILABLE_NOTE, autoRenewDisclosure, describePlanEnd, DIGITAL_PLAN_FEATURES, manageSubscriptionLabel, RESTORE_LABEL, SEPARATE_FROM_MEMBERSHIP, trialHeadline } from "@/lib/billing/copy";
+import { AI_ALLOWANCE_NOTE, TRIALS_UNAVAILABLE_MESSAGE, withoutTrialLabel, autoRenewDisclosure, describePlanEnd, DIGITAL_PLAN_FEATURES, manageSubscriptionLabel, RESTORE_LABEL, SEPARATE_FROM_MEMBERSHIP, trialHeadline } from "@/lib/billing/copy";
 import type { StorePlan } from "@/lib/billing/types";
 import { OUT_OF_DATE_SERVER_MESSAGE } from "@/lib/profile-access";
 import { useProfile } from "@/lib/queries/profile";
@@ -149,7 +149,25 @@ export default function SubscribeScreen() {
                   </Text>
                 ) : null}
 
-                {selectedPlan ? (
+                {selectedPlan?.trialBlocked ? (
+                  // Free trials are unavailable and nothing is started. The Free tier is untouched. On Android only, a SEPARATE paid purchase is offered, as an explicit
+                  // choice that names the store's full price and period; iOS applies an eligible introductory offer on its own, so it is not offered there at all.
+                  <>
+                    <Text style={styles.message} accessibilityLiveRegion="polite">
+                      {TRIALS_UNAVAILABLE_MESSAGE}
+                    </Text>
+                    <Text style={styles.small}>You can keep using the Free tier in the meantime.</Text>
+                    {platform === "android" ? (
+                      <Button
+                        title={withoutTrialLabel(selectedPlan.displayPrice, selectedPlan.periodLabel)}
+                        variant="secondary"
+                        onPress={() => void controller.buy(selectedPlan, { withoutTrial: true })}
+                        loading={busy}
+                        disabled={busy || snapshot.phase === "pending"}
+                      />
+                    ) : null}
+                  </>
+                ) : selectedPlan ? (
                   <Button
                     title={
                       selectedPlan.trial
@@ -162,12 +180,10 @@ export default function SubscribeScreen() {
                   />
                 ) : null}
 
-                {selectedPlan?.trialAiUnavailable ? <Text style={styles.message}>{TRIAL_AI_UNAVAILABLE_NOTE}</Text> : null}
-
                 {selectedPlan?.trial ? (
                   <Text style={styles.message}>{trialHeadline(selectedPlan.trial.label, selectedPlan.displayPrice, selectedPlan.periodLabel)}. Cancel any time before the trial ends and you won&apos;t be charged.</Text>
                 ) : null}
-                <Text style={styles.small}>{autoRenewDisclosure(platform, { trial: !!selectedPlan?.trial })}</Text>
+                {selectedPlan?.trialBlocked && platform === "ios" ? null : <Text style={styles.small}>{autoRenewDisclosure(platform, { trial: !!selectedPlan?.trial })}</Text>}
               </>
             )}
           </>

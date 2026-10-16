@@ -42,10 +42,11 @@ export interface StorePlan {
    */
   trial: { label: string } | null;
   /**
-   * The store offers this member a free trial (iOS applies an introductory offer on its own) but the server says trial AI capacity is unavailable, so the app does
-   * not promote the trial and warns that AI is not available during it. Always false on Android, where the app simply buys the plan without the trial offer.
+   * The store would give this member a free trial, but the server says it cannot honour one right now (trial capacity). The app does NOT start it and does not
+   * quietly turn it into a paid purchase. iOS applies an eligible introductory offer on its own, so it cannot offer this plan at all while blocked. On Android a
+   * separate, explicit "without a free trial" purchase is possible (the regular base-plan offer, whose token `offerToken` then holds).
    */
-  trialAiUnavailable?: boolean;
+  trialBlocked?: boolean;
 }
 
 /** The account binding the server hands out; the purchase must carry it or the server will refuse to claim it. */
@@ -134,7 +135,11 @@ export interface VerifyResult {
 
 export interface BillingApi {
   getCatalog(): Promise<CatalogPlan[]>;
-  getBinding(platform: StorePlatform): Promise<PurchaseBinding>;
+  /**
+   * `trial: true` means the app is about to START A FREE TRIAL: the server claims its AI capacity first, atomically, and refuses with code "trial_unavailable" when
+   * there is none. The store sheet must not open after a refusal.
+   */
+  getBinding(platform: StorePlatform, options?: { trial?: boolean }): Promise<PurchaseBinding>;
   /** Throws ServerBillingError with the server's code when the server refuses. */
   verify(proof: PurchaseProof): Promise<VerifyResult>;
 }

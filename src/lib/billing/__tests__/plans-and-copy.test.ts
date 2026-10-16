@@ -119,6 +119,14 @@ describe("copy", () => {
   it("says AI use has a limit, and never advertises unlimited AI anywhere in the purchase copy", async () => {
     const copy = await import("@/lib/billing/copy");
     expect(copy.AI_ALLOWANCE_NOTE).toMatch(/allowance/);
+    // What is limited, when it resets, what happens at the limit, and that it is not the subscription.
+    expect(copy.AI_ALLOWANCE_NOTE).toMatch(/AI features/);
+    expect(copy.AI_ALLOWANCE_NOTE).toMatch(/rolling 30 days/);
+    expect(copy.AI_ALLOWANCE_NOTE).toMatch(/whole trial/);
+    expect(copy.AI_ALLOWANCE_NOTE).toMatch(/only the AI features pause/);
+    expect(copy.AI_ALLOWANCE_NOTE).toMatch(/subscription .* unaffected/);
+    expect(copy.AI_ALLOWANCE_NOTE).not.toMatch(/fair.use/i);
+    expect(copy.AI_ALLOWANCE_REACHED_CODE).toBe("ai_allowance_reached");
     const everything = [copy.AI_ALLOWANCE_NOTE, ...copy.DIGITAL_PLAN_FEATURES, copy.SEPARATE_FROM_MEMBERSHIP, copy.autoRenewDisclosure("ios", { trial: true })].join(" ");
     expect(everything).not.toMatch(/unlimited AI|unlimited chat|unlimited coaching/i);
   });

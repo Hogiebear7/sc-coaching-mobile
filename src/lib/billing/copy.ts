@@ -103,8 +103,15 @@ export const DIGITAL_PLAN_FEATURES: readonly string[] = [
   "Tracker import, gym profiles and reminders",
 ];
 
-/** AI use has a limit, and the paywall says so. Nothing in the app advertises unlimited AI. */
-export const AI_ALLOWANCE_NOTE = "AI features include a fair-use allowance over a rolling 30 days.";
+/**
+ * AI use has a limit, and the paywall says what is limited, when it resets and what happens at the limit. Nothing in the app advertises unlimited AI.
+ * It is separate from subscription status: reaching the allowance pauses AI features only. (The server sends its own message when a limit is hit.)
+ */
+export const AI_ALLOWANCE_NOTE =
+  "AI features have an allowance, measured over a rolling 30 days. A free trial has one allowance for the whole trial, and your paid allowance starts when the trial becomes a paid plan. If you reach it, only the AI features pause until more frees up. Your subscription and the rest of the app are unaffected.";
+
+/** The server's code when a member has used their AI allowance (HTTP 429). It is not a subscription problem and must never be shown as one. */
+export const AI_ALLOWANCE_REACHED_CODE = "ai_allowance_reached";
 
 /** A gym Membership is a separate product. This sentence appears on the paywall so nobody is surprised either way. */
 export const SEPARATE_FROM_MEMBERSHIP =

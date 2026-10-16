@@ -110,6 +110,10 @@ export const DIGITAL_PLAN_FEATURES: readonly string[] = [
 export const AI_ALLOWANCE_NOTE =
   "AI features have an allowance, measured over a rolling 30 days. A free trial has one allowance for the whole trial, and your paid allowance starts when the trial becomes a paid plan. If you reach it, only the AI features pause until more frees up. Your subscription and the rest of the app are unaffected.";
 
+/** Shown on a plan the store would start a free trial on while the server cannot honour trial AI. Never promotes the trial; says what to expect. */
+export const TRIAL_AI_UNAVAILABLE_NOTE =
+  "A free trial from the store may apply to this plan. AI features aren't available during a trial right now; they start when the paid subscription begins. Everything else in the app works.";
+
 /** The server's code when a member has used their AI allowance (HTTP 429). It is not a subscription problem and must never be shown as one. */
 export const AI_ALLOWANCE_REACHED_CODE = "ai_allowance_reached";
 

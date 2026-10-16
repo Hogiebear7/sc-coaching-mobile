@@ -42,19 +42,25 @@ export function matchStorePlans(platform: StorePlatform, catalog: CatalogPlan[],
     let displayPrice = product.displayPrice;
     let offerToken: string | null = null;
     let basePlanId: string | null = null;
-    let trial: TrialPeriod | null = platform === "ios" ? product.freeTrial ?? null : null;
+    // A trial is only promised when the SERVER also says it can honour one (its shared trial pool has room). Unknown (an older server) is "no".
+    const trialPromised = entry.trialAvailable === true;
+    let trial: TrialPeriod | null = platform === "ios" && trialPromised ? product.freeTrial ?? null : null;
+    // iOS applies an introductory offer the member is eligible for on its own; we cannot suppress it, so say so instead of pretending it is not there.
+    let trialAiUnavailable = platform === "ios" && !trialPromised && !!product.freeTrial;
 
     if (platform === "android") {
       // One Play product carries several base plans (monthly, 6 months, yearly). Take THIS entry's base plan, and its regular (non-promotional) offer.
       const forBasePlan = (product.offers ?? []).filter((o) => o.basePlanId === entry.googlePlayBasePlanId);
       // A free-trial offer the store returned for this base plan means the member is eligible (Play withholds offers they are not eligible for), and
       // buying with ITS token is what starts the trial. Otherwise the regular base-plan offer: the normal paid purchase.
-      const offer = forBasePlan.find((o) => o.freeTrial && o.offerToken) ?? forBasePlan.find((o) => o.isBasePlanOffer) ?? forBasePlan[0];
+      // The trial offer is only chosen while the server says it can honour one; otherwise the regular base-plan offer is bought and no trial starts.
+      const offer = (trialPromised ? forBasePlan.find((o) => o.freeTrial && o.offerToken) : undefined) ?? forBasePlan.find((o) => o.isBasePlanOffer) ?? forBasePlan[0];
       if (!offer || !offer.offerToken) continue; // cannot be purchased without an offer token
       displayPrice = offer.displayPrice || product.displayPrice;
       offerToken = offer.offerToken;
       basePlanId = entry.googlePlayBasePlanId;
-      trial = offer.freeTrial ?? null;
+      trial = trialPromised ? offer.freeTrial ?? null : null;
+      trialAiUnavailable = false;
     }
 
     if (!displayPrice) continue; // never show a plan without the store's price
@@ -70,6 +76,7 @@ export function matchStorePlans(platform: StorePlatform, catalog: CatalogPlan[],
       basePlanId,
       offerToken,
       trial: trial ? { label: trialLabel(trial) } : null,
+      trialAiUnavailable,
     });
   }
 

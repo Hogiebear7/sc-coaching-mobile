@@ -13,6 +13,7 @@ import {
   SEPARATE_FROM_MEMBERSHIP,
   trialHeadline,
   trialLabel,
+  TRIAL_AI_UNAVAILABLE_NOTE,
 } from "@/lib/billing/copy";
 import { matchStorePlans, type RawStoreProduct } from "@/lib/billing/plans";
 import type { CatalogPlan } from "@/lib/billing/types";
@@ -148,8 +149,8 @@ describe("copy", () => {
 
 describe("free trial display: only what the store says this member is eligible for, with the full price after it", () => {
   const catalog: CatalogPlan[] = [
-    { billingOptionId: "m", intervalUnit: "month", intervalCount: 1, appStoreProductId: "apple.monthly", googlePlayProductId: "play_sub", googlePlayBasePlanId: "monthly" },
-    { billingOptionId: "y", intervalUnit: "year", intervalCount: 1, appStoreProductId: "apple.annual", googlePlayProductId: "play_sub", googlePlayBasePlanId: "annual" },
+    { billingOptionId: "m", intervalUnit: "month", intervalCount: 1, appStoreProductId: "apple.monthly", googlePlayProductId: "play_sub", googlePlayBasePlanId: "monthly", trialAvailable: true },
+    { billingOptionId: "y", intervalUnit: "year", intervalCount: 1, appStoreProductId: "apple.annual", googlePlayProductId: "play_sub", googlePlayBasePlanId: "annual", trialAvailable: true },
   ];
 
   it("iOS: an eligible member sees the trial length the store returned, and the plan's full price", () => {
@@ -195,6 +196,52 @@ describe("free trial display: only what the store says this member is eligible f
   it("Android: when the store returns no trial offer (already used, ineligible) the member gets the regular base-plan offer", () => {
     const plans = matchStorePlans("android", catalog, [{ id: "play_sub", title: "S&C", displayPrice: "€12.99", offers: [{ basePlanId: "monthly", offerToken: "tok-base", isBasePlanOffer: true, displayPrice: "€12.99" }] }]);
     expect(plans[0]).toMatchObject({ offerToken: "tok-base", trial: null });
+  });
+
+  describe("when the server cannot honour a trial's AI (shared trial pool unavailable), or does not say", () => {
+    const unavailable = catalog.map((c) => ({ ...c, trialAvailable: false }));
+    const unknown = catalog.map(({ trialAvailable: _omit, ...c }) => c as CatalogPlan);
+    const iosProducts = [
+      { id: "apple.monthly", title: "S&C", displayPrice: "€12.99", freeTrial: { unit: "day" as const, count: 7 } },
+      { id: "apple.annual", title: "S&C", displayPrice: "€84.00", freeTrial: { unit: "day" as const, count: 7 } },
+    ];
+    const androidProducts: RawStoreProduct[] = [
+      {
+        id: "play_sub",
+        title: "S&C",
+        displayPrice: "€12.99",
+        offers: [
+          { basePlanId: "monthly", offerToken: "tok-base", isBasePlanOffer: true, displayPrice: "€12.99" },
+          { basePlanId: "monthly", offerToken: "tok-trial", isBasePlanOffer: false, displayPrice: "€12.99", freeTrial: { unit: "day", count: 7 } },
+        ],
+      },
+    ];
+
+    it("iOS: the app does not promote a trial, and says AI is not available during the one the store may still apply", () => {
+      for (const c of [unavailable, unknown]) {
+        const plans = matchStorePlans("ios", c, iosProducts);
+        expect(plans.map((p) => p.trial)).toEqual([null, null]);
+        expect(plans.every((p) => p.trialAiUnavailable === true)).toBe(true);
+      }
+    });
+
+    it("Android: the plan is bought with the REGULAR base-plan offer (no trial token), so no trial starts and nothing is promised", () => {
+      for (const c of [unavailable, unknown]) {
+        const monthly = matchStorePlans("android", c, androidProducts).find((p) => p.billingOptionId === "m")!;
+        expect(monthly).toMatchObject({ offerToken: "tok-base", trial: null, trialAiUnavailable: false });
+      }
+    });
+
+    it("no trial offered by the store at all: nothing to warn about", () => {
+      const plans = matchStorePlans("ios", unavailable, [{ id: "apple.monthly", title: "S&C", displayPrice: "€12.99", freeTrial: null }]);
+      expect(plans[0]).toMatchObject({ trial: null, trialAiUnavailable: false });
+    });
+
+    it("the note never promotes the trial and keeps the rest of the app in view", () => {
+      expect(TRIAL_AI_UNAVAILABLE_NOTE).toMatch(/AI features aren't available during a trial right now/);
+      expect(TRIAL_AI_UNAVAILABLE_NOTE).toMatch(/Everything else in the app works/);
+      expect(TRIAL_AI_UNAVAILABLE_NOTE).not.toMatch(/start your|try .* free|free for/i);
+    });
   });
 
   it("parses Play's billing period for a trial phase, and trusts nothing unfamiliar", () => {

@@ -9,7 +9,7 @@ import { Card } from "@/components/ui/Card";
 import { API_BASE_URL } from "@/constants/config";
 import { Color, FontSize, Radius, Spacing } from "@/constants/theme";
 import { useBillingController, useBillingSnapshot } from "@/lib/billing/billing-context";
-import { AI_ALLOWANCE_NOTE, autoRenewDisclosure, describePlanEnd, DIGITAL_PLAN_FEATURES, manageSubscriptionLabel, RESTORE_LABEL, SEPARATE_FROM_MEMBERSHIP, trialHeadline } from "@/lib/billing/copy";
+import { AI_ALLOWANCE_NOTE, TRIAL_AI_UNAVAILABLE_NOTE, autoRenewDisclosure, describePlanEnd, DIGITAL_PLAN_FEATURES, manageSubscriptionLabel, RESTORE_LABEL, SEPARATE_FROM_MEMBERSHIP, trialHeadline } from "@/lib/billing/copy";
 import type { StorePlan } from "@/lib/billing/types";
 import { OUT_OF_DATE_SERVER_MESSAGE } from "@/lib/profile-access";
 import { useProfile } from "@/lib/queries/profile";
@@ -161,6 +161,8 @@ export default function SubscribeScreen() {
                     disabled={busy || snapshot.phase === "pending"}
                   />
                 ) : null}
+
+                {selectedPlan?.trialAiUnavailable ? <Text style={styles.message}>{TRIAL_AI_UNAVAILABLE_NOTE}</Text> : null}
 
                 {selectedPlan?.trial ? (
                   <Text style={styles.message}>{trialHeadline(selectedPlan.trial.label, selectedPlan.displayPrice, selectedPlan.periodLabel)}. Cancel any time before the trial ends and you won&apos;t be charged.</Text>

@@ -15,6 +15,11 @@ export interface CatalogPlan {
   appStoreProductId: string | null;
   googlePlayProductId: string | null;
   googlePlayBasePlanId: string | null;
+  /**
+   * The server says whether a NEW free trial can be honoured with its AI allowance right now (its shared trial pool has room). The store, not the server, starts a
+   * trial, so this only decides whether the app may PROMISE one. Anything other than true (false, or absent from an older server) means: do not promise a trial.
+   */
+  trialAvailable?: boolean;
 }
 
 /** One plan as the STORE reports it. The price text is the store's own, localised, and is the only price the app ever displays. */
@@ -36,6 +41,11 @@ export interface StorePlan {
    * whatever the store returned: it is never assumed to be seven days. `displayPrice` above is always the full price charged AFTER the trial.
    */
   trial: { label: string } | null;
+  /**
+   * The store offers this member a free trial (iOS applies an introductory offer on its own) but the server says trial AI capacity is unavailable, so the app does
+   * not promote the trial and warns that AI is not available during it. Always false on Android, where the app simply buys the plan without the trial offer.
+   */
+  trialAiUnavailable?: boolean;
 }
 
 /** The account binding the server hands out; the purchase must carry it or the server will refuse to claim it. */

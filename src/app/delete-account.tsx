@@ -57,8 +57,8 @@ export default function DeleteAccountScreen() {
               Your profile, workouts, programmes, recovery check-ins, food diary, bookings, messages and community activity are removed straight away. This can&apos;t be undone.
             </Text>
             <Text style={styles.body}>
-              Payment records the club must keep for accounting are retained without your name. If you have an active paid membership, cancel it first. A Google Play
-              subscription can only be cancelled in Google Play.
+              Payment records the club must keep for accounting are retained without your name. If you have an active paid membership, cancel it first. The App Subscription, bought through
+              Google Play or the App Store, can only be cancelled there, and deleting your account does not cancel it.
             </Text>
           </Card>
 

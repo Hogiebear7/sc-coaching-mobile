@@ -50,9 +50,40 @@ export function periodLabel(unit: "month" | "year" | null, count: number | null)
   return unit === "month" ? `every ${count} months` : `every ${count} years`;
 }
 
+// ── Free trial ──────────────────────────────────────────────────────────────────────────────────────
+
+export interface TrialPeriod {
+  unit: "day" | "week" | "month" | "year";
+  count: number;
+}
+
+/** "7 days", "1 week", "1 month": exactly the length the store returned. */
+export function trialLabel(period: TrialPeriod): string {
+  return `${period.count} ${period.unit}${period.count === 1 ? "" : "s"}`;
+}
+
+/** Parses the ISO-8601 billing period Google Play reports for a trial phase ("P7D", "P1W", "P1M", "P1Y"). Anything else is not trusted: null. */
+export function parseIsoPeriod(iso: string | null | undefined): TrialPeriod | null {
+  const m = /^P(\d+)([DWMY])$/.exec(iso ?? "");
+  if (!m) return null;
+  const count = Number(m[1]);
+  if (!Number.isInteger(count) || count < 1) return null;
+  return { count, unit: ({ D: "day", W: "week", M: "month", Y: "year" } as const)[m[2] as "D" | "W" | "M" | "Y"] };
+}
+
 // ── Disclosures required next to a subscription price (Apple 3.1.2, Google Play subscriptions policy) ──────────────────
 
-export function autoRenewDisclosure(platform: StorePlatform): string {
+/** The headline under a plan that has an eligible free trial: the trial length, then the FULL price and period. All three are the store's own values. */
+export function trialHeadline(trialText: string, displayPrice: string, period: string): string {
+  return `${trialText} free, then ${displayPrice} ${period}`.trim();
+}
+
+export function autoRenewDisclosure(platform: StorePlatform, options: { trial?: boolean } = {}): string {
+  if (options.trial) {
+    return platform === "ios"
+      ? "Your free trial starts when you confirm. Unless you cancel at least 24 hours before it ends, it converts to a paid subscription and your Apple Account is charged the price shown, and the subscription then renews automatically each period at that price. You can manage or cancel it at any time in your Apple Account settings."
+      : "Your free trial starts when you confirm. Unless you cancel before it ends, it converts to a paid subscription and your Google Play account is charged the price shown, and the subscription then renews automatically each period at that price. You can manage or cancel it at any time in Google Play, under Payments and subscriptions.";
+  }
   return platform === "ios"
     ? "Payment is charged to your Apple Account when you confirm the purchase. The subscription renews automatically at the price shown unless you cancel at least 24 hours before the end of the current period. You can manage or cancel it at any time in your Apple Account settings."
     : "Payment is charged to your Google Play account when you confirm the purchase. The subscription renews automatically at the price shown unless you cancel before the renewal date. You can manage or cancel it at any time in Google Play, under Payments and subscriptions.";
@@ -72,15 +103,23 @@ export const DIGITAL_PLAN_FEATURES: readonly string[] = [
   "Tracker import, gym profiles and reminders",
 ];
 
+/** AI use has a limit, and the paywall says so. Nothing in the app advertises unlimited AI. */
+export const AI_ALLOWANCE_NOTE = "AI features include a fair-use allowance over a rolling 30 days.";
+
 /** A gym Membership is a separate product. This sentence appears on the paywall so nobody is surprised either way. */
 export const SEPARATE_FROM_MEMBERSHIP =
   "The App Subscription is separate from a gym Membership. A gym Membership doesn't include it, and it doesn't include a gym Membership.";
 
-export function describePlanEnd(plan: { currentPeriodEnd: string | null; autoRenewing: boolean; status: string; source: string }, format: (iso: string) => string): string {
+export function describePlanEnd(plan: { currentPeriodEnd: string | null; autoRenewing: boolean; status: string; source: string; trial?: boolean }, format: (iso: string) => string): string {
   if (plan.source === "staff_grant") {
     return plan.currentPeriodEnd ? `Included at no charge until ${format(plan.currentPeriodEnd)}.` : "Included at no charge.";
   }
   if (plan.status === "in_grace_period") return "The store couldn't take your last payment. Access continues while it retries; update your payment method in the store.";
   if (!plan.currentPeriodEnd) return "";
+  if (plan.trial) {
+    return plan.autoRenewing
+      ? `Free trial until ${format(plan.currentPeriodEnd)}, then it renews at the store price unless you cancel before then.`
+      : `Free trial. It won't renew, and access continues until ${format(plan.currentPeriodEnd)}.`;
+  }
   return plan.autoRenewing ? `Renews on ${format(plan.currentPeriodEnd)}.` : `Won't renew. Access continues until ${format(plan.currentPeriodEnd)}.`;
 }

@@ -31,6 +31,11 @@ export interface StorePlan {
   basePlanId: string | null;
   /** Android: the offer token the purchase must carry. */
   offerToken: string | null;
+  /**
+   * A free trial the STORE says this member is eligible for right now, or null (not offered, already used, or the store could not say). The length is
+   * whatever the store returned: it is never assumed to be seven days. `displayPrice` above is always the full price charged AFTER the trial.
+   */
+  trial: { label: string } | null;
 }
 
 /** The account binding the server hands out; the purchase must carry it or the server will refuse to claim it. */
@@ -106,6 +111,8 @@ export interface DigitalPlanSummary {
   status: string;
   currentPeriodEnd: string | null;
   autoRenewing: boolean;
+  /** The current period is a free trial. */
+  trial?: boolean;
   environment: "production" | "sandbox" | null;
 }
 

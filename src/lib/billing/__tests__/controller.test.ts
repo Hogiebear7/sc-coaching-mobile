@@ -20,7 +20,7 @@ import {
 const CATALOG: CatalogPlan[] = [
   { billingOptionId: "opt-m", intervalUnit: "month", intervalCount: 1, appStoreProductId: "apple.monthly", googlePlayProductId: "play_sub", googlePlayBasePlanId: "monthly" },
 ];
-const PLAN: StorePlan = { billingOptionId: "opt-m", productId: "apple.monthly", title: "App Subscription", displayPrice: "£12.99", periodLabel: "per month", intervalUnit: "month", intervalCount: 1, basePlanId: null, offerToken: null };
+const PLAN: StorePlan = { billingOptionId: "opt-m", productId: "apple.monthly", title: "App Subscription", displayPrice: "£12.99", periodLabel: "per month", intervalUnit: "month", intervalCount: 1, basePlanId: null, offerToken: null, trial: null };
 const proof = (key = "tx-1", over: Partial<PurchaseProof> = {}): PurchaseProof => ({ platform: "ios", productId: "apple.monthly", signedTransaction: `jws-${key}`, key, native: { key }, ...over });
 const VERIFIED: VerifyResult = { access: { digital: true, gymMembership: false }, plan: { source: "app_store", status: "active", currentPeriodEnd: "2026-12-01T00:00:00.000Z", autoRenewing: true, environment: "production" }, status: "active" };
 

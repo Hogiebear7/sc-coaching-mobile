@@ -9,7 +9,7 @@ import { Card } from "@/components/ui/Card";
 import { API_BASE_URL } from "@/constants/config";
 import { Color, FontSize, Radius, Spacing } from "@/constants/theme";
 import { useBillingController, useBillingSnapshot } from "@/lib/billing/billing-context";
-import { autoRenewDisclosure, describePlanEnd, DIGITAL_PLAN_FEATURES, manageSubscriptionLabel, RESTORE_LABEL, SEPARATE_FROM_MEMBERSHIP } from "@/lib/billing/copy";
+import { AI_ALLOWANCE_NOTE, autoRenewDisclosure, describePlanEnd, DIGITAL_PLAN_FEATURES, manageSubscriptionLabel, RESTORE_LABEL, SEPARATE_FROM_MEMBERSHIP, trialHeadline } from "@/lib/billing/copy";
 import type { StorePlan } from "@/lib/billing/types";
 import { OUT_OF_DATE_SERVER_MESSAGE } from "@/lib/profile-access";
 import { useProfile } from "@/lib/queries/profile";
@@ -95,6 +95,7 @@ export default function SubscribeScreen() {
                   <Text style={styles.body}>{line}</Text>
                 </View>
               ))}
+              <Text style={styles.small}>{AI_ALLOWANCE_NOTE}</Text>
             </Card>
 
             {snapshot.phase === "idle" || snapshot.phase === "loading" ? (
@@ -124,9 +125,19 @@ export default function SubscribeScreen() {
                         <Ionicons name={active ? "radio-button-on" : "radio-button-off"} size={20} color={active ? Color.gold : Color.textFaint} />
                         <View style={{ flex: 1 }}>
                           <Text style={styles.planTitle}>{plan.title}</Text>
-                          <Text style={styles.planPeriod}>{plan.periodLabel}</Text>
+                          {plan.trial ? (
+                            <Text style={styles.planTrial}>{trialHeadline(plan.trial.label, plan.displayPrice, plan.periodLabel)}</Text>
+                          ) : (
+                            <Text style={styles.planPeriod}>{plan.periodLabel}</Text>
+                          )}
                         </View>
-                        <Text style={styles.planPrice}>{plan.displayPrice}</Text>
+                        {plan.trial ? (
+                          <View style={styles.trialChip}>
+                            <Text style={styles.trialChipText}>{plan.trial.label} free</Text>
+                          </View>
+                        ) : (
+                          <Text style={styles.planPrice}>{plan.displayPrice}</Text>
+                        )}
                       </Pressable>
                     );
                   })}
@@ -140,14 +151,21 @@ export default function SubscribeScreen() {
 
                 {selectedPlan ? (
                   <Button
-                    title={`Subscribe — ${selectedPlan.displayPrice} ${selectedPlan.periodLabel}`}
+                    title={
+                      selectedPlan.trial
+                        ? `Start ${selectedPlan.trial.label} free trial`
+                        : `Subscribe — ${selectedPlan.displayPrice} ${selectedPlan.periodLabel}`
+                    }
                     onPress={() => void controller.buy(selectedPlan)}
                     loading={busy}
                     disabled={busy || snapshot.phase === "pending"}
                   />
                 ) : null}
 
-                <Text style={styles.small}>{autoRenewDisclosure(platform)}</Text>
+                {selectedPlan?.trial ? (
+                  <Text style={styles.message}>{trialHeadline(selectedPlan.trial.label, selectedPlan.displayPrice, selectedPlan.periodLabel)}. Cancel any time before the trial ends and you won&apos;t be charged.</Text>
+                ) : null}
+                <Text style={styles.small}>{autoRenewDisclosure(platform, { trial: !!selectedPlan?.trial })}</Text>
               </>
             )}
           </>
@@ -198,6 +216,9 @@ const styles = StyleSheet.create({
   planTitle: { fontSize: FontSize.base, fontWeight: "600", color: Color.textPrimary },
   planPeriod: { fontSize: FontSize.sm, color: Color.textMuted },
   planPrice: { fontSize: FontSize.md, fontWeight: "700", color: Color.textPrimary },
+  planTrial: { fontSize: FontSize.sm, color: Color.gold },
+  trialChip: { paddingHorizontal: Spacing.sm, paddingVertical: 4, borderRadius: Radius.pill, backgroundColor: Color.goldWeak, borderWidth: 1, borderColor: Color.goldBorder },
+  trialChipText: { fontSize: FontSize.xs, fontWeight: "700", color: Color.gold },
   message: { fontSize: FontSize.sm, color: Color.textSecondary },
   messageError: { color: Color.warning },
   footer: { gap: Spacing.sm, marginTop: Spacing.md },

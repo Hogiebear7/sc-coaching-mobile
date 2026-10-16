@@ -73,6 +73,8 @@ export interface DigitalPlanSummary {
   status: "active" | "canceled" | "in_grace_period" | "on_hold" | "paused" | "expired" | "revoked";
   currentPeriodEnd: string | null;
   autoRenewing: boolean;
+  /** The current period is a free trial. */
+  trial?: boolean;
   environment: "production" | "sandbox" | null;
 }
 

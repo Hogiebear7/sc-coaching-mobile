@@ -3,7 +3,7 @@
 // The price on screen is always the store's own string. A catalog plan the store does not return is simply not offered: the app never shows a price for
 // something it cannot actually sell.
 
-import { periodLabel } from "./copy";
+import { periodLabel, trialLabel, type TrialPeriod } from "./copy";
 import type { CatalogPlan, StorePlan, StorePlatform } from "./types";
 
 export interface RawStoreOffer {
@@ -11,7 +11,10 @@ export interface RawStoreOffer {
   offerToken: string | null;
   /** Google Play offers that carry an offer id are promotional (trial, intro price); the base plan offer has none. */
   isBasePlanOffer: boolean;
+  /** The FULL recurring price (what is charged after any trial), as the store formats it. */
   displayPrice: string;
+  /** A free-trial phase at the start of this offer. Play only returns offers the member is eligible for. */
+  freeTrial?: TrialPeriod | null;
 }
 
 export interface RawStoreProduct {
@@ -20,6 +23,8 @@ export interface RawStoreProduct {
   displayPrice: string;
   /** Android only. */
   offers?: RawStoreOffer[];
+  /** iOS only: a free trial the member is ELIGIBLE for (the adapter has already asked the store). Null or absent means none. */
+  freeTrial?: TrialPeriod | null;
 }
 
 const FALLBACK_TITLE = "App Subscription";
@@ -37,15 +42,19 @@ export function matchStorePlans(platform: StorePlatform, catalog: CatalogPlan[],
     let displayPrice = product.displayPrice;
     let offerToken: string | null = null;
     let basePlanId: string | null = null;
+    let trial: TrialPeriod | null = platform === "ios" ? product.freeTrial ?? null : null;
 
     if (platform === "android") {
       // One Play product carries several base plans (monthly, 6 months, yearly). Take THIS entry's base plan, and its regular (non-promotional) offer.
       const forBasePlan = (product.offers ?? []).filter((o) => o.basePlanId === entry.googlePlayBasePlanId);
-      const offer = forBasePlan.find((o) => o.isBasePlanOffer) ?? forBasePlan[0];
+      // A free-trial offer the store returned for this base plan means the member is eligible (Play withholds offers they are not eligible for), and
+      // buying with ITS token is what starts the trial. Otherwise the regular base-plan offer: the normal paid purchase.
+      const offer = forBasePlan.find((o) => o.freeTrial && o.offerToken) ?? forBasePlan.find((o) => o.isBasePlanOffer) ?? forBasePlan[0];
       if (!offer || !offer.offerToken) continue; // cannot be purchased without an offer token
       displayPrice = offer.displayPrice || product.displayPrice;
       offerToken = offer.offerToken;
       basePlanId = entry.googlePlayBasePlanId;
+      trial = offer.freeTrial ?? null;
     }
 
     if (!displayPrice) continue; // never show a plan without the store's price
@@ -60,6 +69,7 @@ export function matchStorePlans(platform: StorePlatform, catalog: CatalogPlan[],
       intervalCount: entry.intervalCount,
       basePlanId,
       offerToken,
+      trial: trial ? { label: trialLabel(trial) } : null,
     });
   }
 

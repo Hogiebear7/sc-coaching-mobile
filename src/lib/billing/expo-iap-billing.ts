@@ -14,6 +14,7 @@
 
 import { Platform } from "react-native";
 
+import { parseIsoPeriod, type TrialPeriod } from "./copy";
 import { matchStorePlans, type RawStoreProduct } from "./plans";
 import { BillingError, type BillingErrorCode, type CatalogPlan, type PurchaseBinding, type PurchaseProof, type StoreBilling, type StorePlan, type StorePlatform } from "./types";
 
@@ -27,18 +28,28 @@ interface IapPurchase {
   isAcknowledgedAndroid?: boolean | null;
   transactionId?: string;
 }
+interface IapPricingPhase {
+  priceAmountMicros?: string;
+  formattedPrice?: string;
+  billingPeriod?: string;
+}
 interface IapOffer {
   id?: string | null;
+  type?: string;
+  paymentMode?: string | null;
+  period?: { unit: string; value: number } | null;
+  periodCount?: number | null;
   basePlanIdAndroid?: string | null;
   offerTokenAndroid?: string | null;
   displayPrice?: string;
-  pricingPhasesAndroid?: { pricingPhaseList?: unknown[] } | null;
+  pricingPhasesAndroid?: { pricingPhaseList?: IapPricingPhase[] } | null;
 }
 interface IapProduct {
   id: string;
   title?: string;
   displayName?: string | null;
   displayPrice?: string;
+  subscriptionGroupIdIOS?: string | null;
   subscriptionOffers?: IapOffer[];
 }
 interface IapModule {
@@ -51,6 +62,7 @@ interface IapModule {
   purchaseUpdatedListener(listener: (purchase: IapPurchase) => void): { remove: () => void };
   purchaseErrorListener(listener: (error: { code?: string; message?: string }) => void): { remove: () => void };
   deepLinkToSubscriptions(args?: { skuAndroid?: string; packageNameAndroid?: string }): Promise<void>;
+  isEligibleForIntroOfferIOS?(groupId: string): Promise<boolean>;
 }
 
 function loadModule(): IapModule | null {
@@ -81,6 +93,39 @@ const ERROR_MAP: Record<string, BillingErrorCode> = {
 
 export function mapStoreErrorCode(code: string | undefined): BillingErrorCode {
   return (code && ERROR_MAP[code]) || "unknown";
+}
+
+// A free trial phase is one that charges nothing. Play reports each phase's price in micros as a string.
+function androidOffer(o: IapOffer) {
+  const phases = o.pricingPhasesAndroid?.pricingPhaseList ?? [];
+  const first = phases[0];
+  const last = phases[phases.length - 1];
+  const freeTrial: TrialPeriod | null = first && first.priceAmountMicros === "0" ? parseIsoPeriod(first.billingPeriod) : null;
+  return {
+    basePlanId: o.basePlanIdAndroid ?? null,
+    offerToken: o.offerTokenAndroid ?? null,
+    // A base plan offer has no promotional phases; a trial or introductory offer has more than one pricing phase.
+    isBasePlanOffer: phases.length <= 1 && !o.id,
+    // The FULL recurring price is the last phase (what is charged after any trial), as the store formats it.
+    displayPrice: last?.formattedPrice ?? o.displayPrice ?? "",
+    freeTrial,
+  };
+}
+
+// iOS: a free trial counts only if the store reports an introductory free-trial offer AND says THIS member is eligible. Any doubt (no eligibility call,
+// an error, an unfamiliar period) means no trial is shown: the normal paid offer, never a promise the store may not keep.
+async function iosEligibleTrial(iap: IapModule, p: IapProduct): Promise<TrialPeriod | null> {
+  const offer = (p.subscriptionOffers ?? []).find((o) => o.type === "introductory" && o.paymentMode === "free-trial");
+  if (!offer?.period || !p.subscriptionGroupIdIOS || typeof iap.isEligibleForIntroOfferIOS !== "function") return null;
+  const unit = offer.period.unit;
+  if (unit !== "day" && unit !== "week" && unit !== "month" && unit !== "year") return null;
+  const count = offer.period.value * (offer.periodCount && offer.periodCount > 0 ? offer.periodCount : 1);
+  if (!Number.isInteger(count) || count < 1) return null;
+  try {
+    return (await iap.isEligibleForIntroOfferIOS(p.subscriptionGroupIdIOS)) ? { unit, count } : null;
+  } catch {
+    return null;
+  }
 }
 
 export function createExpoIapBilling(platform: StorePlatform = Platform.OS === "ios" ? "ios" : "android"): StoreBilling {
@@ -150,21 +195,16 @@ export function createExpoIapBilling(platform: StorePlatform = Platform.OS === "
       const skus = [...new Set(catalog.map((c) => (platform === "ios" ? c.appStoreProductId : c.googlePlayProductId)).filter((s): s is string => !!s))];
       if (skus.length === 0) return [];
       const products = (await iap.fetchProducts({ skus, type: "subs" })) ?? [];
-      const raw: RawStoreProduct[] = products.map((p) => ({
-        id: p.id,
-        title: p.displayName || p.title || "",
-        displayPrice: p.displayPrice ?? "",
-        offers:
-          platform === "android"
-            ? (p.subscriptionOffers ?? []).map((o) => ({
-                basePlanId: o.basePlanIdAndroid ?? null,
-                offerToken: o.offerTokenAndroid ?? null,
-                // A base plan offer has no promotional phases; a trial or introductory offer has more than one pricing phase.
-                isBasePlanOffer: (o.pricingPhasesAndroid?.pricingPhaseList?.length ?? 1) <= 1 && !o.id,
-                displayPrice: o.displayPrice ?? "",
-              }))
-            : undefined,
-      }));
+      const raw: RawStoreProduct[] = [];
+      for (const p of products) {
+        raw.push({
+          id: p.id,
+          title: p.displayName || p.title || "",
+          displayPrice: p.displayPrice ?? "",
+          offers: platform === "android" ? (p.subscriptionOffers ?? []).map(androidOffer) : undefined,
+          freeTrial: platform === "ios" ? await iosEligibleTrial(iap, p) : undefined,
+        });
+      }
       return matchStorePlans(platform, catalog, raw);
     },
 

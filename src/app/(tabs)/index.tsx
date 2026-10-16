@@ -1,6 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useRef } from "react";
 import { ActivityIndicator, InteractionManager, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -9,7 +9,7 @@ import { MetricTile, PillButton, RoundIconButton, SectionTitle, TileGrid, WeekSt
 import { ContinueWorkoutPill } from "@/components/ui/ContinueWorkoutPill";
 import { AppRadius, AppSpace, appTitle, figure, Radius, readinessColor, Spacing } from "@/constants/theme";
 import { useAuth } from "@/lib/auth-context";
-import { POST_SIGNUP_SETUP_KEY_PREFIX } from "@/lib/post-signup-setup";
+import { POST_SIGNUP_SETUP_KEY_PREFIX, POST_SIGNUP_TRIAL_OFFER_KEY_PREFIX } from "@/lib/post-signup-setup";
 import { useBodyWeightLogs } from "@/lib/queries/body-weight";
 import { compareWeightLogs } from "@/lib/weight-logs";
 import { useCommunityHighlight } from "@/lib/queries/community";
@@ -19,6 +19,7 @@ import { useProfile } from "@/lib/queries/profile";
 import { useTour } from "@/lib/tour-context";
 import { makeStyles, useAppTheme, useLegacyColors } from "@/lib/theme";
 import { NO_ACCESS } from "@/lib/member-access";
+import { CAN_SELL_DIGITAL_PLAN } from "@/lib/upsell-config";
 
 // Shown once, right after a member's very first signup — offers the two
 // setup steps that meaningfully improve day-one use of Workouts (an
@@ -55,6 +56,40 @@ function PostSignupOnboardingRedirect() {
       handle?.cancel();
     };
   }, [user, tourShowPrompt, tourActivePage, router]);
+
+  return null;
+}
+
+// The free-trial offer, once, right after signup: after the onboarding steps (it waits while the setup flag is still set, so the two never
+// stack), and only when this build sells the plan and the member has no App subscription yet. The offer screen itself shows nothing unless the
+// STORE says the member is eligible. The one-shot flag is cleared either way; the trial stays available from Settings.
+function PostSignupTrialOffer() {
+  const router = useRouter();
+  const { user } = useAuth();
+  const { data: profile } = useProfile();
+  const { showPrompt: tourShowPrompt, activePage: tourActivePage } = useTour();
+  const handled = useRef(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!CAN_SELL_DIGITAL_PLAN || !user || !profile || handled.current || tourShowPrompt || tourActivePage) return;
+      let cancelled = false;
+      Promise.all([
+        AsyncStorage.getItem(POST_SIGNUP_TRIAL_OFFER_KEY_PREFIX + user.id),
+        AsyncStorage.getItem(POST_SIGNUP_SETUP_KEY_PREFIX + user.id),
+      ])
+        .then(([offer, setupStillPending]) => {
+          if (cancelled || !offer || setupStillPending || handled.current) return;
+          handled.current = true;
+          AsyncStorage.removeItem(POST_SIGNUP_TRIAL_OFFER_KEY_PREFIX + user.id).catch(() => {});
+          if (profile.accessSupported && !profile.memberAccess.digital) router.push("/trial-offer" as never);
+        })
+        .catch(() => {});
+      return () => {
+        cancelled = true;
+      };
+    }, [user, profile, tourShowPrompt, tourActivePage, router])
+  );
 
   return null;
 }
@@ -369,6 +404,7 @@ export default function DashboardScreen() {
         </View>
       </ScrollView>
       <PostSignupOnboardingRedirect />
+      <PostSignupTrialOffer />
     </SafeAreaView>
   );
 }

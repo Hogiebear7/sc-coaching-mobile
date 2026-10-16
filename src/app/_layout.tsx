@@ -173,6 +173,7 @@ function AuthGate() {
       <Stack.Screen name="gym" options={{ presentation: "card" }} />
       <Stack.Screen name="membership" options={{ presentation: "card" }} />
       <Stack.Screen name="subscribe" options={{ presentation: "card" }} />
+      <Stack.Screen name="trial-offer" options={{ presentation: "card" }} />
       <Stack.Screen name="messages" options={{ presentation: "card" }} />
       <Stack.Screen name="notifications" options={{ presentation: "card" }} />
       <Stack.Screen name="exercise-library-detail" options={{ presentation: "card" }} />

@@ -22,7 +22,8 @@ import { headline, Radius, Spacing } from "@/constants/theme";
 import { ApiError, useAuth, type AuthUser } from "@/lib/auth-context";
 import { apiFetch } from "@/lib/api-client";
 import { ALLERGENS, DIETARY_PREFERENCES, INTOLERANCES, optionLabel } from "@/lib/dietary-options";
-import { POST_SIGNUP_SETUP_KEY_PREFIX } from "@/lib/post-signup-setup";
+import { POST_SIGNUP_SETUP_KEY_PREFIX, POST_SIGNUP_TRIAL_OFFER_KEY_PREFIX } from "@/lib/post-signup-setup";
+import { CAN_SELL_DIGITAL_PLAN } from "@/lib/upsell-config";
 import { setToken as persistToken } from "@/lib/token-store";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
@@ -343,6 +344,8 @@ export default function SignupScreen() {
       });
       await persistToken(res.token);
       await AsyncStorage.setItem(POST_SIGNUP_SETUP_KEY_PREFIX + res.user.id, "1").catch(() => {});
+      // Creating the account starts nothing: this only lets Home OFFER the trial once, if the store later says the member is eligible.
+      if (CAN_SELL_DIGITAL_PLAN) await AsyncStorage.setItem(POST_SIGNUP_TRIAL_OFFER_KEY_PREFIX + res.user.id, "1").catch(() => {});
       await setSession(res.token, res.user);
     } catch (e) {
       setFormError(e instanceof ApiError ? e.message : "Something went wrong. Try again.");

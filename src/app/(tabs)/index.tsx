@@ -26,7 +26,7 @@ import { ReadinessSparkline } from "@/components/ui/ReadinessSparkline";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { StatCard } from "@/components/ui/StatCard";
 import { UpsellRow } from "@/components/ui/Upsell";
-import { Color, Radius, Spacing } from "@/constants/theme";
+import { Color, headline, Radius, Spacing } from "@/constants/theme";
 import { useAuth } from "@/lib/auth-context";
 import { hasAccess, isMembershipTier } from "@/lib/member-access";
 import { POST_SIGNUP_SETUP_KEY_PREFIX } from "@/lib/post-signup-setup";
@@ -646,9 +646,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   greeting: {
-    fontSize: 28,
-    fontWeight: "700",
-    fontStyle: "italic",
+    ...headline(40),
     color: Color.textPrimary,
   },
   subGreeting: {

@@ -8,7 +8,7 @@ import type { KeyboardAwareScrollViewRef } from "react-native-keyboard-controlle
 import { BrandMark } from "@/components/ui/BrandMark";
 import { Button } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/TextField";
-import { Color, Spacing } from "@/constants/theme";
+import { Color, headline, Spacing } from "@/constants/theme";
 import { ApiError } from "@/lib/auth-context";
 import { dismissEmergencyContactReminder } from "@/lib/emergency-contact-reminder";
 import { useProfile, useUpdateProfile } from "@/lib/queries/profile";
@@ -185,10 +185,8 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.sm,
   },
   title: {
-    fontSize: 28,
-    fontWeight: "700",
+    ...headline(36),
     color: Color.textPrimary,
-    fontStyle: "italic",
   },
   hint: {
     fontSize: 13,

@@ -6,7 +6,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
 import { KeyboardAwareScroll } from "@/components/ui/KeyboardAwareScroll";
-import { Color, Radius, Spacing } from "@/constants/theme";
+import { Color, figure, headline, Radius, Spacing } from "@/constants/theme";
 import { successFeedback, tapFeedback } from "@/lib/haptics";
 import { formatDuration, parseDuration } from "@/lib/workout-formatters";
 import {
@@ -926,7 +926,7 @@ const styles = StyleSheet.create({
   body: { flexGrow: 1, alignItems: "center", paddingTop: Spacing.xl, paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
   doneText: { fontSize: 14, color: Color.textMuted, textAlign: "center", marginTop: Spacing.xl },
   getReadyText: { fontSize: 16, fontWeight: "600", color: Color.textMuted, marginTop: Spacing.xxl },
-  countdownNumber: { fontSize: 96, fontWeight: "700", color: Color.gold, marginTop: Spacing.lg, fontVariant: ["tabular-nums"] },
+  countdownNumber: { ...figure(110, "700"), color: Color.gold, marginTop: Spacing.lg, },
   cardBody: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
   cardHint: { fontSize: 13, color: Color.textMuted, marginTop: Spacing.sm, lineHeight: 18 },
   cardList: {
@@ -944,9 +944,9 @@ const styles = StyleSheet.create({
   cardRowMeta: { fontSize: 11, color: Color.textFaint, marginTop: 2 },
   cardRowDuration: { fontSize: 12, color: Color.textMuted, fontVariant: ["tabular-nums"] },
   phaseKind: { fontSize: 12, fontWeight: "700", letterSpacing: 1, color: Color.gold },
-  phaseLabel: { fontSize: 26, fontWeight: "700", color: Color.textPrimary, textAlign: "center", marginTop: Spacing.xs },
+  phaseLabel: { ...headline(30), color: Color.textPrimary, textAlign: "center", marginTop: Spacing.xs },
   phaseMeta: { fontSize: 12, color: Color.textMuted, marginTop: 4 },
-  clock: { fontSize: 56, fontWeight: "700", color: Color.gold, fontVariant: ["tabular-nums"], marginTop: Spacing.lg },
+  clock: { ...figure(64, "700"), color: Color.gold, marginTop: Spacing.lg },
   ringWrap: {
     width: 240,
     height: 240,
@@ -1009,7 +1009,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Color.borderSubtle,
   },
-  roundsValue: { fontSize: 32, fontWeight: "700", color: Color.textPrimary, fontVariant: ["tabular-nums"] },
+  roundsValue: { ...figure(38), color: Color.textPrimary },
   roundsLabel: { fontSize: 11, color: Color.textMuted },
   chipperMovements: { width: "100%", marginTop: Spacing.lg, gap: Spacing.sm },
   chipperMovement: {

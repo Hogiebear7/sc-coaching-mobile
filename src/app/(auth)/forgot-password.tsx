@@ -12,7 +12,7 @@ import { KeyboardAwareScroll } from "@/components/ui/KeyboardAwareScroll";
 
 import { Button } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/TextField";
-import { Color, Spacing } from "@/constants/theme";
+import { Color, headline, Spacing } from "@/constants/theme";
 import { apiFetch, ApiError } from "@/lib/api-client";
 
 // Mirrors the web app's /forgot-password page exactly — same route
@@ -124,10 +124,8 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.sm,
   },
   title: {
-    fontSize: 32,
-    fontWeight: "700",
+    ...headline(40),
     color: Color.textPrimary,
-    fontStyle: "italic",
   },
   subtitle: {
     fontSize: 14,

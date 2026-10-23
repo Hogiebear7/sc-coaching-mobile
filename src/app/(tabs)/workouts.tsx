@@ -15,7 +15,7 @@ import { SectionHeader } from "@/components/ui/SectionHeader";
 import { SessionCard } from "@/components/ui/SessionCard";
 import { TrendChart } from "@/components/ui/TrendChart";
 import { UpsellTile } from "@/components/ui/Upsell";
-import { Color, Radius, Spacing } from "@/constants/theme";
+import { Color, figure, headline, Radius, Spacing } from "@/constants/theme";
 import { useAuth } from "@/lib/auth-context";
 import { tapFeedback } from "@/lib/haptics";
 import { hasAccess } from "@/lib/member-access";
@@ -799,7 +799,7 @@ const styles = StyleSheet.create({
   errorText: { color: Color.textMuted, fontSize: 14 },
   scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
   headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: Spacing.md, marginBottom: Spacing.lg },
-  heading: { fontSize: 24, fontWeight: "700", fontStyle: "italic", color: Color.textPrimary },
+  heading: { ...headline(34), color: Color.textPrimary },
   logButton: { flexDirection: "row", alignItems: "center", gap: 2, backgroundColor: Color.gold, borderRadius: Radius.pill, paddingHorizontal: Spacing.md, paddingVertical: 8 },
   logButtonText: { fontSize: 12, fontWeight: "700", color: Color.goldForeground },
   section: { marginBottom: Spacing.xl },
@@ -823,7 +823,7 @@ const styles = StyleSheet.create({
   pbHeaderRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: Spacing.xs },
   pbTitle: { fontSize: 13, fontWeight: "600", color: Color.textPrimary },
   pbStat: {},
-  pbValue: { fontSize: 22, fontWeight: "700", color: Color.gold, fontVariant: ["tabular-nums"] },
+  pbValue: { ...figure(28), color: Color.gold },
   pbLabel: { fontSize: 10, color: Color.textMuted, marginTop: 2 },
   programCard: { padding: Spacing.md },
   programHeaderRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },

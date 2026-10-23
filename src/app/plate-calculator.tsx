@@ -5,7 +5,7 @@ import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Card } from "@/components/ui/Card";
-import { Color, Radius, Spacing } from "@/constants/theme";
+import { Color, figure, Radius, Spacing } from "@/constants/theme";
 import { tapFeedback } from "@/lib/haptics";
 import {
   BAR_PRESETS_KG,
@@ -238,7 +238,7 @@ const styles = StyleSheet.create({
   totalDivider: { height: 1, backgroundColor: Color.borderSubtle, marginVertical: Spacing.md },
   totalRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "baseline" },
   totalLabel: { fontSize: 13, color: Color.textMuted },
-  totalValue: { fontSize: 24, fontWeight: "700", color: Color.textPrimary, fontVariant: ["tabular-nums"] },
+  totalValue: { ...figure(30), color: Color.textPrimary },
   shortfallText: { fontSize: 11, color: Color.warning, marginTop: Spacing.sm },
   emptyText: { fontSize: 13, color: Color.textMuted, marginTop: Spacing.xl, textAlign: "center" },
 });

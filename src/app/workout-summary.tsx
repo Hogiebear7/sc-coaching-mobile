@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { StatCard } from "@/components/ui/StatCard";
 import { UpsellCard } from "@/components/ui/Upsell";
-import { Color, Radius, Spacing } from "@/constants/theme";
+import { Color, headline, Radius, Spacing } from "@/constants/theme";
 import { hasAccess } from "@/lib/member-access";
 import { useMemberTier } from "@/lib/queries/profile";
 import { takePendingWorkoutSummary } from "@/lib/workout-summary-handoff";
@@ -145,7 +145,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginBottom: Spacing.md,
   },
-  heroTitle: { fontSize: 22, fontWeight: "700", color: Color.textPrimary },
+  heroTitle: { ...headline(28), color: Color.textPrimary },
   heroSubtitle: { fontSize: 13, color: Color.textMuted, marginTop: 4 },
   pbPill: {
     flexDirection: "row",

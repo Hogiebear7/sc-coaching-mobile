@@ -26,7 +26,7 @@ import { KeyboardAwareScroll } from "@/components/ui/KeyboardAwareScroll";
 import { MacroLegendRow, MacroPieChart, type MacroKind } from "@/components/ui/MacroPieChart";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { UpsellCard } from "@/components/ui/Upsell";
-import { Color, Radius, Spacing } from "@/constants/theme";
+import { Color, figure, headline, Radius, Spacing } from "@/constants/theme";
 import { ApiError } from "@/lib/auth-context";
 import { tapFeedback } from "@/lib/haptics";
 import { hasAccess } from "@/lib/member-access";
@@ -878,7 +878,7 @@ const styles = StyleSheet.create({
   errorText: { color: Color.textMuted, fontSize: 14 },
   scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
   headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: Spacing.md, marginBottom: Spacing.md },
-  heading: { fontSize: 24, fontWeight: "700", fontStyle: "italic", color: Color.textPrimary },
+  heading: { ...headline(34), color: Color.textPrimary },
   dateNavRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: Spacing.lg, marginBottom: Spacing.md },
   dateArrow: { padding: 4 },
   dateLabel: { fontSize: 14, fontWeight: "600", color: Color.textPrimary, minWidth: 100, textAlign: "center" },
@@ -888,7 +888,7 @@ const styles = StyleSheet.create({
   viewWeekRow: { flexDirection: "row", alignItems: "center", gap: 2 },
   viewWeekText: { fontSize: 11, fontWeight: "600", color: Color.textFaint },
   calorieRow: { flexDirection: "row", alignItems: "baseline" },
-  calorieValue: { fontSize: 28, fontWeight: "700", color: Color.gold, fontVariant: ["tabular-nums"] },
+  calorieValue: { ...figure(34), color: Color.gold },
   calorieTarget: { fontSize: 14, color: Color.textMuted },
   calorieRemaining: { fontSize: 12, color: Color.textMuted, marginTop: 2 },
   noTargetText: { fontSize: 12, color: Color.textMuted, marginTop: Spacing.xs },
@@ -950,10 +950,8 @@ const styles = StyleSheet.create({
   hydrationLabel: { fontSize: 11, fontWeight: "600", color: Color.textMuted, letterSpacing: 0.2 },
   hydrationInfoButton: { padding: 1 },
   hydrationMetricValue: {
-    fontSize: 26,
-    fontWeight: "700",
+    ...figure(30),
     color: Color.textPrimary,
-    fontVariant: ["tabular-nums"],
     marginBottom: 7,
   },
   hydrationMetricTarget: { fontSize: 15, fontWeight: "500", color: Color.textMuted },

@@ -5,7 +5,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
-import { Color, Radius, Spacing } from "@/constants/theme";
+import { Color, figure, Radius, Spacing } from "@/constants/theme";
 import { tapFeedback } from "@/lib/haptics";
 import { formatDuration } from "@/lib/workout-formatters";
 import { useWorkoutDraft } from "@/lib/workout-draft";
@@ -135,7 +135,7 @@ const styles = StyleSheet.create({
   backButton: { padding: 4 },
   headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
   body: { flex: 1, alignItems: "center", paddingTop: Spacing.xxl, paddingHorizontal: Spacing.lg },
-  clock: { fontSize: 56, fontWeight: "700", color: Color.gold, fontVariant: ["tabular-nums"] },
+  clock: { ...figure(64, "700"), color: Color.gold },
   controlsRow: { flexDirection: "row", alignItems: "center", gap: Spacing.xl, marginTop: Spacing.xl },
   secondaryControl: { width: 48, height: 48, borderRadius: 24, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: Color.borderSubtle },
   primaryControl: { width: 72, height: 72, borderRadius: 36, alignItems: "center", justifyContent: "center", backgroundColor: Color.gold },

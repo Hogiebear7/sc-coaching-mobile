@@ -67,7 +67,35 @@
           "locationWhenInUsePermission": "S&C Coaching uses your location to find nearby gyms and coaches."
         }
       ],
-      "./plugins/withTransparentSplashIcon.js"
+      "./plugins/withTransparentSplashIcon.js",
+      [
+        "expo-font",
+        {
+          "android": {
+            "fonts": [
+              {
+                "fontFamily": "Teko",
+                "fontDefinitions": [
+                  {
+                    "path": "./node_modules/@expo-google-fonts/teko/600SemiBold/Teko_600SemiBold.ttf",
+                    "weight": 600
+                  },
+                  {
+                    "path": "./node_modules/@expo-google-fonts/teko/700Bold/Teko_700Bold.ttf",
+                    "weight": 700
+                  }
+                ]
+              }
+            ]
+          },
+          "ios": {
+            "fonts": [
+              "./node_modules/@expo-google-fonts/teko/600SemiBold/Teko_600SemiBold.ttf",
+              "./node_modules/@expo-google-fonts/teko/700Bold/Teko_700Bold.ttf"
+            ]
+          }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

@@ -18,7 +18,7 @@ import { Card } from "@/components/ui/Card";
 import { DateField, formatDateDisplay } from "@/components/ui/DateField";
 import { TextField } from "@/components/ui/TextField";
 import { API_BASE_URL } from "@/constants/config";
-import { Color, Radius, Spacing } from "@/constants/theme";
+import { Color, headline, Radius, Spacing } from "@/constants/theme";
 import { ApiError, useAuth, type AuthUser } from "@/lib/auth-context";
 import { apiFetch } from "@/lib/api-client";
 import { ALLERGENS, DIETARY_PREFERENCES, INTOLERANCES, optionLabel } from "@/lib/dietary-options";
@@ -787,10 +787,8 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.sm,
   },
   title: {
-    fontSize: 28,
-    fontWeight: "700",
+    ...headline(36),
     color: Color.textPrimary,
-    fontStyle: "italic",
   },
   stepIndicator: {
     fontSize: 12,

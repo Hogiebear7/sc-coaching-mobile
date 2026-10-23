@@ -7,7 +7,7 @@ import Svg, { Circle } from "react-native-svg";
 
 import { Card } from "@/components/ui/Card";
 import { Collapsible } from "@/components/ui/Collapsible";
-import { Color, Radius, Spacing } from "@/constants/theme";
+import { Color, figure, Radius, Spacing } from "@/constants/theme";
 import { useNutritionDiary, useMyNutritionTarget, useWeeklyNutritionTargets, type ResolvedNutritionTarget } from "@/lib/queries/nutrition-diary";
 import { todayDateString } from "@/lib/workout-formatters";
 
@@ -269,7 +269,7 @@ const styles = StyleSheet.create({
   fuelDayLabel: { fontSize: 11, fontWeight: "700", letterSpacing: 0.5, textTransform: "uppercase", color: Color.gold, marginBottom: Spacing.sm },
   ringWrap: { marginVertical: Spacing.sm },
   ringCenter: { flex: 1, alignItems: "center", justifyContent: "center" },
-  ringValue: { fontSize: 32, fontWeight: "700", color: Color.textPrimary, fontVariant: ["tabular-nums"] },
+  ringValue: { ...figure(38), color: Color.textPrimary },
   ringSuffix: { fontSize: 11, color: Color.textMuted, marginTop: 2 },
   sourceText: { fontSize: 11, color: Color.textFaint, textAlign: "center", marginTop: Spacing.xs },
   macroBlock: { width: "100%", marginTop: Spacing.lg, gap: Spacing.md },

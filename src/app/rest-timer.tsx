@@ -6,7 +6,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { isBatteryOptimizationRelevant, openBatteryOptimizationSettings } from "@/lib/battery-optimization";
-import { Color, Radius, Spacing } from "@/constants/theme";
+import { Color, figure, Radius, Spacing } from "@/constants/theme";
 import { successFeedback, tapFeedback } from "@/lib/haptics";
 import { useRestTimer } from "@/lib/rest-timer";
 import { useTickingValue } from "@/lib/use-ticker";
@@ -352,11 +352,11 @@ const styles = StyleSheet.create({
   dialWrap: { width: 240, height: 240, alignItems: "center", justifyContent: "center" },
   dialCenter: { ...StyleSheet.absoluteFill, alignItems: "center", justifyContent: "center" },
   pickerWrap: { width: "100%", alignItems: "center", paddingVertical: Spacing.lg },
-  clockText: { fontSize: 40, fontWeight: "700", color: Color.gold, fontVariant: ["tabular-nums"] },
+  clockText: { ...figure(48, "700"), color: Color.gold },
   doneText: { fontSize: 12, color: Color.success, marginTop: 4, fontWeight: "600" },
   getReadyWrap: { flex: 1, alignItems: "center", justifyContent: "center" },
   getReadyLabel: { fontSize: 13, fontWeight: "700", letterSpacing: 1.2, color: Color.textMuted },
-  getReadyNumber: { fontSize: 96, fontWeight: "800", color: Color.gold, fontVariant: ["tabular-nums"], marginTop: Spacing.sm },
+  getReadyNumber: { ...figure(110, "700"), color: Color.gold, marginTop: Spacing.sm },
   getReadyHint: { fontSize: 13, color: Color.textMuted, marginTop: Spacing.sm, textAlign: "center" },
   adjustRow: { flexDirection: "row", gap: Spacing.md, marginTop: Spacing.xl },
   adjustButton: { paddingHorizontal: Spacing.lg, paddingVertical: Spacing.sm, borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle },

@@ -6,7 +6,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { API_BASE_URL } from "@/constants/config";
-import { Color, Radius, Spacing } from "@/constants/theme";
+import { Color, figure, Radius, Spacing } from "@/constants/theme";
 import { apiFetch } from "@/lib/api-client";
 import { tapFeedback } from "@/lib/haptics";
 import { useMembership } from "@/lib/queries/membership";
@@ -177,7 +177,7 @@ const styles = StyleSheet.create({
   planMeta: { fontSize: 12, color: Color.textMuted, marginTop: Spacing.sm },
   statsRow: { flexDirection: "row", gap: Spacing.sm, marginBottom: Spacing.md },
   statCard: { flex: 1, padding: Spacing.md, alignItems: "center" },
-  statValue: { fontSize: 24, fontWeight: "700", color: Color.gold, fontVariant: ["tabular-nums"] },
+  statValue: { ...figure(30), color: Color.gold },
   statLabel: { fontSize: 11, color: Color.textMuted, marginTop: 4 },
   warningCard: {
     flexDirection: "row",

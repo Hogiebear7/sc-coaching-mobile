@@ -5,6 +5,8 @@
 // brand is a fixed dark navy/gold identity (not light/dark adaptive), so
 // this is the only theme — no system-appearance branching.
 
+import type { TextStyle } from "react-native";
+
 export const Color = {
   // Surfaces
   bg0: "#0a1526",
@@ -73,16 +75,42 @@ export const Spacing = {
   xxl: 32,
 } as const;
 
-// Display face carries the brand's editorial-serif personality (used for
-// headings/hero numbers on web); body stays a clean system sans for density
-// and legibility at small sizes. No custom font files bundled yet — falls
-// back to each platform's serif/sans system font until brand fonts are
-// added as static assets.
+// Display face is Teko, matching the website (gym-app DESIGN.md): headings and
+// big figures only, embedded at build time by the expo-font config plugin in
+// app.json (static 600/700 files — SDK 57 has no variable-font support). Body
+// text deliberately stays the platform sans (SF Pro / Roboto), which is close
+// enough to the website's Inter at body sizes; see DESIGN.md "Known gaps".
 export const Font = {
-  display: "serif",
+  display: "Teko",
   body: "System",
   mono: "monospace",
 } as const;
+
+// Uppercase Teko headline, the website's `text-headline`. Teko's capitals sit
+// tall, so lineHeight stays at 1x the size rather than the web's 0.9 to avoid
+// Android clipping the tops of the glyphs.
+export function headline(size: number): TextStyle {
+  return {
+    fontFamily: Font.display,
+    fontWeight: "600",
+    fontSize: size,
+    lineHeight: Math.round(size * 1.0),
+    letterSpacing: size * 0.01,
+    textTransform: "uppercase",
+  };
+}
+
+// Teko figure for big numbers (stats, rings, timers): same face, not
+// uppercased, even-width digits so ticking clocks don't jitter.
+export function figure(size: number, weight: "600" | "700" = "600"): TextStyle {
+  return {
+    fontFamily: Font.display,
+    fontWeight: weight,
+    fontSize: size,
+    lineHeight: Math.round(size * 1.05),
+    fontVariant: ["tabular-nums"],
+  };
+}
 
 export const FontSize = {
   xs: 11,

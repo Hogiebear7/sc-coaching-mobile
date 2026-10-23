@@ -30,7 +30,7 @@ import { RestTimerBar } from "@/components/ui/RestTimerBar";
 import { SupersetChips } from "@/components/ui/SupersetChips";
 import { TextField } from "@/components/ui/TextField";
 import { TimeWheelPicker } from "@/components/ui/TimeWheelPicker";
-import { Color, Radius, Spacing } from "@/constants/theme";
+import { Color, figure, Radius, Spacing } from "@/constants/theme";
 import { successFeedback, tapFeedback } from "@/lib/haptics";
 import { ApiError } from "@/lib/api-client";
 import { useAdvanceProgram, useMyProgram, type PrescribedExercise } from "@/lib/queries/programs";
@@ -2093,7 +2093,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.lg,
   },
   timerLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted },
-  timerClock: { fontSize: 24, fontWeight: "700", color: Color.gold, fontVariant: ["tabular-nums"], marginTop: 2 },
+  timerClock: { ...figure(30, "700"), color: Color.gold, marginTop: 2 },
   timerToggle: {
     width: 40,
     height: 40,

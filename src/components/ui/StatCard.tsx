@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { Color, Spacing } from "@/constants/theme";
+import { Color, figure, Spacing } from "@/constants/theme";
 import { Card } from "./Card";
 import { ProgressBar } from "./ProgressBar";
 
@@ -78,10 +78,8 @@ const styles = StyleSheet.create({
     marginTop: Spacing.xs,
   },
   value: {
-    fontSize: 22,
-    fontWeight: "700",
+    ...figure(28),
     color: Color.textPrimary,
-    fontVariant: ["tabular-nums"],
   },
   unit: {
     fontSize: 12,

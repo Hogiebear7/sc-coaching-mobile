@@ -13,7 +13,7 @@ import { InfoModal } from "@/components/ui/InfoModal";
 import { ReadinessRing } from "@/components/ui/ReadinessRing";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Stepper } from "@/components/ui/Stepper";
-import { Color, Spacing } from "@/constants/theme";
+import { Color, headline, Spacing } from "@/constants/theme";
 import { ApiError } from "@/lib/auth-context";
 import { hasAccess } from "@/lib/member-access";
 import { useMemberTier } from "@/lib/queries/profile";
@@ -328,9 +328,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.lg,
   },
   heading: {
-    fontSize: 24,
-    fontWeight: "700",
-    fontStyle: "italic",
+    ...headline(34),
     color: Color.textPrimary,
   },
   summaryCard: { padding: Spacing.md, marginBottom: Spacing.lg },

@@ -6,7 +6,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { StatCard } from "@/components/ui/StatCard";
-import { Color, Spacing } from "@/constants/theme";
+import { Color, figure, Spacing } from "@/constants/theme";
 import { useWorkoutReview, type WorkoutScoreBreakdown } from "@/lib/queries/workouts";
 
 function bandLabel(band: WorkoutScoreBreakdown["band"]): string {
@@ -255,7 +255,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: Color.borderSubtle,
   },
-  scoreTotal: { fontSize: 40, fontWeight: "800" },
+  scoreTotal: { ...figure(48, "700") },
   scoreOutOf: { fontSize: 16, color: Color.textFaint, marginRight: Spacing.sm },
   scoreBand: { fontSize: 13, fontWeight: "700", letterSpacing: 0.4, textTransform: "uppercase" },
   scoreDetail: { fontSize: 11, color: Color.textFaint, marginTop: 2 },

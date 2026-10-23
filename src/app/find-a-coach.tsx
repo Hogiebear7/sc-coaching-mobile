@@ -9,7 +9,7 @@ import { BrandMark } from "@/components/ui/BrandMark";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { TextField } from "@/components/ui/TextField";
-import { Color, Radius, Spacing } from "@/constants/theme";
+import { Color, headline, Radius, Spacing } from "@/constants/theme";
 import { ApiError } from "@/lib/api-client";
 import {
   ALLOWED_RADIUS_KM,
@@ -322,10 +322,8 @@ const styles = StyleSheet.create({
   scroll: { paddingHorizontal: Spacing.xl, paddingBottom: Spacing.xxl },
   logo: { marginBottom: Spacing.md },
   title: {
-    fontSize: 24,
-    fontWeight: "700",
+    ...headline(34),
     color: Color.textPrimary,
-    fontStyle: "italic",
   },
   hint: {
     fontSize: 13,

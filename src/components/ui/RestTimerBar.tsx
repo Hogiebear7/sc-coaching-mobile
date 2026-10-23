@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { Color, Radius, Spacing } from "@/constants/theme";
+import { Color, figure, Radius, Spacing } from "@/constants/theme";
 import { tapFeedback } from "@/lib/haptics";
 import { useRestTimer } from "@/lib/rest-timer";
 import { useTickingValue } from "@/lib/use-ticker";
@@ -107,7 +107,7 @@ const styles = StyleSheet.create({
   },
   barGetReady: { justifyContent: "center", gap: Spacing.sm },
   getReadyText: { fontSize: 12, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted },
-  getReadyClock: { fontSize: 22, fontWeight: "700", color: Color.gold, fontVariant: ["tabular-nums"] },
+  getReadyClock: { ...figure(26, "700"), color: Color.gold },
   adjustButton: {
     paddingHorizontal: Spacing.sm,
     paddingVertical: 6,
@@ -118,7 +118,7 @@ const styles = StyleSheet.create({
   adjustText: { fontSize: 12, fontWeight: "600", color: Color.textSecondary },
   clockWrap: { flex: 1, alignItems: "center" },
   label: { fontSize: 10, fontWeight: "700", letterSpacing: 0.4, color: Color.textMuted, textTransform: "uppercase" },
-  clock: { fontSize: 22, fontWeight: "700", color: Color.gold, fontVariant: ["tabular-nums"] },
+  clock: { ...figure(26, "700"), color: Color.gold },
   clockDone: { color: Color.success },
   iconButton: {
     width: 32,

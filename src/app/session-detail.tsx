@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { MuscleMap } from "@/components/ui/MuscleMap";
 import { StatCard } from "@/components/ui/StatCard";
-import { Color, Radius, Spacing } from "@/constants/theme";
+import { Color, headline, Radius, Spacing } from "@/constants/theme";
 import { tapFeedback } from "@/lib/haptics";
 import type { PrescribedExercise } from "@/lib/queries/programs";
 import { useDeleteWorkoutSession, useSetWorkoutVisibility, useWorkouts, type WorkoutExerciseEntry } from "@/lib/queries/workouts";
@@ -262,7 +262,7 @@ const styles = StyleSheet.create({
   centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
   emptyText: { fontSize: 14, color: Color.textMuted },
   scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
-  title: { fontSize: 22, fontWeight: "700", color: Color.textPrimary },
+  title: { ...headline(28), color: Color.textPrimary },
   date: { fontSize: 13, color: Color.textMuted, marginTop: 2 },
   privateBadge: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 6 },
   privateBadgeText: { fontSize: 11, color: Color.textFaint },

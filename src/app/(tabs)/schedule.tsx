@@ -6,7 +6,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ContinueWorkoutPill } from "@/components/ui/ContinueWorkoutPill";
-import { Color, Radius, Spacing } from "@/constants/theme";
+import { Color, headline, Radius, Spacing } from "@/constants/theme";
 import { ApiError } from "@/lib/auth-context";
 import {
   useBookClass,
@@ -442,9 +442,7 @@ const styles = StyleSheet.create({
   header: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.md },
   headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   heading: {
-    fontSize: 24,
-    fontWeight: "700",
-    fontStyle: "italic",
+    ...headline(34),
     color: Color.textPrimary,
   },
   tabBar: {

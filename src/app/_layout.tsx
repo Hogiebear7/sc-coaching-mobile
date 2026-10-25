@@ -177,6 +177,7 @@ function AuthGate() {
       <Stack.Screen name="readiness" options={{ presentation: "card" }} />
       <Stack.Screen name="weight-trend" options={{ presentation: "card" }} />
       <Stack.Screen name="sleep-trend" options={{ presentation: "card" }} />
+      <Stack.Screen name="onboarding" options={{ presentation: "card", gestureEnabled: false }} />
       <Stack.Screen name="staff-member" options={{ presentation: "card" }} />
       <Stack.Screen name="staff-message-thread" options={{ presentation: "card" }} />
       <Stack.Screen name="staff-program-builder" options={{ presentation: "card" }} />

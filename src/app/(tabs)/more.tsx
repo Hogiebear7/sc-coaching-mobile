@@ -16,6 +16,7 @@ const GROUPS: { title: string; rows: Row[] }[] = [
   {
     title: "Your training",
     rows: [
+      { label: "Set up your plan", icon: "flag-outline", href: "/onboarding" },
       { label: "Recovery", icon: "heart-outline", href: "/(tabs)/recovery" },
       { label: "Nutrition", icon: "nutrition-outline", href: "/(tabs)/nutrition" },
       { label: "Readiness trend", icon: "pulse-outline", href: "/readiness" },

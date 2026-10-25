@@ -1,16 +1,14 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Modal, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useCallback, useEffect, useRef } from "react";
+import { ActivityIndicator, InteractionManager, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { MetricTile, PillButton, RoundIconButton, SectionTitle, TileGrid, WeekStrip } from "@/components/app/primitives";
-import { Button } from "@/components/ui/Button";
 import { ContinueWorkoutPill } from "@/components/ui/ContinueWorkoutPill";
 import { AppRadius, AppSpace, appTitle, figure, Radius, readinessColor, Spacing } from "@/constants/theme";
 import { useAuth } from "@/lib/auth-context";
-import { hasAccess } from "@/lib/member-access";
 import { POST_SIGNUP_SETUP_KEY_PREFIX } from "@/lib/post-signup-setup";
 import { useBodyWeightLogs } from "@/lib/queries/body-weight";
 import { useCommunityHighlight } from "@/lib/queries/community";
@@ -25,73 +23,38 @@ import { makeStyles, useAppTheme, useLegacyColors } from "@/lib/theme";
 // equipment-aware gym profile, an AI-generated first programme) without
 // forcing either during the signup form itself. Gated behind the tour
 // prompt/card so the two one-time modals never stack on a fresh account.
-function PostSignupSetupModal() {
-  const styles = useStyles();
-  const Color = useLegacyColors();
+// A brand-new member lands here straight after signup with a pending
+// flag set (see lib/post-signup-setup.ts). Rather than a modal, they're
+// taken once to the step-by-step "Set up your plan" onboarding. Gated
+// behind the tour prompt/card so the two first-run flows never stack, and
+// it's a single navigation (no modal to close first).
+function PostSignupOnboardingRedirect() {
   const router = useRouter();
   const { user } = useAuth();
-  const { data: profile } = useProfile();
   const { showPrompt: tourShowPrompt, activePage: tourActivePage } = useTour();
-  const [pending, setPending] = useState(false);
+  const handled = useRef(false);
 
+  // Waits until no tour UI is showing, then checks the flag once and, if
+  // set, clears it and navigates.
   useEffect(() => {
-    if (!user) return;
+    if (!user || handled.current || tourShowPrompt || tourActivePage) return;
     let cancelled = false;
+    let handle: { cancel: () => void } | null = null;
     AsyncStorage.getItem(POST_SIGNUP_SETUP_KEY_PREFIX + user.id)
       .then((v) => {
-        if (!cancelled && v) setPending(true);
+        if (cancelled || !v || handled.current) return;
+        handled.current = true;
+        AsyncStorage.removeItem(POST_SIGNUP_SETUP_KEY_PREFIX + user.id).catch(() => {});
+        handle = InteractionManager.runAfterInteractions(() => router.push("/onboarding" as never));
       })
       .catch(() => {});
     return () => {
       cancelled = true;
+      handle?.cancel();
     };
-  }, [user]);
+  }, [user, tourShowPrompt, tourActivePage, router]);
 
-  function dismiss() {
-    setPending(false);
-    if (user) AsyncStorage.removeItem(POST_SIGNUP_SETUP_KEY_PREFIX + user.id).catch(() => {});
-  }
-
-  function choose(path: "/gym-profile-builder" | "/workout-generator" | "/membership") {
-    dismiss();
-    router.push(path as never);
-  }
-
-  const tier = profile?.memberTier ?? "free";
-  const canGymProfile = hasAccess(tier, "gymProfiles");
-  const canGenerate = hasAccess(tier, "workoutGenerate");
-  const visible = pending && !tourShowPrompt && !tourActivePage;
-
-  return (
-    <Modal visible={visible} transparent animationType="fade" statusBarTranslucent>
-      <View style={styles.setupBackdrop}>
-        <View style={styles.setupCard}>
-          <View style={styles.setupIcon}>
-            <Ionicons name="barbell-outline" size={22} color={Color.gold} />
-          </View>
-          <Text style={styles.setupTitle}>Set up your training?</Text>
-          <Text style={styles.setupBody}>
-            Add the equipment you have access to, or generate your first programme now — both take a couple of
-            minutes, and you can just as easily do this later from Workouts.
-          </Text>
-          <Button
-            title={canGymProfile ? "Set up a gym profile" : "Set up a gym profile — Upgrade"}
-            onPress={() => choose(canGymProfile ? "/gym-profile-builder" : "/membership")}
-            style={styles.setupButton}
-          />
-          <Button
-            title={canGenerate ? "Generate a programme" : "Generate a programme — Upgrade"}
-            onPress={() => choose(canGenerate ? "/workout-generator" : "/membership")}
-            variant="secondary"
-            style={styles.setupButton}
-          />
-          <Pressable onPress={dismiss} hitSlop={8} style={styles.setupLaterButton}>
-            <Text style={styles.setupLaterText}>I&apos;ll do this later</Text>
-          </Pressable>
-        </View>
-      </View>
-    </Modal>
-  );
+  return null;
 }
 
 function formatTodayLabel(): string {
@@ -403,7 +366,7 @@ export default function DashboardScreen() {
           </View>
         </View>
       </ScrollView>
-      <PostSignupSetupModal />
+      <PostSignupOnboardingRedirect />
     </SafeAreaView>
   );
 }

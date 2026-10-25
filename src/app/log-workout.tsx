@@ -30,8 +30,8 @@ import { RestTimerBar } from "@/components/ui/RestTimerBar";
 import { SupersetChips } from "@/components/ui/SupersetChips";
 import { TextField } from "@/components/ui/TextField";
 import { TimeWheelPicker } from "@/components/ui/TimeWheelPicker";
-import { figure, Radius, Spacing } from "@/constants/theme";
-import { successFeedback, tapFeedback } from "@/lib/haptics";
+import { figure, Radius, Spacing, type LegacyPalette } from "@/constants/theme";
+import { selectionFeedback, successFeedback, tapFeedback } from "@/lib/haptics";
 import { ApiError } from "@/lib/api-client";
 import { useAdvanceProgram, useMyProgram, type PrescribedExercise } from "@/lib/queries/programs";
 import {
@@ -175,6 +175,70 @@ function checkForLivePb(sessions: WorkoutSessionSummary[] | undefined, row: Exer
 function nextSetType(current: WorkoutSetType): WorkoutSetType {
   const idx = SET_TYPE_OPTIONS.findIndex((opt) => opt.value === current);
   return SET_TYPE_OPTIONS[(idx + 1) % SET_TYPE_OPTIONS.length].value;
+}
+
+// "Last time" for one set, shown beside the inputs (App v2: target next to
+// input, so the member never has to scroll up to remember what they did).
+function formatPreviousSet(prev: { weight: string | null; reps: number | null } | null, mode: ExerciseRow["unitMode"]): string {
+  if (!prev) return "—";
+  const w = prev.weight?.trim() || null;
+  if (mode === "time") return w ?? "—";
+  if (w && prev.reps != null) return `${w.replace(/\s?kg$/i, "")} × ${prev.reps}`;
+  if (w) return w;
+  if (prev.reps != null) return `${prev.reps} reps`;
+  return "—";
+}
+
+// Reps in reserve as a row of coloured dots (red = nothing left, blue =
+// plenty) instead of a free-text number. Stored exactly as before, as the
+// exercise's `rir` string; tapping the selected dot clears it.
+const RIR_OPTIONS = ["0", "1", "2", "3", "4", "5", "6"];
+
+function rirColor(v: string, Color: LegacyPalette): string {
+  const n = Number(v);
+  if (n <= 1) return Color.danger;
+  if (n <= 3) return Color.warning;
+  if (n <= 5) return Color.success;
+  return Color.accentData;
+}
+
+function RirPicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const styles = useStyles();
+  const Color = useLegacyColors();
+  const current = value.trim();
+  return (
+    <View>
+      <View style={styles.rirHead}>
+        <Text style={styles.fieldLabel}>Reps in reserve (optional)</Text>
+        <Text style={styles.rirHint}>{current ? `${current === "6" ? "6+" : current} left in the tank` : "How many more could you do?"}</Text>
+      </View>
+      <View style={styles.rirRow} accessibilityRole="radiogroup">
+        {RIR_OPTIONS.map((o) => {
+          const selected = current === o;
+          const c = rirColor(o, Color);
+          return (
+            <Pressable
+              key={o}
+              onPress={() => {
+                selectionFeedback();
+                onChange(selected ? "" : o);
+              }}
+              style={[styles.rirDot, { borderColor: c }, selected && { backgroundColor: c }]}
+              accessibilityRole="radio"
+              accessibilityState={{ selected }}
+              accessibilityLabel={`${o === "6" ? "6 or more" : o} reps in reserve`}
+            >
+              <Text style={[styles.rirDotText, selected && { color: Color.bg0 }]}>{o === "6" ? "6+" : o}</Text>
+            </Pressable>
+          );
+        })}
+      </View>
+      <View style={styles.rirScale}>
+        <Text style={styles.rirScaleText}>Hardest</Text>
+        <Text style={styles.rirScaleText}>Easiest</Text>
+      </View>
+    </View>
+  );
 }
 
 function newExerciseRow(): ExerciseRow {
@@ -1305,7 +1369,7 @@ export default function LogWorkoutScreen() {
                     }}
                     style={styles.timerReset}
                   >
-                    <Ionicons name="refresh" size={18} color={Color.textSecondary} />
+                    <Ionicons name="refresh" size={20} color={Color.textPrimary} />
                   </Pressable>
                 ) : null}
                 <Pressable
@@ -1318,7 +1382,7 @@ export default function LogWorkoutScreen() {
                 >
                   <Ionicons
                     name={timerRunning ? "pause" : "play"}
-                    size={20}
+                    size={26}
                     color={Color.goldForeground}
                   />
                 </Pressable>
@@ -1594,7 +1658,12 @@ export default function LogWorkoutScreen() {
             >
               <View style={styles.entryHeader}>
                 <View style={styles.entryHeaderTitle}>
-                  <Text style={styles.entryLabel}>Exercise {idx + 1}</Text>
+                  <View style={[styles.indexBadge, allComplete && styles.indexBadgeDone]}>
+                    <Text style={[styles.indexBadgeText, allComplete && { color: Color.bg0 }]}>{idx + 1}</Text>
+                  </View>
+                  <Text style={styles.entryLabel} numberOfLines={1}>
+                    {row.name.trim() || "New exercise"}
+                  </Text>
                   {allComplete ? (
                     <View style={styles.exerciseDoneBadge}>
                       <Ionicons name="checkmark" size={12} color={Color.bg0} />
@@ -1604,9 +1673,12 @@ export default function LogWorkoutScreen() {
                 <View style={styles.entryHeaderActions}>
                   <Pressable
                     onPress={() => router.push({ pathname: "/plate-calculator" })}
-                    hitSlop={8}
+                    hitSlop={4}
+                    style={styles.roundTool}
+                    accessibilityRole="button"
+                    accessibilityLabel="Plate calculator"
                   >
-                    <Ionicons name="barbell-outline" size={16} color={Color.textMuted} />
+                    <Ionicons name="barbell-outline" size={18} color={Color.textPrimary} />
                   </Pressable>
                   <Pressable
                     onPress={() => {
@@ -1616,12 +1688,21 @@ export default function LogWorkoutScreen() {
                       if (!restTimer.isRunning) restTimer.reset(restTimerSeconds, row.name || null);
                       router.push({ pathname: "/rest-timer" });
                     }}
-                    hitSlop={8}
+                    hitSlop={4}
+                    style={styles.roundTool}
+                    accessibilityRole="button"
+                    accessibilityLabel="Rest timer"
                   >
-                    <Ionicons name="timer-outline" size={16} color={Color.textMuted} />
+                    <Ionicons name="timer-outline" size={18} color={Color.textPrimary} />
                   </Pressable>
-                  <Pressable onPress={() => removeRow(row.key)}>
-                    <Text style={styles.removeText}>Remove</Text>
+                  <Pressable
+                    onPress={() => removeRow(row.key)}
+                    hitSlop={4}
+                    style={styles.roundTool}
+                    accessibilityRole="button"
+                    accessibilityLabel="Remove exercise"
+                  >
+                    <Ionicons name="trash-outline" size={18} color={Color.danger} />
                   </Pressable>
                 </View>
               </View>
@@ -1665,25 +1746,26 @@ export default function LogWorkoutScreen() {
               <View style={styles.unitToggleRow}>
                 <Text style={styles.fieldLabel}>{unitModeLabel(row.unitMode)}</Text>
                 <View style={{ flexDirection: "row", gap: 4 }}>
-                  <Pressable onPress={() => updateRow(row.key, { unitMode: "weight" })} style={[styles.unitChip, row.unitMode === "weight" && styles.unitChipActive]}>
+                  <Pressable onPress={() => { selectionFeedback(); updateRow(row.key, { unitMode: "weight" }); }} style={[styles.unitChip, row.unitMode === "weight" && styles.unitChipActive]}>
                     <Text style={[styles.unitChipText, row.unitMode === "weight" && styles.unitChipTextActive]}>kg</Text>
                   </Pressable>
-                  <Pressable onPress={() => updateRow(row.key, { unitMode: "time" })} style={[styles.unitChip, row.unitMode === "time" && styles.unitChipActive]}>
+                  <Pressable onPress={() => { selectionFeedback(); updateRow(row.key, { unitMode: "time" }); }} style={[styles.unitChip, row.unitMode === "time" && styles.unitChipActive]}>
                     <Text style={[styles.unitChipText, row.unitMode === "time" && styles.unitChipTextActive]}>time</Text>
                   </Pressable>
-                  <Pressable onPress={() => updateRow(row.key, { unitMode: "band" })} style={[styles.unitChip, row.unitMode === "band" && styles.unitChipActive]}>
+                  <Pressable onPress={() => { selectionFeedback(); updateRow(row.key, { unitMode: "band" }); }} style={[styles.unitChip, row.unitMode === "band" && styles.unitChipActive]}>
                     <Text style={[styles.unitChipText, row.unitMode === "band" && styles.unitChipTextActive]}>band</Text>
                   </Pressable>
                 </View>
               </View>
 
               <View style={styles.setColumnHeader}>
-                <Text style={[styles.setColumnLabel, { width: 40 }]}>Set</Text>
+                <Text style={[styles.setColumnLabel, { width: 36, textAlign: "center" }]}>Set</Text>
+                <Text style={[styles.setColumnLabel, { width: 66 }]}>Previous</Text>
                 <Text style={[styles.setColumnLabel, { flex: 1 }]}>{unitModeColumnLabel(row.unitMode)}</Text>
                 <Text style={[styles.setColumnLabel, { flex: 1 }]}>
                   {row.unitMode === "time" ? "" : row.perSide ? "Reps (R/L)" : "Reps"}
                 </Text>
-                <View style={{ width: 32 }} />
+                <View style={{ width: 40 }} />
               </View>
 
               {row.setRows.map((set, setIdx) => {
@@ -1691,16 +1773,26 @@ export default function LogWorkoutScreen() {
                 return (
                   <View key={set.key} style={[styles.setRow2, set.completed && styles.setRow2Completed]}>
                     <Pressable
-                      onPress={() => updateSetRow(row.key, set.key, { setType: nextSetType(set.setType) })}
-                      style={{ width: 40 }}
+                      onPress={() => {
+                        selectionFeedback();
+                        updateSetRow(row.key, set.key, { setType: nextSetType(set.setType) });
+                      }}
+                      style={styles.setNumberWrap}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Set ${setIdx + 1}, ${SET_TYPE_OPTIONS.find((o) => o.value === set.setType)?.label ?? "standard"}. Tap to change set type.`}
                     >
-                      <Text style={styles.setNumber}>{setIdx + 1}</Text>
+                      <View style={[styles.setNumberBadge, set.completed && styles.setNumberBadgeDone]}>
+                        <Text style={styles.setNumber}>{setIdx + 1}</Text>
+                      </View>
                       {set.setType !== "standard" ? (
                         <Text style={styles.setTypeTag} numberOfLines={1}>
                           {SET_TYPE_OPTIONS.find((o) => o.value === set.setType)?.label}
                         </Text>
                       ) : null}
                     </Pressable>
+                    <Text style={styles.prevCell} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
+                      {formatPreviousSet(lastSet, row.unitMode)}
+                    </Text>
                     {row.unitMode === "time" ? (
                       // A wheel picker instead of a keyboard — typing "0:45"
                       // on a phone keypad is fiddly; scrolling two columns
@@ -1789,11 +1881,14 @@ export default function LogWorkoutScreen() {
                     )}
                     <Pressable
                       onPress={() => toggleSetComplete(row.key, set.key, !isGrouped || memberIdx === grp.rows.length - 1)}
-                      hitSlop={8}
+                      hitSlop={6}
                       style={styles.setCheckWrap}
+                      accessibilityRole="checkbox"
+                      accessibilityState={{ checked: set.completed }}
+                      accessibilityLabel={`Set ${setIdx + 1} done`}
                     >
                       <View style={[styles.setCheck, set.completed && styles.setCheckDone]}>
-                        {set.completed ? <Ionicons name="checkmark" size={16} color={Color.bg0} /> : null}
+                        {set.completed ? <Ionicons name="checkmark" size={20} color={Color.bg0} /> : null}
                       </View>
                     </Pressable>
                   </View>
@@ -1801,12 +1896,25 @@ export default function LogWorkoutScreen() {
               })}
 
               <View style={styles.setRowActions}>
-                <Pressable onPress={() => addSetRow(row.key)}>
-                  <Text style={styles.linkText}>+ Add set</Text>
+                <Pressable
+                  onPress={() => {
+                    tapFeedback();
+                    addSetRow(row.key);
+                  }}
+                  style={styles.setPill}
+                  accessibilityRole="button"
+                >
+                  <Ionicons name="add" size={18} color={Color.textPrimary} />
+                  <Text style={styles.setPillText}>Add set</Text>
                 </Pressable>
                 {row.setRows.length > 1 ? (
-                  <Pressable onPress={() => removeSetRow(row.key, row.setRows[row.setRows.length - 1].key)}>
-                    <Text style={styles.linkTextMuted}>Remove last set</Text>
+                  <Pressable
+                    onPress={() => removeSetRow(row.key, row.setRows[row.setRows.length - 1].key)}
+                    style={[styles.setPill, styles.setPillQuiet]}
+                    accessibilityRole="button"
+                  >
+                    <Ionicons name="remove" size={18} color={Color.textSecondary} />
+                    <Text style={[styles.setPillText, { color: Color.textSecondary }]}>Remove last</Text>
                   </Pressable>
                 ) : null}
               </View>
@@ -1835,7 +1943,9 @@ export default function LogWorkoutScreen() {
                   onChange={(v) => updateRow(row.key, { supersetGroup: v })}
                 />
 
-                <NumberField label="RIR (opt.)" value={row.rir} onChangeText={(v) => updateRow(row.key, { rir: v })} placeholder="e.g. 2" />
+                <View style={{ marginTop: Spacing.sm, marginBottom: Spacing.sm }}>
+                  <RirPicker value={row.rir} onChange={(v) => updateRow(row.key, { rir: v })} />
+                </View>
 
                 <Pressable
                   onPress={() => updateRow(row.key, { perSide: !row.perSide })}
@@ -1882,12 +1992,21 @@ export default function LogWorkoutScreen() {
                 <View style={styles.entryHeaderActions}>
                   <Pressable
                     onPress={() => router.push({ pathname: "/run-timer", params: { runKey: row.key } })}
-                    hitSlop={8}
+                    hitSlop={4}
+                    style={styles.roundTool}
+                    accessibilityRole="button"
+                    accessibilityLabel="Run timer"
                   >
-                    <Ionicons name="stopwatch-outline" size={16} color={Color.textMuted} />
+                    <Ionicons name="stopwatch-outline" size={18} color={Color.textPrimary} />
                   </Pressable>
-                  <Pressable onPress={() => removeRunRow(row.key)}>
-                    <Text style={styles.removeText}>Remove</Text>
+                  <Pressable
+                    onPress={() => removeRunRow(row.key)}
+                    hitSlop={4}
+                    style={styles.roundTool}
+                    accessibilityRole="button"
+                    accessibilityLabel="Remove run"
+                  >
+                    <Ionicons name="trash-outline" size={18} color={Color.danger} />
                   </Pressable>
                 </View>
               </View>
@@ -1951,11 +2070,13 @@ export default function LogWorkoutScreen() {
           ))}
 
           <View ref={addButtonsRef} style={styles.addButtonsRow}>
-            <Pressable onPress={handleAddExercise} style={styles.addChip}>
-              <Text style={styles.addChipText}>+ Exercise</Text>
+            <Pressable onPress={handleAddExercise} style={styles.addChip} accessibilityRole="button">
+              <Ionicons name="barbell-outline" size={18} color={Color.textPrimary} />
+              <Text style={styles.addChipText}>Add exercise</Text>
             </Pressable>
-            <Pressable onPress={handleAddRun} style={styles.addChip}>
-              <Text style={styles.addChipText}>+ Run</Text>
+            <Pressable onPress={handleAddRun} style={styles.addChip} accessibilityRole="button">
+              <Ionicons name="walk-outline" size={18} color={Color.textPrimary} />
+              <Text style={styles.addChipText}>Add run</Text>
             </Pressable>
           </View>
 
@@ -2041,11 +2162,11 @@ const useStyles = makeLegacyStyles((Color) =>
     multiline: { height: 80, paddingTop: 12, textAlignVertical: "top" },
     sectionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: Spacing.md, marginBottom: Spacing.sm },
     sectionLabel: { fontSize: 15, fontWeight: "600", color: Color.textSecondary },
-    addChip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.sm, paddingVertical: 6 },
-    addChipText: { fontSize: 13, fontWeight: "600", color: Color.textSecondary },
+    addChip: { flexDirection: "row", alignItems: "center", gap: 6, borderRadius: Radius.pill, backgroundColor: Color.surface1, paddingHorizontal: 16, minHeight: 46 },
+    addChipText: { fontSize: 15, fontWeight: "600", color: Color.textPrimary },
     addButtonsRow: { flexDirection: "row", gap: Spacing.sm, marginTop: Spacing.sm, marginBottom: Spacing.md },
     emptyHint: { fontSize: 14, color: Color.textMuted, borderWidth: 1, borderColor: Color.borderSubtle, borderStyle: "dashed", borderRadius: Radius.md, padding: Spacing.md },
-    entryCard: { padding: Spacing.md, marginBottom: Spacing.md },
+    entryCard: { padding: Spacing.md, marginBottom: Spacing.md, borderRadius: 16 },
     // A superset group wraps its member cards in one bordered block with a
     // shared "ST1" label — members render edge-to-edge inside it (no
     // individual margin/radius/border of their own) so it reads as one
@@ -2073,10 +2194,10 @@ const useStyles = makeLegacyStyles((Color) =>
       backgroundColor: "transparent",
     },
     entryCardGroupedDivider: { borderTopWidth: 1, borderTopColor: Color.goldBorder },
-    entryHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: Spacing.sm },
-    entryHeaderTitle: { flexDirection: "row", alignItems: "center", gap: Spacing.xs },
-    entryHeaderActions: { flexDirection: "row", alignItems: "center", gap: Spacing.md },
-    entryLabel: { fontSize: 14, fontWeight: "600", color: Color.textMuted },
+    entryHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: Spacing.md, gap: Spacing.sm },
+    entryHeaderTitle: { flexDirection: "row", alignItems: "center", gap: 10, flex: 1 },
+    entryHeaderActions: { flexDirection: "row", alignItems: "center", gap: 8 },
+    entryLabel: { fontSize: 17, fontWeight: "600", color: Color.textPrimary, flexShrink: 1 },
     exerciseDoneBadge: {
       width: 16,
       height: 16,
@@ -2086,53 +2207,36 @@ const useStyles = makeLegacyStyles((Color) =>
       justifyContent: "center",
     },
     removeText: { fontSize: 14, color: Color.danger },
-    lastTimeText: { fontSize: 13, color: Color.textMuted, marginTop: 4 },
+    lastTimeText: { fontSize: 14, color: Color.textMuted, marginTop: 2 },
     lastTimeValue: { color: Color.textSecondary, fontWeight: "600" },
     demoLink: { flexDirection: "row", alignItems: "center", gap: 4, alignSelf: "flex-start" },
-    demoLinkText: { fontSize: 14, fontWeight: "600", color: Color.gold },
+    demoLinkText: { fontSize: 14, fontWeight: "600", color: Color.textPrimary, textDecorationLine: "underline" },
     exerciseInfoRow: {
       flexDirection: "row",
-      alignItems: "flex-start",
+      alignItems: "center",
       gap: Spacing.sm,
       marginTop: Spacing.sm,
       padding: Spacing.sm,
       borderRadius: Radius.md,
-      backgroundColor: Color.overlayFaint,
+      backgroundColor: Color.surface2,
     },
-    exerciseThumb: { width: 40, height: 40, borderRadius: Radius.md, backgroundColor: Color.surface2 },
+    exerciseThumb: { width: 52, height: 52, borderRadius: Radius.md, backgroundColor: Color.surface3 },
     exerciseInfoText: { flex: 1, gap: 4 },
     timerCard: {
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
-      borderRadius: Radius.lg,
-      borderWidth: 1,
-      borderColor: Color.goldBorder,
-      backgroundColor: Color.goldWeak,
+      borderRadius: 16,
+      backgroundColor: Color.surface1,
       paddingHorizontal: Spacing.lg,
       paddingVertical: Spacing.md,
-      marginTop: Spacing.md,
+      marginTop: Spacing.sm,
       marginBottom: Spacing.lg,
     },
-    timerLabel: { fontSize: 15, fontWeight: "600", color: Color.textSecondary },
-    timerClock: { ...figure(30, "700"), color: Color.gold, marginTop: 2 },
-    timerToggle: {
-      width: 40,
-      height: 40,
-      borderRadius: 20,
-      alignItems: "center",
-      justifyContent: "center",
-      backgroundColor: Color.gold,
-    },
-    timerReset: {
-      width: 40,
-      height: 40,
-      borderRadius: 20,
-      alignItems: "center",
-      justifyContent: "center",
-      borderWidth: 1,
-      borderColor: Color.borderSubtle,
-    },
+    timerLabel: { fontSize: 15, color: Color.textSecondary },
+    timerClock: { fontSize: 40, fontWeight: "500", color: Color.textPrimary, fontVariant: ["tabular-nums"], marginTop: 2 },
+    timerToggle: { width: 56, height: 56, borderRadius: 28, alignItems: "center", justifyContent: "center", backgroundColor: Color.gold },
+    timerReset: { width: 56, height: 56, borderRadius: 28, alignItems: "center", justifyContent: "center", backgroundColor: Color.surface3 },
     fieldLabel: { fontSize: 14, fontWeight: "500", color: Color.textSecondary, marginBottom: 4 },
     gridRow: { flexDirection: "row", gap: Spacing.sm, marginTop: Spacing.sm },
     numberField: { flex: 1 },
@@ -2147,13 +2251,13 @@ const useStyles = makeLegacyStyles((Color) =>
       color: Color.textPrimary,
     },
     unitToggleRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 4 },
-    unitChip: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
-    unitChipActive: { backgroundColor: Color.goldWeak },
-    unitChipText: { fontSize: 12, fontWeight: "700", color: Color.textMuted },
-    unitChipTextActive: { color: Color.gold },
+    unitChip: { paddingHorizontal: 12, minHeight: 32, justifyContent: "center", borderRadius: Radius.pill, backgroundColor: Color.surface2 },
+    unitChipActive: { backgroundColor: Color.gold },
+    unitChipText: { fontSize: 14, fontWeight: "600", color: Color.textSecondary },
+    unitChipTextActive: { color: Color.goldForeground },
     startTimerButton: {
-      height: 40,
-      borderRadius: Radius.md,
+      height: 46,
+      borderRadius: Radius.pill,
       backgroundColor: Color.gold,
       flexDirection: "row",
       alignItems: "center",
@@ -2163,32 +2267,26 @@ const useStyles = makeLegacyStyles((Color) =>
     startTimerButtonText: { fontSize: 14, fontWeight: "700", color: Color.goldForeground },
     linkText: { fontSize: 14, fontWeight: "600", color: Color.gold, marginTop: Spacing.sm },
     linkTextMuted: { fontSize: 14, color: Color.textMuted, marginTop: 4 },
-    setColumnHeader: { flexDirection: "row", alignItems: "center", gap: Spacing.xs, marginTop: Spacing.md, paddingHorizontal: 2 },
-    setColumnLabel: { fontSize: 15, fontWeight: "600", color: Color.textSecondary },
-    setRow2: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: Spacing.xs,
-      marginTop: Spacing.xs,
-      padding: 4,
-      borderRadius: Radius.md,
-    },
+    setColumnHeader: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: Spacing.md, marginBottom: 2 },
+    setColumnLabel: { fontSize: 13, fontWeight: "500", color: Color.textMuted },
+    setRow2: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 6, paddingVertical: 4, borderRadius: Radius.md },
     setRow2Completed: { backgroundColor: Color.successWeak },
-    setNumber: { fontSize: 13, fontWeight: "700", color: Color.textPrimary, textAlign: "center" },
-    setTypeTag: { fontSize: 7, fontWeight: "700", color: Color.gold, textAlign: "center", textTransform: "uppercase" },
+    setNumber: { fontSize: 15, fontWeight: "600", color: Color.textPrimary, textAlign: "center", fontVariant: ["tabular-nums"] },
+    setTypeTag: { fontSize: 10, fontWeight: "700", color: Color.textSecondary, textAlign: "center", marginTop: 2 },
     setInput: {
-      height: 40,
+      height: 46,
       borderRadius: Radius.md,
-      borderWidth: 1,
-      borderColor: Color.borderSubtle,
-      backgroundColor: Color.surface1,
+      backgroundColor: Color.surface2,
       paddingHorizontal: Spacing.sm,
-      fontSize: 14,
+      fontSize: 17,
+      fontWeight: "500",
       color: Color.textPrimary,
+      textAlign: "center",
+      fontVariant: ["tabular-nums"],
     },
-    setInputCompleted: { borderColor: Color.successWeak, color: Color.textSecondary },
-    timePickerValue: { fontSize: 14, color: Color.textPrimary },
-    timePickerPlaceholder: { fontSize: 14, color: Color.textFaint },
+    setInputCompleted: { backgroundColor: "transparent", color: Color.textPrimary },
+    timePickerValue: { fontSize: 17, fontWeight: "500", color: Color.textPrimary, textAlign: "center" },
+    timePickerPlaceholder: { fontSize: 17, color: Color.textFaint, textAlign: "center" },
     timePickerCard: {
       width: "100%",
       maxWidth: 360,
@@ -2200,18 +2298,18 @@ const useStyles = makeLegacyStyles((Color) =>
       alignItems: "center",
     },
     timePickerTitle: { fontSize: 15, fontWeight: "700", color: Color.textPrimary, marginBottom: Spacing.md },
-    setCheckWrap: { width: 32, alignItems: "center", justifyContent: "center" },
+    setCheckWrap: { width: 40, alignItems: "center", justifyContent: "center" },
     setCheck: {
-      width: 26,
-      height: 26,
-      borderRadius: 13,
-      borderWidth: 1.5,
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      borderWidth: 2,
       borderColor: Color.borderDefault,
       alignItems: "center",
       justifyContent: "center",
     },
     setCheckDone: { backgroundColor: Color.success, borderColor: Color.success },
-    setRowActions: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: Spacing.sm },
+    setRowActions: { flexDirection: "row", gap: Spacing.sm, alignItems: "center", marginTop: Spacing.md },
     moreOptions: { marginTop: Spacing.md, paddingTop: Spacing.sm, borderTopWidth: 1, borderTopColor: Color.borderSubtle },
     supersetRow: { flexDirection: "row", alignItems: "center", gap: Spacing.xs, marginBottom: Spacing.sm },
     supersetText: { fontSize: 14, color: Color.textMuted },
@@ -2222,12 +2320,12 @@ const useStyles = makeLegacyStyles((Color) =>
     splitsText: { fontSize: 13, color: Color.textSecondary, marginTop: Spacing.xs },
     error: { fontSize: 14, color: Color.danger, marginTop: Spacing.md },
     formatRow: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.xs },
-    formatChip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.sm, paddingVertical: 8 },
-    formatChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
-    formatChipText: { fontSize: 14, fontWeight: "600", color: Color.textMuted },
-    formatChipTextActive: { color: Color.gold },
+    formatChip: { borderRadius: Radius.pill, backgroundColor: Color.surface1, paddingHorizontal: 16, minHeight: 40, justifyContent: "center" },
+    formatChipActive: { backgroundColor: Color.gold },
+    formatChipText: { fontSize: 15, fontWeight: "600", color: Color.textSecondary },
+    formatChipTextActive: { color: Color.goldForeground },
     formatHint: { fontSize: 14, color: Color.textMuted, marginTop: Spacing.sm, lineHeight: 17 },
-    formatDescription: { fontSize: 14, color: Color.textFaint, marginTop: Spacing.sm, lineHeight: 17, fontStyle: "italic" },
+    formatDescription: { fontSize: 14, color: Color.textMuted, marginTop: Spacing.sm, lineHeight: 20 },
     formatFieldsRow: { flexDirection: "row", gap: Spacing.sm, marginTop: Spacing.sm },
     formatResultText: {
       fontSize: 14,
@@ -2314,6 +2412,24 @@ const useStyles = makeLegacyStyles((Color) =>
       paddingVertical: 6,
     },
     movementChipText: { fontSize: 13, color: Color.textSecondary, fontWeight: "500" },
+    indexBadge: { width: 30, height: 30, borderRadius: 15, backgroundColor: Color.surface2, alignItems: "center", justifyContent: "center" },
+    indexBadgeDone: { backgroundColor: Color.success },
+    indexBadgeText: { fontSize: 14, fontWeight: "700", color: Color.textPrimary },
+    roundTool: { width: 40, height: 40, borderRadius: 20, backgroundColor: Color.surface2, alignItems: "center", justifyContent: "center" },
+    setNumberWrap: { width: 36, alignItems: "center" },
+    setNumberBadge: { width: 32, height: 32, borderRadius: 16, backgroundColor: Color.surface2, alignItems: "center", justifyContent: "center" },
+    setNumberBadgeDone: { backgroundColor: "transparent" },
+    prevCell: { width: 66, fontSize: 14, color: Color.textMuted, fontVariant: ["tabular-nums"] },
+    setPill: { flexDirection: "row", alignItems: "center", gap: 4, minHeight: 40, paddingHorizontal: 14, borderRadius: Radius.pill, backgroundColor: Color.surface2 },
+    setPillQuiet: { backgroundColor: "transparent" },
+    setPillText: { fontSize: 15, fontWeight: "600", color: Color.textPrimary },
+    rirHead: { flexDirection: "row", alignItems: "baseline", justifyContent: "space-between", gap: 8, flexWrap: "wrap" },
+    rirHint: { fontSize: 13, color: Color.textMuted },
+    rirRow: { flexDirection: "row", justifyContent: "space-between", marginTop: 6 },
+    rirDot: { width: 38, height: 38, borderRadius: 19, borderWidth: 2, alignItems: "center", justifyContent: "center" },
+    rirDotText: { fontSize: 14, fontWeight: "700", color: Color.textPrimary },
+    rirScale: { flexDirection: "row", justifyContent: "space-between", marginTop: 4 },
+    rirScaleText: { fontSize: 12, color: Color.textMuted },
   })
 );
 

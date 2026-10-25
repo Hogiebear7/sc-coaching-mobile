@@ -207,7 +207,7 @@ export default function SessionDetailScreen() {
                       <View style={styles.exerciseHead}>
                         <View style={styles.exerciseIcon}>
                           {section ? (
-                            <MuscleMap section={section} size={22} />
+                            <MuscleMap section={section} size={34} />
                           ) : (
                             <Text style={styles.exerciseIndex}>{idx + 1}</Text>
                           )}
@@ -305,7 +305,7 @@ const useStyles = makeLegacyStyles((Color) =>
     exerciseList: { gap: Spacing.sm },
     exerciseCard: { backgroundColor: Color.surface1, borderRadius: Radius.lg, padding: Spacing.md },
     exerciseHead: { flexDirection: "row", alignItems: "center", gap: 12 },
-    exerciseIcon: { width: 44, height: 44, borderRadius: 22, backgroundColor: Color.surface2, alignItems: "center", justifyContent: "center" },
+    exerciseIcon: { width: 44, height: 44, borderRadius: 22, backgroundColor: Color.bg0, alignItems: "center", justifyContent: "center" },
     exerciseIndex: { fontSize: 16, fontWeight: "600", color: Color.textSecondary, fontVariant: ["tabular-nums"] },
     exerciseName: { fontSize: 17, fontWeight: "600", color: Color.textPrimary },
     exerciseMetaRow: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 6, marginTop: 3 },

@@ -36,6 +36,9 @@ describe("groupSetLabels", () => {
       { from: 4, to: 4, label: "40 kg × 12" },
     ]);
   });
+  it("treats a set typed without kg as the same set", () => {
+    expect(groupSetLabels(["55 kg×10", "55×10", "55×10", "55×10"])).toEqual([{ from: 1, to: 4, label: "55 kg × 10" }]);
+  });
   it("handles no sets", () => {
     expect(groupSetLabels([])).toEqual([]);
   });

@@ -34,7 +34,7 @@ export function ExercisePreviewList({
         return (
           <View key={`ex-${i}`} style={styles.row}>
             <View style={styles.icon}>
-              {section ? <MuscleMap section={section} size={16} /> : <Ionicons name="barbell-outline" size={16} color={Color.textMuted} />}
+              {section ? <MuscleMap section={section} size={28} /> : <Ionicons name="barbell-outline" size={16} color={Color.textMuted} />}
             </View>
             <View style={styles.text}>
               <Text style={styles.name} numberOfLines={1}>
@@ -73,7 +73,7 @@ const useStyles = makeLegacyStyles((Color) =>
   StyleSheet.create({
     list: { gap: 10 },
     row: { flexDirection: "row", alignItems: "center", gap: 12 },
-    icon: { width: 36, height: 36, borderRadius: 18, backgroundColor: Color.surface2, alignItems: "center", justifyContent: "center" },
+    icon: { width: 36, height: 36, borderRadius: 18, backgroundColor: Color.bg0, alignItems: "center", justifyContent: "center" },
     text: { flex: 1 },
     name: { fontSize: 15, fontWeight: "500", color: Color.textPrimary },
     summary: { fontSize: 14, color: Color.textMuted, marginTop: 1, fontVariant: ["tabular-nums"] },

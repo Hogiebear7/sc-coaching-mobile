@@ -155,12 +155,17 @@ export interface SetLabelGroup {
 
 // Runs of identical consecutive sets collapse into one row ("Sets 1–4"),
 // so four straight sets of 15 kg × 20 read as one line instead of four.
+// "55 kg × 10" and "55 × 10" count as the same set — members often type
+// the unit on the first set only; the first spelling is the one shown.
+const unitless = (label: string) => label.replace(/\s*kg(?![a-z])/gi, "");
+const sameSet = (a: string, b: string) => unitless(a) === unitless(b);
+
 export function groupSetLabels(labels: string[]): SetLabelGroup[] {
   const groups: SetLabelGroup[] = [];
   labels.forEach((raw, i) => {
     const label = prettySetLabel(raw);
     const last = groups[groups.length - 1];
-    if (last && last.label === label) last.to = i + 1;
+    if (last && sameSet(last.label, label)) last.to = i + 1;
     else groups.push({ from: i + 1, to: i + 1, label });
   });
   return groups;

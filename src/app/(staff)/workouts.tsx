@@ -5,7 +5,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { Radius, Spacing } from "@/constants/theme";
+import { Radius, Spacing, headline } from "@/constants/theme";
 import { useStaffClassCategories, useStaffWorkoutTemplates, type StaffWorkoutTemplate } from "@/lib/queries/staff";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
@@ -58,8 +58,14 @@ export default function StaffWorkoutsScreen() {
     <SafeAreaView style={styles.safe} edges={["top"]}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Workouts</Text>
-        <Pressable onPress={() => router.push("/staff-workout-template-builder")} hitSlop={12} style={styles.addButton}>
-          <Ionicons name="add" size={22} color={Color.gold} />
+        <Pressable
+          onPress={() => router.push("/staff-workout-template-builder")}
+          hitSlop={4}
+          style={styles.addButton}
+          accessibilityRole="button"
+          accessibilityLabel="New workout template"
+        >
+          <Ionicons name="add" size={24} color={Color.textPrimary} />
         </Pressable>
       </View>
 
@@ -113,15 +119,9 @@ export default function StaffWorkoutsScreen() {
 const useStyles = makeLegacyStyles((Color) =>
   StyleSheet.create({
     safe: { flex: 1, backgroundColor: Color.bg0 },
-    header: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
-      paddingHorizontal: Spacing.lg,
-      paddingVertical: Spacing.md,
-    },
-    headerTitle: { fontSize: 20, fontWeight: "600", color: Color.textPrimary, flexShrink: 1, textAlign: "center" },
-    addButton: { padding: 4 },
+    header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: Spacing.lg, paddingTop: Spacing.md, paddingBottom: Spacing.md },
+    headerTitle: { ...headline(34), letterSpacing: 0.68, color: Color.textPrimary, flexShrink: 1 },
+    addButton: { width: 44, height: 44, borderRadius: 22, backgroundColor: Color.surface2, alignItems: "center", justifyContent: "center" },
     centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl, gap: Spacing.xs },
     errorText: { color: Color.textMuted, fontSize: 14, textAlign: "center" },
     scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },

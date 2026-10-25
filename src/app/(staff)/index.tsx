@@ -16,7 +16,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { BrandMark } from "@/components/ui/BrandMark";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { Radius, Spacing } from "@/constants/theme";
+import { Radius, Spacing, headline } from "@/constants/theme";
 import { useAuth } from "@/lib/auth-context";
 import { successFeedback, tapFeedback } from "@/lib/haptics";
 import { useProvisionMemberProfile } from "@/lib/queries/profile";
@@ -356,18 +356,25 @@ export default function StaffOperationsScreen() {
           <Text style={styles.headerTitle}>Classes</Text>
         </View>
         <View style={styles.headerActions}>
-          <Pressable onPress={() => router.push("/class-editor")} hitSlop={12}>
-            <Ionicons name="add-circle-outline" size={22} color={Color.textMuted} />
+          <Pressable onPress={() => router.push("/class-editor")} hitSlop={4} style={styles.roundBtn} accessibilityRole="button" accessibilityLabel="Add a class">
+            <Ionicons name="add" size={24} color={Color.textPrimary} />
           </Pressable>
-          <Pressable onPress={handleSwitchToMemberView} hitSlop={12} disabled={provisionMemberProfile.isPending}>
+          <Pressable
+            onPress={handleSwitchToMemberView}
+            hitSlop={4}
+            disabled={provisionMemberProfile.isPending}
+            style={styles.roundBtn}
+            accessibilityRole="button"
+            accessibilityLabel="Switch to member view"
+          >
             {provisionMemberProfile.isPending ? (
-              <ActivityIndicator size="small" color={Color.textMuted} />
+              <ActivityIndicator size="small" color={Color.textPrimary} />
             ) : (
-              <Ionicons name="swap-horizontal-outline" size={22} color={Color.textMuted} />
+              <Ionicons name="swap-horizontal" size={22} color={Color.textPrimary} />
             )}
           </Pressable>
-          <Pressable onPress={() => confirmLogout(logout)} hitSlop={12}>
-            <Ionicons name="log-out-outline" size={22} color={Color.textMuted} />
+          <Pressable onPress={() => confirmLogout(logout)} hitSlop={4} style={styles.roundBtn} accessibilityRole="button" accessibilityLabel="Sign out">
+            <Ionicons name="log-out-outline" size={22} color={Color.textPrimary} />
           </Pressable>
         </View>
       </View>
@@ -436,35 +443,20 @@ export default function StaffOperationsScreen() {
 const useStyles = makeLegacyStyles((Color) =>
   StyleSheet.create({
     safe: { flex: 1, backgroundColor: Color.bg0 },
-    header: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
-      paddingHorizontal: Spacing.lg,
-      paddingVertical: Spacing.md,
-    },
+    header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: Spacing.lg, paddingTop: Spacing.md, paddingBottom: Spacing.md },
     headerLeft: { flexDirection: "row", alignItems: "center" },
     headerLogo: { marginRight: Spacing.sm },
-    headerActions: { flexDirection: "row", alignItems: "center", gap: Spacing.md },
-    headerTitle: { fontSize: 20, fontWeight: "600", color: Color.textPrimary, flexShrink: 1, textAlign: "center" },
+    headerActions: { flexDirection: "row", alignItems: "center", gap: 8 },
+    roundBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: Color.surface2, alignItems: "center", justifyContent: "center" },
+    headerTitle: { ...headline(34), letterSpacing: 0.68, color: Color.textPrimary, flexShrink: 1 },
     centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
     errorText: { color: Color.textMuted, fontSize: 14, textAlign: "center" },
     scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
-    viewToggle: {
-      flexDirection: "row",
-      gap: 4,
-      marginHorizontal: Spacing.lg,
-      marginBottom: Spacing.sm,
-      padding: 4,
-      borderRadius: Radius.md,
-      borderWidth: 1,
-      borderColor: "transparent",
-      backgroundColor: Color.surface2,
-    },
-    viewToggleButton: { flex: 1, paddingVertical: Spacing.sm, borderRadius: Radius.sm, alignItems: "center" },
-    viewToggleButtonActive: { backgroundColor: Color.surface2 },
-    viewToggleText: { fontSize: 14, fontWeight: "600", color: Color.textMuted },
-    viewToggleTextActive: { color: Color.textPrimary },
+    viewToggle: { flexDirection: "row", gap: 2, marginHorizontal: Spacing.lg, marginBottom: Spacing.md, padding: 3, borderRadius: Radius.pill, backgroundColor: Color.surface2 },
+    viewToggleButton: { flex: 1, minHeight: 38, borderRadius: Radius.pill, alignItems: "center", justifyContent: "center" },
+    viewToggleButtonActive: { backgroundColor: Color.gold },
+    viewToggleText: { fontSize: 14, fontWeight: "600", color: Color.textSecondary },
+    viewToggleTextActive: { color: Color.goldForeground },
     calendarCard: { padding: Spacing.md },
     calHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: Spacing.md },
     calNavButton: {

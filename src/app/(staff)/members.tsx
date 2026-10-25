@@ -14,7 +14,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
-import { Radius, Spacing } from "@/constants/theme";
+import { Radius, Spacing, headline } from "@/constants/theme";
 import { useStaffMembers, type StaffMemberSummary } from "@/lib/queries/staff";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
@@ -136,8 +136,8 @@ export default function StaffMembersScreen() {
 const useStyles = makeLegacyStyles((Color) =>
   StyleSheet.create({
     safe: { flex: 1, backgroundColor: Color.bg0 },
-    header: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.md, paddingBottom: Spacing.sm },
-    headerTitle: { fontSize: 20, fontWeight: "600", color: Color.textPrimary, flexShrink: 1, textAlign: "center" },
+    header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: Spacing.lg, paddingTop: Spacing.md, paddingBottom: Spacing.md },
+    headerTitle: { ...headline(34), letterSpacing: 0.68, color: Color.textPrimary, flexShrink: 1 },
     searchRow: {
       flexDirection: "row",
       alignItems: "center",

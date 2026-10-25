@@ -1,18 +1,18 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { SectionTitle } from "@/components/app/primitives";
 import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
-import { StatCard } from "@/components/ui/StatCard";
 import { UpsellCard } from "@/components/ui/Upsell";
-import { headline, Radius, Spacing } from "@/constants/theme";
+import { AppRadius, AppSpace, appTitle } from "@/constants/theme";
+import { celebrateFeedback } from "@/lib/haptics";
 import { hasAccess } from "@/lib/member-access";
 import { useMemberTier } from "@/lib/queries/profile";
+import { makeStyles, useAppTheme } from "@/lib/theme";
 import { takePendingWorkoutSummary } from "@/lib/workout-summary-handoff";
-import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 // Built entirely from the payload the logging screen just submitted, plus
 // the personalBests it already had in memory — no server round-trip, no
@@ -32,149 +32,175 @@ export interface WorkoutSummaryData {
 
 export default function WorkoutSummaryScreen() {
   const styles = useStyles();
-  const Color = useLegacyColors();
+  const { colors, data: dc } = useAppTheme();
   const router = useRouter();
   const tier = useMemberTier();
   // Lazy initializer so this read-once handoff is only taken on the first
   // render of this screen instance, not on every re-render.
   const [summary] = useState<WorkoutSummaryData | null>(() => takePendingWorkoutSummary());
+  const pbs = summary ? summary.exercises.filter((ex) => ex.isPb) : [];
+
+  // The logger already gave a success buzz on save; only a PB earns a
+  // second, heavier one here.
+  useEffect(() => {
+    if (summary && pbs.length > 0) celebrateFeedback();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   if (!summary) {
     return (
       <SafeAreaView style={styles.safe} edges={["top"]}>
         <View style={styles.emptyWrap}>
           <Text style={styles.emptyText}>Workout logged.</Text>
-          <Button title="Done" onPress={() => router.replace("/workouts")} style={{ marginTop: Spacing.lg }} />
+          <Button title="Done" onPress={() => router.replace("/workouts")} style={{ marginTop: 20 }} />
         </View>
       </SafeAreaView>
     );
   }
 
-  const pbCount = summary.exercises.filter((ex) => ex.isPb).length;
-
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
       <ScrollView contentContainerStyle={styles.scroll}>
-        <View style={styles.heroWrap}>
+        <View style={styles.hero}>
           <View style={styles.heroBadge}>
-            <Ionicons name="checkmark" size={32} color={Color.bg0} />
+            <Ionicons name="checkmark" size={34} color={colors.onPrimary} />
           </View>
-          <Text style={styles.heroTitle}>Workout Complete</Text>
+          <Text style={appTitle(32, colors.text)}>Workout complete</Text>
           <Text style={styles.heroSubtitle}>
             {summary.title || "Workout"} · {summary.date}
           </Text>
-          {pbCount > 0 ? (
-            <View style={styles.pbPill}>
-              <Ionicons name="trophy" size={12} color={Color.gold} />
-              <Text style={styles.pbPillText}>
-                {pbCount} new personal {pbCount === 1 ? "best" : "bests"}
-              </Text>
-            </View>
-          ) : null}
         </View>
 
-        <View style={styles.statsGrid}>
-          <View style={styles.statsRow}>
-            <StatCard label="Duration" value={summary.durationLabel} />
-            <StatCard label="Volume" value={summary.totalVolume > 0 ? `${summary.totalVolume.toLocaleString()} kg` : "—"} />
+        {pbs.length > 0 ? (
+          <View style={styles.section}>
+            <SectionTitle title={pbs.length === 1 ? "New personal best" : `${pbs.length} new personal bests`} />
+            <View style={styles.pbGrid}>
+              {pbs.map((ex, i) => (
+                <View key={`${ex.name}-${i}`} style={styles.pbCard} accessible accessibilityLabel={`New personal best: ${ex.name}, ${ex.summary}`}>
+                  <View style={styles.pbHead}>
+                    <Ionicons name="trophy" size={22} color={colors.brand} />
+                    <Text style={styles.pbNew}>New</Text>
+                  </View>
+                  <Text style={styles.pbName} numberOfLines={2}>
+                    {ex.name}
+                  </Text>
+                  <Text style={styles.pbDetail} numberOfLines={2}>
+                    {ex.summary || "Personal best"}
+                  </Text>
+                </View>
+              ))}
+            </View>
           </View>
-          <View style={styles.statsRow}>
-            <StatCard label="Sets" value={`${summary.completedSets}/${summary.totalSets}`} />
-            <StatCard label="Exercises" value={`${summary.completedExercises}/${summary.totalExercises}`} />
+        ) : null}
+
+        <View style={styles.section}>
+          <SectionTitle title="Session" />
+          <View style={styles.statGrid}>
+            <Stat label="Duration" value={summary.durationLabel} color={dc.sessions} />
+            <Stat label="Volume" value={summary.totalVolume > 0 ? `${summary.totalVolume.toLocaleString()} kg` : "—"} color={dc.weight} />
+            <Stat label="Sets" value={`${summary.completedSets}/${summary.totalSets}`} color={dc.load} />
+            <Stat label="Exercises" value={`${summary.completedExercises}/${summary.totalExercises}`} color={dc.readinessHigh} />
           </View>
         </View>
 
         {summary.exercises.length > 0 ? (
-          <>
-            <Text style={styles.sectionLabel}>Exercises</Text>
-            <Card style={styles.exerciseList}>
+          <View style={styles.section}>
+            <SectionTitle title="Exercises" />
+            <View style={styles.list}>
               {summary.exercises.map((ex, idx) => (
-                <View key={`${ex.name}-${idx}`} style={[styles.exerciseRow, idx > 0 && styles.exerciseRowDivider]}>
+                <View key={`${ex.name}-${idx}`} style={[styles.row, idx > 0 && styles.rowDivider]}>
                   <View style={{ flex: 1 }}>
-                    <View style={styles.exerciseNameRow}>
-                      <Text style={styles.exerciseName}>{ex.name}</Text>
+                    <View style={styles.nameRow}>
+                      <Text style={styles.rowTitle}>{ex.name}</Text>
                       {ex.isPb ? (
-                        <View style={styles.pbBadge}>
-                          <Text style={styles.pbBadgeText}>PB</Text>
+                        <View style={styles.pbTag}>
+                          <Text style={styles.pbTagText}>PB</Text>
                         </View>
                       ) : null}
                     </View>
-                    <Text style={styles.exerciseSummary}>{ex.summary || "—"}</Text>
+                    <Text style={styles.rowSub}>{ex.summary || "—"}</Text>
                   </View>
-                  <Text style={styles.exerciseSets}>
-                    {ex.setsCompleted}/{ex.setsLogged} sets
+                  <Text style={styles.rowValue}>
+                    {ex.setsCompleted}/{ex.setsLogged}
+                    <Text style={styles.rowUnit}> sets</Text>
                   </Text>
                 </View>
               ))}
-            </Card>
-          </>
+            </View>
+          </View>
         ) : null}
 
         {hasAccess(tier, "workoutReview") ? (
-          <Button
-            title="View your session review"
-            onPress={() => router.push({ pathname: "/workout-review", params: { id: summary.id } })}
-            style={{ marginTop: Spacing.xl }}
-          />
+          <Button title="View your session review" onPress={() => router.push({ pathname: "/workout-review", params: { id: summary.id } })} />
         ) : (
-          <View style={{ marginTop: Spacing.xl }}>
-            <UpsellCard icon="analytics-outline" title="Session review" body="Available on App Subscription and above" />
-          </View>
+          <UpsellCard icon="analytics-outline" title="Session review" body="Available on App Subscription and above" />
         )}
-        <Button title="Done" variant="secondary" onPress={() => router.replace("/workouts")} style={{ marginTop: Spacing.sm }} />
-        <Button
-          title="View full history"
-          variant="secondary"
-          onPress={() => router.push("/workout-history")}
-          style={{ marginTop: Spacing.sm }}
-        />
+        <Button title="Done" variant="secondary" onPress={() => router.replace("/workouts")} style={{ marginTop: 10 }} />
+        <Button title="View full history" variant="secondary" onPress={() => router.push("/workout-history")} style={{ marginTop: 10 }} />
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-const useStyles = makeLegacyStyles((Color) =>
+function Stat({ label, value, color }: { label: string; value: string; color: string }) {
+  const styles = useStyles();
+  return (
+    <View style={styles.stat} accessible accessibilityLabel={`${label}: ${value}`}>
+      <View style={[styles.statDot, { backgroundColor: color }]} />
+      <Text style={styles.statValue} numberOfLines={1} adjustsFontSizeToFit>
+        {value}
+      </Text>
+      <Text style={styles.statLabel}>{label}</Text>
+    </View>
+  );
+}
+
+const useStyles = makeStyles((c) =>
   StyleSheet.create({
-    safe: { flex: 1, backgroundColor: Color.bg0 },
-    scroll: { padding: Spacing.lg, paddingBottom: Spacing.xxl },
-    emptyWrap: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
-    emptyText: { fontSize: 15, color: Color.textSecondary },
-    heroWrap: { alignItems: "center", paddingVertical: Spacing.xl },
+    safe: { flex: 1, backgroundColor: c.bg },
+    scroll: { paddingHorizontal: AppSpace.gutter, paddingBottom: 48 },
+    emptyWrap: { flex: 1, alignItems: "center", justifyContent: "center", padding: 24 },
+    emptyText: { fontSize: 17, color: c.textSecondary },
+    hero: { alignItems: "center", paddingTop: 32, paddingBottom: 24 },
     heroBadge: {
-      width: 64,
-      height: 64,
-      borderRadius: 32,
-      backgroundColor: Color.success,
+      width: 72,
+      height: 72,
+      borderRadius: 36,
+      backgroundColor: c.success,
       alignItems: "center",
       justifyContent: "center",
-      marginBottom: Spacing.md,
+      marginBottom: 16,
     },
-    heroTitle: { ...headline(28), color: Color.textPrimary },
-    heroSubtitle: { fontSize: 13, color: Color.textMuted, marginTop: 4 },
-    pbPill: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 6,
-      borderRadius: Radius.pill,
-      borderWidth: 1,
-      borderColor: Color.goldBorder,
-      backgroundColor: Color.goldWeak,
-      paddingHorizontal: Spacing.md,
-      paddingVertical: 6,
-      marginTop: Spacing.md,
+    heroSubtitle: { fontSize: 16, color: c.textSecondary, marginTop: 6, textAlign: "center" },
+    section: { marginBottom: AppSpace.section },
+    pbGrid: { flexDirection: "row", flexWrap: "wrap", gap: AppSpace.gap },
+    pbCard: {
+      width: "48.6%",
+      backgroundColor: c.surface,
+      borderRadius: AppRadius.card,
+      borderWidth: 1.5,
+      borderColor: c.brand,
+      padding: 14,
+      minHeight: 128,
     },
-    pbPillText: { fontSize: 14, fontWeight: "700", color: Color.gold },
-    statsGrid: { gap: Spacing.sm, marginTop: Spacing.md },
-    statsRow: { flexDirection: "row", gap: Spacing.sm },
-    sectionLabel: { fontSize: 15, fontWeight: "600", color: Color.textSecondary, marginTop: Spacing.xl, marginBottom: Spacing.sm },
-    exerciseList: { padding: 0, overflow: "hidden" },
-    exerciseRow: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", padding: Spacing.md, gap: Spacing.sm },
-    exerciseRowDivider: { borderTopWidth: 1, borderTopColor: Color.borderSubtle },
-    exerciseNameRow: { flexDirection: "row", alignItems: "center", gap: Spacing.xs },
-    exerciseName: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
-    exerciseSummary: { fontSize: 14, color: Color.textMuted, marginTop: 2 },
-    exerciseSets: { fontSize: 13, color: Color.textFaint, marginTop: 2 },
-    pbBadge: { borderRadius: Radius.sm, backgroundColor: Color.goldWeak, paddingHorizontal: 6, paddingVertical: 1 },
-    pbBadgeText: { fontSize: 12, fontWeight: "700", color: Color.gold },
+    pbHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 10 },
+    pbNew: { fontSize: 13, fontWeight: "700", color: c.brand },
+    pbName: { fontSize: 16, fontWeight: "600", color: c.text },
+    pbDetail: { fontSize: 14, color: c.textSecondary, marginTop: 4 },
+    statGrid: { flexDirection: "row", flexWrap: "wrap", gap: AppSpace.gap },
+    stat: { width: "48.6%", backgroundColor: c.surface, borderRadius: AppRadius.card, padding: 14 },
+    statDot: { width: 8, height: 8, borderRadius: 4, marginBottom: 10 },
+    statValue: { fontSize: 24, fontWeight: "500", color: c.text, fontVariant: ["tabular-nums"] },
+    statLabel: { fontSize: 14, color: c.textMuted, marginTop: 2 },
+    list: { backgroundColor: c.surface, borderRadius: AppRadius.card, overflow: "hidden" },
+    row: { flexDirection: "row", alignItems: "center", gap: 12, minHeight: 62, paddingHorizontal: 16, paddingVertical: 10 },
+    rowDivider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: c.hairline },
+    nameRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+    rowTitle: { fontSize: 16, color: c.text, flexShrink: 1 },
+    rowSub: { fontSize: 14, color: c.textMuted, marginTop: 2 },
+    rowValue: { fontSize: 16, fontWeight: "600", color: c.text, fontVariant: ["tabular-nums"] },
+    rowUnit: { fontSize: 13, fontWeight: "400", color: c.textMuted },
+    pbTag: { borderRadius: 6, backgroundColor: c.brand, paddingHorizontal: 6, paddingVertical: 1 },
+    pbTagText: { fontSize: 12, fontWeight: "700", color: "#0a1526" },
   })
 );

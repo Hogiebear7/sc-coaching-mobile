@@ -3,10 +3,12 @@ import { useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { SectionTitle } from "@/components/app/primitives";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ContinueWorkoutPill } from "@/components/ui/ContinueWorkoutPill";
-import { headline, Radius, Spacing } from "@/constants/theme";
+import { Segmented } from "@/components/ui/Segmented";
+import { AppRadius, AppSpace, appTitle, Spacing } from "@/constants/theme";
 import { ApiError } from "@/lib/auth-context";
 import {
   useBookClass,
@@ -18,7 +20,8 @@ import {
   type ScheduleClass,
   type ScheduleUpcomingBooking,
 } from "@/lib/queries/schedule";
-import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
+import { selectionFeedback } from "@/lib/haptics";
+import { makeStyles, useAppTheme } from "@/lib/theme";
 
 type Tab = "browse" | "calendar" | "bookings";
 
@@ -47,7 +50,7 @@ function formatDateLabel(dateISO: string): string {
 
 function ClassRow({ item }: { item: ScheduleClass }) {
   const styles = useStyles();
-  const Color = useLegacyColors();
+  const { legacy: Color } = useAppTheme();
   const [error, setError] = useState<string | null>(null);
   const book = useBookClass();
   const joinWaitlist = useJoinWaitlist();
@@ -84,8 +87,8 @@ function ClassRow({ item }: { item: ScheduleClass }) {
       <View style={styles.actionRow}>
         {item.isBookedByMe ? (
           <View style={styles.bookedBadge}>
-            <Ionicons name="checkmark-circle" size={14} color={Color.success} />
-            <Text style={styles.bookedBadgeText}>Booked — manage in My Bookings</Text>
+            <Ionicons name="checkmark-circle" size={16} color={Color.success} />
+            <Text style={styles.bookedBadgeText}>Booked · manage under Booked</Text>
           </View>
         ) : item.waitlistOfferState === "offered" ? (
           <View style={styles.offerBadge}>
@@ -206,7 +209,7 @@ function MyBookingRow({ booking, cancellable }: { booking: ScheduleUpcomingBooki
 
 function ScheduleCalendarTab({ classesByDate }: { classesByDate: Record<string, ScheduleClass[]> }) {
   const styles = useStyles();
-  const Color = useLegacyColors();
+  const { colors } = useAppTheme();
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth());
@@ -259,12 +262,12 @@ function ScheduleCalendarTab({ classesByDate }: { classesByDate: Record<string, 
     <View>
       <Card style={styles.calendarCard}>
         <View style={styles.calHeader}>
-          <Pressable onPress={prevMonth} hitSlop={12} style={styles.calNavButton}>
-            <Ionicons name="chevron-back" size={18} color={Color.textPrimary} />
+          <Pressable onPress={prevMonth} hitSlop={8} style={styles.calNavButton} accessibilityRole="button" accessibilityLabel="Previous month">
+            <Ionicons name="chevron-back" size={20} color={colors.text} />
           </Pressable>
           <Text style={styles.calTitle}>{monthLabel}</Text>
-          <Pressable onPress={nextMonth} hitSlop={12} style={styles.calNavButton}>
-            <Ionicons name="chevron-forward" size={18} color={Color.textPrimary} />
+          <Pressable onPress={nextMonth} hitSlop={8} style={styles.calNavButton} accessibilityRole="button" accessibilityLabel="Next month">
+            <Ionicons name="chevron-forward" size={20} color={colors.text} />
           </Pressable>
         </View>
 
@@ -285,7 +288,13 @@ function ScheduleCalendarTab({ classesByDate }: { classesByDate: Record<string, 
               return (
                 <Pressable
                   key={cell.iso}
-                  onPress={() => setSelectedDate(cell.iso)}
+                  onPress={() => {
+                    if (!isSelected) selectionFeedback();
+                    setSelectedDate(cell.iso);
+                  }}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: isSelected }}
+                  accessibilityLabel={`${cell.iso}${dayClasses.length ? `, ${dayClasses.length} classes` : ""}`}
                   style={[
                     styles.dayCell,
                     isSelected && styles.dayCellSelected,
@@ -293,11 +302,9 @@ function ScheduleCalendarTab({ classesByDate }: { classesByDate: Record<string, 
                     !cell.inMonth && styles.dayCellOutside,
                   ]}
                 >
-                  <Text style={[styles.dayCellText, isToday && styles.dayCellTextToday]}>{cell.day}</Text>
+                  <Text style={[styles.dayCellText, isToday && styles.dayCellTextToday, isSelected && styles.dayCellTextSelected]}>{cell.day}</Text>
                   {dayClasses.length > 0 ? (
-                    <View style={styles.dayCellBadge}>
-                      <Text style={styles.dayCellBadgeText}>{dayClasses.length}</Text>
-                    </View>
+                    <View style={[styles.dayCellDot, isSelected && styles.dayCellDotSelected]} />
                   ) : null}
                 </Pressable>
               );
@@ -307,7 +314,7 @@ function ScheduleCalendarTab({ classesByDate }: { classesByDate: Record<string, 
       </Card>
 
       <View style={styles.calendarDetail}>
-        <Text style={styles.sectionLabel}>{selectedDate ? formatDateLabel(selectedDate).toUpperCase() : "SELECT A DATE"}</Text>
+        <SectionTitle title={selectedDate ? formatDateLabel(selectedDate) : "Select a date"} />
         {selectedClasses.length === 0 ? (
           <Card style={styles.emptyCard}>
             <Text style={styles.emptyText}>No classes scheduled.</Text>
@@ -322,7 +329,7 @@ function ScheduleCalendarTab({ classesByDate }: { classesByDate: Record<string, 
 
 export default function ScheduleScreen() {
   const styles = useStyles();
-  const Color = useLegacyColors();
+  const { colors } = useAppTheme();
   const { data, isLoading, isError, refetch, isRefetching } = useSchedule();
   const [tab, setTab] = useState<Tab>("calendar");
 
@@ -330,7 +337,7 @@ export default function ScheduleScreen() {
     return (
       <SafeAreaView style={styles.safe}>
         <View style={styles.centerFill}>
-          <ActivityIndicator color={Color.gold} size="large" />
+          <ActivityIndicator color={colors.text} size="large" />
         </View>
       </SafeAreaView>
     );
@@ -358,33 +365,34 @@ export default function ScheduleScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
       <View style={[styles.header, styles.headerRow]}>
-        <Text style={styles.heading}>Schedule</Text>
+        <Text style={appTitle(34, colors.text)}>Schedule</Text>
         <ContinueWorkoutPill />
       </View>
 
       <View style={styles.tabBar}>
-        <Pressable onPress={() => setTab("browse")} style={[styles.tabButton, tab === "browse" && styles.tabButtonActive]}>
-          <Text style={[styles.tabButtonText, tab === "browse" && styles.tabButtonTextActive]}>Browse</Text>
-        </Pressable>
-        <Pressable onPress={() => setTab("calendar")} style={[styles.tabButton, tab === "calendar" && styles.tabButtonActive]}>
-          <Text style={[styles.tabButtonText, tab === "calendar" && styles.tabButtonTextActive]}>Calendar</Text>
-        </Pressable>
-        <Pressable onPress={() => setTab("bookings")} style={[styles.tabButton, tab === "bookings" && styles.tabButtonActive]}>
-          <Text style={[styles.tabButtonText, tab === "bookings" && styles.tabButtonTextActive]}>
-            My bookings{data.upcomingBookings.length > 0 ? ` (${data.upcomingBookings.length})` : ""}
-          </Text>
-        </Pressable>
+        <Segmented
+          options={["browse", "calendar", "bookings"] as const}
+          value={tab}
+          onChange={(t) => setTab(t)}
+          format={(t) =>
+            t === "browse"
+              ? "Classes"
+              : t === "calendar"
+                ? "Calendar"
+                : `Booked${data.upcomingBookings.length > 0 ? ` (${data.upcomingBookings.length})` : ""}`
+          }
+        />
       </View>
 
       <ScrollView
         contentContainerStyle={styles.scroll}
-        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => refetch()} tintColor={Color.gold} />}
+        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => refetch()} tintColor={colors.text} />}
       >
         {tab === "browse" ? (
           <>
             {pendingOffers.length > 0 ? (
               <View style={styles.section}>
-                <Text style={styles.sectionLabel}>NEEDS A RESPONSE</Text>
+                <SectionTitle title="Needs a response" />
                 {pendingOffers.map((c) => (
                   <PendingOfferCard key={c.id} item={c} />
                 ))}
@@ -393,13 +401,13 @@ export default function ScheduleScreen() {
 
             {data.classes.length === 0 ? (
               <Card style={styles.emptyCard}>
-                <Ionicons name="calendar-outline" size={22} color={Color.textFaint} />
+                <Ionicons name="calendar-outline" size={24} color={colors.textMuted} />
                 <Text style={styles.emptyText}>No upcoming classes scheduled.</Text>
               </Card>
             ) : (
               sortedDates.map((date) => (
                 <View key={date} style={styles.section}>
-                  <Text style={styles.sectionLabel}>{formatDateLabel(date).toUpperCase()}</Text>
+                  <SectionTitle title={formatDateLabel(date)} />
                   {classesByDate[date].map((c) => (
                     <ClassRow key={c.id} item={c} />
                   ))}
@@ -414,7 +422,7 @@ export default function ScheduleScreen() {
         {tab === "bookings" ? (
           <>
             <View style={styles.section}>
-              <Text style={styles.sectionLabel}>UPCOMING</Text>
+              <SectionTitle title="Upcoming" />
               {data.upcomingBookings.length === 0 ? (
                 <Card style={styles.emptyCard}>
                   <Text style={styles.emptyText}>No upcoming bookings.</Text>
@@ -431,7 +439,7 @@ export default function ScheduleScreen() {
 
             {data.pastBookings.length > 0 ? (
               <View style={styles.section}>
-                <Text style={styles.sectionLabel}>PAST</Text>
+                <SectionTitle title="Past" />
                 {data.pastBookings.map((b) => (
                   <MyBookingRow key={b.bookingId} booking={b} cancellable={false} />
                 ))}
@@ -444,119 +452,89 @@ export default function ScheduleScreen() {
   );
 }
 
-const useStyles = makeLegacyStyles((Color) =>
+const useStyles = makeStyles((c, _dc, Color) =>
   StyleSheet.create({
-    safe: { flex: 1, backgroundColor: Color.bg0 },
+    safe: { flex: 1, backgroundColor: c.bg },
     centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
-    errorText: { color: Color.textMuted, fontSize: 14 },
-    header: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.md },
+    errorText: { color: c.textMuted, fontSize: 16 },
+    header: { paddingHorizontal: AppSpace.gutter, paddingTop: 12 },
     headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-    heading: {
-      ...headline(34),
-      color: Color.textPrimary,
-    },
-    tabBar: {
-      flexDirection: "row",
-      gap: 4,
-      marginHorizontal: Spacing.lg,
-      marginTop: Spacing.md,
-      marginBottom: Spacing.sm,
-      padding: 4,
-      borderRadius: Radius.md,
-      borderWidth: 1,
-      borderColor: Color.borderSubtle,
-      backgroundColor: Color.surface1,
-    },
-    tabButton: { flex: 1, paddingVertical: Spacing.sm, borderRadius: Radius.sm, alignItems: "center" },
-    tabButtonActive: { backgroundColor: Color.surface2 },
-    tabButtonText: { fontSize: 12, fontWeight: "600", color: Color.textMuted },
-    tabButtonTextActive: { color: Color.textPrimary },
-    scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
-    section: { marginBottom: Spacing.xl },
-    sectionLabel: {
-      fontSize: 10,
-      fontWeight: "700",
-      letterSpacing: 0.6,
-      color: Color.textMuted,
-      marginBottom: Spacing.sm,
-    },
-    classCard: { padding: Spacing.md, marginBottom: Spacing.sm },
-    classRow: { flexDirection: "row", alignItems: "center", gap: Spacing.md },
+    tabBar: { marginHorizontal: AppSpace.gutter, marginTop: 16, marginBottom: 16 },
+    scroll: { paddingHorizontal: AppSpace.gutter, paddingBottom: 40 },
+    section: { marginBottom: AppSpace.section },
+    classCard: { padding: 16, marginBottom: 10 },
+    classRow: { flexDirection: "row", alignItems: "center", gap: 14 },
     timeBlock: {
-      width: 52,
-      height: 52,
-      borderRadius: Radius.md,
-      backgroundColor: Color.goldWeak,
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+      backgroundColor: c.control,
       alignItems: "center",
       justifyContent: "center",
     },
-    timeText: { fontSize: 16, fontWeight: "700", color: Color.gold },
-    timeSub: { fontSize: 10, color: Color.gold, opacity: 0.8 },
-    classTitle: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
-    classMeta: { fontSize: 11, color: Color.textMuted, marginTop: 2 },
-    blockReason: { fontSize: 11, color: Color.warning, marginTop: 4 },
-    actionRow: { marginTop: Spacing.sm },
+    timeText: { fontSize: 18, fontWeight: "600", color: c.text, fontVariant: ["tabular-nums"] },
+    timeSub: { fontSize: 12, color: c.textMuted, fontVariant: ["tabular-nums"] },
+    classTitle: { fontSize: 17, fontWeight: "600", color: c.text },
+    classMeta: { fontSize: 14, color: c.textMuted, marginTop: 3 },
+    blockReason: { fontSize: 14, color: Color.warning, marginTop: 6 },
+    actionRow: { marginTop: 14 },
     bookedBadge: {
       flexDirection: "row",
       alignItems: "center",
-      gap: Spacing.xs,
-      borderRadius: Radius.pill,
-      borderWidth: 1,
-      borderColor: Color.success,
+      gap: 6,
+      borderRadius: AppRadius.control,
       backgroundColor: Color.successWeak,
-      paddingVertical: 10,
-      paddingHorizontal: Spacing.sm,
+      minHeight: 44,
+      paddingHorizontal: 16,
       justifyContent: "center",
     },
-    bookedBadgeText: { fontSize: 11, fontWeight: "600", color: Color.success },
+    bookedBadgeText: { fontSize: 14, fontWeight: "600", color: Color.success },
     offerBadge: {
-      borderRadius: Radius.pill,
-      borderWidth: 1,
-      borderColor: Color.warning,
+      borderRadius: AppRadius.control,
       backgroundColor: Color.warningWeak,
-      paddingVertical: 10,
+      minHeight: 44,
       alignItems: "center",
+      justifyContent: "center",
     },
-    offerBadgeText: { fontSize: 12, fontWeight: "600", color: Color.warning },
-    error: { fontSize: 11, color: Color.danger, marginTop: Spacing.xs },
-    emptyCard: { alignItems: "center", padding: Spacing.xl, gap: Spacing.sm },
-    emptyText: { fontSize: 12, color: Color.textMuted },
+    offerBadgeText: { fontSize: 14, fontWeight: "600", color: Color.warning },
+    error: { fontSize: 14, color: c.danger, marginTop: 8 },
+    emptyCard: { alignItems: "center", padding: 24, gap: 8 },
+    emptyText: { fontSize: 15, color: c.textMuted },
     myBookingCard: {
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
-      padding: Spacing.md,
-      marginBottom: Spacing.sm,
-      gap: Spacing.md,
+      padding: 16,
+      marginBottom: 10,
+      gap: 14,
     },
     attendedBadge: {
-      borderRadius: Radius.pill,
-      borderWidth: 1,
-      paddingVertical: 6,
-      paddingHorizontal: Spacing.sm,
+      borderRadius: AppRadius.control,
+      paddingVertical: 8,
+      paddingHorizontal: 12,
     },
-    attendedBadgeYes: { borderColor: Color.success, backgroundColor: Color.successWeak },
-    attendedBadgeNo: { borderColor: Color.borderSubtle, backgroundColor: Color.surface2 },
-    attendedBadgeText: { fontSize: 11, fontWeight: "600", color: Color.textMuted },
+    attendedBadgeYes: { backgroundColor: Color.successWeak },
+    attendedBadgeNo: { backgroundColor: c.control },
+    attendedBadgeText: { fontSize: 13, fontWeight: "600", color: c.textMuted },
     attendedBadgeTextYes: { color: Color.success },
-    cutoffHint: { fontSize: 11, color: Color.textFaint, marginTop: Spacing.xs },
-    offerCard: { padding: Spacing.md, marginBottom: Spacing.sm, borderColor: Color.goldBorder },
-    offerTitle: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
-    offerMeta: { fontSize: 11, color: Color.textMuted, marginTop: 2, marginBottom: Spacing.sm },
-    offerButtonRow: { flexDirection: "row", gap: Spacing.sm },
-    calendarCard: { padding: Spacing.md },
-    calHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: Spacing.md },
+    cutoffHint: { fontSize: 14, color: c.textMuted, marginTop: 6, lineHeight: 20 },
+    offerCard: { padding: 16, marginBottom: 10 },
+    offerTitle: { fontSize: 17, fontWeight: "600", color: c.text },
+    offerMeta: { fontSize: 14, color: c.textMuted, marginTop: 3, marginBottom: 14 },
+    offerButtonRow: { flexDirection: "row", gap: 10 },
+    calendarCard: { padding: 14 },
+    calHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 },
     calNavButton: {
-      width: 32,
-      height: 32,
-      borderRadius: Radius.pill,
+      width: 44,
+      height: 44,
+      borderRadius: 22,
       alignItems: "center",
       justifyContent: "center",
-      backgroundColor: Color.surface2,
+      backgroundColor: c.control,
     },
-    calTitle: { fontSize: 15, fontWeight: "700", color: Color.textPrimary },
-    weekRow: { flexDirection: "row", marginBottom: Spacing.xs },
-    weekLabel: { flex: 1, textAlign: "center", fontSize: 10, fontWeight: "600", color: Color.textFaint },
+    calTitle: { fontSize: 17, fontWeight: "600", color: c.text },
+    weekRow: { flexDirection: "row", marginBottom: 4 },
+    weekLabel: { flex: 1, textAlign: "center", fontSize: 12, fontWeight: "600", color: c.textMuted },
     // flex:1 across each week's own row, not a `${100/7}%` width inside a
     // flex-wrap grid — the percentage-rounding version silently dropped the
     // 7th cell (Sunday) onto the next row on some screen widths. See
@@ -566,24 +544,17 @@ const useStyles = makeLegacyStyles((Color) =>
       aspectRatio: 1,
       alignItems: "center",
       justifyContent: "center",
-      borderRadius: Radius.sm,
-      gap: 2,
+      borderRadius: 999,
+      gap: 3,
     },
-    dayCellSelected: { backgroundColor: Color.goldWeak, borderWidth: 1, borderColor: Color.gold },
-    dayCellToday: { borderWidth: 1, borderColor: Color.goldBorder },
+    dayCellSelected: { backgroundColor: c.primary },
+    dayCellToday: { borderWidth: 1.5, borderColor: c.text },
     dayCellOutside: { opacity: 0.35 },
-    dayCellText: { fontSize: 13, color: Color.textSecondary },
-    dayCellTextToday: { color: Color.gold, fontWeight: "700" },
-    dayCellBadge: {
-      minWidth: 16,
-      height: 16,
-      borderRadius: Radius.pill,
-      backgroundColor: Color.gold,
-      alignItems: "center",
-      justifyContent: "center",
-      paddingHorizontal: 3,
-    },
-    dayCellBadgeText: { fontSize: 9, fontWeight: "700", color: Color.goldForeground },
-    calendarDetail: { marginTop: Spacing.lg },
+    dayCellText: { fontSize: 15, color: c.text, fontVariant: ["tabular-nums"] },
+    dayCellTextToday: { fontWeight: "700" },
+    dayCellTextSelected: { color: c.onPrimary, fontWeight: "700" },
+    dayCellDot: { width: 5, height: 5, borderRadius: 3, backgroundColor: c.text },
+    dayCellDotSelected: { backgroundColor: c.onPrimary },
+    calendarDetail: { marginTop: AppSpace.section },
   })
 );

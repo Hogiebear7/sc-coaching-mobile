@@ -165,7 +165,7 @@ const useStyles = makeLegacyStyles((Color) =>
     headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
     centerFill: { flex: 1, alignItems: "center", justifyContent: "center" },
     scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
-    intro: { fontSize: 12, color: Color.textMuted, lineHeight: 17 },
+    intro: { fontSize: 14, color: Color.textMuted, lineHeight: 17 },
     windowRow: {
       flexDirection: "row",
       alignSelf: "flex-start",
@@ -177,7 +177,7 @@ const useStyles = makeLegacyStyles((Color) =>
     },
     windowChip: { borderRadius: Radius.pill, paddingHorizontal: Spacing.sm, paddingVertical: 6 },
     windowChipActive: { backgroundColor: "rgba(85,196,254,0.15)" },
-    windowChipText: { fontSize: 11, fontWeight: "500", color: Color.textMuted },
+    windowChipText: { fontSize: 13, fontWeight: "500", color: Color.textMuted },
     windowChipTextActive: { color: Color.accentData },
     emptyCard: {
       marginTop: Spacing.lg,
@@ -189,7 +189,7 @@ const useStyles = makeLegacyStyles((Color) =>
       alignItems: "center",
     },
     emptyTitle: { fontSize: 14, fontWeight: "600", color: Color.textPrimary, textAlign: "center" },
-    emptyBody: { fontSize: 12, color: Color.textMuted, textAlign: "center", marginTop: Spacing.xs, lineHeight: 17 },
+    emptyBody: { fontSize: 14, color: Color.textMuted, textAlign: "center", marginTop: Spacing.xs, lineHeight: 17 },
     diagramCard: {
       marginTop: Spacing.lg,
       borderRadius: Radius.lg,
@@ -199,7 +199,7 @@ const useStyles = makeLegacyStyles((Color) =>
     legendRow: { flexDirection: "row", gap: Spacing.lg, marginTop: Spacing.md },
     legendItem: { flexDirection: "row", alignItems: "center", gap: 6 },
     legendDot: { width: 10, height: 10, borderRadius: Radius.pill, backgroundColor: Color.accentData },
-    legendText: { fontSize: 10, color: Color.textMuted },
+    legendText: { fontSize: 12, color: Color.textMuted },
     sectionList: {
       marginTop: Spacing.lg,
       borderRadius: Radius.md,
@@ -218,9 +218,9 @@ const useStyles = makeLegacyStyles((Color) =>
     sectionRowDivider: { borderTopWidth: 1, borderTopColor: Color.borderSubtle },
     sectionLabel: { fontSize: 13, fontWeight: "500", color: Color.textPrimary },
     sectionMeta: { flexDirection: "row", alignItems: "center", gap: Spacing.sm },
-    sectionSets: { fontSize: 11, color: Color.textMuted, fontVariant: ["tabular-nums"] },
+    sectionSets: { fontSize: 13, color: Color.textMuted, fontVariant: ["tabular-nums"] },
     tierBadge: { borderRadius: Radius.pill, paddingHorizontal: Spacing.xs, paddingVertical: 2 },
-    tierBadgeText: { fontSize: 10, fontWeight: "700" },
-    unresolvedNote: { fontSize: 11, color: Color.textFaint, lineHeight: 16, marginTop: Spacing.md },
+    tierBadgeText: { fontSize: 12, fontWeight: "700" },
+    unresolvedNote: { fontSize: 13, color: Color.textFaint, lineHeight: 16, marginTop: Spacing.md },
   })
 );

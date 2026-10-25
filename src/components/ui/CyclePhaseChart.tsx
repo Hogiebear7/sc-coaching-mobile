@@ -12,7 +12,7 @@ import { makeLegacyStyles } from "@/lib/theme";
 const phaseColor = (): Record<Exclude<PhaseName, "Unknown">, string> => ({
   Menstrual: Color.danger,
   Follicular: Color.accentData,
-  Ovulatory: Color.gold,
+  Ovulatory: Color.brand,
   Luteal: Color.warning,
 });
 
@@ -71,7 +71,7 @@ const useStyles = makeLegacyStyles((Color) =>
   StyleSheet.create({
     markerRow: { position: "relative", height: 18 },
     markerWrap: { position: "absolute", top: 0, alignItems: "center", transform: [{ translateX: -12 }] },
-    markerText: { fontSize: 9, fontWeight: "700", color: Color.textPrimary, textTransform: "uppercase", letterSpacing: 0.4 },
+    markerText: { fontSize: 12, fontWeight: "700", color: Color.textPrimary, textTransform: "uppercase", letterSpacing: 0.4 },
     markerTriangle: {
       marginTop: 2,
       width: 0,
@@ -87,7 +87,7 @@ const useStyles = makeLegacyStyles((Color) =>
     legendRow: { flexDirection: "row", flexWrap: "wrap", columnGap: Spacing.md, rowGap: 6, marginTop: Spacing.sm },
     legendItem: { flexDirection: "row", alignItems: "center", gap: 6 },
     legendDot: { width: 8, height: 8, borderRadius: 4 },
-    legendText: { fontSize: 12, color: Color.textMuted },
+    legendText: { fontSize: 14, color: Color.textMuted },
     legendTextActive: { fontWeight: "700", color: Color.textPrimary },
   })
 );

@@ -119,7 +119,7 @@ const useStyles = makeLegacyStyles((Color) =>
     },
     segment: { minWidth: 64, alignItems: "center", paddingHorizontal: Spacing.md, paddingVertical: 8, borderRadius: Radius.sm },
     segmentActive: { backgroundColor: Color.surface2 },
-    segmentText: { fontSize: 12, fontWeight: "600", color: Color.textMuted },
+    segmentText: { fontSize: 14, fontWeight: "600", color: Color.textMuted },
     segmentTextActive: { color: Color.textPrimary },
   })
 );

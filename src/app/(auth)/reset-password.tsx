@@ -174,7 +174,7 @@ const useStyles = makeLegacyStyles((Color) =>
     },
     backButton: { position: "absolute", top: Spacing.xl, left: Spacing.xl, padding: 4 },
     eyebrow: {
-      fontSize: 11,
+      fontSize: 13,
       fontWeight: "700",
       letterSpacing: 1,
       color: Color.gold,
@@ -192,7 +192,7 @@ const useStyles = makeLegacyStyles((Color) =>
     },
     form: { marginTop: Spacing.sm },
     tokenInput: { height: 64, textAlignVertical: "top", paddingTop: Spacing.sm },
-    hint: { fontSize: 12, color: Color.textFaint, marginTop: -Spacing.sm, marginBottom: Spacing.md },
+    hint: { fontSize: 14, color: Color.textFaint, marginTop: -Spacing.sm, marginBottom: Spacing.md },
     submit: { marginTop: Spacing.sm },
     error: {
       color: Color.danger,

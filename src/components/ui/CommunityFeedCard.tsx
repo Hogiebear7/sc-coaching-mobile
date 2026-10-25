@@ -90,7 +90,7 @@ const useStyles = makeLegacyStyles((Color) =>
     feedCard: { padding: Spacing.md, marginBottom: Spacing.sm },
     feedHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: Spacing.sm },
     authorName: { fontSize: 13, fontWeight: "700", color: Color.textPrimary, flexShrink: 1 },
-    feedDate: { fontSize: 11, color: Color.textFaint },
+    feedDate: { fontSize: 13, color: Color.textFaint },
     feedTitleRow: { flexDirection: "row", alignItems: "center", gap: Spacing.xs, marginTop: 4 },
     feedTitle: { fontSize: 15, fontWeight: "600", color: Color.textPrimary, flexShrink: 1 },
     feedPbBadge: {
@@ -102,9 +102,9 @@ const useStyles = makeLegacyStyles((Color) =>
       paddingHorizontal: 6,
       paddingVertical: 2,
     },
-    feedPbBadgeText: { fontSize: 10, fontWeight: "700", color: Color.gold },
-    feedLine: { fontSize: 12, color: Color.textMuted, marginTop: 4 },
-    feedMore: { fontSize: 11, color: Color.textFaint, marginTop: 2 },
+    feedPbBadgeText: { fontSize: 12, fontWeight: "700", color: Color.gold },
+    feedLine: { fontSize: 14, color: Color.textMuted, marginTop: 4 },
+    feedMore: { fontSize: 13, color: Color.textFaint, marginTop: 2 },
     feedActions: {
       flexDirection: "row",
       alignItems: "center",
@@ -116,7 +116,7 @@ const useStyles = makeLegacyStyles((Color) =>
     },
     feedActionButton: { flexDirection: "row", alignItems: "center", gap: 4, minHeight: 32, paddingVertical: 4 },
     feedActionButtonPending: { opacity: 0.5 },
-    feedActionText: { fontSize: 11, fontWeight: "500", color: Color.textFaint },
-    feedActionError: { fontSize: 11, color: Color.danger, marginLeft: "auto" },
+    feedActionText: { fontSize: 13, fontWeight: "500", color: Color.textFaint },
+    feedActionError: { fontSize: 13, color: Color.danger, marginLeft: "auto" },
   })
 );

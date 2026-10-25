@@ -60,7 +60,7 @@ const useStyles = makeLegacyStyles((Color) =>
   StyleSheet.create({
     wrap: { marginBottom: Spacing.md },
     label: { fontSize: 13, fontWeight: "500", color: Color.textSecondary, marginBottom: 2 },
-    caption: { fontSize: 11, color: Color.textFaint, marginBottom: 6 },
+    caption: { fontSize: 13, color: Color.textFaint, marginBottom: 6 },
     row: {
       flexDirection: "row",
       alignItems: "center",
@@ -83,6 +83,6 @@ const useStyles = makeLegacyStyles((Color) =>
     buttonText: { fontSize: 18, fontWeight: "700", color: Color.gold },
     valueWrap: { flexDirection: "row", alignItems: "baseline", gap: 2 },
     value: { fontSize: 17, fontWeight: "700", color: Color.textPrimary, fontVariant: ["tabular-nums"] },
-    suffix: { fontSize: 12, color: Color.textMuted },
+    suffix: { fontSize: 14, color: Color.textMuted },
   })
 );

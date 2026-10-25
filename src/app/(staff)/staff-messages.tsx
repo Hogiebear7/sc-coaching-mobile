@@ -117,8 +117,8 @@ const useStyles = makeLegacyStyles((Color) =>
     rowTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
     rowName: { fontSize: 14, fontWeight: "600", color: Color.textSecondary, flexShrink: 1 },
     rowNameUnread: { color: Color.textPrimary, fontWeight: "700" },
-    rowTime: { fontSize: 10, color: Color.textFaint, marginLeft: Spacing.xs },
-    rowPreview: { fontSize: 12, color: Color.textMuted, marginTop: 2 },
+    rowTime: { fontSize: 12, color: Color.textFaint, marginLeft: Spacing.xs },
+    rowPreview: { fontSize: 14, color: Color.textMuted, marginTop: 2 },
     rowPreviewUnread: { color: Color.textSecondary, fontWeight: "500" },
     unreadBadge: {
       minWidth: 20,
@@ -130,6 +130,6 @@ const useStyles = makeLegacyStyles((Color) =>
       paddingHorizontal: 6,
       marginLeft: Spacing.xs,
     },
-    unreadBadgeText: { fontSize: 11, fontWeight: "700", color: Color.goldForeground },
+    unreadBadgeText: { fontSize: 13, fontWeight: "700", color: Color.goldForeground },
   })
 );

@@ -154,7 +154,7 @@ const useStyles = makeLegacyStyles((Color) =>
     emptyText: { fontSize: 13, color: Color.textMuted, textAlign: "center" },
     introBlock: { paddingHorizontal: Spacing.lg, marginBottom: Spacing.md },
     introText: { fontSize: 13, color: Color.textSecondary },
-    countText: { fontSize: 11, fontWeight: "600", color: Color.gold, marginTop: 4 },
+    countText: { fontSize: 13, fontWeight: "600", color: Color.gold, marginTop: 4 },
     searchWrap: {
       flexDirection: "row",
       alignItems: "center",
@@ -175,7 +175,7 @@ const useStyles = makeLegacyStyles((Color) =>
     rowDivider: { borderTopWidth: 1, borderTopColor: Color.borderSubtle },
     rowDisabled: { opacity: 0.4 },
     rowName: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
-    rowSub: { fontSize: 11, color: Color.textMuted, marginTop: 2 },
+    rowSub: { fontSize: 13, color: Color.textMuted, marginTop: 2 },
     checkbox: {
       width: 22,
       height: 22,

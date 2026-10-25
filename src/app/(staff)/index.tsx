@@ -463,7 +463,7 @@ const useStyles = makeLegacyStyles((Color) =>
     },
     viewToggleButton: { flex: 1, paddingVertical: Spacing.sm, borderRadius: Radius.sm, alignItems: "center" },
     viewToggleButtonActive: { backgroundColor: Color.surface2 },
-    viewToggleText: { fontSize: 12, fontWeight: "600", color: Color.textMuted },
+    viewToggleText: { fontSize: 14, fontWeight: "600", color: Color.textMuted },
     viewToggleTextActive: { color: Color.textPrimary },
     calendarCard: { padding: Spacing.md },
     calHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: Spacing.md },
@@ -477,7 +477,7 @@ const useStyles = makeLegacyStyles((Color) =>
     },
     calTitle: { fontSize: 15, fontWeight: "700", color: Color.textPrimary },
     weekRow: { flexDirection: "row", marginBottom: Spacing.xs },
-    weekLabel: { flex: 1, textAlign: "center", fontSize: 10, fontWeight: "600", color: Color.textFaint },
+    weekLabel: { flex: 1, textAlign: "center", fontSize: 12, fontWeight: "600", color: Color.textFaint },
     // flex:1 across each week's own row, not a `${100/7}%` width inside a
     // flex-wrap grid — the percentage-rounding version silently dropped the
     // 7th cell (Sunday) onto the next row on some screen widths. See
@@ -504,7 +504,7 @@ const useStyles = makeLegacyStyles((Color) =>
       justifyContent: "center",
       paddingHorizontal: 3,
     },
-    dayCellBadgeText: { fontSize: 9, fontWeight: "700", color: Color.goldForeground },
+    dayCellBadgeText: { fontSize: 12, fontWeight: "700", color: Color.goldForeground },
     calendarDetail: { marginTop: Spacing.lg },
     emptyDetailCard: { alignItems: "center", padding: Spacing.xl },
     dateGroup: { marginBottom: Spacing.lg },
@@ -515,12 +515,12 @@ const useStyles = makeLegacyStyles((Color) =>
       marginBottom: Spacing.sm,
     },
     dateGroupRight: { flexDirection: "row", alignItems: "center", gap: Spacing.xs },
-    dateGroupCount: { fontSize: 11, color: Color.textFaint },
-    dateLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted },
+    dateGroupCount: { fontSize: 13, color: Color.textFaint },
+    dateLabel: { fontSize: 12, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted },
     classCard: { marginBottom: Spacing.sm, overflow: "hidden" },
     classHeader: { flexDirection: "row", alignItems: "center", padding: Spacing.md },
     classTitle: { fontSize: 15, fontWeight: "600", color: Color.textPrimary },
-    classMeta: { fontSize: 11, color: Color.textMuted, marginTop: 2 },
+    classMeta: { fontSize: 13, color: Color.textMuted, marginTop: 2 },
     capacityChip: {
       borderRadius: Radius.pill,
       borderWidth: 1,
@@ -530,7 +530,7 @@ const useStyles = makeLegacyStyles((Color) =>
       paddingVertical: 4,
     },
     capacityChipFull: { borderColor: Color.warning, backgroundColor: Color.warningWeak },
-    capacityChipText: { fontSize: 11, fontWeight: "700", color: Color.textSecondary, fontVariant: ["tabular-nums"] },
+    capacityChipText: { fontSize: 13, fontWeight: "700", color: Color.textSecondary, fontVariant: ["tabular-nums"] },
     capacityChipTextFull: { color: Color.warning },
     roster: {
       borderTopWidth: 1,
@@ -538,12 +538,12 @@ const useStyles = makeLegacyStyles((Color) =>
       paddingHorizontal: Spacing.md,
       paddingVertical: Spacing.sm,
     },
-    rosterEmpty: { fontSize: 12, color: Color.textMuted, paddingVertical: Spacing.xs },
+    rosterEmpty: { fontSize: 14, color: Color.textMuted, paddingVertical: Spacing.xs },
     rosterRow: { flexDirection: "row", alignItems: "center", paddingVertical: Spacing.xs },
     rosterRowMain: { flex: 1, flexDirection: "row", alignItems: "center", gap: Spacing.sm },
     rosterRemoveButton: { paddingLeft: Spacing.sm, paddingVertical: 4 },
     rosterName: { fontSize: 13, color: Color.textPrimary },
-    rosterEmail: { fontSize: 11, color: Color.textMuted },
+    rosterEmail: { fontSize: 13, color: Color.textMuted },
     workoutButton: {
       flexDirection: "row",
       alignItems: "center",
@@ -556,6 +556,6 @@ const useStyles = makeLegacyStyles((Color) =>
       paddingHorizontal: Spacing.md,
       paddingVertical: 6,
     },
-    workoutButtonText: { fontSize: 12, fontWeight: "600", color: Color.gold },
+    workoutButtonText: { fontSize: 14, fontWeight: "600", color: Color.gold },
   })
 );

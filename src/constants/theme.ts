@@ -27,13 +27,17 @@ export const Color = {
   textMuted: "rgba(255,255,255,0.55)",
   textFaint: "rgba(255,255,255,0.35)",
 
-  // Gold accent (legacy primary; App v2 keeps it for the brand mark and
-  // celebrations only, and screens drop it as they are rebuilt)
-  gold: "#c6a15b",
-  goldHover: "#e0be7c",
+  // Legacy "accent" slots. App v2 rule: actions are monochrome (white on
+  // dark, navy on light) and gold is the brand mark only — so these keep
+  // their old names for the screens that use them but now hold the
+  // primary-ink values. Real gold lives in `brand`.
+  gold: "#ffffff",
+  goldHover: "#ffffff",
   goldForeground: "#0a1526",
-  goldWeak: "rgba(198,161,91,0.12)",
-  goldBorder: "rgba(224,190,124,0.45)",
+  goldWeak: "rgba(255,255,255,0.10)",
+  goldBorder: "rgba(255,255,255,0.28)",
+  brand: "#c6a15b",
+  brandWeak: "rgba(198,161,91,0.14)",
 
   // Semantic
   accentData: "#55c4fe",
@@ -71,11 +75,13 @@ export const ColorLight: LegacyPalette = {
   textSecondary: "rgba(10,21,38,0.78)",
   textMuted: "rgba(10,21,38,0.56)",
   textFaint: "rgba(10,21,38,0.40)",
-  gold: "#9c7631",
-  goldHover: "#b38a42",
+  gold: "#0a1526",
+  goldHover: "#0a1526",
   goldForeground: "#ffffff",
-  goldWeak: "rgba(156,118,49,0.12)",
-  goldBorder: "rgba(156,118,49,0.45)",
+  goldWeak: "rgba(10,21,38,0.06)",
+  goldBorder: "rgba(10,21,38,0.22)",
+  brand: "#9c7631",
+  brandWeak: "rgba(156,118,49,0.12)",
   accentData: "#1784c4",
   success: "#2e8a57",
   successWeak: "rgba(46,138,87,0.12)",
@@ -97,12 +103,12 @@ export const MacroColor = {
   fat: "#e0924f",
 } as const;
 
-// Editorial, slightly-sharp corners — the web app deliberately uses 4px
-// radii on cards (surface-card), not the generic rounded-2xl look.
+// App v2 soft geometry for the app (the website keeps its sharper 4px
+// cards; see docs/design-inspiration-macrofactor-2026-10.md).
 export const Radius = {
-  sm: 4,
-  md: 8,
-  lg: 12,
+  sm: 8,
+  md: 12,
+  lg: 16,
   pill: 999,
 } as const;
 

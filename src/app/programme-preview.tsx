@@ -249,14 +249,14 @@ const useStyles = makeLegacyStyles((Color) =>
     scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
     summaryCard: { padding: Spacing.md, marginTop: Spacing.md },
     programName: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
-    summaryLine: { fontSize: 12, color: Color.textMuted, marginTop: 4 },
+    summaryLine: { fontSize: 14, color: Color.textMuted, marginTop: 4 },
     rationaleText: { fontSize: 13, color: Color.textSecondary, marginTop: Spacing.sm, lineHeight: 19 },
-    summaryHint: { fontSize: 12, color: Color.textFaint, marginTop: Spacing.sm, lineHeight: 17 },
+    summaryHint: { fontSize: 14, color: Color.textFaint, marginTop: Spacing.sm, lineHeight: 17 },
     dayCard: { padding: Spacing.md, marginTop: Spacing.sm },
     dayLabel: { fontSize: 15, fontWeight: "700", color: Color.textPrimary },
-    error: { fontSize: 12, color: Color.danger, marginTop: Spacing.md },
+    error: { fontSize: 14, color: Color.danger, marginTop: Spacing.md },
     sectionLabel: {
-      fontSize: 11,
+      fontSize: 13,
       fontWeight: "700",
       color: Color.textFaint,
       letterSpacing: 0.6,
@@ -273,7 +273,7 @@ const useStyles = makeLegacyStyles((Color) =>
       backgroundColor: Color.surface1,
     },
     chipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
-    chipText: { fontSize: 12, fontWeight: "600", color: Color.textMuted },
+    chipText: { fontSize: 14, fontWeight: "600", color: Color.textMuted },
     chipTextActive: { color: Color.gold },
   })
 );

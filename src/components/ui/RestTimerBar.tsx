@@ -110,7 +110,7 @@ const useStyles = makeLegacyStyles((Color) =>
       backgroundColor: Color.surface1,
     },
     barGetReady: { justifyContent: "center", gap: Spacing.sm },
-    getReadyText: { fontSize: 12, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted },
+    getReadyText: { fontSize: 14, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted },
     getReadyClock: { ...figure(26, "700"), color: Color.gold },
     adjustButton: {
       paddingHorizontal: Spacing.sm,
@@ -119,9 +119,9 @@ const useStyles = makeLegacyStyles((Color) =>
       borderWidth: 1,
       borderColor: Color.borderSubtle,
     },
-    adjustText: { fontSize: 12, fontWeight: "600", color: Color.textSecondary },
+    adjustText: { fontSize: 14, fontWeight: "600", color: Color.textSecondary },
     clockWrap: { flex: 1, alignItems: "center" },
-    label: { fontSize: 10, fontWeight: "700", letterSpacing: 0.4, color: Color.textMuted, textTransform: "uppercase" },
+    label: { fontSize: 12, fontWeight: "700", letterSpacing: 0.4, color: Color.textMuted, textTransform: "uppercase" },
     clock: { ...figure(26, "700"), color: Color.gold },
     clockDone: { color: Color.success },
     iconButton: {

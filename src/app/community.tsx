@@ -423,9 +423,9 @@ const useStyles = makeLegacyStyles((Color) =>
       paddingHorizontal: Spacing.sm,
       paddingVertical: 5,
     },
-    followButtonText: { fontSize: 12, fontWeight: "600", color: Color.gold },
+    followButtonText: { fontSize: 14, fontWeight: "600", color: Color.gold },
     subhead: {
-      fontSize: 12,
+      fontSize: 14,
       color: Color.textMuted,
       paddingHorizontal: Spacing.lg,
       marginTop: -Spacing.xs,
@@ -433,7 +433,7 @@ const useStyles = makeLegacyStyles((Color) =>
     },
     suggestedCard: { padding: 0, overflow: "hidden", marginTop: Spacing.sm },
     suggestedLabel: {
-      fontSize: 10,
+      fontSize: 12,
       fontWeight: "700",
       letterSpacing: 0.6,
       color: Color.textFaint,
@@ -475,7 +475,7 @@ const useStyles = makeLegacyStyles((Color) =>
     noticeTitle: { fontSize: 15, fontWeight: "700", color: Color.textPrimary },
     noticeBody: { fontSize: 13, color: Color.textSecondary, lineHeight: 19, marginTop: Spacing.sm },
     noticeSecondary: { marginTop: Spacing.md, alignSelf: "center" },
-    noticeSecondaryText: { fontSize: 12, fontWeight: "500", color: Color.textFaint, textDecorationLine: "underline" },
+    noticeSecondaryText: { fontSize: 14, fontWeight: "500", color: Color.textFaint, textDecorationLine: "underline" },
     scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
     section: { marginBottom: Spacing.xl },
     winsCard: { padding: 0, overflow: "hidden" },
@@ -496,7 +496,7 @@ const useStyles = makeLegacyStyles((Color) =>
       paddingVertical: 7,
     },
     metricChipActive: { backgroundColor: Color.gold },
-    metricChipText: { fontSize: 11, fontWeight: "600", color: Color.textFaint },
+    metricChipText: { fontSize: 13, fontWeight: "600", color: Color.textFaint },
     metricChipTextActive: { color: Color.goldForeground, fontWeight: "700" },
     rangeRow: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: Spacing.sm },
     rangeChip: {
@@ -507,12 +507,12 @@ const useStyles = makeLegacyStyles((Color) =>
       paddingVertical: 5,
     },
     rangeChipActive: { borderColor: Color.goldBorder, backgroundColor: Color.goldWeak },
-    rangeChipText: { fontSize: 11, fontWeight: "600", color: Color.textFaint },
+    rangeChipText: { fontSize: 13, fontWeight: "600", color: Color.textFaint },
     rangeChipTextActive: { color: Color.gold },
     customRangeRow: { flexDirection: "row", gap: Spacing.sm, marginBottom: Spacing.sm },
-    emptyLeaderboardText: { fontSize: 12, color: Color.textMuted, textAlign: "center", paddingVertical: Spacing.sm },
+    emptyLeaderboardText: { fontSize: 14, color: Color.textMuted, textAlign: "center", paddingVertical: Spacing.sm },
     leaderboardContextLabel: {
-      fontSize: 11,
+      fontSize: 13,
       fontWeight: "700",
       color: Color.textFaint,
       marginBottom: Spacing.xs,
@@ -530,7 +530,7 @@ const useStyles = makeLegacyStyles((Color) =>
     leaderboardName: { fontSize: 14, fontWeight: "600", color: Color.textPrimary, flex: 1 },
     leaderboardValueWrap: { alignItems: "flex-end" },
     leaderboardValue: { fontSize: 13, fontWeight: "700", color: Color.textPrimary, fontVariant: ["tabular-nums"] },
-    leaderboardPct: { fontSize: 10, color: Color.textFaint, marginTop: 1 },
+    leaderboardPct: { fontSize: 12, color: Color.textFaint, marginTop: 1 },
     leaderboardTextMe: { color: Color.gold },
   })
 );

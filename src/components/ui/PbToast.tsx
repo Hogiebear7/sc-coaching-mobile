@@ -80,7 +80,7 @@ const useStyles = makeLegacyStyles((Color) =>
       flexDirection: "row",
       alignItems: "center",
       gap: Spacing.sm,
-      backgroundColor: Color.gold,
+      backgroundColor: Color.brand,
       borderRadius: Radius.md,
       paddingHorizontal: Spacing.md,
       paddingVertical: Spacing.sm,

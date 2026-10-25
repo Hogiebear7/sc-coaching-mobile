@@ -100,6 +100,6 @@ const useStyles = makeLegacyStyles((Color) =>
     },
     optionActive: { backgroundColor: Color.goldWeak },
     optionLabel: { fontSize: 13, fontWeight: "500", color: Color.textPrimary },
-    optionSublabel: { fontSize: 11, color: Color.textMuted, marginTop: 1 },
+    optionSublabel: { fontSize: 13, color: Color.textMuted, marginTop: 1 },
   })
 );

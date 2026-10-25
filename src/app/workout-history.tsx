@@ -199,8 +199,8 @@ const useStyles = makeLegacyStyles((Color) =>
     errorText: { color: Color.textMuted, fontSize: 14 },
     scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
     monthGroup: { marginBottom: Spacing.lg },
-    monthLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginBottom: Spacing.sm },
+    monthLabel: { fontSize: 12, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginBottom: Spacing.sm },
     emptyCard: { alignItems: "center", padding: Spacing.xl, gap: Spacing.sm },
-    emptyText: { fontSize: 12, color: Color.textMuted, textAlign: "center" },
+    emptyText: { fontSize: 14, color: Color.textMuted, textAlign: "center" },
   })
 );

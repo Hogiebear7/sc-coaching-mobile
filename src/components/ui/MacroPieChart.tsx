@@ -170,7 +170,7 @@ const useStyles = makeLegacyStyles((Color) =>
   StyleSheet.create({
     legendRow: { flexDirection: "row", alignItems: "center", paddingVertical: 5 },
     dot: { width: 9, height: 9, borderRadius: 5, marginRight: Spacing.sm },
-    legendLabel: { flex: 1, fontSize: 12.5, fontWeight: "600", color: Color.textSecondary },
-    legendValue: { fontSize: 12, color: Color.textMuted, fontVariant: ["tabular-nums"] },
+    legendLabel: { flex: 1, fontSize: 14.5, fontWeight: "600", color: Color.textSecondary },
+    legendValue: { fontSize: 14, color: Color.textMuted, fontVariant: ["tabular-nums"] },
   })
 );

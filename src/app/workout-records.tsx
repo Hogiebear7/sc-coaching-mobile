@@ -94,14 +94,14 @@ const useStyles = makeLegacyStyles((Color) =>
     emptyText: { fontSize: 14, color: Color.textMuted, textAlign: "center" },
     scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
     section: { marginBottom: Spacing.lg },
-    weekLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginBottom: Spacing.sm },
+    weekLabel: { fontSize: 12, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginBottom: Spacing.sm },
     recordsList: { padding: 0, overflow: "hidden" },
     recordRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", padding: Spacing.md, gap: Spacing.sm },
     recordRowDivider: { borderTopWidth: 1, borderTopColor: Color.borderSubtle },
     recordExercise: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
-    recordLabel: { fontSize: 12, color: Color.textMuted, marginTop: 2 },
+    recordLabel: { fontSize: 14, color: Color.textMuted, marginTop: 2 },
     recordValueWrap: { alignItems: "flex-end" },
     recordValue: { fontSize: 14, fontWeight: "700", color: Color.gold },
-    recordDate: { fontSize: 11, color: Color.textFaint, marginTop: 2 },
+    recordDate: { fontSize: 13, color: Color.textFaint, marginTop: 2 },
   })
 );

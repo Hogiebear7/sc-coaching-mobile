@@ -84,11 +84,11 @@ const useStyles = makeLegacyStyles((Color) =>
     card: { padding: Spacing.md, marginBottom: Spacing.sm },
     header: { flexDirection: "row", justifyContent: "space-between", alignItems: "baseline" },
     title: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
-    date: { fontSize: 11, color: Color.textMuted },
-    meta: { fontSize: 11, color: Color.textMuted, marginTop: 2 },
+    date: { fontSize: 13, color: Color.textMuted },
+    meta: { fontSize: 13, color: Color.textMuted, marginTop: 2 },
     lineRow: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 4 },
-    line: { flex: 1, fontSize: 11, color: Color.textFaint },
-    moreLine: { fontSize: 11, color: Color.textMuted, fontWeight: "600", marginTop: 4 },
+    line: { flex: 1, fontSize: 13, color: Color.textFaint },
+    moreLine: { fontSize: 13, color: Color.textMuted, fontWeight: "600", marginTop: 4 },
     pressed: { opacity: 0.7 },
   })
 );

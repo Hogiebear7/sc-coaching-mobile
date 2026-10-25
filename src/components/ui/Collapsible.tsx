@@ -92,7 +92,7 @@ const useStyles = makeLegacyStyles((Color) =>
       color: Color.textSecondary,
     },
     summary: {
-      fontSize: 12,
+      fontSize: 14,
       color: Color.textMuted,
       marginTop: 2,
     },

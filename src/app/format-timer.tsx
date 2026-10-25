@@ -941,7 +941,7 @@ const useStyles = makeLegacyStyles((Color) =>
     backButton: { padding: 4 },
     headerTitleWrap: { flex: 1, alignItems: "center", paddingHorizontal: Spacing.sm },
     headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary, textAlign: "center" },
-    headerSubtitle: { fontSize: 11, fontWeight: "600", color: Color.textFaint, marginTop: 1, letterSpacing: 0.4, textTransform: "uppercase" },
+    headerSubtitle: { fontSize: 13, fontWeight: "600", color: Color.textFaint, marginTop: 1, letterSpacing: 0.4, textTransform: "uppercase" },
     body: { flexGrow: 1, alignItems: "center", paddingTop: Spacing.xl, paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
     doneText: { fontSize: 14, color: Color.textMuted, textAlign: "center", marginTop: Spacing.xl },
     getReadyText: { fontSize: 16, fontWeight: "600", color: Color.textMuted, marginTop: Spacing.xxl },
@@ -958,13 +958,13 @@ const useStyles = makeLegacyStyles((Color) =>
     },
     cardRow: { flexDirection: "row", alignItems: "center", gap: Spacing.sm, padding: Spacing.md },
     cardRowDivider: { borderTopWidth: 1, borderTopColor: Color.borderSubtle },
-    cardRowIndex: { fontSize: 12, fontWeight: "700", color: Color.gold, width: 18 },
+    cardRowIndex: { fontSize: 14, fontWeight: "700", color: Color.gold, width: 18 },
     cardRowLabel: { fontSize: 14, fontWeight: "600", color: Color.textPrimary, flex: 1 },
-    cardRowMeta: { fontSize: 11, color: Color.textFaint, marginTop: 2 },
-    cardRowDuration: { fontSize: 12, color: Color.textMuted, fontVariant: ["tabular-nums"] },
-    phaseKind: { fontSize: 12, fontWeight: "700", letterSpacing: 1, color: Color.gold },
+    cardRowMeta: { fontSize: 13, color: Color.textFaint, marginTop: 2 },
+    cardRowDuration: { fontSize: 14, color: Color.textMuted, fontVariant: ["tabular-nums"] },
+    phaseKind: { fontSize: 14, fontWeight: "700", letterSpacing: 1, color: Color.gold },
     phaseLabel: { ...headline(30), color: Color.textPrimary, textAlign: "center", marginTop: Spacing.xs },
-    phaseMeta: { fontSize: 12, color: Color.textMuted, marginTop: 4 },
+    phaseMeta: { fontSize: 14, color: Color.textMuted, marginTop: 4 },
     clock: { ...figure(64, "700"), color: Color.gold, marginTop: Spacing.lg },
     ringWrap: {
       width: 240,
@@ -980,9 +980,9 @@ const useStyles = makeLegacyStyles((Color) =>
     ringFill: { position: "absolute", left: 0, right: 0, bottom: 0, backgroundColor: Color.goldWeak },
     ringFillRest: { backgroundColor: Color.surface3 },
     ringCenter: { ...StyleSheet.absoluteFill, alignItems: "center", justifyContent: "center" },
-    totalElapsed: { fontSize: 12, color: Color.textFaint, marginTop: Spacing.md },
+    totalElapsed: { fontSize: 14, color: Color.textFaint, marginTop: Spacing.md },
     nextPreview: { alignItems: "center", marginTop: Spacing.lg, opacity: 0.8 },
-    nextPreviewLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textFaint },
+    nextPreviewLabel: { fontSize: 12, fontWeight: "700", letterSpacing: 0.6, color: Color.textFaint },
     nextPreviewText: { fontSize: 14, fontWeight: "600", color: Color.textSecondary, marginTop: 2 },
     controlsRow: { flexDirection: "row", alignItems: "center", gap: Spacing.xl, marginTop: Spacing.xl },
     secondaryControl: {
@@ -1007,7 +1007,7 @@ const useStyles = makeLegacyStyles((Color) =>
     },
     amrapMovementRow: { flexDirection: "row", alignItems: "center", gap: Spacing.sm },
     amrapMovementText: { fontSize: 13, fontWeight: "600", color: Color.textSecondary },
-    amrapMovementSub: { fontSize: 10, color: Color.textFaint, marginTop: 1 },
+    amrapMovementSub: { fontSize: 12, color: Color.textFaint, marginTop: 1 },
     amrapRepsValue: { fontSize: 16, fontWeight: "700", color: Color.gold, fontVariant: ["tabular-nums"], minWidth: 28, textAlign: "center" },
     stepperButtonSmall: {
       width: 32,
@@ -1029,7 +1029,7 @@ const useStyles = makeLegacyStyles((Color) =>
       borderColor: Color.borderSubtle,
     },
     roundsValue: { ...figure(38), color: Color.textPrimary },
-    roundsLabel: { fontSize: 11, color: Color.textMuted },
+    roundsLabel: { fontSize: 13, color: Color.textMuted },
     chipperMovements: { width: "100%", marginTop: Spacing.lg, gap: Spacing.sm },
     chipperMovement: {
       borderRadius: Radius.md,
@@ -1042,7 +1042,7 @@ const useStyles = makeLegacyStyles((Color) =>
     chipperMovementName: { fontSize: 14, fontWeight: "700", color: Color.textPrimary },
     chipperProgressRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: Spacing.sm },
     chipperProgressText: { fontSize: 13, color: Color.textSecondary },
-    chipperRemainingText: { fontSize: 12, fontWeight: "600", color: Color.textMuted },
+    chipperRemainingText: { fontSize: 14, fontWeight: "600", color: Color.textMuted },
     chipperRemainingDone: { color: Color.gold },
     chipperInputRow: { flexDirection: "row", gap: Spacing.xs, marginTop: Spacing.sm, alignItems: "center" },
     chipperInput: {
@@ -1056,7 +1056,7 @@ const useStyles = makeLegacyStyles((Color) =>
       backgroundColor: Color.surface2,
     },
     chipperAddButton: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.gold, paddingHorizontal: Spacing.sm, paddingVertical: 9 },
-    chipperAddButtonText: { fontSize: 12, fontWeight: "700", color: Color.gold },
+    chipperAddButtonText: { fontSize: 14, fontWeight: "700", color: Color.gold },
     chipperPlayButton: {
       width: 36,
       height: 36,
@@ -1065,6 +1065,6 @@ const useStyles = makeLegacyStyles((Color) =>
       alignItems: "center",
       justifyContent: "center",
     },
-    chipperPrepText: { fontSize: 12, fontWeight: "700", color: Color.gold, marginTop: Spacing.xs },
+    chipperPrepText: { fontSize: 14, fontWeight: "700", color: Color.gold, marginTop: Spacing.xs },
   })
 );

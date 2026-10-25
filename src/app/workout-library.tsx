@@ -298,7 +298,7 @@ const useStyles = makeLegacyStyles((Color) =>
     scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
     emptyCard: { alignItems: "center", padding: Spacing.xl, gap: 4 },
     emptyText: { fontSize: 13, fontWeight: "600", color: Color.textSecondary, marginTop: Spacing.xs },
-    emptySub: { fontSize: 12, color: Color.textMuted, textAlign: "center" },
+    emptySub: { fontSize: 14, color: Color.textMuted, textAlign: "center" },
     generatorBanner: {
       flexDirection: "row",
       alignItems: "center",
@@ -319,11 +319,11 @@ const useStyles = makeLegacyStyles((Color) =>
       backgroundColor: Color.surface1,
     },
     generatorBannerTitle: { fontSize: 14, fontWeight: "700", color: Color.textPrimary },
-    generatorBannerSub: { fontSize: 11, color: Color.textMuted, marginTop: 2 },
+    generatorBannerSub: { fontSize: 13, color: Color.textMuted, marginTop: 2 },
     templateCard: { padding: Spacing.md, marginBottom: Spacing.sm },
     templateName: { fontSize: 15, fontWeight: "600", color: Color.textPrimary },
-    templatePreview: { fontSize: 12, color: Color.textMuted, marginTop: 4 },
-    templateCount: { fontSize: 11, color: Color.textFaint, marginTop: 4 },
+    templatePreview: { fontSize: 14, color: Color.textMuted, marginTop: 4 },
+    templateCount: { fontSize: 13, color: Color.textFaint, marginTop: 4 },
     searchWrap: {
       flexDirection: "row",
       alignItems: "center",
@@ -344,8 +344,8 @@ const useStyles = makeLegacyStyles((Color) =>
       marginHorizontal: Spacing.lg,
       marginBottom: Spacing.sm,
     },
-    equipmentFilterText: { flex: 1, fontSize: 11, color: Color.textMuted },
-    equipmentFilterAction: { fontSize: 11, fontWeight: "600", color: Color.gold },
+    equipmentFilterText: { flex: 1, fontSize: 13, color: Color.textMuted },
+    equipmentFilterAction: { fontSize: 13, fontWeight: "600", color: Color.gold },
     // flexShrink: 0 is load-bearing — react-native-web's ScrollView defaults to
     // flexShrink: 1 on its outer wrapper, so without this the FlatList below
     // (which wants all remaining vertical space) squeezes this row down toward
@@ -354,11 +354,11 @@ const useStyles = makeLegacyStyles((Color) =>
     bodyPartRow: { paddingHorizontal: Spacing.lg, gap: Spacing.xs },
     bodyPartChip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.md, paddingVertical: 6 },
     bodyPartChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
-    bodyPartChipText: { fontSize: 12, fontWeight: "600", color: Color.textMuted, textTransform: "capitalize" },
+    bodyPartChipText: { fontSize: 14, fontWeight: "600", color: Color.textMuted, textTransform: "capitalize" },
     bodyPartChipTextActive: { color: Color.gold },
     separator: { height: 1, backgroundColor: Color.borderSubtle },
     exerciseRow: { flexDirection: "row", alignItems: "center", paddingVertical: Spacing.md, gap: Spacing.sm },
     exerciseName: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
-    exerciseMeta: { fontSize: 11, color: Color.textMuted, marginTop: 2, textTransform: "capitalize" },
+    exerciseMeta: { fontSize: 13, color: Color.textMuted, marginTop: 2, textTransform: "capitalize" },
   })
 );

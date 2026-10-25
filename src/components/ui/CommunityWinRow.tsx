@@ -53,6 +53,6 @@ const useStyles = makeLegacyStyles((Color) =>
     },
     text: { fontSize: 13, color: Color.textSecondary, lineHeight: 18 },
     author: { fontWeight: "700", color: Color.textPrimary },
-    date: { fontSize: 11, color: Color.textFaint, marginTop: 2 },
+    date: { fontSize: 13, color: Color.textFaint, marginTop: 2 },
   })
 );

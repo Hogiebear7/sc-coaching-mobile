@@ -84,12 +84,12 @@ const useStyles = makeLegacyStyles((Color) =>
     exerciseRow: { paddingVertical: Spacing.sm, borderTopWidth: 1, borderTopColor: Color.borderSubtle },
     exerciseNameRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: Spacing.sm },
     exerciseName: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
-    exerciseTarget: { fontSize: 12, color: Color.textMuted, marginTop: 2 },
-    protocolNote: { fontSize: 12, color: Color.textMuted, marginTop: 4, fontStyle: "italic" },
+    exerciseTarget: { fontSize: 14, color: Color.textMuted, marginTop: 2 },
+    protocolNote: { fontSize: 14, color: Color.textMuted, marginTop: 4, fontStyle: "italic" },
     supersetBadge: { borderRadius: 999, backgroundColor: Color.gold + "26", paddingHorizontal: 6, paddingVertical: 1 },
-    supersetBadgeText: { fontSize: 10, fontWeight: "700", color: Color.gold },
+    supersetBadgeText: { fontSize: 12, fontWeight: "700", color: Color.gold },
     muscleTagRow: { flexDirection: "row", flexWrap: "wrap", gap: 4, marginTop: Spacing.xs },
     muscleTagChip: { borderRadius: Radius.pill, backgroundColor: Color.goldWeak, paddingHorizontal: Spacing.sm, paddingVertical: 3 },
-    muscleTagChipText: { fontSize: 10, fontWeight: "600", color: Color.gold },
+    muscleTagChipText: { fontSize: 12, fontWeight: "600", color: Color.gold },
   })
 );

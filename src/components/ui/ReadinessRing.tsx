@@ -99,7 +99,7 @@ const useStyles = makeLegacyStyles((Color) =>
       fontVariant: ["tabular-nums"],
     },
     suffix: {
-      fontSize: 9,
+      fontSize: 12,
       fontWeight: "500",
       color: Color.textMuted,
       marginTop: 1,

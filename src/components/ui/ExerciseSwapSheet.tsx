@@ -168,8 +168,8 @@ const useStyles = makeLegacyStyles((Color) =>
       paddingTop: Spacing.xl,
     },
     title: { fontSize: 15, fontWeight: "700", color: Color.textPrimary },
-    hint: { fontSize: 12, color: Color.textSecondary, lineHeight: 17, marginTop: Spacing.sm, marginBottom: Spacing.sm },
-    error: { fontSize: 12, color: Color.danger, marginTop: Spacing.sm },
+    hint: { fontSize: 14, color: Color.textSecondary, lineHeight: 17, marginTop: Spacing.sm, marginBottom: Spacing.sm },
+    error: { fontSize: 14, color: Color.danger, marginTop: Spacing.sm },
     closeButton: { position: "absolute", top: Spacing.md, right: Spacing.md, padding: 4 },
     altScroll: { marginTop: Spacing.xs },
     altCard: {
@@ -181,6 +181,6 @@ const useStyles = makeLegacyStyles((Color) =>
       borderTopColor: Color.borderSubtle,
     },
     altName: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
-    altRationale: { fontSize: 12, color: Color.textMuted, marginTop: 2, lineHeight: 16 },
+    altRationale: { fontSize: 14, color: Color.textMuted, marginTop: 2, lineHeight: 16 },
   })
 );

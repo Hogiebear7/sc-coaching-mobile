@@ -320,7 +320,7 @@ const useStyles = makeLegacyStyles((Color) =>
     inputError: { borderColor: Color.danger },
     valueText: { fontSize: 15, color: Color.textPrimary },
     placeholderText: { fontSize: 15, color: Color.textFaint },
-    error: { fontSize: 12, color: Color.danger, marginTop: 4 },
+    error: { fontSize: 14, color: Color.danger, marginTop: 4 },
     backdrop: {
       flex: 1,
       backgroundColor: "rgba(0,0,0,0.55)",
@@ -359,7 +359,7 @@ const useStyles = makeLegacyStyles((Color) =>
     },
     yearCellText: { fontSize: 14, color: Color.textSecondary },
     weekRow: { flexDirection: "row", marginBottom: Spacing.xs },
-    weekLabel: { flex: 1, textAlign: "center", fontSize: 11, fontWeight: "600", color: Color.textFaint },
+    weekLabel: { flex: 1, textAlign: "center", fontSize: 13, fontWeight: "600", color: Color.textFaint },
     // Each week is its own row of exactly 7 flex:1 cells, matching the header
     // row's sizing exactly — a `${100/7}%` width inside a flex-wrap grid was
     // the source of a rounding bug where accumulated pixel rounding pushed

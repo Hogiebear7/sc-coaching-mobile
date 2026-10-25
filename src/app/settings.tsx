@@ -545,7 +545,7 @@ const useStyles = makeLegacyStyles((Color) =>
     centerFill: { flex: 1 },
     scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
     sectionLabel: {
-      fontSize: 10,
+      fontSize: 12,
       fontWeight: "700",
       letterSpacing: 0.6,
       color: Color.textMuted,
@@ -563,7 +563,7 @@ const useStyles = makeLegacyStyles((Color) =>
       justifyContent: "center",
     },
     rowTitle: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
-    rowSub: { fontSize: 11, color: Color.textMuted, marginTop: 2 },
+    rowSub: { fontSize: 13, color: Color.textMuted, marginTop: 2 },
     divider: { borderTopWidth: 1, borderTopColor: Color.borderSubtle },
     identityRow: {
       flexDirection: "row",
@@ -572,7 +572,7 @@ const useStyles = makeLegacyStyles((Color) =>
       marginBottom: Spacing.lg,
     },
     identityName: { fontSize: 20, fontWeight: "700", fontStyle: "italic", color: Color.textPrimary },
-    identityEmail: { fontSize: 12, color: Color.textMuted, marginTop: 2 },
+    identityEmail: { fontSize: 14, color: Color.textMuted, marginTop: 2 },
     avatar: { width: 60, height: 60, borderRadius: Radius.pill },
     avatarPlaceholder: {
       width: 60,
@@ -586,9 +586,9 @@ const useStyles = makeLegacyStyles((Color) =>
     },
     avatarInitial: { fontSize: 22, fontWeight: "700", color: Color.gold },
     avatarActions: { flexDirection: "row", gap: Spacing.md, marginTop: 6 },
-    linkText: { fontSize: 12, fontWeight: "600", color: Color.gold },
-    linkTextDanger: { fontSize: 12, fontWeight: "600", color: Color.danger },
-    error: { fontSize: 11, color: Color.danger, marginTop: 4 },
+    linkText: { fontSize: 14, fontWeight: "600", color: Color.gold },
+    linkTextDanger: { fontSize: 14, fontWeight: "600", color: Color.danger },
+    error: { fontSize: 13, color: Color.danger, marginTop: 4 },
     unitsToggle: { flexDirection: "row", gap: 6 },
     unitsChip: {
       borderRadius: Radius.pill,
@@ -598,7 +598,7 @@ const useStyles = makeLegacyStyles((Color) =>
       paddingVertical: 6,
     },
     unitsChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
-    unitsChipText: { fontSize: 12, fontWeight: "600", color: Color.textMuted },
+    unitsChipText: { fontSize: 14, fontWeight: "600", color: Color.textMuted },
     unitsChipTextActive: { color: Color.gold },
     chipRow: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.xs },
     chip: {
@@ -609,7 +609,7 @@ const useStyles = makeLegacyStyles((Color) =>
       borderColor: Color.borderSubtle,
     },
     chipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
-    chipText: { fontSize: 11, fontWeight: "500", color: Color.textMuted },
+    chipText: { fontSize: 13, fontWeight: "500", color: Color.textMuted },
     chipTextActive: { color: Color.gold },
     customRow: { flexDirection: "row", gap: Spacing.sm, marginTop: Spacing.sm },
     customInput: {
@@ -630,7 +630,7 @@ const useStyles = makeLegacyStyles((Color) =>
       paddingHorizontal: Spacing.md,
       justifyContent: "center",
     },
-    addButtonText: { fontSize: 12, fontWeight: "600", color: Color.textSecondary },
+    addButtonText: { fontSize: 14, fontWeight: "600", color: Color.textSecondary },
     reminderActions: {
       flexDirection: "row",
       justifyContent: "space-between",
@@ -638,7 +638,7 @@ const useStyles = makeLegacyStyles((Color) =>
       marginTop: Spacing.md,
     },
     reminderSaveButton: { height: 36, paddingHorizontal: Spacing.lg },
-    saved: { color: Color.success, fontSize: 12 },
-    buildInfo: { fontSize: 11, color: Color.textFaint, textAlign: "center", marginTop: Spacing.xl },
+    saved: { color: Color.success, fontSize: 14 },
+    buildInfo: { fontSize: 13, color: Color.textFaint, textAlign: "center", marginTop: Spacing.xl },
   })
 );

@@ -150,8 +150,8 @@ const useStyles = makeLegacyStyles((Color) =>
     card: { padding: Spacing.md },
     headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
     value: { fontSize: 20, fontWeight: "700", color: Color.textPrimary, fontVariant: ["tabular-nums"] },
-    sub: { fontSize: 11, color: Color.textMuted, marginTop: 2 },
-    explainer: { fontSize: 11, color: Color.textMuted, marginTop: Spacing.sm, lineHeight: 16 },
+    sub: { fontSize: 13, color: Color.textMuted, marginTop: 2 },
+    explainer: { fontSize: 13, color: Color.textMuted, marginTop: Spacing.sm, lineHeight: 16 },
     inputRow: { flexDirection: "row", gap: Spacing.sm, marginTop: Spacing.md },
     input: {
       width: 90,
@@ -173,9 +173,9 @@ const useStyles = makeLegacyStyles((Color) =>
       borderColor: Color.borderSubtle,
     },
     rangeChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
-    rangeChipText: { fontSize: 11, fontWeight: "500", color: Color.textMuted },
+    rangeChipText: { fontSize: 13, fontWeight: "500", color: Color.textMuted },
     rangeChipTextActive: { color: Color.gold },
-    summary: { fontSize: 11, color: Color.textMuted, marginTop: Spacing.sm },
-    emptyRange: { fontSize: 12, color: Color.textMuted, textAlign: "center", paddingVertical: 20 },
+    summary: { fontSize: 13, color: Color.textMuted, marginTop: Spacing.sm },
+    emptyRange: { fontSize: 14, color: Color.textMuted, textAlign: "center", paddingVertical: 20 },
   })
 );

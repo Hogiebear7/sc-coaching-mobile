@@ -178,16 +178,16 @@ const useStyles = makeLegacyStyles((Color) =>
     thread: { paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md, gap: Spacing.sm },
     emptyState: { alignItems: "center", paddingVertical: Spacing.xxl },
     emptyTitle: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
-    emptySub: { fontSize: 12, color: Color.textMuted, marginTop: 4, textAlign: "center", maxWidth: 260 },
+    emptySub: { fontSize: 14, color: Color.textMuted, marginTop: 4, textAlign: "center", maxWidth: 260 },
     bubble: { maxWidth: "85%", borderRadius: Radius.md, padding: Spacing.sm },
     bubbleStaff: { alignSelf: "flex-end", backgroundColor: Color.goldWeak },
     bubbleMember: { alignSelf: "flex-start", borderWidth: 1, borderColor: Color.borderSubtle, backgroundColor: Color.surface1 },
     bubbleStaffText: { fontSize: 13, color: Color.gold, lineHeight: 18 },
     bubbleMemberText: { fontSize: 13, color: Color.textSecondary, lineHeight: 18 },
-    bubbleTime: { fontSize: 10, color: Color.textFaint, marginTop: 4 },
+    bubbleTime: { fontSize: 12, color: Color.textFaint, marginTop: 4 },
     bubbleTimeStaff: { color: "rgba(198,161,91,0.6)" },
-    error: { fontSize: 11, color: Color.danger, marginHorizontal: Spacing.lg, marginBottom: Spacing.xs },
-    aiNote: { fontSize: 11, color: Color.textMuted, marginHorizontal: Spacing.lg, marginBottom: Spacing.xs },
+    error: { fontSize: 13, color: Color.danger, marginHorizontal: Spacing.lg, marginBottom: Spacing.xs },
+    aiNote: { fontSize: 13, color: Color.textMuted, marginHorizontal: Spacing.lg, marginBottom: Spacing.xs },
     inputRow: {
       flexDirection: "row",
       gap: Spacing.sm,
@@ -228,6 +228,6 @@ const useStyles = makeLegacyStyles((Color) =>
       height: 40,
     },
     buttonDisabled: { opacity: 0.5 },
-    sendButtonText: { fontSize: 12, fontWeight: "700", color: Color.goldForeground },
+    sendButtonText: { fontSize: 14, fontWeight: "700", color: Color.goldForeground },
   })
 );

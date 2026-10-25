@@ -179,7 +179,7 @@ const useStyles = makeLegacyStyles((Color) =>
       paddingHorizontal: Spacing.xl,
     },
     overlayText: { fontSize: 13, color: Color.textSecondary, textAlign: "center", marginTop: Spacing.sm, lineHeight: 19 },
-    hint: { textAlign: "center", fontSize: 12, color: Color.textMuted, marginTop: Spacing.md },
+    hint: { textAlign: "center", fontSize: 14, color: Color.textMuted, marginTop: Spacing.md },
     manualLink: { alignItems: "center", paddingVertical: Spacing.lg },
     manualLinkText: { fontSize: 13, color: Color.gold, fontWeight: "600" },
   })

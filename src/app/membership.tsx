@@ -165,7 +165,7 @@ const useStyles = makeLegacyStyles((Color) =>
     scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
     statusCard: { padding: Spacing.lg, marginBottom: Spacing.md },
     statusCardAttention: { borderColor: Color.danger },
-    planLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted },
+    planLabel: { fontSize: 12, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted },
     planName: { fontSize: 20, fontWeight: "700", color: Color.textPrimary, marginTop: 4 },
     statusChip: {
       alignSelf: "flex-start",
@@ -177,12 +177,12 @@ const useStyles = makeLegacyStyles((Color) =>
       paddingVertical: 4,
       marginTop: Spacing.sm,
     },
-    statusChipText: { fontSize: 11, fontWeight: "600", color: Color.gold },
-    planMeta: { fontSize: 12, color: Color.textMuted, marginTop: Spacing.sm },
+    statusChipText: { fontSize: 13, fontWeight: "600", color: Color.gold },
+    planMeta: { fontSize: 14, color: Color.textMuted, marginTop: Spacing.sm },
     statsRow: { flexDirection: "row", gap: Spacing.sm, marginBottom: Spacing.md },
     statCard: { flex: 1, padding: Spacing.md, alignItems: "center" },
     statValue: { ...figure(30), color: Color.gold },
-    statLabel: { fontSize: 11, color: Color.textMuted, marginTop: 4 },
+    statLabel: { fontSize: 13, color: Color.textMuted, marginTop: 4 },
     warningCard: {
       flexDirection: "row",
       alignItems: "center",
@@ -192,7 +192,7 @@ const useStyles = makeLegacyStyles((Color) =>
       borderColor: Color.warning,
       backgroundColor: Color.warningWeak,
     },
-    warningText: { fontSize: 12, color: Color.warning, flex: 1 },
-    noteText: { fontSize: 12, color: Color.textMuted, lineHeight: 17, marginTop: Spacing.sm, textAlign: "center" },
+    warningText: { fontSize: 14, color: Color.warning, flex: 1 },
+    noteText: { fontSize: 14, color: Color.textMuted, lineHeight: 17, marginTop: Spacing.sm, textAlign: "center" },
   })
 );

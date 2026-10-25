@@ -787,7 +787,7 @@ const useStyles = makeLegacyStyles((Color) =>
       marginBottom: Spacing.md,
     },
     eyebrow: {
-      fontSize: 11,
+      fontSize: 13,
       fontWeight: "700",
       letterSpacing: 1,
       color: Color.gold,
@@ -798,7 +798,7 @@ const useStyles = makeLegacyStyles((Color) =>
       color: Color.textPrimary,
     },
     stepIndicator: {
-      fontSize: 12,
+      fontSize: 14,
       color: Color.textMuted,
       marginTop: Spacing.sm,
     },
@@ -826,7 +826,7 @@ const useStyles = makeLegacyStyles((Color) =>
       marginTop: Spacing.md,
     },
     chipHint: {
-      fontSize: 11,
+      fontSize: 13,
       color: Color.textFaint,
       marginBottom: Spacing.xs,
     },
@@ -848,7 +848,7 @@ const useStyles = makeLegacyStyles((Color) =>
       backgroundColor: Color.goldWeak,
     },
     chipText: {
-      fontSize: 12,
+      fontSize: 14,
       fontWeight: "500",
       color: Color.textMuted,
     },
@@ -857,7 +857,7 @@ const useStyles = makeLegacyStyles((Color) =>
     },
     multiline: { height: 90, paddingTop: 12, textAlignVertical: "top" },
     hint: {
-      fontSize: 11,
+      fontSize: 13,
       color: Color.textFaint,
       marginTop: -Spacing.sm,
       marginBottom: Spacing.md,
@@ -875,7 +875,7 @@ const useStyles = makeLegacyStyles((Color) =>
       marginBottom: Spacing.md,
     },
     dietaryTitle: { fontSize: 14, fontWeight: "700", color: Color.textPrimary },
-    dietaryHint: { fontSize: 11, color: Color.textMuted, marginTop: 2, marginBottom: Spacing.md, lineHeight: 15 },
+    dietaryHint: { fontSize: 13, color: Color.textMuted, marginTop: 2, marginBottom: Spacing.md, lineHeight: 15 },
     checkboxRow: {
       flexDirection: "row",
       alignItems: "flex-start",
@@ -883,10 +883,10 @@ const useStyles = makeLegacyStyles((Color) =>
       marginBottom: Spacing.md,
     },
     checkboxLabel: { fontSize: 13, fontWeight: "500", color: Color.textPrimary },
-    checkboxDescription: { fontSize: 11, color: Color.textMuted, marginTop: 2, lineHeight: 15 },
+    checkboxDescription: { fontSize: 13, color: Color.textMuted, marginTop: 2, lineHeight: 15 },
     shareWrap: { marginTop: Spacing.xs },
     legalLink: {
-      fontSize: 12,
+      fontSize: 14,
       color: Color.gold,
       fontWeight: "600",
       marginTop: -Spacing.sm,
@@ -895,7 +895,7 @@ const useStyles = makeLegacyStyles((Color) =>
     },
     reviewCard: { padding: Spacing.md, marginBottom: Spacing.md },
     reviewCardTitle: {
-      fontSize: 10,
+      fontSize: 12,
       fontWeight: "700",
       letterSpacing: 0.6,
       color: Color.textMuted,
@@ -906,7 +906,7 @@ const useStyles = makeLegacyStyles((Color) =>
       borderTopWidth: 1,
       borderTopColor: Color.borderSubtle,
     },
-    reviewLabel: { fontSize: 11, color: Color.textMuted },
+    reviewLabel: { fontSize: 13, color: Color.textMuted },
     reviewValue: { fontSize: 13, color: Color.textPrimary, fontWeight: "500", marginTop: 2 },
     warnBox: {
       marginTop: -Spacing.sm,
@@ -917,8 +917,8 @@ const useStyles = makeLegacyStyles((Color) =>
       backgroundColor: Color.warningWeak,
       padding: Spacing.sm,
     },
-    warnText: { fontSize: 12, color: Color.warning },
-    warnLink: { fontSize: 12, color: Color.warning, fontWeight: "700", marginTop: 4 },
+    warnText: { fontSize: 14, color: Color.warning },
+    warnLink: { fontSize: 14, color: Color.warning, fontWeight: "700", marginTop: 4 },
     footerRow: {
       flexDirection: "row",
       gap: Spacing.sm,
@@ -927,7 +927,7 @@ const useStyles = makeLegacyStyles((Color) =>
     footerButton: { flex: 1 },
     error: {
       color: Color.danger,
-      fontSize: 12,
+      fontSize: 14,
       marginTop: -Spacing.sm,
       marginBottom: Spacing.md,
     },

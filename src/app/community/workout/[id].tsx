@@ -141,7 +141,7 @@ const useStyles = makeLegacyStyles((Color) =>
     card: { padding: Spacing.md },
     cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
     authorName: { fontSize: 13, fontWeight: "700", color: Color.textPrimary },
-    date: { fontSize: 11, color: Color.textFaint },
+    date: { fontSize: 13, color: Color.textFaint },
     title: { fontSize: 17, fontWeight: "700", color: Color.textPrimary, marginTop: 4 },
     pbBadge: {
       flexDirection: "row",
@@ -154,7 +154,7 @@ const useStyles = makeLegacyStyles((Color) =>
       borderRadius: 999,
       backgroundColor: Color.goldWeak,
     },
-    pbBadgeText: { fontSize: 10, fontWeight: "700", color: Color.gold },
+    pbBadgeText: { fontSize: 12, fontWeight: "700", color: Color.gold },
     line: { fontSize: 13, color: Color.textMuted, marginTop: Spacing.sm },
     actions: {
       flexDirection: "row",
@@ -167,7 +167,7 @@ const useStyles = makeLegacyStyles((Color) =>
     },
     actionButton: { flexDirection: "row", alignItems: "center", gap: 4, minHeight: 32, paddingVertical: 4 },
     actionButtonPending: { opacity: 0.5 },
-    actionText: { fontSize: 12, fontWeight: "500", color: Color.textFaint },
-    actionError: { fontSize: 11, color: Color.danger, marginLeft: "auto" },
+    actionText: { fontSize: 14, fontWeight: "500", color: Color.textFaint },
+    actionError: { fontSize: 13, color: Color.danger, marginLeft: "auto" },
   })
 );

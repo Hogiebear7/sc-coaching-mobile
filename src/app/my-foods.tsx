@@ -109,7 +109,7 @@ const useStyles = makeLegacyStyles((Color) =>
     backButton: { padding: 4 },
     headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
     limitBanner: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.sm },
-    limitBannerText: { fontSize: 12, color: Color.textFaint },
+    limitBannerText: { fontSize: 14, color: Color.textFaint },
     centerFill: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: Spacing.xl },
     emptyTitle: { fontSize: 15, fontWeight: "700", color: Color.textPrimary, marginTop: Spacing.md },
     emptyText: { fontSize: 13, color: Color.textMuted, textAlign: "center", marginTop: 6, lineHeight: 19 },
@@ -124,10 +124,10 @@ const useStyles = makeLegacyStyles((Color) =>
     },
     rowName: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
     rowSubRow: { flexDirection: "row", alignItems: "center", gap: Spacing.xs, marginTop: 2 },
-    rowSub: { fontSize: 11, color: Color.textMuted },
+    rowSub: { fontSize: 13, color: Color.textMuted },
     badge: { borderWidth: 1, borderRadius: Radius.pill, paddingHorizontal: 6, paddingVertical: 1 },
-    badgeText: { fontSize: 9, fontWeight: "700" },
+    badgeText: { fontSize: 12, fontWeight: "700" },
     shareButton: { padding: 6 },
-    footerHint: { fontSize: 11, color: Color.textMuted, lineHeight: 16, marginTop: Spacing.md, paddingHorizontal: 2 },
+    footerHint: { fontSize: 13, color: Color.textMuted, lineHeight: 16, marginTop: Spacing.md, paddingHorizontal: 2 },
   })
 );

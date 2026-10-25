@@ -159,10 +159,10 @@ const useStyles = makeLegacyStyles((Color) =>
       marginHorizontal: Spacing.lg,
       marginBottom: Spacing.md,
     },
-    sortLabel: { fontSize: 11, color: Color.textFaint, marginRight: 2 },
+    sortLabel: { fontSize: 13, color: Color.textFaint, marginRight: 2 },
     sortChip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.sm, paddingVertical: 6 },
     sortChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
-    sortChipText: { fontSize: 11, fontWeight: "600", color: Color.textMuted },
+    sortChipText: { fontSize: 13, fontWeight: "600", color: Color.textMuted },
     sortChipTextActive: { color: Color.gold },
     centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
     errorText: { color: Color.textMuted, fontSize: 14, textAlign: "center", marginTop: Spacing.md },
@@ -175,7 +175,7 @@ const useStyles = makeLegacyStyles((Color) =>
       borderBottomColor: Color.borderSubtle,
     },
     rowName: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
-    rowEmail: { fontSize: 11, color: Color.textMuted, marginTop: 2 },
+    rowEmail: { fontSize: 13, color: Color.textMuted, marginTop: 2 },
     planChip: {
       borderRadius: Radius.pill,
       borderWidth: 1,
@@ -185,7 +185,7 @@ const useStyles = makeLegacyStyles((Color) =>
       paddingVertical: 4,
     },
     planChipNone: { borderColor: Color.borderSubtle, backgroundColor: "transparent" },
-    planChipText: { fontSize: 10, fontWeight: "600", color: Color.gold },
+    planChipText: { fontSize: 12, fontWeight: "600", color: Color.gold },
     planChipTextNone: { color: Color.textFaint },
   })
 );

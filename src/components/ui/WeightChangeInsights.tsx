@@ -33,7 +33,7 @@ export function WeightChangeInsights({ logs }: { logs: BodyWeightLog[] }) {
 const useStyles = makeLegacyStyles((Color) =>
   StyleSheet.create({
     wrap: { width: "100%", marginTop: Spacing.lg },
-    sectionTitle: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted },
+    sectionTitle: { fontSize: 12, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted },
     subTitle: { fontSize: 13, fontWeight: "700", color: Color.textPrimary, marginTop: Spacing.sm, marginBottom: 2 },
   })
 );

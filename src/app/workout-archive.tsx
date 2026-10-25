@@ -99,13 +99,13 @@ const useStyles = makeLegacyStyles((Color) =>
     headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
     centerFill: { flex: 1, alignItems: "center", justifyContent: "center" },
     scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
-    sectionLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginBottom: Spacing.sm },
-    emptyText: { fontSize: 12, color: Color.textMuted, marginBottom: Spacing.md },
+    sectionLabel: { fontSize: 12, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginBottom: Spacing.sm },
+    emptyText: { fontSize: 14, color: Color.textMuted, marginBottom: Spacing.md },
     card: { padding: Spacing.md, marginBottom: Spacing.sm },
     name: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
-    sub: { fontSize: 11, color: Color.textMuted, marginTop: 2 },
+    sub: { fontSize: 13, color: Color.textMuted, marginTop: 2 },
     actionsRow: { flexDirection: "row", alignItems: "center", gap: Spacing.sm, marginTop: Spacing.sm },
     deleteButton: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, borderRadius: Radius.md, borderWidth: 1, borderColor: Color.dangerWeak },
-    deleteText: { fontSize: 12, fontWeight: "600", color: Color.danger },
+    deleteText: { fontSize: 14, fontWeight: "600", color: Color.danger },
   })
 );

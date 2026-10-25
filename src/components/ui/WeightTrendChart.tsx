@@ -288,16 +288,16 @@ export function WeightTrendChart({
 const useStyles = makeLegacyStyles((Color) =>
   StyleSheet.create({
     emptyWrap: { paddingVertical: 20, alignItems: "center" },
-    emptyText: { fontSize: 12, color: Color.textMuted },
+    emptyText: { fontSize: 14, color: Color.textMuted },
     wrap: { width: "100%" },
     statsRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
     statRight: { alignItems: "flex-end" },
-    statLabel: { fontSize: 10, fontWeight: "600", color: Color.textMuted, textTransform: "uppercase", letterSpacing: 0.4 },
+    statLabel: { fontSize: 12, fontWeight: "600", color: Color.textMuted, textTransform: "uppercase", letterSpacing: 0.4 },
     statValue: { fontSize: 16, fontWeight: "700", color: Color.textPrimary, marginTop: 2, fontVariant: ["tabular-nums"] },
     legendRow: { flexDirection: "row", gap: 14, marginTop: 10 },
     legendItem: { flexDirection: "row", alignItems: "center", gap: 5 },
     legendSwatch: { width: 8, height: 8, borderRadius: 4 },
-    legendText: { fontSize: 10, color: Color.textMuted },
+    legendText: { fontSize: 12, color: Color.textMuted },
     chartWrap: { width: "100%", alignItems: "center", marginTop: 6 },
     tooltip: {
       position: "absolute",
@@ -310,7 +310,7 @@ const useStyles = makeLegacyStyles((Color) =>
       borderColor: Color.borderDefault,
       backgroundColor: Color.surface2,
     },
-    tooltipValue: { fontSize: 12, fontWeight: "700", color: Color.textPrimary, fontVariant: ["tabular-nums"] },
-    tooltipDate: { fontSize: 9, color: Color.textMuted, marginTop: 1 },
+    tooltipValue: { fontSize: 14, fontWeight: "700", color: Color.textPrimary, fontVariant: ["tabular-nums"] },
+    tooltipDate: { fontSize: 12, color: Color.textMuted, marginTop: 1 },
   })
 );

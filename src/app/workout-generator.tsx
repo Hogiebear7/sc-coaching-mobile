@@ -1147,9 +1147,9 @@ const useStyles = makeLegacyStyles((Color) =>
     tierHeaderRow: { flexDirection: "row", alignItems: "center", gap: Spacing.xs },
     tierDot: { width: 8, height: 8, borderRadius: 4 },
     tierTitle: { fontSize: 13, fontWeight: "700", color: Color.textPrimary },
-    tierRationale: { fontSize: 12, color: Color.textMuted, marginTop: 4, lineHeight: 17 },
-    sectionLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginTop: Spacing.lg },
-    sectionSub: { fontSize: 12, color: Color.textFaint, marginTop: 2, marginBottom: Spacing.sm },
+    tierRationale: { fontSize: 14, color: Color.textMuted, marginTop: 4, lineHeight: 17 },
+    sectionLabel: { fontSize: 12, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginTop: Spacing.lg },
+    sectionSub: { fontSize: 14, color: Color.textFaint, marginTop: 2, marginBottom: Spacing.sm },
     // The one loud label per logical group ("Programme setup", "Practical
     // constraints", "Context for AI") — everything under it uses the quieter
     // fieldLabel below, so the page reads as three groups, not six-plus
@@ -1162,7 +1162,7 @@ const useStyles = makeLegacyStyles((Color) =>
       marginTop: Spacing.xl,
       marginBottom: Spacing.sm,
     },
-    fieldLabel: { fontSize: 11, fontWeight: "600", color: Color.textSecondary, marginBottom: 6 },
+    fieldLabel: { fontSize: 13, fontWeight: "600", color: Color.textSecondary, marginBottom: 6 },
     chipRow: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.xs },
     chipIconRow: { flexDirection: "row", alignItems: "center" },
     // Sport field — a tap-to-open modal list (see SportField), not a chip
@@ -1214,9 +1214,9 @@ const useStyles = makeLegacyStyles((Color) =>
       borderColor: Color.goldBorder,
       backgroundColor: Color.goldWeak,
     },
-    customEndDateText: { flex: 1, fontSize: 12, fontWeight: "600", color: Color.textPrimary },
-    changeLinkText: { fontSize: 12, fontWeight: "600", color: Color.gold },
-    equipmentStatus: { fontSize: 12, color: Color.textFaint, marginTop: 2, marginBottom: Spacing.sm },
+    customEndDateText: { flex: 1, fontSize: 14, fontWeight: "600", color: Color.textPrimary },
+    changeLinkText: { fontSize: 14, fontWeight: "600", color: Color.gold },
+    equipmentStatus: { fontSize: 14, color: Color.textFaint, marginTop: 2, marginBottom: Spacing.sm },
     chip: {
       flexDirection: "row",
       alignItems: "center",
@@ -1228,7 +1228,7 @@ const useStyles = makeLegacyStyles((Color) =>
     },
     chipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
     chipActiveSecondary: { borderColor: Color.accentData, backgroundColor: "rgba(85,196,254,0.12)" },
-    chipText: { fontSize: 12, fontWeight: "600", color: Color.textMuted, textTransform: "capitalize" },
+    chipText: { fontSize: 14, fontWeight: "600", color: Color.textMuted, textTransform: "capitalize" },
     chipTextActive: { color: Color.gold },
     chipTextActiveSecondary: { color: Color.accentData },
     // Collapsed-by-default review area — replaces the old always-open chip
@@ -1251,10 +1251,10 @@ const useStyles = makeLegacyStyles((Color) =>
     },
     summaryDot: { width: 8, height: 8, borderRadius: 4 },
     summaryHeaderText: { flex: 1 },
-    summaryTitle: { fontSize: 12, fontWeight: "700", color: Color.textPrimary },
-    summaryMeta: { fontSize: 12, fontWeight: "500", color: Color.textMuted },
+    summaryTitle: { fontSize: 14, fontWeight: "700", color: Color.textPrimary },
+    summaryMeta: { fontSize: 14, fontWeight: "500", color: Color.textMuted },
     summaryEmptyText: {
-      fontSize: 11,
+      fontSize: 13,
       color: Color.textFaint,
       lineHeight: 16,
       paddingHorizontal: Spacing.md,
@@ -1275,7 +1275,7 @@ const useStyles = makeLegacyStyles((Color) =>
       marginTop: Spacing.sm,
       paddingVertical: 6,
     },
-    fullListToggleText: { fontSize: 11, fontWeight: "600", color: Color.textMuted },
+    fullListToggleText: { fontSize: 13, fontWeight: "600", color: Color.textMuted },
     // The diagram module reads as one contained "picker" panel — Front/Back,
     // Primary/Secondary, the silhouette, and the cardio pill all live inside
     // it, rather than floating loose against the screen background.
@@ -1292,7 +1292,7 @@ const useStyles = makeLegacyStyles((Color) =>
     },
     segment: { minWidth: 64, alignItems: "center", paddingHorizontal: Spacing.md, paddingVertical: 8, borderRadius: Radius.sm },
     segmentActive: { backgroundColor: Color.surface2 },
-    segmentText: { fontSize: 12, fontWeight: "600", color: Color.textMuted },
+    segmentText: { fontSize: 14, fontWeight: "600", color: Color.textMuted },
     segmentTextActive: { color: Color.textPrimary },
     // Both modes shown at once (rather than one button whose label changes)
     // so it's always visually obvious which one is active, and the dot color
@@ -1316,7 +1316,7 @@ const useStyles = makeLegacyStyles((Color) =>
     modeSegmentActivePrimary: { borderColor: Color.goldBorder, backgroundColor: Color.goldWeak },
     modeSegmentActiveSecondary: { borderColor: Color.accentData, backgroundColor: "rgba(85,196,254,0.12)" },
     modeDot: { width: 7, height: 7, borderRadius: 4 },
-    modeSegmentText: { fontSize: 12, fontWeight: "600", color: Color.textMuted },
+    modeSegmentText: { fontSize: 14, fontWeight: "600", color: Color.textMuted },
     modeSegmentTextActivePrimary: { color: Color.gold },
     modeSegmentTextActiveSecondary: { color: Color.accentData },
     diagramWrap: { alignItems: "center", paddingVertical: Spacing.md },
@@ -1331,7 +1331,7 @@ const useStyles = makeLegacyStyles((Color) =>
       paddingVertical: 8,
       marginTop: Spacing.xs,
     },
-    cardioChipText: { fontSize: 12, fontWeight: "600", color: Color.textMuted },
+    cardioChipText: { fontSize: 14, fontWeight: "600", color: Color.textMuted },
     profileRow: { gap: Spacing.xs, paddingBottom: 2 },
     profileChip: {
       flexDirection: "row",
@@ -1346,7 +1346,7 @@ const useStyles = makeLegacyStyles((Color) =>
     },
     profileChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
     profileChipIcon: { fontSize: 14 },
-    profileChipText: { fontSize: 12, fontWeight: "600", color: Color.textMuted },
+    profileChipText: { fontSize: 14, fontWeight: "600", color: Color.textMuted },
     profileChipTextActive: { color: Color.gold },
     addProfileChip: {
       flexDirection: "row",
@@ -1358,10 +1358,10 @@ const useStyles = makeLegacyStyles((Color) =>
       paddingHorizontal: Spacing.md,
       paddingVertical: 8,
     },
-    addProfileChipText: { fontSize: 12, fontWeight: "600", color: Color.gold },
-    emptyProfileHint: { fontSize: 11, color: Color.textFaint, marginTop: Spacing.xs, lineHeight: 15 },
+    addProfileChipText: { fontSize: 14, fontWeight: "600", color: Color.gold },
+    emptyProfileHint: { fontSize: 13, color: Color.textFaint, marginTop: Spacing.xs, lineHeight: 15 },
     editEquipmentRow: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: Spacing.sm, marginBottom: Spacing.sm },
-    editEquipmentText: { fontSize: 12, fontWeight: "600", color: Color.textMuted },
-    error: { fontSize: 12, color: Color.danger, marginTop: Spacing.md },
+    editEquipmentText: { fontSize: 14, fontWeight: "600", color: Color.textMuted },
+    error: { fontSize: 14, color: Color.danger, marginTop: Spacing.md },
   })
 );

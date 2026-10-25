@@ -57,11 +57,11 @@ export function ChangeInsightRow({
 const useStyles = makeLegacyStyles((Color) =>
   StyleSheet.create({
     row: { flexDirection: "row", alignItems: "center", gap: Spacing.sm, paddingVertical: 8 },
-    label: { width: 48, fontSize: 12, fontWeight: "600", color: Color.textSecondary },
-    noData: { flex: 1, fontSize: 11, color: Color.textFaint, textAlign: "right" },
+    label: { width: 48, fontSize: 14, fontWeight: "600", color: Color.textSecondary },
+    noData: { flex: 1, fontSize: 13, color: Color.textFaint, textAlign: "right" },
     barTrack: { flex: 1, height: 5, borderRadius: Radius.pill, backgroundColor: Color.surface2, overflow: "hidden" },
     barFill: { height: "100%", borderRadius: Radius.pill, backgroundColor: Color.gold },
     deltaWrap: { flexDirection: "row", alignItems: "center", minWidth: 68, justifyContent: "flex-end" },
-    deltaText: { fontSize: 12, fontWeight: "700", color: Color.textPrimary, fontVariant: ["tabular-nums"] },
+    deltaText: { fontSize: 14, fontWeight: "700", color: Color.textPrimary, fontVariant: ["tabular-nums"] },
   })
 );

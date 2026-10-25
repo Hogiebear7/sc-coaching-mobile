@@ -127,7 +127,7 @@ const useStyles = makeLegacyStyles((Color) =>
       opacity: 0.55,
     },
     tileText: {
-      fontSize: 12,
+      fontSize: 14,
       fontWeight: "600",
       color: Color.textFaint,
     },

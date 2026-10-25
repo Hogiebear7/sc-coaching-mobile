@@ -240,12 +240,12 @@ const useStyles = makeLegacyStyles((Color) =>
     errorText: { fontSize: 14, color: Color.textMuted, textAlign: "center" },
     scroll: { padding: Spacing.lg, paddingBottom: Spacing.xxl },
     reviewCard: { borderColor: Color.goldBorder, backgroundColor: Color.goldWeak },
-    reviewLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.gold },
+    reviewLabel: { fontSize: 12, fontWeight: "700", letterSpacing: 0.6, color: Color.gold },
     reviewText: { fontSize: 14, color: Color.textPrimary, lineHeight: 20, marginTop: Spacing.xs },
-    sectionLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginTop: Spacing.xl, marginBottom: Spacing.sm },
+    sectionLabel: { fontSize: 12, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginTop: Spacing.xl, marginBottom: Spacing.sm },
     statsGrid: { gap: Spacing.sm },
     statsRow: { flexDirection: "row", gap: Spacing.sm },
-    noCompareText: { fontSize: 12, color: Color.textFaint, marginTop: Spacing.xs, lineHeight: 17 },
+    noCompareText: { fontSize: 14, color: Color.textFaint, marginTop: Spacing.xs, lineHeight: 17 },
     detailCard: { padding: 0, overflow: "hidden" },
     detailRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: Spacing.md },
     detailRowDivider: { borderBottomWidth: 1, borderBottomColor: Color.borderSubtle },
@@ -263,6 +263,6 @@ const useStyles = makeLegacyStyles((Color) =>
     scoreTotal: { ...figure(48, "700") },
     scoreOutOf: { fontSize: 16, color: Color.textFaint, marginRight: Spacing.sm },
     scoreBand: { fontSize: 13, fontWeight: "700", letterSpacing: 0.4, textTransform: "uppercase" },
-    scoreDetail: { fontSize: 11, color: Color.textFaint, marginTop: 2 },
+    scoreDetail: { fontSize: 13, color: Color.textFaint, marginTop: 2 },
   })
 );

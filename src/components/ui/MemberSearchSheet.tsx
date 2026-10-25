@@ -138,8 +138,8 @@ const useStyles = makeLegacyStyles((Color) =>
       paddingHorizontal: Spacing.sm,
       paddingVertical: 6,
     },
-    mentionButtonText: { fontSize: 12, fontWeight: "600", color: Color.gold },
-    empty: { fontSize: 12, color: Color.textMuted, textAlign: "center", paddingVertical: Spacing.md },
+    mentionButtonText: { fontSize: 14, fontWeight: "600", color: Color.gold },
+    empty: { fontSize: 14, color: Color.textMuted, textAlign: "center", paddingVertical: Spacing.md },
     closeButton: { position: "absolute", top: Spacing.md, right: Spacing.md, padding: 4 },
   })
 );

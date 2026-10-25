@@ -60,7 +60,7 @@ const useStyles = makeLegacyStyles((Color) =>
   StyleSheet.create({
     wrap: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: Spacing.xl },
     text: { fontSize: 13, color: Color.textMuted, textAlign: "center", marginTop: Spacing.md, lineHeight: 19 },
-    subtext: { fontSize: 12, color: Color.textFaint, textAlign: "center", marginTop: Spacing.sm, lineHeight: 17 },
+    subtext: { fontSize: 14, color: Color.textFaint, textAlign: "center", marginTop: Spacing.sm, lineHeight: 17 },
     overlay: {
       ...StyleSheet.absoluteFill,
       backgroundColor: "rgba(10,21,38,0.9)",

@@ -35,7 +35,7 @@ const useStyles = makeLegacyStyles((Color) =>
     },
     chip: { flex: 1, alignItems: "center", borderRadius: Radius.pill, paddingVertical: 7 },
     chipActive: { backgroundColor: Color.gold },
-    chipText: { fontSize: 12, fontWeight: "600", color: Color.textFaint },
+    chipText: { fontSize: 14, fontWeight: "600", color: Color.textFaint },
     chipTextActive: { color: Color.goldForeground, fontWeight: "700" },
   })
 );

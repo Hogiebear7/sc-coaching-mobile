@@ -127,11 +127,11 @@ const useStyles = makeLegacyStyles((Color) =>
     categoryHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
     categoryHeaderRight: { flexDirection: "row", alignItems: "center", gap: Spacing.sm },
     categoryLabel: { fontSize: 13, fontWeight: "600", color: Color.textPrimary },
-    categoryCount: { fontSize: 11, color: Color.textFaint, fontVariant: ["tabular-nums"] },
+    categoryCount: { fontSize: 13, color: Color.textFaint, fontVariant: ["tabular-nums"] },
     equipmentChipWrap: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: Spacing.sm },
     equipmentChip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.sm, paddingVertical: 6 },
     equipmentChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
-    equipmentChipText: { fontSize: 11, fontWeight: "500", color: Color.textMuted },
+    equipmentChipText: { fontSize: 13, fontWeight: "500", color: Color.textMuted },
     equipmentChipTextActive: { color: Color.gold },
   })
 );

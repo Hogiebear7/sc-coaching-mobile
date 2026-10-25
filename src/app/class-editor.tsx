@@ -422,7 +422,7 @@ const useStyles = makeLegacyStyles((Color) =>
     centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
     errorText: { color: Color.textMuted, fontSize: 14, textAlign: "center" },
     scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
-    fieldLabel: { fontSize: 12, fontWeight: "500", color: Color.textSecondary, marginBottom: 6 },
+    fieldLabel: { fontSize: 14, fontWeight: "500", color: Color.textSecondary, marginBottom: 6 },
     input: {
       height: 44,
       borderRadius: Radius.md,
@@ -437,12 +437,12 @@ const useStyles = makeLegacyStyles((Color) =>
     chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: Spacing.sm },
     chip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.md, paddingVertical: 8 },
     chipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
-    chipText: { fontSize: 12, fontWeight: "600", color: Color.textMuted },
+    chipText: { fontSize: 14, fontWeight: "600", color: Color.textMuted },
     chipTextActive: { color: Color.gold },
-    error: { fontSize: 12, color: Color.danger, marginTop: Spacing.sm, textAlign: "center" },
+    error: { fontSize: 14, color: Color.danger, marginTop: Spacing.sm, textAlign: "center" },
     dangerLink: { alignItems: "center", paddingVertical: Spacing.md },
     dangerLinkText: { fontSize: 13, fontWeight: "600", color: Color.danger },
     labelRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 6 },
-    clearLinkText: { fontSize: 11, fontWeight: "600", color: Color.gold },
+    clearLinkText: { fontSize: 13, fontWeight: "600", color: Color.gold },
   })
 );

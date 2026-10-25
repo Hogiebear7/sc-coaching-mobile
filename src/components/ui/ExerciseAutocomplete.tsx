@@ -152,6 +152,6 @@ const useStyles = makeLegacyStyles((Color) =>
       borderBottomColor: Color.borderSubtle,
     },
     suggestionName: { fontSize: 13, fontWeight: "500", color: Color.textPrimary },
-    suggestionSection: { fontSize: 10, color: Color.textMuted },
+    suggestionSection: { fontSize: 12, color: Color.textMuted },
   })
 );

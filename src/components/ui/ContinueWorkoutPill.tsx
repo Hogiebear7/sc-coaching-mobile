@@ -39,6 +39,6 @@ const useStyles = makeLegacyStyles((Color) =>
       paddingHorizontal: Spacing.md,
       paddingVertical: 8,
     },
-    pillText: { fontSize: 12, fontWeight: "700", color: Color.goldForeground },
+    pillText: { fontSize: 14, fontWeight: "700", color: Color.goldForeground },
   })
 );

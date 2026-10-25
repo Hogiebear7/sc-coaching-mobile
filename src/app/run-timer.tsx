@@ -152,7 +152,7 @@ const useStyles = makeLegacyStyles((Color) =>
       backgroundColor: Color.surface1,
       padding: Spacing.md,
     },
-    splitsTitle: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginBottom: Spacing.sm },
+    splitsTitle: { fontSize: 12, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginBottom: Spacing.sm },
     splitRow: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: Color.borderSubtle },
     splitIndex: { fontSize: 13, color: Color.textMuted },
     splitTime: { fontSize: 13, fontWeight: "600", color: Color.textPrimary, fontVariant: ["tabular-nums"] },

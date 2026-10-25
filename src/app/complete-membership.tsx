@@ -182,7 +182,7 @@ const useStyles = makeLegacyStyles((Color) =>
     },
     logo: { marginBottom: Spacing.md },
     eyebrow: {
-      fontSize: 11,
+      fontSize: 13,
       fontWeight: "700",
       letterSpacing: 1,
       color: Color.gold,
@@ -200,7 +200,7 @@ const useStyles = makeLegacyStyles((Color) =>
     },
     error: {
       color: Color.danger,
-      fontSize: 12,
+      fontSize: 14,
       marginTop: Spacing.md,
     },
     saveButton: { marginTop: Spacing.xl },

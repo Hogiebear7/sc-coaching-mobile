@@ -139,7 +139,7 @@ const useStyles = makeLegacyStyles((Color) =>
     },
     calTitle: { fontSize: 15, fontWeight: "700", color: Color.textPrimary },
     weekRow: { flexDirection: "row", marginBottom: Spacing.xs },
-    weekLabel: { flex: 1, textAlign: "center", fontSize: 10, fontWeight: "600", color: Color.textFaint },
+    weekLabel: { flex: 1, textAlign: "center", fontSize: 12, fontWeight: "600", color: Color.textFaint },
     // flex:1 across each week's own row, not a `${100/7}%` width inside a
     // flex-wrap grid — the percentage-rounding version silently dropped the
     // 7th cell (Sunday) onto the next row on some screen widths. See
@@ -166,6 +166,6 @@ const useStyles = makeLegacyStyles((Color) =>
       justifyContent: "center",
       paddingHorizontal: 3,
     },
-    dayCellBadgeText: { fontSize: 9, fontWeight: "700", color: Color.goldForeground },
+    dayCellBadgeText: { fontSize: 12, fontWeight: "700", color: Color.goldForeground },
   })
 );

@@ -139,7 +139,7 @@ const useStyles = makeLegacyStyles((Color) =>
     },
     title: { fontSize: 13, fontWeight: "700", color: Color.textPrimary },
     weekRow: { flexDirection: "row" },
-    weekLabel: { flex: 1, textAlign: "center", fontSize: 10, fontWeight: "600", color: Color.textFaint, paddingVertical: 4 },
+    weekLabel: { flex: 1, textAlign: "center", fontSize: 12, fontWeight: "600", color: Color.textFaint, paddingVertical: 4 },
     dayCell: { flex: 1, aspectRatio: 1, alignItems: "center", justifyContent: "center", borderRadius: Radius.sm },
     dayCellSelected: { backgroundColor: Color.gold },
     dayCellText: { fontSize: 13, color: Color.textSecondary },

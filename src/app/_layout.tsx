@@ -326,7 +326,7 @@ const useStyles = makeLegacyStyles((Color) =>
     crashRoot: { flex: 1, backgroundColor: Color.bg0 },
     crashScroll: { padding: Spacing.lg, paddingTop: Spacing.xxl },
     crashTitle: { fontSize: 18, fontWeight: "700", color: Color.textPrimary },
-    crashSubtitle: { fontSize: 12, color: Color.textMuted, marginTop: Spacing.xs, lineHeight: 17 },
+    crashSubtitle: { fontSize: 14, color: Color.textMuted, marginTop: Spacing.xs, lineHeight: 17 },
     crashBox: {
       marginTop: Spacing.lg,
       padding: Spacing.md,
@@ -335,8 +335,8 @@ const useStyles = makeLegacyStyles((Color) =>
       borderColor: Color.borderSubtle,
       backgroundColor: Color.surface1,
     },
-    crashLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted },
-    crashText: { fontSize: 12, color: Color.textSecondary, marginTop: Spacing.xs, fontFamily: "monospace" },
+    crashLabel: { fontSize: 12, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted },
+    crashText: { fontSize: 14, color: Color.textSecondary, marginTop: Spacing.xs, fontFamily: "monospace" },
     crashFooter: { padding: Spacing.lg },
   })
 );

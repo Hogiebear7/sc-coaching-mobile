@@ -102,7 +102,7 @@ const useStyles = makeLegacyStyles((Color) =>
       marginBottom: Spacing.lg,
     },
     eyebrow: {
-      fontSize: 11,
+      fontSize: 13,
       fontWeight: "700",
       letterSpacing: 1,
       color: Color.gold,

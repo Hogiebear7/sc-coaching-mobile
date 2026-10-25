@@ -121,7 +121,7 @@ const useStyles = makeLegacyStyles((Color) =>
     },
     backButton: { position: "absolute", top: Spacing.xl, left: Spacing.xl, padding: 4 },
     eyebrow: {
-      fontSize: 11,
+      fontSize: 13,
       fontWeight: "700",
       letterSpacing: 1,
       color: Color.gold,

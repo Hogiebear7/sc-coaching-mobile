@@ -202,7 +202,7 @@ const useStyles = makeLegacyStyles((Color) =>
     unitChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
     unitChipText: { fontSize: 13, fontWeight: "600", color: Color.textMuted },
     unitChipTextActive: { color: Color.gold },
-    fieldLabel: { fontSize: 12, fontWeight: "500", color: Color.textSecondary, marginBottom: Spacing.xs },
+    fieldLabel: { fontSize: 14, fontWeight: "500", color: Color.textSecondary, marginBottom: Spacing.xs },
     bigInput: {
       height: 64,
       borderRadius: Radius.md,
@@ -227,10 +227,10 @@ const useStyles = makeLegacyStyles((Color) =>
     barRow: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.xs },
     barChip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.md, paddingVertical: 8 },
     barChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
-    barChipText: { fontSize: 12, fontWeight: "500", color: Color.textMuted },
+    barChipText: { fontSize: 14, fontWeight: "500", color: Color.textMuted },
     barChipTextActive: { color: Color.gold },
     resultCard: { padding: Spacing.lg, marginTop: Spacing.xl },
-    resultLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginBottom: Spacing.md },
+    resultLabel: { fontSize: 12, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginBottom: Spacing.md },
     noPlatesText: { fontSize: 13, color: Color.textMuted },
     stackWrap: { width: "100%", alignItems: "center", gap: 3, marginBottom: Spacing.md },
     stackRow: { flexDirection: "row-reverse", flexWrap: "wrap", alignItems: "center", justifyContent: "center", gap: 3 },
@@ -243,7 +243,7 @@ const useStyles = makeLegacyStyles((Color) =>
     totalRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "baseline" },
     totalLabel: { fontSize: 13, color: Color.textMuted },
     totalValue: { ...figure(30), color: Color.textPrimary },
-    shortfallText: { fontSize: 11, color: Color.warning, marginTop: Spacing.sm },
+    shortfallText: { fontSize: 13, color: Color.warning, marginTop: Spacing.sm },
     emptyText: { fontSize: 13, color: Color.textMuted, marginTop: Spacing.xl, textAlign: "center" },
   })
 );

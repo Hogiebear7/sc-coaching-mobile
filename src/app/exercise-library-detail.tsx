@@ -251,7 +251,7 @@ const useStyles = makeLegacyStyles((Color) =>
     availabilityTextYes: { color: Color.success },
     availabilityTextNo: { color: Color.danger },
     description: { fontSize: 13, color: Color.textSecondary, lineHeight: 19, marginTop: Spacing.md },
-    sectionLabel: { fontSize: 15, fontWeight: "600", color: Color.textSecondary, marginTop: Spacing.xl, marginBottom: Spacing.sm },
+    sectionLabel: { fontSize: 19, fontWeight: "600", color: Color.textPrimary, marginTop: Spacing.xl, marginBottom: Spacing.sm },
     instructionsCard: { padding: 0, overflow: "hidden" },
     stepRow: { flexDirection: "row", gap: Spacing.sm, padding: Spacing.md },
     stepDivider: { borderTopWidth: 1, borderTopColor: Color.borderSubtle },

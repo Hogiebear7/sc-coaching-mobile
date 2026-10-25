@@ -330,7 +330,7 @@ const useStyles = makeLegacyStyles((Color) =>
     reviewNoteBox: { marginTop: Spacing.sm, paddingTop: Spacing.sm, borderTopWidth: 1, borderTopColor: Color.borderSubtle },
     reviewNoteLabel: { fontSize: 12, fontWeight: "700", letterSpacing: 0.5, color: Color.textFaint },
     reviewNoteText: { fontSize: 14, color: Color.textSecondary, marginTop: 3, lineHeight: 17 },
-    sectionLabel: { fontSize: 15, fontWeight: "600", color: Color.textSecondary, marginTop: Spacing.sm, marginBottom: Spacing.sm },
+    sectionLabel: { fontSize: 19, fontWeight: "600", color: Color.textPrimary, marginTop: Spacing.sm, marginBottom: Spacing.sm },
     eligibilityCard: { padding: Spacing.md, marginBottom: Spacing.md },
     eligibilityRow: { flexDirection: "row", alignItems: "center", gap: Spacing.xs, marginTop: 6 },
     eligibilityRowText: { fontSize: 13, color: Color.textSecondary },

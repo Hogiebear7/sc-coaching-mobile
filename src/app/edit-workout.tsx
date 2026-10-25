@@ -563,7 +563,7 @@ const useStyles = makeLegacyStyles((Color) =>
     scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
     multiline: { minHeight: 80, textAlignVertical: "top", paddingTop: Spacing.sm },
     sectionHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: Spacing.lg, marginBottom: Spacing.sm },
-    sectionLabel: { fontSize: 15, fontWeight: "600", color: Color.textSecondary },
+    sectionLabel: { fontSize: 19, fontWeight: "600", color: Color.textPrimary },
     addChip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.md, paddingVertical: 6 },
     addChipText: { fontSize: 14, fontWeight: "600", color: Color.textSecondary },
     emptyHint: { fontSize: 13, color: Color.textFaint, paddingVertical: Spacing.md },

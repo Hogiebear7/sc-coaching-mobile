@@ -1148,7 +1148,7 @@ const useStyles = makeLegacyStyles((Color) =>
     tierDot: { width: 8, height: 8, borderRadius: 4 },
     tierTitle: { fontSize: 13, fontWeight: "700", color: Color.textPrimary },
     tierRationale: { fontSize: 14, color: Color.textMuted, marginTop: 4, lineHeight: 17 },
-    sectionLabel: { fontSize: 15, fontWeight: "600", color: Color.textSecondary, marginTop: Spacing.lg },
+    sectionLabel: { fontSize: 19, fontWeight: "600", color: Color.textPrimary, marginTop: Spacing.lg },
     sectionSub: { fontSize: 14, color: Color.textFaint, marginTop: 2, marginBottom: Spacing.sm },
     // The one loud label per logical group ("Programme setup", "Practical
     // constraints", "Context for AI") — everything under it uses the quieter

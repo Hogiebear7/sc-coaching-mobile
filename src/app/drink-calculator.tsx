@@ -492,7 +492,7 @@ const useStyles = makeLegacyStyles((Color) =>
     errorText: { color: Color.textMuted, fontSize: 14 },
     scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
     fieldLabel: { fontSize: 13, fontWeight: "600", color: Color.textMuted, marginBottom: 6, marginTop: Spacing.md, textTransform: "uppercase", letterSpacing: 0.4 },
-    sectionLabel: { fontSize: 15, fontWeight: "600", color: Color.textSecondary, marginBottom: Spacing.sm },
+    sectionLabel: { fontSize: 19, fontWeight: "600", color: Color.textPrimary, marginBottom: Spacing.sm },
     gridRow: { flexDirection: "row", gap: Spacing.sm },
     textInput: {
       height: 44,

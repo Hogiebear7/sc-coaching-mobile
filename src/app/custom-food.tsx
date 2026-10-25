@@ -333,7 +333,7 @@ const useStyles = makeLegacyStyles((Color) =>
     hintBannerText: { flex: 1, fontSize: 13, color: Color.textSecondary, lineHeight: 15 },
     photoChip: { flexDirection: "row", gap: Spacing.xs, alignItems: "center", marginBottom: Spacing.md },
     photoChipText: { flex: 1, fontSize: 13, color: Color.textMuted, lineHeight: 15 },
-    sectionLabel: { fontSize: 15, fontWeight: "600", color: Color.textSecondary, marginTop: Spacing.sm, marginBottom: Spacing.sm },
+    sectionLabel: { fontSize: 19, fontWeight: "600", color: Color.textPrimary, marginTop: Spacing.sm, marginBottom: Spacing.sm },
     sectionCaption: { fontSize: 13, color: Color.textMuted, lineHeight: 15, marginTop: -Spacing.xs, marginBottom: Spacing.sm },
     gridRow: { flexDirection: "row", gap: Spacing.sm },
     numberField: { flex: 1, marginBottom: Spacing.md },

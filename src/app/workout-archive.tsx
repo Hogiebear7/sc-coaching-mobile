@@ -99,7 +99,7 @@ const useStyles = makeLegacyStyles((Color) =>
     headerTitle: { fontSize: 20, fontWeight: "600", color: Color.textPrimary, flexShrink: 1, textAlign: "center" },
     centerFill: { flex: 1, alignItems: "center", justifyContent: "center" },
     scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
-    sectionLabel: { fontSize: 15, fontWeight: "600", color: Color.textSecondary, marginBottom: Spacing.sm },
+    sectionLabel: { fontSize: 19, fontWeight: "600", color: Color.textPrimary, marginBottom: Spacing.sm },
     emptyText: { fontSize: 14, color: Color.textMuted, marginBottom: Spacing.md },
     card: { padding: Spacing.md, marginBottom: Spacing.sm },
     name: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },

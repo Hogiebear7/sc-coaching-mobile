@@ -195,7 +195,7 @@ const useStyles = makeLegacyStyles((Color) =>
     modeChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
     modeChipText: { fontSize: 14, fontWeight: "600", color: Color.textMuted },
     modeChipTextActive: { color: Color.gold },
-    sectionLabel: { fontSize: 15, fontWeight: "600", color: Color.textSecondary, marginBottom: Spacing.sm },
+    sectionLabel: { fontSize: 19, fontWeight: "600", color: Color.textPrimary, marginBottom: Spacing.sm },
     presetRow: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.xs, marginBottom: Spacing.lg },
     presetChip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.sm, paddingVertical: 6 },
     presetChipText: { fontSize: 13, fontWeight: "600", color: Color.textSecondary },

@@ -365,7 +365,7 @@ const useStyles = makeLegacyStyles((Color) =>
     categoryChipText: { fontSize: 13, fontWeight: "500", color: Color.textMuted },
     categoryChipTextActive: { color: Color.gold },
     sectionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: Spacing.md, marginBottom: 4 },
-    sectionLabel: { fontSize: 15, fontWeight: "600", color: Color.textSecondary },
+    sectionLabel: { fontSize: 19, fontWeight: "600", color: Color.textPrimary },
     addChip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.sm, paddingVertical: 6 },
     addChipText: { fontSize: 13, fontWeight: "600", color: Color.textSecondary },
     hintText: { fontSize: 13, color: Color.textFaint, marginBottom: Spacing.sm, lineHeight: 15 },

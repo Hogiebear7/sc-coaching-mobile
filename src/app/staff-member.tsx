@@ -400,7 +400,7 @@ const useStyles = makeLegacyStyles((Color) =>
     name: { fontSize: 20, fontWeight: "700", color: Color.textPrimary },
     email: { fontSize: 14, color: Color.textMuted, marginTop: 2, marginBottom: Spacing.lg },
     card: { padding: Spacing.md, marginBottom: Spacing.md },
-    sectionLabel: { fontSize: 15, fontWeight: "600", color: Color.textSecondary, marginBottom: Spacing.sm },
+    sectionLabel: { fontSize: 19, fontWeight: "600", color: Color.textPrimary, marginBottom: Spacing.sm },
     rowLine: {
       flexDirection: "row",
       justifyContent: "space-between",

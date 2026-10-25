@@ -319,7 +319,7 @@ const useStyles = makeLegacyStyles((Color) =>
     itemText: { fontSize: 14, fontWeight: "500", color: Color.textPrimary },
     itemTextChecked: { color: Color.textFaint, textDecorationLine: "line-through" },
     itemQty: { fontSize: 13, color: Color.textMuted, marginTop: 2 },
-    sectionLabel: { fontSize: 15, fontWeight: "600", color: Color.textSecondary, marginBottom: Spacing.sm },
+    sectionLabel: { fontSize: 19, fontWeight: "600", color: Color.textPrimary, marginBottom: Spacing.sm },
     recipeCard: { padding: Spacing.md, marginBottom: Spacing.md },
     recipeIngredient: { fontSize: 13, color: Color.textSecondary, marginTop: 4 },
     recipeNotes: { fontSize: 14, color: Color.textMuted, marginTop: Spacing.sm, fontStyle: "italic" },

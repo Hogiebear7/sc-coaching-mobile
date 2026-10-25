@@ -301,7 +301,7 @@ const useStyles = makeLegacyStyles((Color) =>
     summaryLabel: { fontSize: 12, color: Color.textMuted, marginTop: 2 },
     trendCard: { padding: Spacing.md, alignItems: "center", marginTop: Spacing.md },
     chartCaption: { fontSize: 13, color: Color.textFaint, textAlign: "center", marginTop: Spacing.xs },
-    sectionLabel: { fontSize: 15, fontWeight: "600", color: Color.textSecondary, marginTop: Spacing.xl, marginBottom: Spacing.sm },
+    sectionLabel: { fontSize: 19, fontWeight: "600", color: Color.textPrimary, marginTop: Spacing.xl, marginBottom: Spacing.sm },
     list: { padding: 0, overflow: "hidden" },
     row: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", padding: Spacing.md, gap: Spacing.sm },
     rowDivider: { borderTopWidth: 1, borderTopColor: Color.borderSubtle },

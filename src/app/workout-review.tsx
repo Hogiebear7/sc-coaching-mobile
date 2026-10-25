@@ -242,7 +242,7 @@ const useStyles = makeLegacyStyles((Color) =>
     reviewCard: { borderColor: Color.goldBorder, backgroundColor: Color.goldWeak },
     reviewLabel: { fontSize: 12, fontWeight: "700", letterSpacing: 0.6, color: Color.gold },
     reviewText: { fontSize: 14, color: Color.textPrimary, lineHeight: 20, marginTop: Spacing.xs },
-    sectionLabel: { fontSize: 15, fontWeight: "600", color: Color.textSecondary, marginTop: Spacing.xl, marginBottom: Spacing.sm },
+    sectionLabel: { fontSize: 19, fontWeight: "600", color: Color.textPrimary, marginTop: Spacing.xl, marginBottom: Spacing.sm },
     statsGrid: { gap: Spacing.sm },
     statsRow: { flexDirection: "row", gap: Spacing.sm },
     noCompareText: { fontSize: 14, color: Color.textFaint, marginTop: Spacing.xs, lineHeight: 17 },

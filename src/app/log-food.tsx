@@ -836,7 +836,7 @@ const useStyles = makeLegacyStyles((Color) =>
     // primary state of this one.
     methodChipPrimary: { backgroundColor: Color.gold },
     methodChipTextPrimary: { color: Color.goldForeground },
-    sectionLabel: { fontSize: 15, fontWeight: "600", color: Color.textSecondary, marginTop: Spacing.lg, marginBottom: Spacing.sm },
+    sectionLabel: { fontSize: 19, fontWeight: "600", color: Color.textPrimary, marginTop: Spacing.lg, marginBottom: Spacing.sm },
     fallbackSection: { marginTop: Spacing.sm },
     fallbackLink: { paddingVertical: 6 },
     fallbackLinkText: { fontSize: 13, fontWeight: "600", color: Color.textMuted },

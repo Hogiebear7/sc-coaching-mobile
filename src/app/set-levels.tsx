@@ -216,7 +216,7 @@ const useStyles = makeLegacyStyles((Color) =>
       paddingVertical: Spacing.md,
     },
     sectionRowDivider: { borderTopWidth: 1, borderTopColor: Color.borderSubtle },
-    sectionLabel: { fontSize: 13, fontWeight: "500", color: Color.textPrimary },
+    sectionLabel: { fontSize: 19, fontWeight: "600", color: Color.textPrimary },
     sectionMeta: { flexDirection: "row", alignItems: "center", gap: Spacing.sm },
     sectionSets: { fontSize: 13, color: Color.textMuted, fontVariant: ["tabular-nums"] },
     tierBadge: { borderRadius: Radius.pill, paddingHorizontal: Spacing.xs, paddingVertical: 2 },

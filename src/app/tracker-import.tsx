@@ -318,7 +318,7 @@ const useStyles = makeLegacyStyles((Color) =>
     manualLinkText: { fontSize: 13, color: Color.gold, fontWeight: "600" },
     scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
     reviewCard: { padding: Spacing.md, marginBottom: Spacing.md, gap: Spacing.sm },
-    sectionLabel: { fontSize: 15, fontWeight: "600", color: Color.textSecondary },
+    sectionLabel: { fontSize: 19, fontWeight: "600", color: Color.textPrimary },
     fieldRow: { marginTop: 2 },
     gridRow: { flexDirection: "row", gap: Spacing.sm },
     numberField: { flex: 1, marginTop: 2 },

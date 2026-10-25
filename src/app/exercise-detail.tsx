@@ -181,7 +181,7 @@ const useStyles = makeLegacyStyles((Color) =>
     secondaryDivider: { width: 1, height: 28, backgroundColor: Color.borderSubtle },
     secondaryValue: { fontSize: 16, fontWeight: "700", color: Color.textPrimary, fontVariant: ["tabular-nums"] },
     secondaryLabel: { fontSize: 12, color: Color.textMuted, marginTop: 2 },
-    sectionLabel: { fontSize: 15, fontWeight: "600", color: Color.textSecondary, marginTop: Spacing.xl, marginBottom: Spacing.sm },
+    sectionLabel: { fontSize: 19, fontWeight: "600", color: Color.textPrimary, marginTop: Spacing.xl, marginBottom: Spacing.sm },
     metricPicker: { marginBottom: Spacing.sm },
     metricChip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.sm, paddingVertical: 6 },
     metricChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },

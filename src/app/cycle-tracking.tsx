@@ -634,7 +634,7 @@ const useStyles = makeLegacyStyles((Color) =>
     menopauseTitle: { fontSize: 13, fontWeight: "700", color: Color.textPrimary },
     menopauseBody: { fontSize: 14, color: Color.textMuted, marginTop: 2, lineHeight: 17 },
     sectionTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
-    sectionLabel: { fontSize: 15, fontWeight: "600", color: Color.textSecondary, marginTop: Spacing.xl, marginBottom: Spacing.sm },
+    sectionLabel: { fontSize: 19, fontWeight: "600", color: Color.textPrimary, marginTop: Spacing.xl, marginBottom: Spacing.sm },
     formCard: { padding: Spacing.lg },
     formHint: { fontSize: 14, color: Color.textMuted, marginBottom: Spacing.md, lineHeight: 17 },
     label: { fontSize: 13, fontWeight: "500", color: Color.textSecondary, marginBottom: 6 },

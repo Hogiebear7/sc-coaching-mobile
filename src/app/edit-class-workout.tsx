@@ -323,7 +323,7 @@ const useStyles = makeLegacyStyles((Color) =>
     hint: { fontSize: 14, color: Color.textMuted, marginTop: 4, lineHeight: 17 },
     multiline: { minHeight: 80, textAlignVertical: "top", paddingTop: Spacing.sm, marginTop: Spacing.md },
     sectionHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: Spacing.lg, marginBottom: Spacing.sm },
-    sectionLabel: { fontSize: 15, fontWeight: "600", color: Color.textSecondary },
+    sectionLabel: { fontSize: 19, fontWeight: "600", color: Color.textPrimary },
     addChip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.md, paddingVertical: 6 },
     addChipText: { fontSize: 14, fontWeight: "600", color: Color.textSecondary },
     emptyHint: { fontSize: 13, color: Color.textFaint, paddingVertical: Spacing.md },

@@ -272,7 +272,7 @@ const useStyles = makeLegacyStyles((Color) =>
     privateBadgeText: { fontSize: 13, color: Color.textFaint },
     statsGrid: { gap: Spacing.sm, marginTop: Spacing.lg },
     statsRow: { flexDirection: "row", gap: Spacing.sm },
-    sectionLabel: { fontSize: 15, fontWeight: "600", color: Color.textSecondary, marginTop: Spacing.xl, marginBottom: Spacing.sm },
+    sectionLabel: { fontSize: 19, fontWeight: "600", color: Color.textPrimary, marginTop: Spacing.xl, marginBottom: Spacing.sm },
     list: { padding: 0, overflow: "hidden" },
     row: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", padding: Spacing.md, gap: Spacing.sm },
     rowDivider: { borderTopWidth: 1, borderTopColor: Color.borderSubtle },

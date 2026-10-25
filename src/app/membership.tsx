@@ -100,10 +100,28 @@ export default function MembershipScreen() {
                 <Text style={styles.statusChipText}>Get started</Text>
               </Pressable>
             )}
+            {/* Mirrors the web Membership page: "renews" only for an active,
+                unexpired period. Automatic renewal doesn't exist yet, so a
+                past end date means the member has to renew themselves. */}
             {data.subscriptionPausedUntil ? (
               <Text style={styles.planMeta}>Paused until {formatDate(data.subscriptionPausedUntil)}</Text>
-            ) : data.subscriptionCurrentPeriodEnd ? (
-              <Text style={styles.planMeta}>Renews {formatDate(data.subscriptionCurrentPeriodEnd)}</Text>
+            ) : data.isPeriodLapsed ? (
+              <View style={styles.notice}>
+                <Ionicons name="alert-circle" size={18} color={Color.danger} />
+                <Text style={styles.noticeText}>
+                  Your billing period ended on {formatDate(data.subscriptionCurrentPeriodEnd)}. Renew on the web to keep
+                  booking sessions.
+                </Text>
+              </View>
+            ) : data.subscriptionStatus === "past_due" ? (
+              <View style={styles.notice}>
+                <Ionicons name="alert-circle" size={18} color={Color.danger} />
+                <Text style={styles.noticeText}>Your last payment failed. Update your payment method to keep your sessions.</Text>
+              </View>
+            ) : data.subscriptionStatus === "active" && data.subscriptionCurrentPeriodEnd ? (
+              <Text style={styles.planMeta}>
+                Billing period ends {formatDate(data.subscriptionCurrentPeriodEnd)} · renews automatically
+              </Text>
             ) : null}
           </Card>
 
@@ -133,9 +151,9 @@ export default function MembershipScreen() {
           ) : null}
 
           <Button
-            title={data.currentPlanName ? "Manage membership on web" : "View plans on web"}
+            title={data.isPeriodLapsed ? "Renew on web" : data.currentPlanName ? "Manage membership on web" : "View plans on web"}
             onPress={openMembershipOnWeb}
-            variant="secondary"
+            variant={data.isPeriodLapsed || !data.currentPlanName ? "primary" : "secondary"}
             style={{ marginTop: Spacing.sm }}
           />
           <Text style={styles.noteText}>
@@ -164,7 +182,17 @@ const useStyles = makeLegacyStyles((Color) =>
     errorText: { color: Color.textMuted, fontSize: 14 },
     scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
     statusCard: { padding: Spacing.lg, marginBottom: Spacing.md },
-    statusCardAttention: { borderColor: Color.danger },
+    statusCardAttention: { borderWidth: 1.5, borderColor: Color.danger },
+    notice: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      gap: 8,
+      marginTop: Spacing.md,
+      padding: Spacing.md,
+      borderRadius: Radius.md,
+      backgroundColor: Color.dangerWeak,
+    },
+    noticeText: { flex: 1, fontSize: 15, lineHeight: 21, color: Color.textPrimary },
     planLabel: { fontSize: 12, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted },
     planName: { fontSize: 20, fontWeight: "700", color: Color.textPrimary, marginTop: 4 },
     statusChip: {

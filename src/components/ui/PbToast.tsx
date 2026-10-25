@@ -4,7 +4,7 @@ import { Animated, Pressable, StyleSheet, Text } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Color, Radius, Spacing } from "@/constants/theme";
-import { successFeedback } from "@/lib/haptics";
+import { celebrateFeedback } from "@/lib/haptics";
 
 const VISIBLE_MS = 5000;
 const FADE_MS = 400;
@@ -40,7 +40,7 @@ export function PbToast({ message, onDismiss }: { message: string | null; onDism
 
   useEffect(() => {
     if (!message) return;
-    successFeedback();
+    celebrateFeedback();
     opacity.setValue(0);
     Animated.timing(opacity, { toValue: 1, duration: FADE_MS, useNativeDriver: true }).start();
     const id = setTimeout(fadeOutAndDismiss, VISIBLE_MS);

@@ -2,8 +2,9 @@
 // [data-theme="navy"] + [data-palette="gold"]). React Native's style system
 // doesn't support oklch(), so every value below is that same oklch color
 // converted to sRGB hex — same visual result, RN-compatible format. The S&C
-// brand is a fixed dark navy/gold identity (not light/dark adaptive), so
-// this is the only theme — no system-appearance branching.
+// brand started as a fixed dark navy/gold identity, and these legacy tokens
+// remain the dark values. App v2 palettes (DarkPalette / LightPalette,
+// below) are the themeable layer; see lib/theme.tsx.
 
 import type { TextStyle } from "react-native";
 
@@ -128,7 +129,30 @@ export const FontSize = {
 // current tab, celebrations). Colour otherwise appears only on data, one hue
 // per metric everywhere it shows. Soft geometry: 16dp borderless cards,
 // pill controls, 48dp round icon buttons.
-export const AppColor = {
+// Palettes. Dark is the default and the only one users see until Phase 2
+// enables the Settings theme picker (see lib/theme.tsx). Every key exists in
+// both so a component written against one works in the other. Light keeps
+// the same jobs: navy ink as the primary action, gold only as the brand mark,
+// and data hues darkened enough to hold 3:1 against a white card.
+export type AppPalette = {
+  bg: string;
+  surface: string;
+  surfaceHi: string;
+  control: string;
+  hairline: string;
+  text: string;
+  textSecondary: string;
+  textMuted: string;
+  primary: string;
+  onPrimary: string;
+  brand: string;
+  danger: string;
+  success: string;
+  warning: string;
+  scrim: string;
+};
+
+export const DarkPalette: AppPalette = {
   bg: "#060d18",
   surface: "#0f1a2c",
   surfaceHi: "#16243a",
@@ -140,10 +164,49 @@ export const AppColor = {
   primary: "#ffffff",
   onPrimary: "#0a1526",
   brand: "#c6a15b",
-} as const;
+  danger: "#f0646b",
+  success: "#7ccf9d",
+  warning: "#e9b452",
+  scrim: "rgba(0,0,0,0.55)",
+};
+
+export const LightPalette: AppPalette = {
+  bg: "#f3f5f9",
+  surface: "#ffffff",
+  surfaceHi: "#eaeef4",
+  control: "#e3e8f0",
+  hairline: "rgba(10,21,38,0.10)",
+  text: "#0a1526",
+  textSecondary: "rgba(10,21,38,0.74)",
+  textMuted: "rgba(10,21,38,0.54)",
+  primary: "#0a1526",
+  onPrimary: "#ffffff",
+  brand: "#9c7631",
+  danger: "#c8323a",
+  success: "#2e8a57",
+  warning: "#a86f0c",
+  scrim: "rgba(10,21,38,0.35)",
+};
+
+// Static dark alias for screens not yet reading the theme context.
+export const AppColor = DarkPalette;
+
+export type DataPalette = {
+  readinessHigh: string;
+  readinessMid: string;
+  readinessLow: string;
+  load: string;
+  sleep: string;
+  sessions: string;
+  weight: string;
+  hydration: string;
+  protein: string;
+  carbs: string;
+  fat: string;
+};
 
 // One hue per metric, used on its tile, chart, legend and explainer.
-export const DataColor = {
+export const DataColor: DataPalette = {
   readinessHigh: "#7ccf9d",
   readinessMid: "#55c4fe",
   readinessLow: "#e9b452",
@@ -155,13 +218,27 @@ export const DataColor = {
   protein: MacroColor.protein,
   carbs: MacroColor.carbs,
   fat: MacroColor.fat,
-} as const;
+};
 
-export function readinessColor(score: number | null): string {
-  if (score === null) return AppColor.textMuted;
-  if (score >= 60) return DataColor.readinessHigh;
-  if (score >= 40) return DataColor.readinessMid;
-  return DataColor.readinessLow;
+export const DataColorLight: DataPalette = {
+  readinessHigh: "#2e9a5f",
+  readinessMid: "#1784c4",
+  readinessLow: "#b9790c",
+  load: "#2c66d6",
+  sleep: "#6352d6",
+  sessions: "#cc5a26",
+  weight: "#8f52c9",
+  hydration: "#0f8ea3",
+  protein: "#c24a43",
+  carbs: "#3f8f58",
+  fat: "#c7702a",
+};
+
+export function readinessColor(score: number | null, data: DataPalette = DataColor, muted = AppColor.textMuted): string {
+  if (score === null) return muted;
+  if (score >= 60) return data.readinessHigh;
+  if (score >= 40) return data.readinessMid;
+  return data.readinessLow;
 }
 
 export const AppRadius = { card: 16, control: 999, inner: 10 } as const;

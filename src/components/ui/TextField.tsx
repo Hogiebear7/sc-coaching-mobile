@@ -2,26 +2,48 @@ import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View, type TextInputProps } from "react-native";
 
-import { Color, Radius, Spacing } from "@/constants/theme";
+import { AppRadius, Spacing } from "@/constants/theme";
+import { makeStyles, useAppTheme } from "@/lib/theme";
 
+// App v2 text field: visible label above a soft, borderless control-filled
+// input. Focus and error are shown with a 1.5dp outline so the field never
+// relies on colour fill alone.
 export function TextField({
   label,
   error,
   style,
   secureToggle,
+  onFocus,
+  onBlur,
   ...inputProps
 }: TextInputProps & { label: string; error?: string | null; secureToggle?: boolean }) {
+  const styles = useStyles();
+  const { colors } = useAppTheme();
   const [revealed, setRevealed] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const stateStyle = error ? styles.inputError : focused ? styles.inputFocused : null;
+  const focusProps = {
+    onFocus: (e: Parameters<NonNullable<TextInputProps["onFocus"]>>[0]) => {
+      setFocused(true);
+      onFocus?.(e);
+    },
+    onBlur: (e: Parameters<NonNullable<TextInputProps["onBlur"]>>[0]) => {
+      setFocused(false);
+      onBlur?.(e);
+    },
+  };
 
   if (secureToggle) {
     return (
       <View style={styles.wrap}>
         <Text style={styles.label}>{label}</Text>
-        <View style={[styles.inputRow, error ? styles.inputError : null]}>
+        <View style={[styles.inputRow, stateStyle]}>
           <TextInput
-            placeholderTextColor={Color.textFaint}
+            placeholderTextColor={colors.textMuted}
             secureTextEntry={!revealed}
             style={[styles.inputInner, style]}
+            accessibilityLabel={label}
+            {...focusProps}
             {...inputProps}
           />
           <Pressable
@@ -31,7 +53,7 @@ export function TextField({
             accessibilityRole="button"
             accessibilityLabel={revealed ? "Hide password" : "Show password"}
           >
-            <Ionicons name={revealed ? "eye-off-outline" : "eye-outline"} size={19} color={Color.textFaint} />
+            <Ionicons name={revealed ? "eye-off-outline" : "eye-outline"} size={20} color={colors.textMuted} />
           </Pressable>
         </View>
         {error ? <Text style={styles.error}>{error}</Text> : null}
@@ -43,8 +65,10 @@ export function TextField({
     <View style={styles.wrap}>
       <Text style={styles.label}>{label}</Text>
       <TextInput
-        placeholderTextColor={Color.textFaint}
-        style={[styles.input, error ? styles.inputError : null, style]}
+        placeholderTextColor={colors.textMuted}
+        style={[styles.input, stateStyle, style]}
+        accessibilityLabel={label}
+        {...focusProps}
         {...inputProps}
       />
       {error ? <Text style={styles.error}>{error}</Text> : null}
@@ -52,54 +76,59 @@ export function TextField({
   );
 }
 
-const styles = StyleSheet.create({
-  wrap: {
-    marginBottom: Spacing.md,
-  },
-  label: {
-    fontSize: 13,
-    fontWeight: "500",
-    color: Color.textSecondary,
-    marginBottom: 6,
-  },
-  input: {
-    height: 48,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-    paddingHorizontal: Spacing.md,
-    fontSize: 15,
-    color: Color.textPrimary,
-  },
-  inputError: {
-    borderColor: Color.danger,
-  },
-  error: {
-    fontSize: 12,
-    color: Color.danger,
-    marginTop: 4,
-  },
-  inputRow: {
-    height: 48,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  inputInner: {
-    flex: 1,
-    height: "100%",
-    paddingHorizontal: Spacing.md,
-    fontSize: 15,
-    color: Color.textPrimary,
-  },
-  eyeButton: {
-    height: "100%",
-    paddingHorizontal: Spacing.md,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-});
+const useStyles = makeStyles((c) =>
+  StyleSheet.create({
+    wrap: {
+      marginBottom: Spacing.md,
+    },
+    label: {
+      fontSize: 14,
+      fontWeight: "500",
+      color: c.textSecondary,
+      marginBottom: 6,
+    },
+    input: {
+      height: 50,
+      borderRadius: AppRadius.inner + 2,
+      borderWidth: 1.5,
+      borderColor: "transparent",
+      backgroundColor: c.control,
+      paddingHorizontal: Spacing.lg,
+      fontSize: 16,
+      color: c.text,
+    },
+    inputFocused: {
+      borderColor: c.text,
+    },
+    inputError: {
+      borderColor: c.danger,
+    },
+    error: {
+      fontSize: 13,
+      color: c.danger,
+      marginTop: 4,
+    },
+    inputRow: {
+      height: 50,
+      borderRadius: AppRadius.inner + 2,
+      borderWidth: 1.5,
+      borderColor: "transparent",
+      backgroundColor: c.control,
+      flexDirection: "row",
+      alignItems: "center",
+    },
+    inputInner: {
+      flex: 1,
+      height: "100%",
+      paddingHorizontal: Spacing.lg,
+      fontSize: 16,
+      color: c.text,
+    },
+    eyeButton: {
+      height: "100%",
+      paddingHorizontal: Spacing.lg,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+  })
+);

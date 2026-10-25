@@ -11,12 +11,15 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Collapsible } from "@/components/ui/Collapsible";
+import { ThemePicker } from "@/components/ui/ThemePicker";
 import { UpsellCard, UpsellRow } from "@/components/ui/Upsell";
 import { Color, Radius, Spacing } from "@/constants/theme";
 import { ApiError } from "@/lib/api-client";
 import { useAuth } from "@/lib/auth-context";
 import { isBatteryOptimizationRelevant, openBatteryOptimizationSettings } from "@/lib/battery-optimization";
+import { hapticsEnabled, setHapticsEnabled, tapFeedback } from "@/lib/haptics";
 import { hasAccess } from "@/lib/member-access";
+import { LIGHT_MODE_AVAILABLE } from "@/lib/theme";
 import { useTour } from "@/lib/tour-context";
 import {
   useMemberTier,
@@ -78,6 +81,7 @@ export default function SettingsScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const { restartTour } = useTour();
+  const [haptics, setHaptics] = useState(hapticsEnabled());
   const tier = useMemberTier();
   const canUseNotifications = hasAccess(tier, "notifications");
   const canUseGymProfiles = hasAccess(tier, "gymProfiles");
@@ -334,6 +338,36 @@ export default function SettingsScreen() {
                 </View>
               </View>
             </View>
+            <View style={styles.divider} />
+            <View style={styles.row}>
+              <View style={styles.rowIcon}>
+                <Ionicons name="phone-portrait-outline" size={16} color={Color.gold} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.rowTitle}>Vibration</Text>
+                <Text style={styles.rowSub}>A light tap when you press buttons, log sets and hit PBs</Text>
+              </View>
+              <Switch
+                value={haptics}
+                onValueChange={(v) => {
+                  setHaptics(v);
+                  setHapticsEnabled(v);
+                  if (v) tapFeedback();
+                }}
+                trackColor={{ false: Color.surface3, true: Color.gold }}
+                thumbColor={Color.textPrimary}
+                accessibilityLabel="Vibration"
+              />
+            </View>
+            {LIGHT_MODE_AVAILABLE ? (
+              <>
+                <View style={styles.divider} />
+                <View style={[styles.row, { flexDirection: "column", alignItems: "stretch" }]}>
+                  <Text style={[styles.rowTitle, { marginBottom: Spacing.sm }]}>Appearance</Text>
+                  <ThemePicker />
+                </View>
+              </>
+            ) : null}
           </Card>
 
           <SectionLabel>NOTIFICATIONS</SectionLabel>

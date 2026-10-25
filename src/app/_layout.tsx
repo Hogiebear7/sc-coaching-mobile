@@ -17,6 +17,7 @@ import { isMembershipTier } from "@/lib/member-access";
 import { addNotificationTapListener, mapLinkHrefToRoute } from "@/lib/push-notifications";
 import { useProfile } from "@/lib/queries/profile";
 import { RestTimerProvider } from "@/lib/rest-timer";
+import { ThemeProvider, useAppTheme } from "@/lib/theme";
 import { TourProvider } from "@/lib/tour-context";
 import { WorkoutDraftProvider } from "@/lib/workout-draft";
 
@@ -269,30 +270,38 @@ export default function RootLayout() {
     <KeyboardProvider>
       <SafeAreaProvider>
         <QueryClientProvider client={queryClient}>
-          <AuthProvider>
-            <TourProvider>
-              {/* RestTimerProvider outermost (was nested inside
-                  WorkoutDraftProvider) so WorkoutDraftProvider's own live-
-                  notification scheduling can read rest-timer state and
-                  avoid stacking a "Workout in progress" notification on top
-                  of the more specific "Resting — X" one. rest-timer.tsx
-                  doesn't depend on workout-draft.tsx at all, so this
-                  ordering has no other effect. */}
-              <RestTimerProvider>
-                <WorkoutDraftProvider>
-                  <StatusBar barStyle="light-content" backgroundColor={Color.bg0} />
-                  <View style={styles.root}>
-                    <AuthGate />
-                    <TourHost />
-                  </View>
-                </WorkoutDraftProvider>
-              </RestTimerProvider>
-            </TourProvider>
-          </AuthProvider>
+          <ThemeProvider>
+            <AuthProvider>
+              <TourProvider>
+                {/* RestTimerProvider outermost (was nested inside
+                    WorkoutDraftProvider) so WorkoutDraftProvider's own live-
+                    notification scheduling can read rest-timer state and
+                    avoid stacking a "Workout in progress" notification on top
+                    of the more specific "Resting — X" one. rest-timer.tsx
+                    doesn't depend on workout-draft.tsx at all, so this
+                    ordering has no other effect. */}
+                <RestTimerProvider>
+                  <WorkoutDraftProvider>
+                    <ThemedStatusBar />
+                    <View style={styles.root}>
+                      <AuthGate />
+                      <TourHost />
+                    </View>
+                  </WorkoutDraftProvider>
+                </RestTimerProvider>
+              </TourProvider>
+            </AuthProvider>
+          </ThemeProvider>
         </QueryClientProvider>
       </SafeAreaProvider>
     </KeyboardProvider>
   );
+}
+
+// Status bar follows the resolved theme (always dark until light mode ships).
+function ThemedStatusBar() {
+  const { scheme, colors } = useAppTheme();
+  return <StatusBar barStyle={scheme === "light" ? "dark-content" : "light-content"} backgroundColor={colors.bg} />;
 }
 
 const styles = StyleSheet.create({

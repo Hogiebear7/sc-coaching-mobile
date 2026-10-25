@@ -1,13 +1,14 @@
-import { useEffect, useState } from "react";
+import { Ionicons } from "@expo/vector-icons";
+import { useEffect, useState, type ReactNode } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 
 import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
 import { DateField, formatDateDisplay } from "@/components/ui/DateField";
-import { LiveColor as Color, Radius, Spacing } from "@/constants/theme";
+import { AppRadius, type AppPalette } from "@/constants/theme";
+import { selectionFeedback, successFeedback, tapFeedback } from "@/lib/haptics";
 import { useGoalTimeline, useSaveGoal, type GoalTimelineResult } from "@/lib/queries/goal-timeline";
+import { makeStyles, useAppTheme } from "@/lib/theme";
 import { todayDateString } from "@/lib/workout-formatters";
-import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 function shiftDate(iso: string, days: number): string {
   const d = new Date(`${iso}T00:00:00`);
@@ -18,67 +19,85 @@ function shiftDate(iso: string, days: number): string {
 // DateField's year picker defaults its upper bound to the current year when
 // no maxDate is given — correct for a backward-looking date (DOB, cycle
 // start) but wrong here, since a goal target date is always in the future.
-// Without this, minDate=today and the missing maxDate both collapse to this
-// year, leaving exactly one selectable year. Five years out is generous for
-// any realistic body-composition goal without making the picker unwieldy.
+// Five years out is generous for any realistic body-composition goal
+// without making the picker unwieldy.
 function maxGoalDate(): string {
   const d = new Date();
   d.setFullYear(d.getFullYear() + 5);
   return d.toISOString().slice(0, 10);
 }
 
-const difficultyCopy = (): Record<NonNullable<GoalTimelineResult["difficulty"]>, { label: string; color: string }> => ({
-  comfortable: { label: "Comfortable", color: Color.success },
-  challenging: { label: "Challenging", color: Color.warning },
-  aggressive: { label: "Aggressive", color: Color.danger },
-});
+function weeksUntil(iso: string): number {
+  const ms = new Date(`${iso}T00:00:00`).getTime() - new Date(`${todayDateString()}T00:00:00`).getTime();
+  return Math.max(0, Math.round(ms / (7 * 24 * 3600 * 1000)));
+}
 
-function TimelineSummary({ label, unit, timeline }: { label: string; unit: string; timeline: GoalTimelineResult }) {
-  const styles = useStyles();
-  const difficulty = timeline.difficulty ? difficultyCopy()[timeline.difficulty] : null;
-  return (
-    <View style={styles.summaryBox}>
-      <View style={styles.summaryHeaderRow}>
-        <Text style={styles.summaryLabel}>{label}</Text>
-        {difficulty ? <Text style={[styles.difficultyText, { color: difficulty.color }]}>{difficulty.label}</Text> : null}
-      </View>
-      {timeline.clampedWeeklyRate !== null ? (
-        <Text style={styles.summaryText}>
-          Needs about {Math.abs(timeline.clampedWeeklyRate).toFixed(2)}
-          {unit}/week {timeline.direction === "lose" ? "off" : "on"} to hit your date.
-          {timeline.isAggressive ? (
-            <Text style={styles.warningText}>
-              {" "}
-              That's faster than a safe pace — the plan is capped at a safer rate, so your date may slip.
-            </Text>
-          ) : null}
-        </Text>
-      ) : null}
-      {timeline.suggestedDate ? (
-        <Text style={styles.summaryText}>
-          At a sustainable pace for your training frequency, this goal is realistic by around{" "}
-          {formatDateDisplay(timeline.suggestedDate)}.
-        </Text>
-      ) : null}
-      {timeline.projectedDateAtCurrentTrend ? (
-        <Text style={styles.summaryText}>
-          At your current logged trend, you're on track for around {formatDateDisplay(timeline.projectedDateAtCurrentTrend)}.
-        </Text>
-      ) : (
-        <Text style={styles.summaryText}>Keep logging to see a projection based on your actual trend.</Text>
-      )}
-    </View>
-  );
+function difficultyOf(d: GoalTimelineResult["difficulty"], c: AppPalette): { label: string; color: string } | null {
+  if (d === "comfortable") return { label: "Comfortable", color: c.success };
+  if (d === "challenging") return { label: "Challenging", color: c.warning };
+  if (d === "aggressive") return { label: "Aggressive", color: c.danger };
+  return null;
 }
 
 const TRAINING_DAYS_OPTIONS = [1, 2, 3, 4, 5, 6, 7];
 
+// Goal summary card in the "label · value, then a plain-English paragraph"
+// shape, so each number comes with what it means.
+function SummaryCard({ label, value, valueColor, children }: { label: string; value: string; valueColor?: string; children: ReactNode }) {
+  const styles = useStyles();
+  return (
+    <View style={styles.summary}>
+      <View style={styles.summaryHead}>
+        <Text style={styles.summaryLabel}>{label}</Text>
+        <Text style={[styles.summaryValue, valueColor ? { color: valueColor } : null]}>{value}</Text>
+      </View>
+      <Text style={styles.summaryBody}>{children}</Text>
+    </View>
+  );
+}
+
+function TimelineSummary({ label, unit, timeline }: { label: string; unit: string; timeline: GoalTimelineResult }) {
+  const styles = useStyles();
+  const { colors } = useAppTheme();
+  const difficulty = difficultyOf(timeline.difficulty, colors);
+  return (
+    <View style={{ gap: 10 }}>
+      <Text style={styles.groupTitle}>{label}</Text>
+      {timeline.clampedWeeklyRate !== null ? (
+        <SummaryCard
+          label="Weekly pace"
+          value={`${timeline.direction === "lose" ? "−" : "+"}${Math.abs(timeline.clampedWeeklyRate).toFixed(2)}${unit}`}
+          valueColor={difficulty?.color}
+        >
+          {`That's the pace needed to hit your date${difficulty ? ` — ${difficulty.label.toLowerCase()}` : ""}.`}
+          {timeline.isAggressive ? " It's faster than a safe pace, so your plan is capped at a safer rate and the date may slip." : ""}
+        </SummaryCard>
+      ) : null}
+      {timeline.suggestedDate ? (
+        <SummaryCard label="Sustainable date" value={formatDateDisplay(timeline.suggestedDate)}>
+          A realistic date for your training frequency. It&apos;s an optimistic estimate — plan for a few extra weeks, since progress is
+          rarely a straight line.
+        </SummaryCard>
+      ) : null}
+      <SummaryCard
+        label="On your current trend"
+        value={timeline.projectedDateAtCurrentTrend ? formatDateDisplay(timeline.projectedDateAtCurrentTrend) : "—"}
+      >
+        {timeline.projectedDateAtCurrentTrend
+          ? "Where your logged weigh-ins say you're heading if nothing changes."
+          : "Keep logging your weight to see a projection based on your actual trend."}
+      </SummaryCard>
+    </View>
+  );
+}
+
 // Mirrors the web Profile page's GoalTimelineCard — same save form +
-// projection display, against the same /api/profile/goal + /goal-timeline
-// routes.
+// projection, against the same /api/profile/goal + /goal-timeline routes.
+// App v2 layout borrows the "strategy" pattern: consequence tiles up top
+// that change with the inputs, then the inputs, then the explained summary.
 export function GoalTimelineCard() {
   const styles = useStyles();
-  const Color = useLegacyColors();
+  const { colors, data: dc } = useAppTheme();
   const { data, isLoading, refetch } = useGoalTimeline();
   const saveGoal = useSaveGoal();
   const [goalWeightKg, setGoalWeightKg] = useState("");
@@ -133,14 +152,14 @@ export function GoalTimelineCard() {
         trainingDaysPerWeek,
       });
       const projection = await refetch();
-      const suggested =
-        projection.data?.weightTimeline?.suggestedDate ?? projection.data?.bodyFatTimeline?.suggestedDate ?? null;
+      const suggested = projection.data?.weightTimeline?.suggestedDate ?? projection.data?.bodyFatTimeline?.suggestedDate ?? null;
       if (!suggested) {
         setError("Not enough information yet to suggest a date — check your current weight/body-fat is logged.");
         return;
       }
       setGoalTargetDate(suggested);
       await saveGoal.mutateAsync({ goalTargetDate: suggested });
+      successFeedback();
     } catch {
       setError("Could not generate a timeline. Please try again.");
     } finally {
@@ -148,10 +167,7 @@ export function GoalTimelineCard() {
     }
   }
 
-  // Persists goal weight/body-fat as soon as the member leaves the field —
-  // there's no separate "save" action on this card any more (Generate
-  // timeline is the one that also computes a suggested date; this is for
-  // anyone who just wants the number on record without generating one).
+  // Persists goal weight/body-fat as soon as the member leaves the field.
   // Silently skips an empty or invalid field rather than erroring on blur —
   // the member may still be mid-edit or genuinely means to leave it blank.
   function saveWeightOrBodyFat(field: "weight" | "bodyFat") {
@@ -165,6 +181,7 @@ export function GoalTimelineCard() {
   }
 
   async function nudgeDate(days: number) {
+    tapFeedback();
     const next = shiftDate(goalTargetDate || todayDateString(), days);
     setGoalTargetDate(next);
     setError(null);
@@ -175,63 +192,101 @@ export function GoalTimelineCard() {
     }
   }
 
+  const primary = data?.weightTimeline ?? data?.bodyFatTimeline ?? null;
+  const difficulty = primary ? difficultyOf(primary.difficulty, colors) : null;
+  const pace = primary?.clampedWeeklyRate ?? null;
+  const paceUnit = data?.weightTimeline ? "kg" : "pts";
+  const current = data?.currentWeightKg ?? null;
+  const goal = data?.goalWeightKg ?? null;
+
   return (
-    <Card style={styles.card}>
+    <View style={styles.card}>
       <Text style={styles.title}>Goal timeline</Text>
-      <Text style={styles.explainer}>
-        Optional. Set a goal and training days, then generate a timeline — your calorie target
-        adjusts to match it, capped at a safe rate.
+      <Text style={styles.intro}>
+        Optional. Set a goal and your training days, then generate a timeline — your calorie target adjusts to match it, capped at a safe rate.
       </Text>
 
+      {/* Consequence tiles: what the current inputs mean, at a glance */}
+      <View style={styles.tiles}>
+        <View style={[styles.tile, { backgroundColor: `${dc.readinessHigh}26` }]}>
+          <Text style={styles.tileValue} numberOfLines={1} adjustsFontSizeToFit>
+            {goalTargetDate ? formatDateDisplay(goalTargetDate) : "—"}
+          </Text>
+          <Text style={styles.tileLabel}>{goalTargetDate ? `target · ${weeksUntil(goalTargetDate)} weeks away` : "target date"}</Text>
+        </View>
+        <View style={styles.tile}>
+          <Text style={[styles.tileValue, difficulty ? { color: difficulty.color } : null]} numberOfLines={1} adjustsFontSizeToFit>
+            {pace !== null ? `${primary?.direction === "lose" ? "−" : "+"}${Math.abs(pace).toFixed(2)} ${paceUnit}` : "—"}
+          </Text>
+          <Text style={styles.tileLabel}>{difficulty ? `per week · ${difficulty.label.toLowerCase()}` : "per week"}</Text>
+        </View>
+      </View>
+
+      {current !== null && goal !== null ? (
+        <View style={styles.journey} accessible accessibilityLabel={`From ${current.toFixed(1)} to ${goal} kilograms`}>
+          <View style={[styles.journeyDot, { backgroundColor: dc.weight }]} />
+          <Text style={styles.journeyText}>{current.toFixed(1)} kg</Text>
+          <Ionicons name="arrow-forward" size={16} color={colors.textMuted} />
+          <Text style={styles.journeyText}>{goal} kg</Text>
+          <Text style={styles.journeyGap}>
+            {Math.abs(goal - current).toFixed(1)} kg {goal >= current ? "to gain" : "to lose"}
+          </Text>
+        </View>
+      ) : null}
+
       <View style={styles.inputRow}>
-        <View style={styles.inputCol}>
+        <View style={{ flex: 1 }}>
           <Text style={styles.label}>Goal weight (kg)</Text>
           <TextInput
             value={goalWeightKg}
             onChangeText={setGoalWeightKg}
             onBlur={() => saveWeightOrBodyFat("weight")}
             keyboardType="decimal-pad"
-            placeholder="optional"
-            placeholderTextColor={Color.textFaint}
+            placeholder="Optional"
+            placeholderTextColor={colors.textMuted}
             style={styles.input}
+            accessibilityLabel="Goal weight in kilograms"
           />
         </View>
-        <View style={styles.inputCol}>
+        <View style={{ flex: 1 }}>
           <Text style={styles.label}>Goal body fat (%)</Text>
           <TextInput
             value={goalBodyFatPct}
             onChangeText={setGoalBodyFatPct}
             onBlur={() => saveWeightOrBodyFat("bodyFat")}
             keyboardType="decimal-pad"
-            placeholder="optional"
-            placeholderTextColor={Color.textFaint}
+            placeholder="Optional"
+            placeholderTextColor={colors.textMuted}
             style={styles.input}
+            accessibilityLabel="Goal body fat percentage"
           />
         </View>
       </View>
 
-      <Text style={[styles.label, { marginTop: Spacing.md }]}>Days per week you can train</Text>
-      <View style={styles.chipRow}>
-        {TRAINING_DAYS_OPTIONS.map((d) => (
-          <Pressable
-            key={d}
-            onPress={() => {
-              setTrainingDaysPerWeek(d);
-              saveGoal.mutate({ trainingDaysPerWeek: d });
-            }}
-            style={[styles.dayChip, trainingDaysPerWeek === d && styles.dayChipActive]}
-          >
-            <Text style={[styles.dayChipText, trainingDaysPerWeek === d && styles.dayChipTextActive]}>{d}</Text>
-          </Pressable>
-        ))}
+      <Text style={[styles.label, { marginTop: 16 }]}>Days per week you can train</Text>
+      <View style={styles.dayRow} accessibilityRole="radiogroup">
+        {TRAINING_DAYS_OPTIONS.map((d) => {
+          const active = trainingDaysPerWeek === d;
+          return (
+            <Pressable
+              key={d}
+              onPress={() => {
+                if (!active) selectionFeedback();
+                setTrainingDaysPerWeek(d);
+                saveGoal.mutate({ trainingDaysPerWeek: d });
+              }}
+              style={[styles.dayChip, active && styles.dayChipActive]}
+              accessibilityRole="radio"
+              accessibilityState={{ selected: active }}
+              accessibilityLabel={`${d} days a week`}
+            >
+              <Text style={[styles.dayChipText, active && styles.dayChipTextActive]}>{d}</Text>
+            </Pressable>
+          );
+        })}
       </View>
 
-      <Button
-        title={generating ? "Generating…" : "Generate timeline"}
-        onPress={handleGenerate}
-        loading={generating}
-        style={{ marginTop: Spacing.md }}
-      />
+      <Button title={generating ? "Generating…" : "Generate timeline"} onPress={handleGenerate} loading={generating} style={{ marginTop: 18 }} />
 
       <DateField
         label="Target date"
@@ -242,17 +297,18 @@ export function GoalTimelineCard() {
         }}
         minDate={todayDateString()}
         maxDate={maxGoalDate()}
-        style={{ marginTop: Spacing.sm }}
+        style={{ marginTop: 16 }}
       />
 
       {goalTargetDate ? (
-        <View style={styles.adjustRow}>
-          <Text style={styles.adjustLabel}>Adjust:</Text>
-          <Pressable onPress={() => nudgeDate(-7)} style={styles.adjustChip}>
-            <Text style={styles.adjustChipText}>1 week sooner</Text>
+        <View style={styles.nudgeRow}>
+          <Pressable onPress={() => nudgeDate(-7)} style={styles.nudge} accessibilityRole="button">
+            <Ionicons name="remove" size={16} color={colors.text} />
+            <Text style={styles.nudgeText}>1 week sooner</Text>
           </Pressable>
-          <Pressable onPress={() => nudgeDate(7)} style={styles.adjustChip}>
-            <Text style={styles.adjustChipText}>1 week later</Text>
+          <Pressable onPress={() => nudgeDate(7)} style={styles.nudge} accessibilityRole="button">
+            <Ionicons name="add" size={16} color={colors.text} />
+            <Text style={styles.nudgeText}>1 week later</Text>
           </Pressable>
         </View>
       ) : null}
@@ -260,74 +316,66 @@ export function GoalTimelineCard() {
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
       {!isLoading && data && (data.weightTimeline || data.bodyFatTimeline) ? (
-        <View style={{ marginTop: Spacing.md, gap: Spacing.sm }}>
-          {data.weightTimeline ? (
-            <TimelineSummary label={`Weight -> ${data.goalWeightKg} kg`} unit=" kg" timeline={data.weightTimeline} />
-          ) : null}
+        <View style={{ marginTop: 20, gap: 20 }}>
+          {data.weightTimeline ? <TimelineSummary label={`Weight goal · ${data.goalWeightKg} kg`} unit=" kg" timeline={data.weightTimeline} /> : null}
           {data.bodyFatTimeline ? (
-            <TimelineSummary label={`Body fat -> ${data.goalBodyFatPct}%`} unit=" pts" timeline={data.bodyFatTimeline} />
+            <TimelineSummary label={`Body-fat goal · ${data.goalBodyFatPct}%`} unit=" pts" timeline={data.bodyFatTimeline} />
           ) : null}
         </View>
       ) : !isLoading && data && (data.goalWeightKg !== null || data.goalBodyFatPct !== null) ? (
-        <Text style={styles.summaryText}>Log your weight/body-fat to start seeing a projection.</Text>
+        <Text style={styles.intro}>Log your weight or body fat to start seeing a projection.</Text>
       ) : null}
-    </Card>
+    </View>
   );
 }
 
-const useStyles = makeLegacyStyles((Color) =>
+const useStyles = makeStyles((c) =>
   StyleSheet.create({
-    card: { padding: Spacing.md },
-    title: { fontSize: 15, fontWeight: "700", color: Color.textPrimary },
-    explainer: { fontSize: 12, color: Color.textMuted, marginTop: 4, lineHeight: 17 },
-    inputRow: { flexDirection: "row", gap: Spacing.sm, marginTop: Spacing.md },
-    inputCol: { flex: 1 },
-    label: { fontSize: 13, fontWeight: "500", color: Color.textSecondary, marginBottom: 6 },
-    input: {
-      height: 48,
-      borderRadius: Radius.md,
-      borderWidth: 1,
-      borderColor: Color.borderSubtle,
-      backgroundColor: Color.surface1,
-      paddingHorizontal: Spacing.md,
-      fontSize: 15,
-      color: Color.textPrimary,
-    },
-    adjustRow: { flexDirection: "row", alignItems: "center", gap: Spacing.xs, marginTop: Spacing.sm },
-    adjustLabel: { fontSize: 12, color: Color.textMuted },
-    adjustChip: {
-      paddingHorizontal: Spacing.sm,
-      paddingVertical: 6,
-      borderRadius: Radius.pill,
-      borderWidth: 1,
-      borderColor: Color.borderSubtle,
-    },
-    adjustChipText: { fontSize: 12, color: Color.textMuted },
-    error: { fontSize: 12, color: Color.danger, marginTop: Spacing.sm },
-    chipRow: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.xs },
-    dayChip: {
-      width: 36,
-      height: 36,
-      borderRadius: Radius.pill,
-      borderWidth: 1,
-      borderColor: Color.borderSubtle,
+    card: { backgroundColor: c.surface, borderRadius: AppRadius.card, padding: 16 },
+    title: { fontSize: 19, fontWeight: "600", color: c.text },
+    intro: { fontSize: 15, color: c.textSecondary, marginTop: 6, lineHeight: 21 },
+    tiles: { flexDirection: "row", gap: 10, marginTop: 16 },
+    tile: { flex: 1, backgroundColor: c.surfaceHi, borderRadius: AppRadius.inner + 4, padding: 14 },
+    tileValue: { fontSize: 22, fontWeight: "600", color: c.text, fontVariant: ["tabular-nums"] },
+    tileLabel: { fontSize: 14, color: c.textSecondary, marginTop: 2 },
+    journey: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 14, flexWrap: "wrap" },
+    journeyDot: { width: 8, height: 8, borderRadius: 4 },
+    journeyText: { fontSize: 16, fontWeight: "500", color: c.text, fontVariant: ["tabular-nums"] },
+    journeyGap: { fontSize: 14, color: c.textMuted, marginLeft: 4 },
+    inputRow: { flexDirection: "row", gap: 10, marginTop: 18 },
+    label: { fontSize: 14, fontWeight: "500", color: c.textSecondary, marginBottom: 6 },
+    input: { height: 50, borderRadius: AppRadius.inner + 2, backgroundColor: c.control, paddingHorizontal: 14, fontSize: 16, color: c.text },
+    dayRow: { flexDirection: "row", justifyContent: "space-between" },
+    dayChip: { width: 42, height: 42, borderRadius: 21, backgroundColor: c.control, alignItems: "center", justifyContent: "center" },
+    dayChipActive: { backgroundColor: c.primary },
+    dayChipText: { fontSize: 16, fontWeight: "600", color: c.text },
+    dayChipTextActive: { color: c.onPrimary },
+    nudgeRow: { flexDirection: "row", gap: 10, marginTop: 10 },
+    nudge: {
+      flex: 1,
+      flexDirection: "row",
       alignItems: "center",
       justifyContent: "center",
+      gap: 6,
+      minHeight: 44,
+      borderRadius: AppRadius.control,
+      backgroundColor: c.control,
     },
-    dayChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
-    dayChipText: { fontSize: 13, fontWeight: "600", color: Color.textMuted },
-    dayChipTextActive: { color: Color.gold },
-    summaryBox: {
-      borderRadius: Radius.md,
-      borderWidth: 1,
-      borderColor: Color.borderSubtle,
-      backgroundColor: Color.surface1,
-      padding: Spacing.sm,
+    nudgeText: { fontSize: 15, fontWeight: "500", color: c.text },
+    error: { fontSize: 14, color: c.danger, marginTop: 10 },
+    groupTitle: { fontSize: 17, fontWeight: "600", color: c.text },
+    summary: { borderRadius: AppRadius.inner + 4, backgroundColor: c.surfaceHi, overflow: "hidden" },
+    summaryHead: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: 10,
+      paddingHorizontal: 14,
+      paddingVertical: 12,
+      backgroundColor: c.control,
     },
-    summaryHeaderRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: Spacing.sm },
-    summaryLabel: { fontSize: 13, fontWeight: "600", color: Color.textPrimary },
-    difficultyText: { fontSize: 12, fontWeight: "700" },
-    summaryText: { fontSize: 12, color: Color.textMuted, marginTop: 4, lineHeight: 17 },
-    warningText: { color: Color.warning },
+    summaryLabel: { fontSize: 15, fontWeight: "600", color: c.text },
+    summaryValue: { fontSize: 15, fontWeight: "600", color: c.text, fontVariant: ["tabular-nums"] },
+    summaryBody: { fontSize: 15, color: c.textSecondary, lineHeight: 21, padding: 14 },
   })
 );

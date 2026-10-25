@@ -35,7 +35,8 @@ type Tab = "ai" | "coach";
 function loadBandColor(band: string): string {
   if (band === "high") return Color.warning;
   if (band === "low") return Color.textMuted;
-  return Color.success;
+  if (band === "moderate" || band === "light") return Color.success;
+  return Color.textMuted; // no data yet
 }
 
 function formatTime(iso: string): string {
@@ -326,26 +327,11 @@ const useStyles = makeLegacyStyles((Color) =>
     headerTitle: { fontSize: 20, fontWeight: "600", color: Color.textPrimary, flexShrink: 1, textAlign: "center" },
     centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
     errorText: { color: Color.textMuted, fontSize: 14 },
-    tabBar: {
-      flexDirection: "row",
-      gap: 4,
-      marginHorizontal: Spacing.lg,
-      marginBottom: Spacing.sm,
-      padding: 4,
-      borderRadius: Radius.md,
-      borderWidth: 1,
-      borderColor: "transparent",
-      backgroundColor: Color.surface2,
-    },
-    tabButton: {
-      flex: 1,
-      paddingVertical: Spacing.sm,
-      borderRadius: Radius.sm,
-      alignItems: "center",
-    },
-    tabButtonActive: { backgroundColor: Color.surface2 },
-    tabButtonText: { fontSize: 13, fontWeight: "600", color: Color.textMuted },
-    tabButtonTextActive: { color: Color.textPrimary },
+    tabBar: { flexDirection: "row", gap: 2, marginHorizontal: Spacing.lg, marginBottom: Spacing.sm, padding: 3, borderRadius: Radius.pill, backgroundColor: Color.surface2 },
+    tabButton: { flex: 1, minHeight: 38, borderRadius: Radius.pill, alignItems: "center", justifyContent: "center" },
+    tabButtonActive: { backgroundColor: Color.gold },
+    tabButtonText: { fontSize: 14, fontWeight: "600", color: Color.textSecondary },
+    tabButtonTextActive: { color: Color.goldForeground },
     contextRow: {
       flexDirection: "row",
       flexWrap: "wrap",

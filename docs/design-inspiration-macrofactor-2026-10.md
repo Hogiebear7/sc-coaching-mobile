@@ -121,3 +121,79 @@ Net effect: S&C reads as *branded marketing cards*; MacroFactor reads as an
 Prototype on a branch in `sc-coaching-mobile`: new tokens + Home dashboard +
 "+" sheet + one chart-detail screen (Readiness), built as a preview APK and
 installed on your phone to judge at real size before touching other screens.
+
+---
+
+## 6. Onboarding and goal setup (added 25 Oct 2026)
+
+Source: about 50 screenshots you took yourself of MacroFactor's full
+onboarding (Basics → Goal → Program → feature tour → plan picker → first
+30 days → health disclaimer). As above, these are principles only. Don't
+copy their wording, icons, body-fat illustrations, testimonials or
+"MFers"-style brand voice.
+
+### Patterns worth adopting
+
+1. **One question per screen.** The section name ("Basics") sits in the
+   header with a thin progress bar under it. The question is a large bold
+   heading, and a full-width white primary button is fixed to the bottom.
+   The button stays disabled until there's an answer, unless a sensible
+   default is preselected.
+2. **Option cards.** Icon on the left, then a label with an optional
+   one-line explanation, and a radio button on the right. A selected card
+   gets a 2dp white border. A day-of-week checklist uses plain rows with
+   checkboxes.
+3. **Inputs you handle, not type.** Scroll wheels for date of birth and
+   height, a horizontal ruler for weight (with a kg/lb switch), and a
+   slider for rate. Values update live.
+4. **"Why we ask" card.** A tinted info card sits under sensitive
+   questions.
+5. **A three-step overview between sections.** A vertical stepper (✓
+   Basics · 2 Goal · 3 Program) with a single "Go to …" button makes the
+   flow feel short and finite.
+6. **Live consequence tiles (the key pattern for our goal timeline).**
+   Two tiles at the top (daily budget and projected end date) update as
+   you drag the target and the rate. Slower, Standard and Faster presets
+   sit over a slider. The rate can be edited both as kg and as % of body
+   weight, per week and per month.
+7. **An honest summary.** Each summary card has a header row with a label
+   and a value, and a plain-English paragraph below it. The end date is
+   explicitly called *optimistic*, with advice to allow a few extra weeks.
+8. **Guardrails as a visible choice.** "Standard" versus "Low (proceed
+   with caution)", with a warning icon.
+9. **The result is shown, then explained.** "Your plan is ready" shows a
+   7-day stacked column chart. Under it, "How was your plan designed?"
+   gives a numbered timeline: each step has a coloured value and one
+   sentence. This is the strongest trust pattern in the flow.
+10. **Set expectations.** A "First 30 days" timeline (day 1, day 3, next
+    Monday, day 30) tells new users when the app gets smarter.
+11. **Consent screen.** Plain-language health disclaimer and privacy
+    summary. A separate toggle for each document, and "Accept and
+    Continue" stays disabled until both are on.
+
+### Patterns to avoid or adapt
+
+- **Body-fat photo grid:** their artwork. If we ask at all, use a plain
+  range picker.
+- **Testimonials:** use only real member quotes, with permission. Never
+  invent them.
+- **Calculating animation:** fine once, under about 1.5s, and skip it when
+  reduced motion is on.
+- **Paywall:** not relevant to members on a gym membership. Any digital
+  plan picker must follow the existing IAP rules and the store's own
+  wording.
+
+### What this means for S&C
+
+| S&C surface | Borrow |
+|---|---|
+| Post-signup setup (`PostSignupSetupModal`) | Patterns 1–5: becomes a short stepped flow (About you → Your goal → Your week) instead of one modal |
+| Goal timeline (Profile) | Patterns 6–7 and 9: live end-date and sessions-per-week tiles, rate presets, an honest summary, then "How your plan was built" |
+| Training days | Pattern 2's checklist: pick training days, which feeds Schedule |
+| Readiness / coach plan explainers | Pattern 9: a numbered "how this was worked out" timeline |
+| First run | Pattern 10: "Your first 2 weeks" (first check-in, first coach review, trend unlocks after 2 points) |
+| Consent | Pattern 11: only if legal review wants explicit health-data consent; check against the existing privacy and terms flow first |
+| Weight chart | Smoothed trend line over raw weigh-ins, plus Average and Difference figures (already in the chart-detail template) |
+
+Planned for **Phase 2** alongside the goal timeline redesign. None of this
+is built yet.

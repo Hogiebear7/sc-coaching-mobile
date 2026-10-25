@@ -248,7 +248,9 @@ function newExerciseRow(): ExerciseRow {
     name: "",
     notes: "",
     rir: "",
-    setRows: [newSetRow(), newSetRow(), newSetRow()],
+    // Four working sets is the most common prescription here, so a new
+    // exercise opens with four rows; Add set / Remove last adjust it.
+    setRows: Array.from({ length: 4 }, () => newSetRow()),
     unitMode: "weight",
     defaultSetType: "standard",
     supersetGroup: null,

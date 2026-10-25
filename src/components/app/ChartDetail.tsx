@@ -8,6 +8,7 @@ import Svg, { Circle, Line, Polyline, Rect, Text as SvgText } from "react-native
 import { PillButton, RangePills } from "@/components/app/primitives";
 import { AppRadius, AppSpace } from "@/constants/theme";
 import { smoothTrend } from "@/lib/chart-math";
+import { tapFeedback } from "@/lib/haptics";
 import { makeStyles, useAppTheme } from "@/lib/theme";
 
 export type ChartPoint = { id: string; date: string; value: number };
@@ -16,6 +17,8 @@ const RANGES = ["1W", "1M", "3M", "All"] as const;
 type Range = (typeof RANGES)[number];
 const RANGE_DAYS: Record<Range, number | null> = { "1W": 7, "1M": 30, "3M": 90, All: null };
 const TOP = 12; // headroom so the top axis label is not clipped
+// The entries list starts with the latest few; the rest is one tap away.
+const COLLAPSED_ENTRIES = 5;
 
 function isoToDate(iso: string) {
   const [y, m, d] = iso.split("-").map(Number);
@@ -74,6 +77,7 @@ export function ChartDetail({
   const { colors } = useAppTheme();
   const { width } = useWindowDimensions();
   const [range, setRange] = useState<Range>(defaultRange);
+  const [showAllEntries, setShowAllEntries] = useState(false);
 
   const sorted = useMemo(() => [...points].sort((a, b) => a.date.localeCompare(b.date)), [points]);
   const shown = useMemo(() => {
@@ -227,7 +231,7 @@ export function ChartDetail({
         <View style={styles.list}>
           {[...shown]
             .reverse()
-            .slice(0, 12)
+            .slice(0, showAllEntries ? undefined : COLLAPSED_ENTRIES)
             .map((p, i) => (
               <View key={p.id} style={[styles.row, i > 0 && styles.rowDivider]}>
                 <Text style={styles.rowDate}>
@@ -244,6 +248,20 @@ export function ChartDetail({
             <View style={styles.row}>
               <Text style={styles.muted}>{emptyText}</Text>
             </View>
+          ) : null}
+          {shown.length > COLLAPSED_ENTRIES ? (
+            <Pressable
+              onPress={() => {
+                tapFeedback();
+                setShowAllEntries((v) => !v);
+              }}
+              style={({ pressed }) => [styles.row, styles.rowDivider, styles.moreRow, pressed && { opacity: 0.7 }]}
+              accessibilityRole="button"
+              accessibilityState={{ expanded: showAllEntries }}
+            >
+              <Text style={styles.moreText}>{showAllEntries ? "Show fewer" : `Show all ${shown.length} entries`}</Text>
+              <Ionicons name={showAllEntries ? "chevron-up" : "chevron-down"} size={18} color={colors.textSecondary} />
+            </Pressable>
           ) : null}
         </View>
         {action ? <PillButton title={action.label} onPress={action.onPress} style={{ marginTop: 20 }} /> : null}
@@ -317,6 +335,8 @@ const useStyles = makeStyles((c) =>
     list: { backgroundColor: c.surface, borderRadius: AppRadius.card, overflow: "hidden" },
     row: { flexDirection: "row", alignItems: "center", gap: 12, minHeight: 52, paddingHorizontal: 16 },
     rowDivider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: c.hairline },
+    moreRow: { justifyContent: "center", gap: 6 },
+    moreText: { fontSize: 15, fontWeight: "600", color: c.textSecondary },
     rowDate: { flex: 1, fontSize: 16, color: c.text },
     rowValue: { fontSize: 17, fontWeight: "600", color: c.text, fontVariant: ["tabular-nums"], minWidth: 40, textAlign: "right" },
     rowUnit: { fontSize: 14, fontWeight: "400", color: c.textMuted },

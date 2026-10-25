@@ -197,3 +197,97 @@ copy their wording, icons, body-fat illustrations, testimonials or
 
 Planned for **Phase 2** alongside the goal timeline redesign. None of this
 is built yet.
+
+---
+
+## 7. MacroFactor Workouts app (added 25 Oct 2026)
+
+Source: screens captured over adb on 25 Oct 2026, covering onboarding with
+throwaway answers, then (after you logged in and accepted their terms
+yourself) the Dashboard, Workout, "+" Shortcuts, Levels, More, a workout
+preview and the in-workout logger. A test workout was started and then
+**discarded without saving**. Their muscle-map art, exercise photos and
+icons are theirs. Draw our own if we use the ideas.
+
+### Structure
+
+- **The same system as the nutrition app.** Tabs are Dashboard · Workout ·
+  + · Levels · More, with uppercase wide page titles, round icon buttons,
+  white pill CTAs, 16dp cards and option cards with a radio button on the
+  right. The sameness across both apps is the brand.
+- **Onboarding:** Basics → Gym & Equipment (gym type, nickname, an
+  editable equipment list) → Program. The Program step asks for goal,
+  sessions per week (stepper), split, session length (20–120 min), how rep
+  ranges progress, more/less focus per muscle (thumbs down/up next to a
+  muscle thumbnail), deload yes/no, quick strength checks ("5 strict
+  pull-ups?"), name and colour. Then a "Generating your program" checklist
+  ticks off each factor (experience → muscle priority → equipment →
+  exercise selection → … → smart progression). A "First 30 days" timeline
+  closes the flow (week 1 baseline, week 2 personalised loads, week 3+
+  optimised).
+
+### Screens worth borrowing from
+
+1. **Dashboard "Weekly Workouts":** three rings (Muscles, Sets, Exercises),
+   each showing "0 / 17 left" against a weekly target, plus an Active
+   Program / All Workouts toggle. Below that come insight tiles (Workouts,
+   Weight Trend) and Habits (weigh-in and workout streaks). **For S&C:** a
+   weekly ring row on Train: sessions done / planned, sets, check-ins.
+2. **Workout tab = the week as a list.** A date-capsule strip sits at the
+   top (same as our WeekStrip). The "Active Program · Week 1" card holds
+   each day in order: name, list of exercises, muscle chips and a
+   done-checkbox, with "Rest Day" as its own row. **For S&C:** this is
+   exactly how a coach-assigned week should read on Train and Schedule.
+3. **Workout preview before starting.** "Target Muscles" cards (muscle
+   thumbnail, number of exercises, number of sets), "4 Exercises ·
+   Estimated workout time is 22 min", then exercise rows (photo, name,
+   numbered sets with rep targets and a coloured RIR badge, muscle chips),
+   with a full-width white **Start Workout** button. **For S&C:** a
+   pre-session screen for coach workouts, including estimated time.
+4. **In-workout logger.**
+   - Header: elapsed timer, rest timer and a progress bar.
+   - A horizontal strip of exercise thumbnails (current one underlined,
+     "+" to add).
+   - The exercise name with "Set 1 of 2".
+   - A pill toolbar: Info, Warm Up, Targets, Swap.
+   - Set table: Set number, Target ("7–9 reps / 2 RIR"), weight and reps
+     fields, and a checkbox. The coloured RIR badge sits on the reps
+     field.
+   - "+" adds a set.
+
+   **For S&C:** our log-workout screen should move to this
+   target-next-to-input table and the thumbnail strip. Mind the crash
+   rules in memory: no stacked modal and navigation transitions.
+5. **Effort scale:** RIR 0–6+ as coloured dots (red 0–1, amber 2–3, green
+   4–5, blue 6+), explained once in onboarding and then used as small
+   badges everywhere. Map it to our existing RPE/effort field rather than
+   adding a new metric.
+6. **Workout options sheet:** Pause, Minimize, Finish, Workout settings,
+   Gym settings, then Discard, with a confirm dialog ("Your progress will
+   be lost…", Discard / Go Back).
+7. **Levels:** a full-body muscle map tinted by average weekly sets (1-week
+   range dropdown, front/back flip). The empty state still shows the grey
+   body with "Complete workouts to see your Set Levels", then per-region
+   lists (Chest 0 sets…). **For S&C:** a later "muscle coverage" view built
+   from logged sessions. It needs our own SVG body map.
+8. **"+" Shortcuts sheet:** a row of round quick actions (Weight, Photos,
+   Metrics, History), an "Up Next • Upper" card, then Empty Workout / New
+   Program / New Workout rows. This confirms our QuickActionSheet layout.
+   Adding an "Up next" card for the next coach session is a cheap win.
+9. **Theme picker (relevant to our light mode):** three visual cards, each
+   a mini mock-up of the app in that theme with sample text and the data
+   colour dots: **System** (split light and dark), **Light**, **Dark**.
+   Use this exact three-card pattern in our Settings.
+10. **More:** the profile header, then grouped lists (General, Feature
+    Settings with Dashboard / Workout / Shortcuts / Weight Trend /
+    Exercises / Gym Profiles, Theme, Data Management with Export /
+    Visibility / Account deletion). Feature settings let users customise
+    the dashboard and shortcuts, which supports the editable tab bar and
+    home idea in Phase 4.
+
+### Avoid
+
+- Self-built programs as the default. S&C members are coached, so the
+  coach's plan comes first. A self-built flow is only for app-only members,
+  if ever.
+- Copying their muscle-map illustrations or exercise photography.

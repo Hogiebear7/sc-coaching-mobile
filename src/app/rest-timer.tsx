@@ -372,8 +372,8 @@ const useStyles = makeLegacyStyles((Color) =>
     presetsLabel: { fontSize: 12, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginBottom: Spacing.sm, textAlign: "center" },
     presetsRow: { flexDirection: "row", flexWrap: "wrap", justifyContent: "center", gap: Spacing.xs },
     presetChip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.md, paddingVertical: 8 },
-    presetChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
+    presetChipActive: { borderColor: Color.gold, backgroundColor: Color.gold },
     presetChipText: { fontSize: 14, fontWeight: "600", color: Color.textMuted },
-    presetChipTextActive: { color: Color.gold },
+    presetChipTextActive: { color: Color.goldForeground },
   })
 );

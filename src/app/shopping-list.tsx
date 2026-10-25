@@ -287,9 +287,9 @@ const useStyles = makeLegacyStyles((Color) =>
       borderColor: Color.borderSubtle,
       paddingVertical: 8,
     },
-    viewChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
+    viewChipActive: { borderColor: Color.gold, backgroundColor: Color.gold },
     viewChipText: { fontSize: 13, fontWeight: "600", color: Color.textMuted },
-    viewChipTextActive: { color: Color.gold },
+    viewChipTextActive: { color: Color.goldForeground },
     scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
     addRow: { flexDirection: "row", alignItems: "center", gap: Spacing.sm, marginBottom: Spacing.md },
     addInput: {

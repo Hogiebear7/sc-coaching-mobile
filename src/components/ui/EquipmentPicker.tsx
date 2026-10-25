@@ -130,8 +130,8 @@ const useStyles = makeLegacyStyles((Color) =>
     categoryCount: { fontSize: 13, color: Color.textFaint, fontVariant: ["tabular-nums"] },
     equipmentChipWrap: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: Spacing.sm },
     equipmentChip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.sm, paddingVertical: 6 },
-    equipmentChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
+    equipmentChipActive: { borderColor: Color.gold, backgroundColor: Color.gold },
     equipmentChipText: { fontSize: 13, fontWeight: "500", color: Color.textMuted },
-    equipmentChipTextActive: { color: Color.gold },
+    equipmentChipTextActive: { color: Color.goldForeground },
   })
 );

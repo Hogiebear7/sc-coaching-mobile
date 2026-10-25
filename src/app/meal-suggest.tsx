@@ -433,21 +433,21 @@ export default function MealSuggestScreen() {
               onPress={() => setMode("photo")}
               style={[styles.modeChip, mode === "photo" && styles.modeChipActive]}
             >
-              <Ionicons name="camera-outline" size={14} color={mode === "photo" ? Color.gold : Color.textMuted} />
+              <Ionicons name="camera-outline" size={14} color={mode === "photo" ? Color.goldForeground : Color.textMuted} />
               <Text style={[styles.modeChipText, mode === "photo" && styles.modeChipTextActive]}>Photo</Text>
             </Pressable>
             <Pressable
               onPress={() => setMode("receipt")}
               style={[styles.modeChip, mode === "receipt" && styles.modeChipActive]}
             >
-              <Ionicons name="receipt-outline" size={14} color={mode === "receipt" ? Color.gold : Color.textMuted} />
+              <Ionicons name="receipt-outline" size={14} color={mode === "receipt" ? Color.goldForeground : Color.textMuted} />
               <Text style={[styles.modeChipText, mode === "receipt" && styles.modeChipTextActive]}>Receipt</Text>
             </Pressable>
             <Pressable
               onPress={() => setMode("text")}
               style={[styles.modeChip, mode === "text" && styles.modeChipActive]}
             >
-              <Ionicons name="create-outline" size={14} color={mode === "text" ? Color.gold : Color.textMuted} />
+              <Ionicons name="create-outline" size={14} color={mode === "text" ? Color.goldForeground : Color.textMuted} />
               <Text style={[styles.modeChipText, mode === "text" && styles.modeChipTextActive]}>Type it</Text>
             </Pressable>
           </View>
@@ -587,9 +587,9 @@ const useStyles = makeLegacyStyles((Color) =>
       paddingHorizontal: Spacing.md,
       paddingVertical: 8,
     },
-    modeChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
+    modeChipActive: { borderColor: Color.gold, backgroundColor: Color.gold },
     modeChipText: { fontSize: 14, fontWeight: "600", color: Color.textMuted },
-    modeChipTextActive: { color: Color.gold },
+    modeChipTextActive: { color: Color.goldForeground },
     cameraWrap: {
       flex: 1,
       marginHorizontal: Spacing.lg,
@@ -708,9 +708,9 @@ const useStyles = makeLegacyStyles((Color) =>
     crossText: { flex: 1, fontSize: 13, color: Color.textMuted, lineHeight: 16 },
     mealTypeRow: { flexDirection: "row", gap: 6, marginTop: Spacing.md },
     mealTypeChip: { flex: 1, alignItems: "center", borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingVertical: 6 },
-    mealTypeChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
+    mealTypeChipActive: { borderColor: Color.gold, backgroundColor: Color.gold },
     mealTypeChipText: { fontSize: 12, fontWeight: "600", color: Color.textMuted },
-    mealTypeChipTextActive: { color: Color.gold },
+    mealTypeChipTextActive: { color: Color.goldForeground },
     loggedRow: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: Spacing.md },
     loggedText: { fontSize: 14, fontWeight: "600", color: Color.success },
     saveRecipeRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, marginTop: Spacing.sm, paddingVertical: 6 },

@@ -61,8 +61,8 @@ const useStyles = makeLegacyStyles((Color) =>
       paddingHorizontal: Spacing.sm,
       paddingVertical: 6,
     },
-    chipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
+    chipActive: { borderColor: Color.gold, backgroundColor: Color.gold },
     chipText: { fontSize: 13, fontWeight: "500", color: Color.textMuted },
-    chipTextActive: { color: Color.gold },
+    chipTextActive: { color: Color.goldForeground },
   })
 );

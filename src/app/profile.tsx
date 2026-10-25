@@ -730,9 +730,9 @@ const useStyles = makeLegacyStyles((Color) =>
       borderWidth: 1,
       borderColor: Color.borderSubtle,
     },
-    chipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
+    chipActive: { borderColor: Color.gold, backgroundColor: Color.gold },
     chipText: { fontSize: 14, fontWeight: "500", color: Color.textMuted },
-    chipTextActive: { color: Color.gold },
+    chipTextActive: { color: Color.goldForeground },
     // Same light-blue "secondary selection" language as the secondary
     // muscle-group picker in workout-generator.tsx — reused here so Secondary
     // goal reads as a distinct, lower-emphasis choice from Primary's gold.

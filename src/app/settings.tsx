@@ -597,9 +597,9 @@ const useStyles = makeLegacyStyles((Color) =>
       paddingHorizontal: Spacing.sm,
       paddingVertical: 6,
     },
-    unitsChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
+    unitsChipActive: { borderColor: Color.gold, backgroundColor: Color.gold },
     unitsChipText: { fontSize: 14, fontWeight: "600", color: Color.textMuted },
-    unitsChipTextActive: { color: Color.gold },
+    unitsChipTextActive: { color: Color.goldForeground },
     chipRow: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.xs },
     chip: {
       paddingHorizontal: Spacing.sm,
@@ -608,9 +608,9 @@ const useStyles = makeLegacyStyles((Color) =>
       borderWidth: 1,
       borderColor: Color.borderSubtle,
     },
-    chipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
+    chipActive: { borderColor: Color.gold, backgroundColor: Color.gold },
     chipText: { fontSize: 13, fontWeight: "500", color: Color.textMuted },
-    chipTextActive: { color: Color.gold },
+    chipTextActive: { color: Color.goldForeground },
     customRow: { flexDirection: "row", gap: Spacing.sm, marginTop: Spacing.sm },
     customInput: {
       flex: 1,

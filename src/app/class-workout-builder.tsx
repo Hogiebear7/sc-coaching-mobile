@@ -711,9 +711,9 @@ const useStyles = makeLegacyStyles((Color) =>
     rowLabel: { fontSize: 14, fontWeight: "600", color: Color.textPrimary, marginBottom: 6 },
     formatRow: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.xs, marginTop: Spacing.xs },
     formatChip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.sm, paddingVertical: 8 },
-    formatChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
+    formatChipActive: { borderColor: Color.gold, backgroundColor: Color.gold },
     formatChipText: { fontSize: 14, fontWeight: "600", color: Color.textMuted },
-    formatChipTextActive: { color: Color.gold },
+    formatChipTextActive: { color: Color.goldForeground },
     formatConfig: { marginTop: Spacing.sm },
     formatAddButton: {
       width: 40,

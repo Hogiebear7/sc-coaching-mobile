@@ -2464,9 +2464,9 @@ const useFeelStyles = makeLegacyStyles((Color) =>
       borderColor: "transparent",
       backgroundColor: Color.surface2,
     },
-    rpeChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
+    rpeChipActive: { borderColor: Color.gold, backgroundColor: Color.gold },
     rpeChipText: { fontSize: 13, fontWeight: "600", color: Color.textSecondary },
-    rpeChipTextActive: { color: Color.gold },
+    rpeChipTextActive: { color: Color.goldForeground },
     // Unlike log-workout's other Notes fields (styles.smallInput or the
     // TextField component), this one is a bare TextInput with no wrapper
     // supplying background/border/text color — RN falls back to platform

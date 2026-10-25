@@ -376,9 +376,9 @@ const useStyles = makeLegacyStyles((Color) =>
       paddingHorizontal: Spacing.md,
       paddingVertical: 6,
     },
-    radiusChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
+    radiusChipActive: { borderColor: Color.gold, backgroundColor: Color.gold },
     radiusChipText: { fontSize: 14, fontWeight: "600", color: Color.textMuted },
-    radiusChipTextActive: { color: Color.gold },
+    radiusChipTextActive: { color: Color.goldForeground },
     candidatesHeading: {
       fontSize: 13,
       fontWeight: "600",

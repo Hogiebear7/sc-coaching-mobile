@@ -272,8 +272,8 @@ const useStyles = makeLegacyStyles((Color) =>
       borderColor: "transparent",
       backgroundColor: Color.surface2,
     },
-    chipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
+    chipActive: { borderColor: Color.gold, backgroundColor: Color.gold },
     chipText: { fontSize: 14, fontWeight: "600", color: Color.textMuted },
-    chipTextActive: { color: Color.gold },
+    chipTextActive: { color: Color.goldForeground },
   })
 );

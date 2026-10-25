@@ -506,9 +506,9 @@ const useStyles = makeLegacyStyles((Color) =>
       paddingHorizontal: Spacing.sm,
       paddingVertical: 5,
     },
-    rangeChipActive: { borderColor: Color.goldBorder, backgroundColor: Color.goldWeak },
+    rangeChipActive: { borderColor: Color.gold, backgroundColor: Color.gold },
     rangeChipText: { fontSize: 13, fontWeight: "600", color: Color.textFaint },
-    rangeChipTextActive: { color: Color.gold },
+    rangeChipTextActive: { color: Color.goldForeground },
     customRangeRow: { flexDirection: "row", gap: Spacing.sm, marginBottom: Spacing.sm },
     emptyLeaderboardText: { fontSize: 14, color: Color.textMuted, textAlign: "center", paddingVertical: Spacing.sm },
     leaderboardContextLabel: {

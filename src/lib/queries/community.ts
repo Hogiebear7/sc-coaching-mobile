@@ -195,7 +195,30 @@ export function useToggleWorkoutLike() {
     // "community-feed" left a like made from the detail screen silently
     // stuck showing the pre-like state even though the server had already
     // recorded it (confirmed via direct API read).
-    onSuccess: (_data, workoutSessionId) => {
+    //
+    // Optimistic: the heart turns red (and its animation plays) the moment
+    // it's tapped, then the server's answer settles it; a failure rolls the
+    // cached feed and item back.
+    onMutate: async (workoutSessionId) => {
+      await qc.cancelQueries({ queryKey: ["community-feed"] });
+      await qc.cancelQueries({ queryKey: ["community-workout-item", workoutSessionId] });
+      const feeds = qc.getQueriesData<{ items: CommunityFeedItem[]; hasMore: boolean }>({ queryKey: ["community-feed"] });
+      const item = qc.getQueryData<CommunityFeedItem>(["community-workout-item", workoutSessionId]);
+      const flip = (i: CommunityFeedItem): CommunityFeedItem =>
+        i.id === workoutSessionId
+          ? { ...i, likedByMe: !i.likedByMe, likeCount: Math.max(0, i.likeCount + (i.likedByMe ? -1 : 1)) }
+          : i;
+      for (const [key, data] of feeds) {
+        if (data) qc.setQueryData(key, { ...data, items: data.items.map(flip) });
+      }
+      if (item) qc.setQueryData(["community-workout-item", workoutSessionId], flip(item));
+      return { feeds, item };
+    },
+    onError: (_err, workoutSessionId, context) => {
+      for (const [key, data] of context?.feeds ?? []) qc.setQueryData(key, data);
+      if (context?.item) qc.setQueryData(["community-workout-item", workoutSessionId], context.item);
+    },
+    onSettled: (_data, _err, workoutSessionId) => {
       qc.invalidateQueries({ queryKey: ["community-feed"] });
       qc.invalidateQueries({ queryKey: ["community-workout-item", workoutSessionId] });
     },

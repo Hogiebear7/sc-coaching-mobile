@@ -5,13 +5,14 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-nati
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
+import { LikeButton } from "@/components/app/LikeButton";
 import { Card } from "@/components/ui/Card";
 import { CommentSheet } from "@/components/ui/CommentSheet";
+import { ExercisePreviewList } from "@/components/ui/ExercisePreviewList";
 import { Spacing } from "@/constants/theme";
 import { formatCommunityDate, formatPbExerciseName, formatWorkoutTitle } from "@/lib/community-formatters";
 import { tapFeedback } from "@/lib/haptics";
 import { useCommunityWorkoutItem, useToggleWorkoutLike } from "@/lib/queries/community";
-import { formatExerciseLoad, formatRun } from "@/lib/workout-formatters";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 // Deep-link target for community notifications (a like, a comment, a
@@ -59,48 +60,33 @@ export default function CommunityWorkoutScreen() {
             <Text style={styles.title}>{formatWorkoutTitle(item.title)}</Text>
             {item.isPersonalBest ? (
               <View style={styles.pbBadge}>
-                <Ionicons name="trophy-outline" size={12} color={Color.gold} />
+                <Ionicons name="trophy" size={12} color={Color.brand} />
                 <Text style={styles.pbBadgeText}>
                   {pbExerciseName ? `New ${pbExerciseName} PB` : "New PB"}
                 </Text>
               </View>
             ) : null}
-            {item.exercises.map((ex, i) => (
-              <Text key={`ex-${i}`} style={styles.line} numberOfLines={1}>
-                {ex.name.trim() || "Exercise"} — {formatExerciseLoad(ex) || "logged"}
-              </Text>
-            ))}
-            {item.runs.map((run, i) => (
-              <Text key={`run-${i}`} style={styles.line}>
-                Run — {formatRun(run)}
-              </Text>
-            ))}
+            <View style={styles.exercises}>
+              <ExercisePreviewList exercises={item.exercises} runs={item.runs} maxRows={50} />
+            </View>
 
             <View style={styles.actions}>
+              <LikeButton
+                liked={item.likedByMe}
+                count={item.likeCount}
+                disabled={toggleLike.isPending}
+                onToggle={() => toggleLike.mutate(item.id)}
+              />
               <Pressable
                 onPress={() => {
                   tapFeedback();
-                  toggleLike.mutate(item.id);
+                  setCommentsOpen(true);
                 }}
-                disabled={toggleLike.isPending}
-                style={[styles.actionButton, toggleLike.isPending && styles.actionButtonPending]}
-                hitSlop={8}
-                accessibilityLabel={item.likedByMe ? "Unlike this workout" : "Like this workout"}
-              >
-                <Ionicons
-                  name={item.likedByMe ? "heart" : "heart-outline"}
-                  size={17}
-                  color={item.likedByMe ? Color.textSecondary : Color.textFaint}
-                />
-                {item.likeCount > 0 ? <Text style={styles.actionText}>{item.likeCount}</Text> : null}
-              </Pressable>
-              <Pressable
-                onPress={() => setCommentsOpen(true)}
                 style={styles.actionButton}
                 hitSlop={8}
                 accessibilityLabel="View comments"
               >
-                <Ionicons name="chatbubble-outline" size={16} color={Color.textFaint} />
+                <Ionicons name="chatbubble-outline" size={19} color={Color.textMuted} />
                 {item.commentCount > 0 ? <Text style={styles.actionText}>{item.commentCount}</Text> : null}
               </Pressable>
               {toggleLike.isError ? <Text style={styles.actionError}>Couldn&apos;t update — try again</Text> : null}
@@ -140,8 +126,8 @@ const useStyles = makeLegacyStyles((Color) =>
     body: { paddingHorizontal: Spacing.lg },
     card: { padding: Spacing.md },
     cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-    authorName: { fontSize: 13, fontWeight: "700", color: Color.textPrimary },
-    date: { fontSize: 13, color: Color.textFaint },
+    authorName: { fontSize: 15, fontWeight: "600", color: Color.textPrimary, flexShrink: 1 },
+    date: { fontSize: 13, color: Color.textMuted },
     title: { fontSize: 17, fontWeight: "700", color: Color.textPrimary, marginTop: 4 },
     pbBadge: {
       flexDirection: "row",
@@ -152,22 +138,21 @@ const useStyles = makeLegacyStyles((Color) =>
       paddingHorizontal: Spacing.sm,
       paddingVertical: 3,
       borderRadius: 999,
-      backgroundColor: Color.goldWeak,
+      backgroundColor: Color.surface2,
     },
-    pbBadgeText: { fontSize: 12, fontWeight: "700", color: Color.gold },
-    line: { fontSize: 13, color: Color.textMuted, marginTop: Spacing.sm },
+    pbBadgeText: { fontSize: 12, fontWeight: "700", color: Color.textPrimary },
+    exercises: { marginTop: Spacing.md },
     actions: {
       flexDirection: "row",
       alignItems: "center",
       gap: Spacing.lg,
       marginTop: Spacing.md,
-      paddingTop: Spacing.md,
-      borderTopWidth: 1,
+      paddingTop: 4,
+      borderTopWidth: StyleSheet.hairlineWidth,
       borderTopColor: Color.borderSubtle,
     },
-    actionButton: { flexDirection: "row", alignItems: "center", gap: 4, minHeight: 32, paddingVertical: 4 },
-    actionButtonPending: { opacity: 0.5 },
-    actionText: { fontSize: 14, fontWeight: "500", color: Color.textFaint },
+    actionButton: { flexDirection: "row", alignItems: "center", gap: 6, minHeight: 44 },
+    actionText: { fontSize: 15, fontWeight: "500", color: Color.textMuted },
     actionError: { fontSize: 13, color: Color.danger, marginLeft: "auto" },
   })
 );

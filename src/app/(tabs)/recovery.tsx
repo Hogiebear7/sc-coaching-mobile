@@ -241,6 +241,7 @@ export default function RecoveryScreen() {
                 color={dc.sleep}
                 bars={sleepBars}
                 note="Add sleep hours to your check-in"
+                onPress={() => router.push("/sleep-trend" as never)}
               />
               <MetricTile
                 title="Check-ins"

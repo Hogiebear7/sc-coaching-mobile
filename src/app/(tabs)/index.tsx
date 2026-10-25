@@ -329,7 +329,7 @@ export default function DashboardScreen() {
               unit="h"
               color={dc.sleep}
               note={data.kpis.sleepQuality !== null ? `Quality ${data.kpis.sleepQuality}/10` : "Logged with your check-in"}
-              onPress={() => router.push("/(tabs)/recovery")}
+              onPress={() => router.push("/sleep-trend" as never)}
             />
             <MetricTile
               title="Training load"
@@ -364,7 +364,7 @@ export default function DashboardScreen() {
               bars={recentWeights.length > 1 ? recentWeights.map((w) => w.weightKg) : undefined}
               scale="range"
               note="Add a weigh-in"
-              onPress={() => router.push("/profile")}
+              onPress={() => router.push("/weight-trend" as never)}
             />
             <MetricTile
               title="Nutrition"

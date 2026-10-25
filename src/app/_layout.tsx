@@ -17,10 +17,9 @@ import { isMembershipTier } from "@/lib/member-access";
 import { addNotificationTapListener, mapLinkHrefToRoute } from "@/lib/push-notifications";
 import { useProfile } from "@/lib/queries/profile";
 import { RestTimerProvider } from "@/lib/rest-timer";
-import { ThemeProvider, useAppTheme } from "@/lib/theme";
+import { ThemeProvider, useAppTheme, makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 import { TourProvider } from "@/lib/tour-context";
 import { WorkoutDraftProvider } from "@/lib/workout-draft";
-import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 SplashScreen.preventAutoHideAsync();
 // Some OEM Android skins (Huawei/EMUI confirmed) apply their own, often
@@ -176,6 +175,8 @@ function AuthGate() {
       <Stack.Screen name="profile" options={{ presentation: "card" }} />
       <Stack.Screen name="settings" options={{ presentation: "card" }} />
       <Stack.Screen name="readiness" options={{ presentation: "card" }} />
+      <Stack.Screen name="weight-trend" options={{ presentation: "card" }} />
+      <Stack.Screen name="sleep-trend" options={{ presentation: "card" }} />
       <Stack.Screen name="staff-member" options={{ presentation: "card" }} />
       <Stack.Screen name="staff-message-thread" options={{ presentation: "card" }} />
       <Stack.Screen name="staff-program-builder" options={{ presentation: "card" }} />

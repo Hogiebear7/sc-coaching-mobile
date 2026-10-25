@@ -19,7 +19,7 @@ import { useAuth } from "@/lib/auth-context";
 import { isBatteryOptimizationRelevant, openBatteryOptimizationSettings } from "@/lib/battery-optimization";
 import { hapticsEnabled, setHapticsEnabled, tapFeedback } from "@/lib/haptics";
 import { hasAccess } from "@/lib/member-access";
-import { LIGHT_MODE_AVAILABLE } from "@/lib/theme";
+import { LIGHT_MODE_AVAILABLE, makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 import { useTour } from "@/lib/tour-context";
 import {
   useMemberTier,
@@ -33,7 +33,6 @@ import {
   useSetUnits,
   type MeasurementUnits,
 } from "@/lib/queries/profile";
-import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 const REMINDER_PRESETS = [
   { label: "24 hours before", mins: 1440 },

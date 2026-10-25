@@ -129,7 +129,7 @@ const useStyles = makeLegacyStyles((Color) =>
     categoryLabel: { fontSize: 13, fontWeight: "600", color: Color.textPrimary },
     categoryCount: { fontSize: 13, color: Color.textFaint, fontVariant: ["tabular-nums"] },
     equipmentChipWrap: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: Spacing.sm },
-    equipmentChip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.sm, paddingVertical: 6 },
+    equipmentChip: { borderRadius: Radius.pill, paddingHorizontal: Spacing.sm, paddingVertical: 6, backgroundColor: Color.surface2, minHeight: 40, justifyContent: "center" },
     equipmentChipActive: { borderColor: Color.gold, backgroundColor: Color.gold },
     equipmentChipText: { fontSize: 13, fontWeight: "500", color: Color.textMuted },
     equipmentChipTextActive: { color: Color.goldForeground },

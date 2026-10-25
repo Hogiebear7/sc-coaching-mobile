@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Animated, StyleSheet, Text, View } from "react-native";
 import Svg, { Circle } from "react-native-svg";
 
@@ -27,7 +27,7 @@ export function ReadinessRing({ score, size = 76 }: { score: number | null; size
   const color =
     score === null ? "#7a7f8c" : score >= 60 ? Color.success : score >= 40 ? Color.accentData : Color.warning;
 
-  const fill = useRef(new Animated.Value(0)).current;
+  const [fill] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
     fill.setValue(0);

@@ -37,8 +37,7 @@ const useStyles = makeLegacyStyles((Color) =>
       backgroundColor: Color.gold,
       borderRadius: Radius.pill,
       paddingHorizontal: Spacing.md,
-      paddingVertical: 8,
-    },
+      paddingVertical: 8 },
     pillText: { fontSize: 14, fontWeight: "700", color: Color.goldForeground },
   })
 );

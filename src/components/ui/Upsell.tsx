@@ -189,10 +189,7 @@ const useStyles = makeLegacyStyles((Color) =>
       paddingHorizontal: Spacing.sm,
       paddingVertical: 4,
       borderRadius: Radius.pill,
-      backgroundColor: Color.goldWeak,
-      borderWidth: 1,
-      borderColor: Color.goldBorder,
-    },
+      backgroundColor: Color.goldWeak },
     badgeText: {
       fontSize: FontSize.xs,
       fontWeight: "700",

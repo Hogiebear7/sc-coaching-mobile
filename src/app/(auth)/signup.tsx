@@ -839,10 +839,7 @@ const useStyles = makeLegacyStyles((Color) =>
     chip: {
       paddingHorizontal: Spacing.md,
       paddingVertical: 8,
-      borderRadius: Radius.pill,
-      borderWidth: 1,
-      borderColor: Color.borderSubtle,
-    },
+      borderRadius: Radius.pill, backgroundColor: Color.surface2, minHeight: 40, justifyContent: "center" },
     chipActive: {
       borderColor: Color.gold,
       backgroundColor: Color.goldWeak,
@@ -861,7 +858,7 @@ const useStyles = makeLegacyStyles((Color) =>
       color: Color.textFaint,
       marginTop: -Spacing.sm,
       marginBottom: Spacing.md,
-      lineHeight: 15,
+      lineHeight: 18,
     },
     introText: {
       fontSize: 13,
@@ -875,7 +872,7 @@ const useStyles = makeLegacyStyles((Color) =>
       marginBottom: Spacing.md,
     },
     dietaryTitle: { fontSize: 14, fontWeight: "700", color: Color.textPrimary },
-    dietaryHint: { fontSize: 13, color: Color.textMuted, marginTop: 2, marginBottom: Spacing.md, lineHeight: 15 },
+    dietaryHint: { fontSize: 13, color: Color.textMuted, marginTop: 2, marginBottom: Spacing.md, lineHeight: 18 },
     checkboxRow: {
       flexDirection: "row",
       alignItems: "flex-start",
@@ -883,7 +880,7 @@ const useStyles = makeLegacyStyles((Color) =>
       marginBottom: Spacing.md,
     },
     checkboxLabel: { fontSize: 13, fontWeight: "500", color: Color.textPrimary },
-    checkboxDescription: { fontSize: 13, color: Color.textMuted, marginTop: 2, lineHeight: 15 },
+    checkboxDescription: { fontSize: 13, color: Color.textMuted, marginTop: 2, lineHeight: 18 },
     shareWrap: { marginTop: Spacing.xs },
     legalLink: {
       fontSize: 14,

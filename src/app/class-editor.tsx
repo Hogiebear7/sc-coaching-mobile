@@ -229,7 +229,7 @@ export default function ClassEditorScreen() {
           <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backButton} accessibilityRole="button" accessibilityLabel="Back">
             <Ionicons name="chevron-back" size={26} color={Color.textPrimary} />
           </Pressable>
-          <Text style={styles.headerTitle}>Edit Class</Text>
+          <Text style={styles.headerTitle}>Edit class</Text>
           <View style={{ width: 36 }} />
         </View>
         <View style={styles.centerFill}>
@@ -435,7 +435,7 @@ const useStyles = makeLegacyStyles((Color) =>
       marginBottom: Spacing.md,
     },
     chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: Spacing.sm },
-    chip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.md, paddingVertical: 8 },
+    chip: { borderRadius: Radius.pill, paddingHorizontal: Spacing.md, paddingVertical: 8, backgroundColor: Color.surface2, minHeight: 40, justifyContent: "center" },
     chipActive: { borderColor: Color.gold, backgroundColor: Color.gold },
     chipText: { fontSize: 14, fontWeight: "600", color: Color.textMuted },
     chipTextActive: { color: Color.goldForeground },

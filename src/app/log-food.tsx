@@ -406,7 +406,7 @@ export default function LogFoodScreen() {
           <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backButton} accessibilityRole="button" accessibilityLabel="Back">
             <Ionicons name="chevron-back" size={26} color={Color.textPrimary} />
           </Pressable>
-          <Text style={styles.headerTitle}>Log Food</Text>
+          <Text style={styles.headerTitle}>Log food</Text>
           <View style={{ width: 36 }} />
         </View>
 
@@ -792,8 +792,6 @@ const useStyles = makeLegacyStyles((Color) =>
       width: "100%",
       maxWidth: 360,
       borderRadius: Radius.lg,
-      borderWidth: 1,
-      borderColor: Color.borderDefault,
       backgroundColor: Color.surface1,
       padding: Spacing.lg,
     },

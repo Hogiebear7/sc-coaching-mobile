@@ -411,7 +411,7 @@ const useStyles = makeLegacyStyles((Color) =>
     rowLabel: { fontSize: 14, color: Color.textMuted },
     rowValue: { fontSize: 13, color: Color.textPrimary, fontWeight: "500" },
     noteCard: { padding: Spacing.md, marginBottom: Spacing.md },
-    noteText: { fontSize: 14, color: Color.textMuted, lineHeight: 17 },
+    noteText: { fontSize: 14, color: Color.textMuted, lineHeight: 20 },
     notesHint: { fontSize: 13, color: Color.textFaint, marginBottom: Spacing.sm },
     notesInput: {
       minHeight: 80,

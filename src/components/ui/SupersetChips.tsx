@@ -56,11 +56,8 @@ const useStyles = makeLegacyStyles((Color) =>
     row: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
     chip: {
       borderRadius: Radius.pill,
-      borderWidth: 1,
-      borderColor: Color.borderSubtle,
       paddingHorizontal: Spacing.sm,
-      paddingVertical: 6,
-    },
+      paddingVertical: 6, backgroundColor: Color.surface2, minHeight: 40, justifyContent: "center" },
     chipActive: { borderColor: Color.gold, backgroundColor: Color.gold },
     chipText: { fontSize: 13, fontWeight: "500", color: Color.textMuted },
     chipTextActive: { color: Color.goldForeground },

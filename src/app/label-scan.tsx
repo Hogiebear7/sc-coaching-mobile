@@ -414,7 +414,7 @@ export default function LabelScanScreen() {
           <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backButton} accessibilityRole="button" accessibilityLabel="Back">
             <Ionicons name="chevron-back" size={26} color={Color.textPrimary} />
           </Pressable>
-          <Text style={styles.headerTitle}>Scan Food</Text>
+          <Text style={styles.headerTitle}>Scan food</Text>
           <View style={{ width: 36 }} />
         </View>
         <CameraPermissionDenied
@@ -654,7 +654,7 @@ export default function LabelScanScreen() {
         <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backButton} accessibilityRole="button" accessibilityLabel="Back">
           <Ionicons name="chevron-back" size={26} color={Color.textPrimary} />
         </Pressable>
-        <Text style={styles.headerTitle}>Scan Food</Text>
+        <Text style={styles.headerTitle}>Scan food</Text>
         <View style={{ width: 36 }} />
       </View>
 
@@ -710,7 +710,7 @@ const useStyles = makeLegacyStyles((Color) =>
     itemMetaRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
     badgeGroup: { flexDirection: "row", gap: 6 },
     servingText: { fontSize: 14, color: Color.textMuted },
-    sourceBadge: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.sm, paddingVertical: 2 },
+    sourceBadge: { borderRadius: Radius.pill, paddingHorizontal: Spacing.sm, paddingVertical: 2, backgroundColor: Color.surface2 },
     sourceBadgeLabel: { borderColor: Color.gold },
     sourceBadgeText: { fontSize: 12, fontWeight: "600", color: Color.textFaint },
     sourceBadgeTextLabel: { color: Color.gold },

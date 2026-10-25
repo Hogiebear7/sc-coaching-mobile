@@ -50,7 +50,7 @@ export default function SetLevelsScreen() {
         <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backButton} accessibilityRole="button" accessibilityLabel="Back">
           <Ionicons name="chevron-back" size={26} color={Color.textPrimary} />
         </Pressable>
-        <Text style={styles.headerTitle}>Set Levels</Text>
+        <Text style={styles.headerTitle}>Set levels</Text>
         <View style={{ width: 36 }} />
       </View>
 
@@ -165,17 +165,14 @@ const useStyles = makeLegacyStyles((Color) =>
     headerTitle: { fontSize: 20, fontWeight: "600", color: Color.textPrimary, flexShrink: 1, textAlign: "center" },
     centerFill: { flex: 1, alignItems: "center", justifyContent: "center" },
     scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
-    intro: { fontSize: 14, color: Color.textMuted, lineHeight: 17 },
+    intro: { fontSize: 14, color: Color.textMuted, lineHeight: 20 },
     windowRow: {
       flexDirection: "row",
       alignSelf: "flex-start",
       marginTop: Spacing.md,
       borderRadius: Radius.pill,
-      borderWidth: 1,
-      borderColor: Color.borderSubtle,
-      padding: 2,
-    },
-    windowChip: { borderRadius: Radius.pill, paddingHorizontal: Spacing.sm, paddingVertical: 6 },
+      padding: 2, backgroundColor: Color.surface2 },
+    windowChip: { borderRadius: Radius.pill, paddingHorizontal: Spacing.sm, paddingVertical: 6, minHeight: 40, justifyContent: "center" },
     windowChipActive: { backgroundColor: "rgba(85,196,254,0.15)" },
     windowChipText: { fontSize: 13, fontWeight: "500", color: Color.textMuted },
     windowChipTextActive: { color: Color.accentData },
@@ -189,7 +186,7 @@ const useStyles = makeLegacyStyles((Color) =>
       alignItems: "center",
     },
     emptyTitle: { fontSize: 14, fontWeight: "600", color: Color.textPrimary, textAlign: "center" },
-    emptyBody: { fontSize: 14, color: Color.textMuted, textAlign: "center", marginTop: Spacing.xs, lineHeight: 17 },
+    emptyBody: { fontSize: 14, color: Color.textMuted, textAlign: "center", marginTop: Spacing.xs, lineHeight: 20 },
     diagramCard: {
       marginTop: Spacing.lg,
       borderRadius: Radius.lg,
@@ -221,6 +218,6 @@ const useStyles = makeLegacyStyles((Color) =>
     sectionSets: { fontSize: 13, color: Color.textMuted, fontVariant: ["tabular-nums"] },
     tierBadge: { borderRadius: Radius.pill, paddingHorizontal: Spacing.xs, paddingVertical: 2 },
     tierBadgeText: { fontSize: 12, fontWeight: "700" },
-    unresolvedNote: { fontSize: 13, color: Color.textFaint, lineHeight: 16, marginTop: Spacing.md },
+    unresolvedNote: { fontSize: 13, color: Color.textFaint, lineHeight: 18, marginTop: Spacing.md },
   })
 );

@@ -115,7 +115,7 @@ const MANUAL_MAX_ML = 15_000;
 // and skips the transition entirely when the member has reduce-motion on.
 function HydrationBottle({ remainingPct, reduceMotion }: { remainingPct: number; reduceMotion: boolean }) {
   const styles = useStyles();
-  const fillAnim = useRef(new Animated.Value(remainingPct)).current;
+  const [fillAnim] = useState(() => new Animated.Value(remainingPct));
 
   useEffect(() => {
     Animated.timing(fillAnim, {

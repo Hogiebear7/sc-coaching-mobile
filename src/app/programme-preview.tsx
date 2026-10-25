@@ -108,7 +108,7 @@ export default function ProgrammePreviewScreen() {
       <SafeAreaView style={styles.safe} edges={["top"]}>
         <View style={styles.header}>
           <View style={{ width: 36 }} />
-          <Text style={styles.headerTitle}>Add to Schedule</Text>
+          <Text style={styles.headerTitle}>Add to schedule</Text>
           <View style={{ width: 36 }} />
         </View>
         <ScrollView contentContainerStyle={styles.scroll}>
@@ -179,7 +179,7 @@ export default function ProgrammePreviewScreen() {
         <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backButton} accessibilityRole="button" accessibilityLabel="Back">
           <Ionicons name="chevron-back" size={26} color={Color.textPrimary} />
         </Pressable>
-        <Text style={styles.headerTitle}>Review Programme</Text>
+        <Text style={styles.headerTitle}>Review programme</Text>
         <View style={{ width: 36 }} />
       </View>
 
@@ -251,7 +251,7 @@ const useStyles = makeLegacyStyles((Color) =>
     programName: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
     summaryLine: { fontSize: 14, color: Color.textMuted, marginTop: 4 },
     rationaleText: { fontSize: 13, color: Color.textSecondary, marginTop: Spacing.sm, lineHeight: 19 },
-    summaryHint: { fontSize: 14, color: Color.textFaint, marginTop: Spacing.sm, lineHeight: 17 },
+    summaryHint: { fontSize: 14, color: Color.textFaint, marginTop: Spacing.sm, lineHeight: 20 },
     dayCard: { padding: Spacing.md, marginTop: Spacing.sm },
     dayLabel: { fontSize: 15, fontWeight: "700", color: Color.textPrimary },
     error: { fontSize: 14, color: Color.danger, marginTop: Spacing.md },

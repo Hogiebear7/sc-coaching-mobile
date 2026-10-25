@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Animated, Pressable, StyleSheet, Text } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -25,7 +25,7 @@ export function PbToast({ message, onDismiss }: { message: string | null; onDism
   const styles = useStyles();
   const Color = useLegacyColors();
   const insets = useSafeAreaInsets();
-  const opacity = useRef(new Animated.Value(0)).current;
+  const [opacity] = useState(() => new Animated.Value(0));
   // Read via ref rather than depending on `onDismiss` directly — this
   // screen re-renders every second while a live workout timer is running,
   // which would otherwise hand the effect a new function identity each

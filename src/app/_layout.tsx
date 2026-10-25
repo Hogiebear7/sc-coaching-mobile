@@ -327,7 +327,7 @@ const useStyles = makeLegacyStyles((Color) =>
     crashRoot: { flex: 1, backgroundColor: Color.bg0 },
     crashScroll: { padding: Spacing.lg, paddingTop: Spacing.xxl },
     crashTitle: { fontSize: 18, fontWeight: "700", color: Color.textPrimary },
-    crashSubtitle: { fontSize: 14, color: Color.textMuted, marginTop: Spacing.xs, lineHeight: 17 },
+    crashSubtitle: { fontSize: 14, color: Color.textMuted, marginTop: Spacing.xs, lineHeight: 20 },
     crashBox: {
       marginTop: Spacing.lg,
       padding: Spacing.md,

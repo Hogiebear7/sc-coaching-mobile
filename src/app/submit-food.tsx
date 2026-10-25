@@ -169,7 +169,7 @@ export default function SubmitFoodScreen() {
             <Ionicons name="checkmark" size={28} color={Color.goldForeground} />
           </View>
           <Text style={styles.confirmTitle}>Submitted for review</Text>
-          <Text style={styles.confirmText}>We'll let you know once a staff member has taken a look.</Text>
+          <Text style={styles.confirmText}>We&apos;ll let you know once a staff member has taken a look.</Text>
         </View>
       </SafeAreaView>
     );
@@ -323,13 +323,13 @@ const useStyles = makeLegacyStyles((Color) =>
     confirmText: { fontSize: 13, color: Color.textMuted, textAlign: "center", marginTop: 6, lineHeight: 19 },
     scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
     foodName: { fontSize: 18, fontWeight: "700", color: Color.textPrimary },
-    introText: { fontSize: 14, color: Color.textMuted, lineHeight: 18, marginTop: Spacing.xs, marginBottom: Spacing.md },
+    introText: { fontSize: 14, color: Color.textMuted, lineHeight: 20, marginTop: Spacing.xs, marginBottom: Spacing.md },
     statusCard: { padding: Spacing.md, borderWidth: 1, marginBottom: Spacing.md },
     statusLabel: { fontSize: 13, fontWeight: "700" },
-    statusDetail: { fontSize: 14, color: Color.textMuted, marginTop: 4, lineHeight: 17 },
+    statusDetail: { fontSize: 14, color: Color.textMuted, marginTop: 4, lineHeight: 20 },
     reviewNoteBox: { marginTop: Spacing.sm, paddingTop: Spacing.sm, borderTopWidth: 1, borderTopColor: Color.borderSubtle },
     reviewNoteLabel: { fontSize: 12, fontWeight: "700", letterSpacing: 0.5, color: Color.textFaint },
-    reviewNoteText: { fontSize: 14, color: Color.textSecondary, marginTop: 3, lineHeight: 17 },
+    reviewNoteText: { fontSize: 14, color: Color.textSecondary, marginTop: 3, lineHeight: 20 },
     sectionLabel: { fontSize: 19, fontWeight: "600", color: Color.textPrimary, marginTop: Spacing.sm, marginBottom: Spacing.sm },
     eligibilityCard: { padding: Spacing.md, marginBottom: Spacing.md },
     eligibilityRow: { flexDirection: "row", alignItems: "center", gap: Spacing.xs, marginTop: 6 },
@@ -346,10 +346,7 @@ const useStyles = makeLegacyStyles((Color) =>
       gap: 6,
       height: 44,
       borderRadius: Radius.md,
-      borderWidth: 1,
-      borderColor: Color.borderSubtle,
-      borderStyle: "dashed",
-    },
+      borderStyle: "dashed", backgroundColor: Color.surface2 },
     photoSlotEmptyText: { fontSize: 14, fontWeight: "600", color: Color.gold },
     photoSlotFilled: {
       flex: 1,
@@ -364,7 +361,7 @@ const useStyles = makeLegacyStyles((Color) =>
     },
     photoSlotFilledText: { fontSize: 14, fontWeight: "600", color: Color.success },
     consentRow: { flexDirection: "row", alignItems: "flex-start", gap: Spacing.sm, marginTop: Spacing.sm },
-    consentText: { flex: 1, fontSize: 14, color: Color.textSecondary, lineHeight: 17 },
+    consentText: { flex: 1, fontSize: 14, color: Color.textSecondary, lineHeight: 20 },
     error: { fontSize: 14, color: Color.danger, marginTop: Spacing.sm },
     cameraWrap: { flex: 1, marginHorizontal: Spacing.lg, borderRadius: Radius.lg, overflow: "hidden", backgroundColor: Color.surface1 },
     overlay: { ...StyleSheet.absoluteFill, backgroundColor: `${Color.bg0}e6`, alignItems: "center", justifyContent: "center" },

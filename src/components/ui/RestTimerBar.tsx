@@ -115,13 +115,10 @@ const useStyles = makeLegacyStyles((Color) =>
     adjustButton: {
       paddingHorizontal: Spacing.sm,
       paddingVertical: 6,
-      borderRadius: Radius.pill,
-      borderWidth: 1,
-      borderColor: Color.borderSubtle,
-    },
+      borderRadius: Radius.pill, backgroundColor: Color.surface2, minHeight: 40, justifyContent: "center" },
     adjustText: { fontSize: 14, fontWeight: "600", color: Color.textSecondary },
     clockWrap: { flex: 1, alignItems: "center" },
-    label: { fontSize: 12, fontWeight: "700", letterSpacing: 0.4, color: Color.textMuted, textTransform: "uppercase" },
+    label: { fontSize: 14, fontWeight: "600", color: Color.textMuted },
     clock: { ...figure(26, "700"), color: Color.gold },
     clockDone: { color: Color.success },
     iconButton: {

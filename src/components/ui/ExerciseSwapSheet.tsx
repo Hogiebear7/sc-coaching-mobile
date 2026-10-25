@@ -161,14 +161,12 @@ const useStyles = makeLegacyStyles((Color) =>
       maxWidth: 360,
       maxHeight: "80%",
       borderRadius: Radius.lg,
-      borderWidth: 1,
-      borderColor: Color.borderDefault,
       backgroundColor: Color.surface1,
       padding: Spacing.lg,
       paddingTop: Spacing.xl,
     },
     title: { fontSize: 15, fontWeight: "700", color: Color.textPrimary },
-    hint: { fontSize: 14, color: Color.textSecondary, lineHeight: 17, marginTop: Spacing.sm, marginBottom: Spacing.sm },
+    hint: { fontSize: 14, color: Color.textSecondary, lineHeight: 20, marginTop: Spacing.sm, marginBottom: Spacing.sm },
     error: { fontSize: 14, color: Color.danger, marginTop: Spacing.sm },
     closeButton: { position: "absolute", top: Spacing.md, right: Spacing.md, padding: 4 },
     altScroll: { marginTop: Spacing.xs },
@@ -181,6 +179,6 @@ const useStyles = makeLegacyStyles((Color) =>
       borderTopColor: Color.borderSubtle,
     },
     altName: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
-    altRationale: { fontSize: 14, color: Color.textMuted, marginTop: 2, lineHeight: 16 },
+    altRationale: { fontSize: 14, color: Color.textMuted, marginTop: 2, lineHeight: 20 },
   })
 );

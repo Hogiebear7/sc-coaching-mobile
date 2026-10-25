@@ -161,7 +161,7 @@ export default function EditClassWorkoutScreen() {
           <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backButton} accessibilityRole="button" accessibilityLabel="Back">
             <Ionicons name="chevron-back" size={26} color={Color.textPrimary} />
           </Pressable>
-          <Text style={styles.headerTitle}>Correct Class Workout</Text>
+          <Text style={styles.headerTitle}>Correct class workout</Text>
           <View style={{ width: 36 }} />
         </View>
 
@@ -320,11 +320,11 @@ const useStyles = makeLegacyStyles((Color) =>
     emptyText: { fontSize: 14, color: Color.textMuted, textAlign: "center" },
     scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
     subhead: { fontSize: 14, fontWeight: "700", color: Color.textPrimary, marginTop: Spacing.sm },
-    hint: { fontSize: 14, color: Color.textMuted, marginTop: 4, lineHeight: 17 },
+    hint: { fontSize: 14, color: Color.textMuted, marginTop: 4, lineHeight: 20 },
     multiline: { minHeight: 80, textAlignVertical: "top", paddingTop: Spacing.sm, marginTop: Spacing.md },
     sectionHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: Spacing.lg, marginBottom: Spacing.sm },
     sectionLabel: { fontSize: 19, fontWeight: "600", color: Color.textPrimary },
-    addChip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.md, paddingVertical: 6 },
+    addChip: { borderRadius: Radius.pill, paddingHorizontal: Spacing.md, paddingVertical: 6, backgroundColor: Color.surface2, minHeight: 40, justifyContent: "center" },
     addChipText: { fontSize: 14, fontWeight: "600", color: Color.textSecondary },
     emptyHint: { fontSize: 13, color: Color.textFaint, paddingVertical: Spacing.md },
     entryCard: { padding: Spacing.md, marginBottom: Spacing.md },

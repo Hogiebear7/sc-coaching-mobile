@@ -87,7 +87,7 @@ export default function RunTimerScreen() {
         <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backButton} accessibilityRole="button" accessibilityLabel="Back">
           <Ionicons name="chevron-back" size={26} color={Color.textPrimary} />
         </Pressable>
-        <Text style={styles.headerTitle}>Run Timer</Text>
+        <Text style={styles.headerTitle}>Run timer</Text>
         <View style={{ width: 36 }} />
       </View>
 
@@ -141,7 +141,7 @@ const useStyles = makeLegacyStyles((Color) =>
     body: { flex: 1, alignItems: "center", paddingTop: Spacing.xxl, paddingHorizontal: Spacing.lg },
     clock: { ...figure(64, "700"), color: Color.gold },
     controlsRow: { flexDirection: "row", alignItems: "center", gap: Spacing.xl, marginTop: Spacing.xl },
-    secondaryControl: { width: 48, height: 48, borderRadius: 24, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: Color.borderSubtle },
+    secondaryControl: { width: 48, height: 48, borderRadius: 24, alignItems: "center", justifyContent: "center", backgroundColor: Color.surface2 },
     primaryControl: { width: 72, height: 72, borderRadius: 36, alignItems: "center", justifyContent: "center", backgroundColor: Color.gold },
     splitsCard: {
       width: "100%",

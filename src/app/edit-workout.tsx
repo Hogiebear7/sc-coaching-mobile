@@ -313,7 +313,7 @@ export default function EditWorkoutScreen() {
           <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backButton} accessibilityRole="button" accessibilityLabel="Back">
             <Ionicons name="chevron-back" size={26} color={Color.textPrimary} />
           </Pressable>
-          <Text style={styles.headerTitle}>Edit Workout</Text>
+          <Text style={styles.headerTitle}>Edit workout</Text>
           <View style={{ width: 36 }} />
         </View>
 
@@ -564,7 +564,7 @@ const useStyles = makeLegacyStyles((Color) =>
     multiline: { minHeight: 80, textAlignVertical: "top", paddingTop: Spacing.sm },
     sectionHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: Spacing.lg, marginBottom: Spacing.sm },
     sectionLabel: { fontSize: 19, fontWeight: "600", color: Color.textPrimary },
-    addChip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.md, paddingVertical: 6 },
+    addChip: { borderRadius: Radius.pill, paddingHorizontal: Spacing.md, paddingVertical: 6, backgroundColor: Color.surface2, minHeight: 40, justifyContent: "center" },
     addChipText: { fontSize: 14, fontWeight: "600", color: Color.textSecondary },
     emptyHint: { fontSize: 13, color: Color.textFaint, paddingVertical: Spacing.md },
     entryCard: { padding: Spacing.md, marginBottom: Spacing.md },
@@ -578,7 +578,7 @@ const useStyles = makeLegacyStyles((Color) =>
     setColumnLabel: { fontSize: 15, fontWeight: "600", color: Color.textSecondary },
     setEditRow: { flexDirection: "row", alignItems: "center", gap: Spacing.xs, marginTop: Spacing.xs, padding: 4 },
     setNumber: { fontSize: 13, fontWeight: "700", color: Color.textPrimary, textAlign: "center" },
-    setTypeTag: { fontSize: 7, fontWeight: "700", color: Color.gold, textAlign: "center", textTransform: "uppercase" },
+    setTypeTag: { fontSize: 7, fontWeight: "600", color: Color.gold, textAlign: "center" },
     setInput: {
       height: 40,
       borderRadius: Radius.md,

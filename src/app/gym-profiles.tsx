@@ -71,7 +71,7 @@ export default function GymProfilesScreen() {
         <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backButton} accessibilityRole="button" accessibilityLabel="Back">
           <Ionicons name="chevron-back" size={26} color={Color.textPrimary} />
         </Pressable>
-        <Text style={styles.headerTitle}>Gym Profiles</Text>
+        <Text style={styles.headerTitle}>Gym profiles</Text>
         <Pressable onPress={() => router.push("/gym-profile-builder")} hitSlop={12} style={styles.addButton}>
           <Ionicons name="add" size={22} color={Color.gold} />
         </Pressable>
@@ -140,11 +140,11 @@ const useStyles = makeLegacyStyles((Color) =>
     },
     backButton: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center", marginLeft: -8 },
     headerTitle: { fontSize: 20, fontWeight: "600", color: Color.textPrimary, flexShrink: 1, textAlign: "center" },
-    addButton: { padding: 4 },
+    addButton: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center", backgroundColor: Color.surface2 },
     centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl, gap: Spacing.xs },
     errorText: { color: Color.textMuted, fontSize: 14, textAlign: "center" },
     scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
-    introText: { fontSize: 14, color: Color.textMuted, marginBottom: Spacing.md, lineHeight: 17 },
+    introText: { fontSize: 14, color: Color.textMuted, marginBottom: Spacing.md, lineHeight: 20 },
     emptyCard: { alignItems: "center", padding: Spacing.xl, gap: 4 },
     emptyText: { fontSize: 13, fontWeight: "600", color: Color.textSecondary, marginTop: Spacing.xs },
     emptySub: { fontSize: 14, color: Color.textMuted, textAlign: "center" },
@@ -153,10 +153,10 @@ const useStyles = makeLegacyStyles((Color) =>
     profileIcon: { fontSize: 26 },
     profileNameRow: { flexDirection: "row", alignItems: "center", gap: 6 },
     profileName: { fontSize: 15, fontWeight: "600", color: Color.textPrimary },
-    activeBadge: { borderRadius: Radius.pill, backgroundColor: Color.goldWeak, borderWidth: 1, borderColor: Color.goldBorder, paddingHorizontal: 8, paddingVertical: 2 },
+    activeBadge: { borderRadius: Radius.pill, backgroundColor: Color.goldWeak, paddingHorizontal: 8, paddingVertical: 2 },
     activeBadgeText: { fontSize: 12, fontWeight: "700", color: Color.gold },
     profileMeta: { fontSize: 14, color: Color.textMuted, marginTop: 2 },
-    setActiveButton: { marginTop: Spacing.sm, alignSelf: "flex-start", borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.md, paddingVertical: 6 },
+    setActiveButton: { marginTop: Spacing.sm, alignSelf: "flex-start", borderRadius: Radius.pill, paddingHorizontal: Spacing.md, paddingVertical: 6, backgroundColor: Color.surface2, minHeight: 40, justifyContent: "center" },
     setActiveButtonText: { fontSize: 13, fontWeight: "600", color: Color.textSecondary },
   })
 );

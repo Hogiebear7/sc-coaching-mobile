@@ -156,12 +156,12 @@ const useStyles = makeLegacyStyles((Color) =>
     backButton: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center", marginLeft: -8 },
     headerTitle: { fontSize: 20, fontWeight: "600", color: Color.textPrimary, flexShrink: 1, textAlign: "center" },
     scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
-    intro: { fontSize: 14, color: Color.textSecondary, lineHeight: 17, marginBottom: Spacing.lg },
+    intro: { fontSize: 14, color: Color.textSecondary, lineHeight: 20, marginBottom: Spacing.lg },
     card: { padding: Spacing.md },
     cardSpaced: { marginTop: Spacing.md },
     settingRow: { flexDirection: "row", alignItems: "center", gap: Spacing.md, paddingVertical: Spacing.sm },
     settingRowDivider: { borderTopWidth: 1, borderTopColor: Color.borderSubtle },
     settingTitle: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
-    settingSub: { fontSize: 14, color: Color.textMuted, marginTop: 2, lineHeight: 16 },
+    settingSub: { fontSize: 14, color: Color.textMuted, marginTop: 2, lineHeight: 20 },
   })
 );

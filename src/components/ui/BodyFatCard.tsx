@@ -86,7 +86,7 @@ export function BodyFatCard({ compact = false }: { compact?: boolean }) {
 
       {!compact && !latest ? (
         <Text style={styles.explainer}>
-          Optional — weight alone can't tell muscle gain from fat loss. Logging body fat %
+          Optional — weight alone can&apos;t tell muscle gain from fat loss. Logging body fat %
           (calipers, a smart scale, or a DEXA/InBody scan) lets your plan track body
           composition directly.
         </Text>
@@ -151,7 +151,7 @@ const useStyles = makeLegacyStyles((Color) =>
     headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
     value: { fontSize: 20, fontWeight: "700", color: Color.textPrimary, fontVariant: ["tabular-nums"] },
     sub: { fontSize: 13, color: Color.textMuted, marginTop: 2 },
-    explainer: { fontSize: 13, color: Color.textMuted, marginTop: Spacing.sm, lineHeight: 16 },
+    explainer: { fontSize: 13, color: Color.textMuted, marginTop: Spacing.sm, lineHeight: 18 },
     inputRow: { flexDirection: "row", gap: Spacing.sm, marginTop: Spacing.md },
     input: {
       width: 90,
@@ -168,10 +168,7 @@ const useStyles = makeLegacyStyles((Color) =>
     rangeChip: {
       paddingHorizontal: Spacing.sm,
       paddingVertical: 6,
-      borderRadius: Radius.pill,
-      borderWidth: 1,
-      borderColor: Color.borderSubtle,
-    },
+      borderRadius: Radius.pill, backgroundColor: Color.surface2, minHeight: 40, justifyContent: "center" },
     rangeChipActive: { borderColor: Color.gold, backgroundColor: Color.gold },
     rangeChipText: { fontSize: 13, fontWeight: "500", color: Color.textMuted },
     rangeChipTextActive: { color: Color.goldForeground },

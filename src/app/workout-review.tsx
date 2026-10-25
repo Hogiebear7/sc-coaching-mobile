@@ -56,7 +56,7 @@ export default function WorkoutReviewScreen() {
         <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backButton} accessibilityRole="button" accessibilityLabel="Back">
           <Ionicons name="chevron-back" size={26} color={Color.textPrimary} />
         </Pressable>
-        <Text style={styles.headerTitle}>Session Review</Text>
+        <Text style={styles.headerTitle}>Session review</Text>
         <View style={{ width: 36 }} />
       </View>
 
@@ -245,7 +245,7 @@ const useStyles = makeLegacyStyles((Color) =>
     sectionLabel: { fontSize: 19, fontWeight: "600", color: Color.textPrimary, marginTop: Spacing.xl, marginBottom: Spacing.sm },
     statsGrid: { gap: Spacing.sm },
     statsRow: { flexDirection: "row", gap: Spacing.sm },
-    noCompareText: { fontSize: 14, color: Color.textFaint, marginTop: Spacing.xs, lineHeight: 17 },
+    noCompareText: { fontSize: 14, color: Color.textFaint, marginTop: Spacing.xs, lineHeight: 20 },
     detailCard: { padding: 0, overflow: "hidden" },
     detailRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: Spacing.md },
     detailRowDivider: { borderBottomWidth: 1, borderBottomColor: Color.borderSubtle },
@@ -262,7 +262,7 @@ const useStyles = makeLegacyStyles((Color) =>
     },
     scoreTotal: { ...figure(48, "700") },
     scoreOutOf: { fontSize: 16, color: Color.textFaint, marginRight: Spacing.sm },
-    scoreBand: { fontSize: 13, fontWeight: "700", letterSpacing: 0.4, textTransform: "uppercase" },
+    scoreBand: { fontSize: 14, fontWeight: "600" },
     scoreDetail: { fontSize: 13, color: Color.textFaint, marginTop: 2 },
   })
 );

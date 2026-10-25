@@ -656,7 +656,7 @@ const useStyles = makeLegacyStyles((Color) =>
     headerTitle: { fontSize: 20, fontWeight: "600", color: Color.textPrimary, flexShrink: 1, textAlign: "center" },
     headerSubtitle: { fontSize: 13, color: Color.textMuted, marginTop: 2 },
     scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
-    intro: { fontSize: 14, color: Color.textMuted, lineHeight: 18, marginBottom: Spacing.md },
+    intro: { fontSize: 14, color: Color.textMuted, lineHeight: 20, marginBottom: Spacing.md },
     errorBanner: {
       fontSize: 14,
       color: Color.danger,
@@ -689,13 +689,10 @@ const useStyles = makeLegacyStyles((Color) =>
     gridRow4: { flexDirection: "row", gap: Spacing.xs },
     addChip: {
       borderRadius: Radius.pill,
-      borderWidth: 1,
-      borderColor: Color.borderSubtle,
       paddingHorizontal: Spacing.sm,
       paddingVertical: 6,
       alignSelf: "flex-start",
-      marginTop: Spacing.xs,
-    },
+      marginTop: Spacing.xs, backgroundColor: Color.surface2, minHeight: 40, justifyContent: "center" },
     addChipText: { fontSize: 13, fontWeight: "600", color: Color.textSecondary },
     notesInput: { marginTop: Spacing.md, minHeight: 64, textAlignVertical: "top", paddingVertical: Spacing.sm },
     memberWell: {
@@ -710,7 +707,7 @@ const useStyles = makeLegacyStyles((Color) =>
     memberBody: { marginTop: Spacing.sm, paddingTop: Spacing.sm, borderTopWidth: 1, borderTopColor: Color.borderSubtle },
     rowLabel: { fontSize: 14, fontWeight: "600", color: Color.textPrimary, marginBottom: 6 },
     formatRow: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.xs, marginTop: Spacing.xs },
-    formatChip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.sm, paddingVertical: 8 },
+    formatChip: { borderRadius: Radius.pill, paddingHorizontal: Spacing.sm, paddingVertical: 8, backgroundColor: Color.surface2, minHeight: 40, justifyContent: "center" },
     formatChipActive: { borderColor: Color.gold, backgroundColor: Color.gold },
     formatChipText: { fontSize: 14, fontWeight: "600", color: Color.textMuted },
     formatChipTextActive: { color: Color.goldForeground },
@@ -723,7 +720,7 @@ const useStyles = makeLegacyStyles((Color) =>
       justifyContent: "center",
       backgroundColor: Color.gold,
     },
-    formatModeChip: { paddingHorizontal: Spacing.sm, paddingVertical: 8, borderRadius: Radius.md, borderWidth: 1, borderColor: Color.borderSubtle },
+    formatModeChip: { paddingHorizontal: Spacing.sm, paddingVertical: 8, borderRadius: Radius.md, backgroundColor: Color.surface2 },
     formatModeText: { fontSize: 12, fontWeight: "700", color: Color.textMuted },
     stationRow: { flexDirection: "row", alignItems: "center", gap: Spacing.xs, marginBottom: Spacing.xs },
     movementsList: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: Spacing.sm },
@@ -736,8 +733,7 @@ const useStyles = makeLegacyStyles((Color) =>
       borderColor: "transparent",
       backgroundColor: Color.surface2,
       paddingHorizontal: Spacing.sm,
-      paddingVertical: 6,
-    },
+      paddingVertical: 6 },
     movementChipText: { fontSize: 13, color: Color.textSecondary, fontWeight: "500" },
   })
 );

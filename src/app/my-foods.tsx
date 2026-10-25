@@ -59,7 +59,7 @@ export default function MyFoodsScreen() {
         <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backButton} accessibilityRole="button" accessibilityLabel="Back">
           <Ionicons name="chevron-back" size={26} color={Color.textPrimary} />
         </Pressable>
-        <Text style={styles.headerTitle}>My Custom Foods</Text>
+        <Text style={styles.headerTitle}>My custom foods</Text>
         <Pressable onPress={() => router.push(atFreeLimit ? "/membership" : "/custom-food")} hitSlop={12}>
           <Ionicons name={atFreeLimit ? "lock-closed-outline" : "add"} size={22} color={Color.gold} />
         </Pressable>
@@ -82,7 +82,7 @@ export default function MyFoodsScreen() {
         <View style={styles.centerFill}>
           <Ionicons name="restaurant-outline" size={32} color={Color.textFaint} />
           <Text style={styles.emptyTitle}>No custom foods yet</Text>
-          <Text style={styles.emptyText}>Add one here, or save a food while logging — it'll show up in this list.</Text>
+          <Text style={styles.emptyText}>Add one here, or save a food while logging — it&apos;ll show up in this list.</Text>
         </View>
       ) : (
         <FlatList
@@ -128,6 +128,6 @@ const useStyles = makeLegacyStyles((Color) =>
     badge: { borderWidth: 1, borderRadius: Radius.pill, paddingHorizontal: 6, paddingVertical: 1 },
     badgeText: { fontSize: 12, fontWeight: "700" },
     shareButton: { padding: 6 },
-    footerHint: { fontSize: 13, color: Color.textMuted, lineHeight: 16, marginTop: Spacing.md, paddingHorizontal: 2 },
+    footerHint: { fontSize: 13, color: Color.textMuted, lineHeight: 18, marginTop: Spacing.md, paddingHorizontal: 2 },
   })
 );

@@ -227,12 +227,9 @@ const useStyles = makeLegacyStyles((Color) =>
     chipRow: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.xs, marginTop: Spacing.md },
     chip: {
       borderRadius: Radius.pill,
-      borderWidth: 1,
-      borderColor: Color.goldBorder,
       backgroundColor: Color.goldWeak,
       paddingHorizontal: Spacing.sm,
-      paddingVertical: 4,
-    },
+      paddingVertical: 4 },
     chipText: { fontSize: 13, fontWeight: "600", color: Color.gold, textTransform: "capitalize" },
     availabilityBadge: {
       flexDirection: "row",
@@ -243,8 +240,7 @@ const useStyles = makeLegacyStyles((Color) =>
       borderRadius: Radius.pill,
       borderWidth: 1,
       paddingHorizontal: Spacing.sm,
-      paddingVertical: 4,
-    },
+      paddingVertical: 4 },
     availabilityBadgeYes: { borderColor: Color.success, backgroundColor: `${Color.success}22` },
     availabilityBadgeNo: { borderColor: Color.danger, backgroundColor: `${Color.danger}22` },
     availabilityText: { fontSize: 13, fontWeight: "600" },

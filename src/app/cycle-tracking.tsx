@@ -265,7 +265,7 @@ export default function CycleTrackingScreen() {
           <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backButton} accessibilityRole="button" accessibilityLabel="Back">
             <Ionicons name="chevron-back" size={26} color={Color.textPrimary} />
           </Pressable>
-          <Text style={styles.headerTitle}>Cycle Tracking</Text>
+          <Text style={styles.headerTitle}>Cycle tracking</Text>
           <View style={{ width: 36 }} />
         </View>
 
@@ -603,11 +603,11 @@ const useStyles = makeLegacyStyles((Color) =>
       backgroundColor: Color.surface2,
       padding: Spacing.md,
     },
-    wellText: { fontSize: 14, color: Color.textMuted, lineHeight: 17 },
+    wellText: { fontSize: 14, color: Color.textMuted, lineHeight: 20 },
     beginDayCard: { padding: Spacing.md, marginTop: Spacing.md, borderColor: Color.goldBorder, backgroundColor: Color.goldWeak },
     beginDayRow: { flexDirection: "row", alignItems: "center", gap: Spacing.md },
     beginDayTitle: { fontSize: 13, fontWeight: "700", color: Color.textPrimary },
-    beginDaySub: { fontSize: 13, color: Color.textMuted, marginTop: 2, lineHeight: 15 },
+    beginDaySub: { fontSize: 13, color: Color.textMuted, marginTop: 2, lineHeight: 18 },
     beginDayButton: { flexShrink: 0 },
     phaseCard: { padding: Spacing.lg, marginTop: Spacing.lg },
     phaseHeaderRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap", gap: 4 },
@@ -622,7 +622,7 @@ const useStyles = makeLegacyStyles((Color) =>
       backgroundColor: Color.warningWeak,
       padding: Spacing.sm,
     },
-    warningText: { fontSize: 13, color: Color.warning, lineHeight: 15 },
+    warningText: { fontSize: 13, color: Color.warning, lineHeight: 18 },
     guidanceWrap: { marginTop: Spacing.md, borderTopWidth: 1, borderTopColor: Color.borderSubtle, paddingTop: Spacing.md, gap: Spacing.sm },
     guidanceRow: { flexDirection: "row", gap: Spacing.sm },
     guidanceLabel: { width: 70, fontSize: 12, fontWeight: "700", letterSpacing: 0.4, color: Color.textMuted },
@@ -632,20 +632,17 @@ const useStyles = makeLegacyStyles((Color) =>
     menopauseHeaderRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap", gap: 4, marginBottom: Spacing.sm },
     menopauseBadge: { fontSize: 12, color: Color.textFaint },
     menopauseTitle: { fontSize: 13, fontWeight: "700", color: Color.textPrimary },
-    menopauseBody: { fontSize: 14, color: Color.textMuted, marginTop: 2, lineHeight: 17 },
+    menopauseBody: { fontSize: 14, color: Color.textMuted, marginTop: 2, lineHeight: 20 },
     sectionTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
     sectionLabel: { fontSize: 19, fontWeight: "600", color: Color.textPrimary, marginTop: Spacing.xl, marginBottom: Spacing.sm },
     formCard: { padding: Spacing.lg },
-    formHint: { fontSize: 14, color: Color.textMuted, marginBottom: Spacing.md, lineHeight: 17 },
+    formHint: { fontSize: 14, color: Color.textMuted, marginBottom: Spacing.md, lineHeight: 20 },
     label: { fontSize: 13, fontWeight: "500", color: Color.textSecondary, marginBottom: 6 },
     chipRow: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.xs, marginBottom: Spacing.md },
     chip: {
       paddingHorizontal: Spacing.md,
       paddingVertical: 8,
-      borderRadius: Radius.pill,
-      borderWidth: 1,
-      borderColor: Color.borderSubtle,
-    },
+      borderRadius: Radius.pill, backgroundColor: Color.surface2, minHeight: 40, justifyContent: "center" },
     chipActive: { borderColor: Color.gold, backgroundColor: Color.gold },
     chipText: { fontSize: 14, fontWeight: "500", color: Color.textMuted },
     chipTextActive: { color: Color.goldForeground },
@@ -653,13 +650,13 @@ const useStyles = makeLegacyStyles((Color) =>
     checkboxWrap: { gap: Spacing.md },
     checkboxRow: { flexDirection: "row", alignItems: "flex-start", gap: Spacing.sm },
     checkboxLabel: { fontSize: 13, fontWeight: "500", color: Color.textPrimary },
-    checkboxDescription: { fontSize: 13, color: Color.textMuted, marginTop: 2, lineHeight: 15 },
+    checkboxDescription: { fontSize: 13, color: Color.textMuted, marginTop: 2, lineHeight: 18 },
     error: { color: Color.danger, fontSize: 13, marginTop: Spacing.sm },
     saved: { color: Color.success, fontSize: 13, marginTop: Spacing.sm },
     settingsCard: { padding: 0 },
     settingRow: { flexDirection: "row", alignItems: "center", padding: Spacing.md, gap: Spacing.sm },
     settingTitle: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
-    settingSub: { fontSize: 13, color: Color.textMuted, marginTop: 2, lineHeight: 15 },
+    settingSub: { fontSize: 13, color: Color.textMuted, marginTop: 2, lineHeight: 18 },
     pregnancyGuidanceBox: {
       marginTop: Spacing.lg,
       borderTopWidth: 1,
@@ -669,6 +666,6 @@ const useStyles = makeLegacyStyles((Color) =>
     bulletLabel: { fontSize: 12, fontWeight: "700", letterSpacing: 0.5, color: Color.textMuted },
     bulletRow: { flexDirection: "row", alignItems: "flex-start", gap: 6, marginTop: 4 },
     bulletDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: Color.gold, marginTop: 7 },
-    bulletText: { flex: 1, fontSize: 14, color: Color.textSecondary, lineHeight: 17 },
+    bulletText: { flex: 1, fontSize: 14, color: Color.textSecondary, lineHeight: 20 },
   })
 );

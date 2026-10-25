@@ -355,7 +355,7 @@ export default function MealSuggestScreen() {
         <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backButton} accessibilityRole="button" accessibilityLabel="Back">
           <Ionicons name="chevron-back" size={26} color={Color.textPrimary} />
         </Pressable>
-        <Text style={styles.headerTitle}>What Can I Make?</Text>
+        <Text style={styles.headerTitle}>What can I make?</Text>
         <View style={{ width: 36 }} />
       </View>
 
@@ -582,11 +582,8 @@ const useStyles = makeLegacyStyles((Color) =>
       alignItems: "center",
       gap: 6,
       borderRadius: Radius.pill,
-      borderWidth: 1,
-      borderColor: Color.borderSubtle,
       paddingHorizontal: Spacing.md,
-      paddingVertical: 8,
-    },
+      paddingVertical: 8, backgroundColor: Color.surface2, minHeight: 40, justifyContent: "center" },
     modeChipActive: { borderColor: Color.gold, backgroundColor: Color.gold },
     modeChipText: { fontSize: 14, fontWeight: "600", color: Color.textMuted },
     modeChipTextActive: { color: Color.goldForeground },
@@ -633,8 +630,7 @@ const useStyles = makeLegacyStyles((Color) =>
       backgroundColor: "rgba(0,0,0,0.55)",
       borderRadius: Radius.pill,
       paddingHorizontal: Spacing.sm,
-      paddingVertical: 6,
-    },
+      paddingVertical: 6, minHeight: 40, justifyContent: "center" },
     retakeText: { fontSize: 13, fontWeight: "600", color: Color.textPrimary },
     textInputWrap: { paddingHorizontal: Spacing.lg, marginBottom: Spacing.md },
     textInput: {
@@ -670,7 +666,7 @@ const useStyles = makeLegacyStyles((Color) =>
     },
     confirmInput: { flex: 1, fontSize: 14, color: Color.textPrimary, paddingVertical: 4 },
     uncertainBadge: { borderRadius: Radius.pill, backgroundColor: Color.warningWeak, paddingHorizontal: 6, paddingVertical: 2 },
-    uncertainBadgeText: { fontSize: 12, fontWeight: "700", color: Color.warning, textTransform: "uppercase" },
+    uncertainBadgeText: { fontSize: 14, fontWeight: "600", color: Color.warning },
     confirmAddRow: { flexDirection: "row", alignItems: "center", gap: Spacing.sm, marginTop: Spacing.md },
     confirmAddInput: {
       flex: 1,
@@ -687,8 +683,6 @@ const useStyles = makeLegacyStyles((Color) =>
       width: 40,
       height: 40,
       borderRadius: Radius.md,
-      borderWidth: 1,
-      borderColor: Color.goldBorder,
       backgroundColor: Color.goldWeak,
       alignItems: "center",
       justifyContent: "center",
@@ -696,7 +690,7 @@ const useStyles = makeLegacyStyles((Color) =>
     footer: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.lg },
     suggestionCard: { padding: Spacing.md, marginBottom: Spacing.md },
     suggestionTitle: { fontSize: 15, fontWeight: "700", color: Color.textPrimary },
-    suggestionDesc: { fontSize: 14, color: Color.textMuted, marginTop: 4, lineHeight: 17 },
+    suggestionDesc: { fontSize: 14, color: Color.textMuted, marginTop: 4, lineHeight: 20 },
     ingredientRow: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: Spacing.sm },
     ingredientChip: { borderRadius: Radius.pill, backgroundColor: Color.surface2, paddingHorizontal: Spacing.sm, paddingVertical: 3 },
     ingredientChipText: { fontSize: 12, color: Color.textSecondary },
@@ -705,9 +699,9 @@ const useStyles = makeLegacyStyles((Color) =>
     macroValue: { fontSize: 15, fontWeight: "700", color: Color.gold, fontVariant: ["tabular-nums"] },
     macroLabel: { fontSize: 12, color: Color.textMuted, marginTop: 1 },
     crossRow: { flexDirection: "row", alignItems: "flex-start", gap: 6, marginTop: Spacing.sm },
-    crossText: { flex: 1, fontSize: 13, color: Color.textMuted, lineHeight: 16 },
+    crossText: { flex: 1, fontSize: 13, color: Color.textMuted, lineHeight: 18 },
     mealTypeRow: { flexDirection: "row", gap: 6, marginTop: Spacing.md },
-    mealTypeChip: { flex: 1, alignItems: "center", borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingVertical: 6 },
+    mealTypeChip: { flex: 1, alignItems: "center", borderRadius: Radius.pill, paddingVertical: 6, backgroundColor: Color.surface2, minHeight: 40, justifyContent: "center" },
     mealTypeChipActive: { borderColor: Color.gold, backgroundColor: Color.gold },
     mealTypeChipText: { fontSize: 12, fontWeight: "600", color: Color.textMuted },
     mealTypeChipTextActive: { color: Color.goldForeground },

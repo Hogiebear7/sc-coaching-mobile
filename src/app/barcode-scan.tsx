@@ -81,7 +81,7 @@ export default function BarcodeScanScreen() {
           <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backButton} accessibilityRole="button" accessibilityLabel="Back">
             <Ionicons name="chevron-back" size={26} color={Color.textPrimary} />
           </Pressable>
-          <Text style={styles.headerTitle}>Scan Barcode</Text>
+          <Text style={styles.headerTitle}>Scan barcode</Text>
           <View style={{ width: 36 }} />
         </View>
         <CameraPermissionDenied
@@ -105,7 +105,7 @@ export default function BarcodeScanScreen() {
         <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backButton} accessibilityRole="button" accessibilityLabel="Back">
           <Ionicons name="chevron-back" size={26} color={Color.textPrimary} />
         </Pressable>
-        <Text style={styles.headerTitle}>Scan Barcode</Text>
+        <Text style={styles.headerTitle}>Scan barcode</Text>
         <View style={{ width: 36 }} />
       </View>
 

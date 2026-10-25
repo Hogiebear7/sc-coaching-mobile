@@ -187,7 +187,7 @@ const useStyles = makeLegacyStyles((Color) =>
     wrap: { width: "100%" },
     statsRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
     statRight: { alignItems: "flex-end" },
-    statLabel: { fontSize: 12, fontWeight: "600", color: Color.textMuted, textTransform: "uppercase", letterSpacing: 0.4 },
+    statLabel: { fontSize: 14, fontWeight: "600", color: Color.textMuted },
     statValue: { fontSize: 16, fontWeight: "700", color: Color.textPrimary, marginTop: 2, fontVariant: ["tabular-nums"] },
     chartWrap: { width: "100%", alignItems: "center", marginTop: 6 },
     tooltip: {
@@ -197,8 +197,6 @@ const useStyles = makeLegacyStyles((Color) =>
       paddingVertical: 5,
       paddingHorizontal: 8,
       borderRadius: Radius.sm,
-      borderWidth: 1,
-      borderColor: Color.borderDefault,
       backgroundColor: Color.surface2,
     },
     tooltipValue: { fontSize: 14, fontWeight: "700", color: Color.textPrimary, fontVariant: ["tabular-nums"] },

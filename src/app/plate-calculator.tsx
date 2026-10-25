@@ -72,7 +72,7 @@ export default function PlateCalculatorScreen() {
         <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backButton} accessibilityRole="button" accessibilityLabel="Back">
           <Ionicons name="chevron-back" size={26} color={Color.textPrimary} />
         </Pressable>
-        <Text style={styles.headerTitle}>Plate Calculator</Text>
+        <Text style={styles.headerTitle}>Plate calculator</Text>
         <View style={{ width: 36 }} />
       </View>
 
@@ -225,7 +225,7 @@ const useStyles = makeLegacyStyles((Color) =>
       color: Color.textPrimary,
     },
     barRow: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.xs },
-    barChip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.md, paddingVertical: 8 },
+    barChip: { borderRadius: Radius.pill, paddingHorizontal: Spacing.md, paddingVertical: 8, backgroundColor: Color.surface2, minHeight: 40, justifyContent: "center" },
     barChipActive: { borderColor: Color.gold, backgroundColor: Color.gold },
     barChipText: { fontSize: 14, fontWeight: "500", color: Color.textMuted },
     barChipTextActive: { color: Color.goldForeground },

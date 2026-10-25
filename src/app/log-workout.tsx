@@ -1339,7 +1339,7 @@ export default function LogWorkoutScreen() {
         <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backButton} accessibilityRole="button" accessibilityLabel="Back">
           <Ionicons name="chevron-back" size={26} color={Color.textPrimary} />
         </Pressable>
-        <Text style={styles.headerTitle}>Log Workout</Text>
+        <Text style={styles.headerTitle}>Log workout</Text>
         <Pressable onPress={handleDiscard} hitSlop={12}>
           <Text style={styles.discardText}>Discard</Text>
         </Pressable>
@@ -2167,7 +2167,7 @@ const useStyles = makeLegacyStyles((Color) =>
     addChip: { flexDirection: "row", alignItems: "center", gap: 6, borderRadius: Radius.pill, backgroundColor: Color.surface1, paddingHorizontal: 16, minHeight: 46 },
     addChipText: { fontSize: 15, fontWeight: "600", color: Color.textPrimary },
     addButtonsRow: { flexDirection: "row", gap: Spacing.sm, marginTop: Spacing.sm, marginBottom: Spacing.md },
-    emptyHint: { fontSize: 14, color: Color.textMuted, borderWidth: 1, borderColor: Color.borderSubtle, borderStyle: "dashed", borderRadius: Radius.md, padding: Spacing.md },
+    emptyHint: { fontSize: 14, color: Color.textMuted, borderStyle: "dashed", borderRadius: Radius.md, padding: Spacing.md, backgroundColor: Color.surface2 },
     entryCard: { padding: Spacing.md, marginBottom: Spacing.md, borderRadius: 16 },
     // A superset group wraps its member cards in one bordered block with a
     // shared "ST1" label — members render edge-to-edge inside it (no
@@ -2175,8 +2175,6 @@ const useStyles = makeLegacyStyles((Color) =>
     // station, not a stack of separate cards.
     supersetGroupWrap: {
       borderRadius: Radius.md,
-      borderWidth: 1,
-      borderColor: Color.goldBorder,
       backgroundColor: Color.goldWeak,
       marginBottom: Spacing.md,
       overflow: "hidden",
@@ -2326,7 +2324,7 @@ const useStyles = makeLegacyStyles((Color) =>
     formatChipActive: { backgroundColor: Color.gold },
     formatChipText: { fontSize: 15, fontWeight: "600", color: Color.textSecondary },
     formatChipTextActive: { color: Color.goldForeground },
-    formatHint: { fontSize: 14, color: Color.textMuted, marginTop: Spacing.sm, lineHeight: 17 },
+    formatHint: { fontSize: 14, color: Color.textMuted, marginTop: Spacing.sm, lineHeight: 20 },
     formatDescription: { fontSize: 14, color: Color.textMuted, marginTop: Spacing.sm, lineHeight: 20 },
     formatFieldsRow: { flexDirection: "row", gap: Spacing.sm, marginTop: Spacing.sm },
     formatResultText: {
@@ -2351,7 +2349,7 @@ const useStyles = makeLegacyStyles((Color) =>
       fontSize: 13,
       color: Color.textPrimary,
     },
-    stationModeChip: { paddingHorizontal: Spacing.sm, paddingVertical: 8, borderRadius: Radius.md, borderWidth: 1, borderColor: Color.borderSubtle },
+    stationModeChip: { paddingHorizontal: Spacing.sm, paddingVertical: 8, borderRadius: Radius.md, backgroundColor: Color.surface2 },
     stationModeText: { fontSize: 12, fontWeight: "700", color: Color.textMuted },
     stationValueInput: {
       width: 56,
@@ -2411,8 +2409,7 @@ const useStyles = makeLegacyStyles((Color) =>
       borderColor: "transparent",
       backgroundColor: Color.surface2,
       paddingHorizontal: Spacing.sm,
-      paddingVertical: 6,
-    },
+      paddingVertical: 6 },
     movementChipText: { fontSize: 13, color: Color.textSecondary, fontWeight: "500" },
     indexBadge: { width: 30, height: 30, borderRadius: 15, backgroundColor: Color.surface2, alignItems: "center", justifyContent: "center" },
     indexBadgeDone: { backgroundColor: Color.success },
@@ -2454,7 +2451,7 @@ const useFeelStyles = makeLegacyStyles((Color) =>
       padding: Spacing.lg,
     },
     title: { fontSize: 17, fontWeight: "700", color: Color.textPrimary },
-    rpeDescription: { fontSize: 14, color: Color.textMuted, marginTop: Spacing.xs, lineHeight: 17 },
+    rpeDescription: { fontSize: 14, color: Color.textMuted, marginTop: Spacing.xs, lineHeight: 20 },
     rpeRow: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: Spacing.md },
     rpeChip: {
       width: 36,

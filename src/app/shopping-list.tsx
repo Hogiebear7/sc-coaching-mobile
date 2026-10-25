@@ -245,7 +245,7 @@ export default function ShoppingListScreen() {
         <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backButton} accessibilityRole="button" accessibilityLabel="Back">
           <Ionicons name="chevron-back" size={26} color={Color.textPrimary} />
         </Pressable>
-        <Text style={styles.headerTitle}>Shopping List</Text>
+        <Text style={styles.headerTitle}>Shopping list</Text>
         <View style={{ width: 36 }} />
       </View>
 
@@ -283,10 +283,7 @@ const useStyles = makeLegacyStyles((Color) =>
       flex: 1,
       alignItems: "center",
       borderRadius: Radius.pill,
-      borderWidth: 1,
-      borderColor: Color.borderSubtle,
-      paddingVertical: 8,
-    },
+      paddingVertical: 8, backgroundColor: Color.surface2, minHeight: 40, justifyContent: "center" },
     viewChipActive: { borderColor: Color.gold, backgroundColor: Color.gold },
     viewChipText: { fontSize: 13, fontWeight: "600", color: Color.textMuted },
     viewChipTextActive: { color: Color.goldForeground },
@@ -307,8 +304,6 @@ const useStyles = makeLegacyStyles((Color) =>
       width: 44,
       height: 44,
       borderRadius: Radius.md,
-      borderWidth: 1,
-      borderColor: Color.goldBorder,
       backgroundColor: Color.goldWeak,
       alignItems: "center",
       justifyContent: "center",
@@ -328,10 +323,7 @@ const useStyles = makeLegacyStyles((Color) =>
       width: 44,
       height: 44,
       borderRadius: Radius.md,
-      borderWidth: 1,
-      borderColor: Color.borderSubtle,
       alignItems: "center",
-      justifyContent: "center",
-    },
+      justifyContent: "center", backgroundColor: Color.surface2 },
   })
 );

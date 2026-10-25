@@ -198,13 +198,10 @@ const useStyles = makeLegacyStyles((Color) =>
     statusChip: {
       alignSelf: "flex-start",
       borderRadius: Radius.pill,
-      borderWidth: 1,
-      borderColor: Color.goldBorder,
       backgroundColor: Color.goldWeak,
       paddingHorizontal: Spacing.sm,
       paddingVertical: 4,
-      marginTop: Spacing.sm,
-    },
+      marginTop: Spacing.sm, minHeight: 40, justifyContent: "center" },
     statusChipText: { fontSize: 13, fontWeight: "600", color: Color.gold },
     planMeta: { fontSize: 14, color: Color.textMuted, marginTop: Spacing.sm },
     statsRow: { flexDirection: "row", gap: Spacing.sm, marginBottom: Spacing.md },
@@ -221,6 +218,6 @@ const useStyles = makeLegacyStyles((Color) =>
       backgroundColor: Color.warningWeak,
     },
     warningText: { fontSize: 14, color: Color.warning, flex: 1 },
-    noteText: { fontSize: 14, color: Color.textMuted, lineHeight: 17, marginTop: Spacing.sm, textAlign: "center" },
+    noteText: { fontSize: 14, color: Color.textMuted, lineHeight: 20, marginTop: Spacing.sm, textAlign: "center" },
   })
 );

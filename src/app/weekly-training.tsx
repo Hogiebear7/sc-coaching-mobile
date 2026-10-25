@@ -170,7 +170,7 @@ export default function WeeklyTrainingScreen() {
         <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backButton} accessibilityRole="button" accessibilityLabel="Back">
           <Ionicons name="chevron-back" size={26} color={Color.textPrimary} />
         </Pressable>
-        <Text style={styles.headerTitle}>Weekly Training</Text>
+        <Text style={styles.headerTitle}>Weekly training</Text>
         <View style={{ width: 36 }} />
       </View>
 
@@ -346,20 +346,12 @@ const useStyles = makeLegacyStyles((Color) =>
     headerTitle: { fontSize: 20, fontWeight: "600", color: Color.textPrimary, flexShrink: 1, textAlign: "center" },
     centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
     introBlock: { paddingHorizontal: Spacing.lg, marginBottom: Spacing.md },
-    introText: { fontSize: 14, color: Color.textMuted, lineHeight: 17 },
-    viewToggle: {
-      flexDirection: "row",
-      marginHorizontal: Spacing.lg,
-      marginBottom: Spacing.md,
-      borderRadius: Radius.md,
-      borderWidth: 1,
-      borderColor: Color.borderSubtle,
-      padding: 3,
-    },
-    viewToggleBtn: { flex: 1, alignItems: "center", paddingVertical: 8, borderRadius: Radius.sm },
-    viewToggleBtnActive: { backgroundColor: Color.goldWeak },
-    viewToggleText: { fontSize: 13, fontWeight: "600", color: Color.textMuted },
-    viewToggleTextActive: { color: Color.gold },
+    introText: { fontSize: 14, color: Color.textMuted, lineHeight: 20 },
+    viewToggle: { flexDirection: "row", gap: 2, marginHorizontal: Spacing.lg, marginBottom: Spacing.md, padding: 3, borderRadius: Radius.pill, backgroundColor: Color.surface2 },
+    viewToggleBtn: { flex: 1, minHeight: 38, borderRadius: Radius.pill, alignItems: "center", justifyContent: "center" },
+    viewToggleBtnActive: { backgroundColor: Color.gold },
+    viewToggleText: { fontSize: 14, fontWeight: "600", color: Color.textSecondary },
+    viewToggleTextActive: { color: Color.goldForeground },
     weekGrid: {
       flexDirection: "row",
       justifyContent: "space-between",
@@ -372,11 +364,12 @@ const useStyles = makeLegacyStyles((Color) =>
       alignItems: "center",
       paddingVertical: Spacing.sm,
       borderRadius: Radius.md,
-      borderWidth: 1,
-      borderColor: Color.borderSubtle,
       gap: 6,
+      backgroundColor: Color.surface2,
+      borderWidth: 2,
+      borderColor: "transparent",
     },
-    weekCellSelected: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
+    weekCellSelected: { borderColor: Color.gold },
     weekCellDay: { fontSize: 13, fontWeight: "700", color: Color.textMuted },
     weekCellDaySelected: { color: Color.gold },
     weekCellBadge: {
@@ -412,7 +405,7 @@ const useStyles = makeLegacyStyles((Color) =>
     },
     removeButton: { padding: 4 },
     chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
-    chip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.sm, paddingVertical: 5 },
+    chip: { borderRadius: Radius.pill, paddingHorizontal: Spacing.sm, paddingVertical: 5, backgroundColor: Color.surface2, minHeight: 40, justifyContent: "center" },
     chipActive: { borderColor: Color.gold, backgroundColor: Color.gold },
     chipText: { fontSize: 13, fontWeight: "500", color: Color.textMuted },
     chipTextActive: { color: Color.goldForeground },

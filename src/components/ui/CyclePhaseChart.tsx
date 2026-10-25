@@ -71,7 +71,7 @@ const useStyles = makeLegacyStyles((Color) =>
   StyleSheet.create({
     markerRow: { position: "relative", height: 18 },
     markerWrap: { position: "absolute", top: 0, alignItems: "center", transform: [{ translateX: -12 }] },
-    markerText: { fontSize: 12, fontWeight: "700", color: Color.textPrimary, textTransform: "uppercase", letterSpacing: 0.4 },
+    markerText: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
     markerTriangle: {
       marginTop: 2,
       width: 0,

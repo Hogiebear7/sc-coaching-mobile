@@ -52,8 +52,6 @@ const useStyles = makeLegacyStyles((Color) =>
       maxWidth: 340,
       maxHeight: "86%",
       borderRadius: Radius.lg,
-      borderWidth: 1,
-      borderColor: Color.borderDefault,
       backgroundColor: Color.surface1,
       padding: Spacing.lg,
       paddingTop: Spacing.xl,

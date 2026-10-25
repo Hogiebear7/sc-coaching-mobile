@@ -263,7 +263,7 @@ export default function CustomFoodScreen() {
           </View>
 
           <Text style={styles.sectionLabel}>Nutrition per serving</Text>
-          <Text style={styles.sectionCaption}>Enter these exactly as printed on the label — we'll work out the per-100g figures automatically.</Text>
+          <Text style={styles.sectionCaption}>Enter these exactly as printed on the label — we&apos;ll work out the per-100g figures automatically.</Text>
           <View style={styles.gridRow}>
             <View style={styles.numberField}>
               <Text style={styles.fieldLabel}>Calories</Text>
@@ -330,11 +330,11 @@ const useStyles = makeLegacyStyles((Color) =>
     headerTitle: { fontSize: 20, fontWeight: "600", color: Color.textPrimary, flexShrink: 1, textAlign: "center" },
     scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
     hintBanner: { flexDirection: "row", gap: Spacing.xs, alignItems: "flex-start", backgroundColor: Color.goldWeak, borderRadius: Radius.md, padding: Spacing.sm, marginBottom: Spacing.md },
-    hintBannerText: { flex: 1, fontSize: 13, color: Color.textSecondary, lineHeight: 15 },
+    hintBannerText: { flex: 1, fontSize: 13, color: Color.textSecondary, lineHeight: 18 },
     photoChip: { flexDirection: "row", gap: Spacing.xs, alignItems: "center", marginBottom: Spacing.md },
-    photoChipText: { flex: 1, fontSize: 13, color: Color.textMuted, lineHeight: 15 },
+    photoChipText: { flex: 1, fontSize: 13, color: Color.textMuted, lineHeight: 18 },
     sectionLabel: { fontSize: 19, fontWeight: "600", color: Color.textPrimary, marginTop: Spacing.sm, marginBottom: Spacing.sm },
-    sectionCaption: { fontSize: 13, color: Color.textMuted, lineHeight: 15, marginTop: -Spacing.xs, marginBottom: Spacing.sm },
+    sectionCaption: { fontSize: 13, color: Color.textMuted, lineHeight: 18, marginTop: -Spacing.xs, marginBottom: Spacing.sm },
     gridRow: { flexDirection: "row", gap: Spacing.sm },
     numberField: { flex: 1, marginBottom: Spacing.md },
     fieldLabel: { fontSize: 14, fontWeight: "500", color: Color.textSecondary, marginBottom: 6 },

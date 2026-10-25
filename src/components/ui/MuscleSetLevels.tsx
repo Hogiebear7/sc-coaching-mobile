@@ -113,8 +113,6 @@ const useStyles = makeLegacyStyles((Color) =>
       gap: 4,
       padding: 4,
       borderRadius: Radius.md,
-      borderWidth: 1,
-      borderColor: Color.borderSubtle,
       backgroundColor: Color.bg0,
     },
     segment: { minWidth: 64, alignItems: "center", paddingHorizontal: Spacing.md, paddingVertical: 8, borderRadius: Radius.sm },

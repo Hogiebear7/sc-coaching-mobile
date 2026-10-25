@@ -161,10 +161,7 @@ const useStyles = makeLegacyStyles((Color) =>
     rangeChip: {
       paddingHorizontal: Spacing.sm,
       paddingVertical: 6,
-      borderRadius: Radius.pill,
-      borderWidth: 1,
-      borderColor: Color.borderSubtle,
-    },
+      borderRadius: Radius.pill, backgroundColor: Color.surface2, minHeight: 40, justifyContent: "center" },
     rangeChipActive: { borderColor: Color.gold, backgroundColor: Color.gold },
     rangeChipText: { fontSize: 13, fontWeight: "500", color: Color.textMuted },
     rangeChipTextActive: { color: Color.goldForeground },

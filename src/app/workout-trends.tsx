@@ -94,7 +94,7 @@ export default function WorkoutTrendsScreen() {
         <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backButton} accessibilityRole="button" accessibilityLabel="Back">
           <Ionicons name="chevron-back" size={26} color={Color.textPrimary} />
         </Pressable>
-        <Text style={styles.headerTitle}>Training Trends</Text>
+        <Text style={styles.headerTitle}>Training trends</Text>
         <View style={{ width: 36 }} />
       </View>
 
@@ -283,7 +283,7 @@ const useStyles = makeLegacyStyles((Color) =>
     metricToggleText: { fontSize: 13, fontWeight: "600", color: Color.textMuted },
     metricToggleTextActive: { color: Color.goldForeground },
     rangeRow: { flexDirection: "row", gap: 6, marginTop: Spacing.md },
-    rangeChip: { flex: 1, alignItems: "center", borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingVertical: 5 },
+    rangeChip: { flex: 1, alignItems: "center", borderRadius: Radius.pill, paddingVertical: 5, backgroundColor: Color.surface2, minHeight: 40, justifyContent: "center" },
     rangeChipActive: { borderColor: Color.gold, backgroundColor: Color.gold },
     rangeChipText: { fontSize: 12, fontWeight: "600", color: Color.textMuted },
     rangeChipTextActive: { color: Color.goldForeground },

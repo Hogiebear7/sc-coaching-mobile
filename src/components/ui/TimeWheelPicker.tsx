@@ -166,7 +166,7 @@ const useStyles = makeLegacyStyles((Color) =>
       borderBottomWidth: 1,
       borderColor: Color.goldBorder,
     },
-    columnLabel: { fontSize: 12, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginTop: Spacing.xs, textTransform: "uppercase" },
+    columnLabel: { fontSize: 14, fontWeight: "600", color: Color.textMuted, marginTop: Spacing.xs },
     colon: { fontSize: 20, fontWeight: "700", color: Color.textFaint, marginTop: ITEM_HEIGHT * PADDING_ROWS + (ITEM_HEIGHT - 20) / 2 - 4 },
   })
 );

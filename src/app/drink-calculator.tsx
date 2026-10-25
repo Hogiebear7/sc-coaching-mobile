@@ -241,7 +241,7 @@ export default function DrinkCalculatorScreen() {
         <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backButton} accessibilityRole="button" accessibilityLabel="Back">
           <Ionicons name="chevron-back" size={26} color={Color.textPrimary} />
         </Pressable>
-        <Text style={styles.headerTitle}>Sports Drink</Text>
+        <Text style={styles.headerTitle}>Sports drink</Text>
         <View style={{ width: 36 }} />
       </View>
 
@@ -491,7 +491,7 @@ const useStyles = makeLegacyStyles((Color) =>
     centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
     errorText: { color: Color.textMuted, fontSize: 14 },
     scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
-    fieldLabel: { fontSize: 13, fontWeight: "600", color: Color.textMuted, marginBottom: 6, marginTop: Spacing.md, textTransform: "uppercase", letterSpacing: 0.4 },
+    fieldLabel: { fontSize: 14, fontWeight: "600", color: Color.textMuted, marginBottom: 6, marginTop: Spacing.md },
     sectionLabel: { fontSize: 19, fontWeight: "600", color: Color.textPrimary, marginBottom: Spacing.sm },
     gridRow: { flexDirection: "row", gap: Spacing.sm },
     textInput: {
@@ -505,18 +505,18 @@ const useStyles = makeLegacyStyles((Color) =>
       color: Color.textPrimary,
     },
     presetRow: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.xs, marginTop: Spacing.sm },
-    presetChip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.sm, paddingVertical: 6 },
+    presetChip: { borderRadius: Radius.pill, paddingHorizontal: Spacing.sm, paddingVertical: 6, backgroundColor: Color.surface2, minHeight: 40, justifyContent: "center" },
     presetChipActive: { borderColor: Color.gold, backgroundColor: Color.gold },
     presetChipText: { fontSize: 13, fontWeight: "500", color: Color.textMuted },
     presetChipTextActive: { color: Color.goldForeground },
-    hintText: { fontSize: 13, color: Color.textMuted, marginTop: Spacing.sm, lineHeight: 16 },
+    hintText: { fontSize: 13, color: Color.textMuted, marginTop: Spacing.sm, lineHeight: 18 },
     hintTextSmall: { fontSize: 12, color: Color.textFaint, marginTop: 4, lineHeight: 14 },
     durationBox: { borderRadius: Radius.md, borderWidth: 1, borderColor: "transparent", backgroundColor: Color.surface2, alignItems: "center", justifyContent: "center", paddingVertical: 10 },
     durationValue: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
     durationSub: { fontSize: 12, color: Color.textFaint, marginTop: 2 },
     infoCard: { padding: Spacing.md, marginTop: Spacing.md },
-    infoText: { fontSize: 13, color: Color.textMuted, lineHeight: 16 },
-    infoTextGold: { fontSize: 13, color: Color.gold, fontWeight: "600", marginTop: Spacing.xs, lineHeight: 16 },
+    infoText: { fontSize: 13, color: Color.textMuted, lineHeight: 18 },
+    infoTextGold: { fontSize: 13, color: Color.gold, fontWeight: "600", marginTop: Spacing.xs, lineHeight: 18 },
     mixedForText: { fontSize: 12, color: Color.textFaint, marginTop: Spacing.sm, marginBottom: Spacing.sm },
     ingredientsCard: { padding: 0 },
     ingredientRow: { flexDirection: "row", justifyContent: "space-between", paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm },
@@ -525,19 +525,19 @@ const useStyles = makeLegacyStyles((Color) =>
     ingredientAmount: { fontSize: 13, fontWeight: "600", color: Color.textPrimary },
     totalsRow: { flexDirection: "row", gap: Spacing.xs, marginTop: Spacing.sm },
     totalCell: { flex: 1, padding: Spacing.sm, alignItems: "center" },
-    totalLabel: { fontSize: 12, fontWeight: "700", color: Color.textMuted, textTransform: "uppercase" },
+    totalLabel: { fontSize: 14, fontWeight: "600", color: Color.textMuted },
     totalValue: { fontSize: 13, fontWeight: "700", color: Color.textPrimary, marginTop: 4 },
     sodiumBadge: { flexDirection: "row", alignItems: "center", gap: 6, alignSelf: "flex-start", borderRadius: Radius.pill, borderWidth: 1, paddingHorizontal: Spacing.sm, paddingVertical: 6, marginTop: Spacing.md },
     sodiumDot: { width: 6, height: 6, borderRadius: 3 },
     sodiumBadgeText: { fontSize: 13, fontWeight: "600" },
-    sodiumExplainerText: { fontSize: 13, color: Color.textMuted, marginTop: Spacing.xs, lineHeight: 16 },
+    sodiumExplainerText: { fontSize: 13, color: Color.textMuted, marginTop: Spacing.xs, lineHeight: 18 },
     phasesGrid: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.xs, marginTop: Spacing.sm },
     phaseCell: { flexGrow: 1, flexBasis: "30%", padding: Spacing.sm, alignItems: "center" },
-    phaseLabel: { fontSize: 12, fontWeight: "700", color: Color.textMuted, textTransform: "uppercase" },
+    phaseLabel: { fontSize: 14, fontWeight: "600", color: Color.textMuted },
     phaseAmount: { fontSize: 13, fontWeight: "700", color: Color.textPrimary, marginTop: 4 },
     phaseTip: { fontSize: 12, color: Color.textFaint, marginTop: 2, textAlign: "center" },
-    extraText: { fontSize: 13, color: Color.warning, marginTop: Spacing.sm, lineHeight: 16 },
-    footerNote: { fontSize: 13, color: Color.textFaint, marginTop: Spacing.xl, lineHeight: 16 },
+    extraText: { fontSize: 13, color: Color.warning, marginTop: Spacing.sm, lineHeight: 18 },
+    footerNote: { fontSize: 13, color: Color.textFaint, marginTop: Spacing.xl, lineHeight: 18 },
     benefitsHeader: { flexDirection: "row", alignItems: "center", gap: Spacing.sm, paddingVertical: Spacing.sm },
     benefitsTitle: { fontSize: 14, fontWeight: "700", color: Color.textPrimary },
     benefitsSubtitle: { fontSize: 13, color: Color.textMuted, marginTop: 2 },
@@ -545,11 +545,11 @@ const useStyles = makeLegacyStyles((Color) =>
     benefitRow: { flexDirection: "row", alignItems: "flex-start", gap: Spacing.sm },
     benefitNameRow: { flexDirection: "row", alignItems: "center", gap: Spacing.xs, flexWrap: "wrap" },
     benefitName: { fontSize: 13, fontWeight: "700", color: Color.textPrimary },
-    benefitTag: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.goldBorder, backgroundColor: Color.goldWeak, paddingHorizontal: 8, paddingVertical: 2 },
+    benefitTag: { borderRadius: Radius.pill, backgroundColor: Color.goldWeak, paddingHorizontal: 8, paddingVertical: 2 },
     benefitTagText: { fontSize: 12, fontWeight: "600", color: Color.gold },
-    benefitSummary: { fontSize: 13, color: Color.textMuted, marginTop: 4, lineHeight: 15 },
+    benefitSummary: { fontSize: 13, color: Color.textMuted, marginTop: 4, lineHeight: 18 },
     benefitDetail: { marginTop: Spacing.sm, paddingTop: Spacing.sm, borderTopWidth: 1, borderTopColor: Color.borderSubtle, gap: Spacing.xs },
-    benefitDetailText: { fontSize: 13, color: Color.textMuted, lineHeight: 16 },
+    benefitDetailText: { fontSize: 13, color: Color.textMuted, lineHeight: 18 },
     benefitDetailLabel: { fontWeight: "600", color: Color.textSecondary },
   })
 );

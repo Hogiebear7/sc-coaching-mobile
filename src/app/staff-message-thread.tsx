@@ -214,8 +214,6 @@ const useStyles = makeLegacyStyles((Color) =>
       width: 40,
       height: 40,
       borderRadius: Radius.md,
-      borderWidth: 1,
-      borderColor: Color.borderDefault,
       backgroundColor: Color.overlayFaint,
       alignItems: "center",
       justifyContent: "center",

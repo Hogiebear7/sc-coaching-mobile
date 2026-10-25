@@ -336,6 +336,6 @@ const useStyles = makeLegacyStyles((Color) =>
     inputReadOnly: { color: Color.textMuted },
     noteCard: { padding: Spacing.md, marginBottom: Spacing.md, backgroundColor: Color.goldWeak, borderColor: Color.goldBorder },
     noteLabel: { fontSize: 12, fontWeight: "700", letterSpacing: 0.6, color: Color.gold },
-    noteText: { fontSize: 14, color: Color.textSecondary, marginTop: 4, lineHeight: 17 },
+    noteText: { fontSize: 14, color: Color.textSecondary, marginTop: 4, lineHeight: 20 },
   })
 );

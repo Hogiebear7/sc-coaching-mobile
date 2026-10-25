@@ -19,7 +19,7 @@ import {
   type ChoosableTab,
   type TabRoute,
 } from "@/lib/tab-config";
-import { setTabChoice, useTabChoice } from "@/lib/tab-choice";
+import { setTabChoice, useSyncTabChoiceWithAccount, useTabChoice } from "@/lib/tab-choice";
 import { makeStyles, useAppTheme } from "@/lib/theme";
 
 // App v2 tab bar (docs/design-inspiration-macrofactor-2026-10.md). The two
@@ -84,6 +84,7 @@ export default function TabsLayout() {
   const insets = useSafeAreaInsets();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [swapping, setSwapping] = useState<ChoosableTab | null>(null);
+  useSyncTabChoiceWithAccount();
   const storedChoice = useTabChoice();
   const choice = normaliseChoice(storedChoice, tier);
 

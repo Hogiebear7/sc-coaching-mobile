@@ -139,6 +139,46 @@ export function formatExerciseLoad(ex: WorkoutExerciseEntry): string {
   return formatExerciseSetLabels(ex).join(", ");
 }
 
+// "15 kg×20" -> "15 kg × 20"; a reps-only "×10" -> "10 reps".
+export function prettySetLabel(label: string): string {
+  const repsOnly = /^×(\d+)(\/side)?$/.exec(label.trim());
+  if (repsOnly) return `${repsOnly[1]} reps${repsOnly[2] ? " /side" : ""}`;
+  return label.replace(/\s*×\s*/g, " × ").trim();
+}
+
+export interface SetLabelGroup {
+  /** 1-based set numbers, inclusive. */
+  from: number;
+  to: number;
+  label: string;
+}
+
+// Runs of identical consecutive sets collapse into one row ("Sets 1–4"),
+// so four straight sets of 15 kg × 20 read as one line instead of four.
+export function groupSetLabels(labels: string[]): SetLabelGroup[] {
+  const groups: SetLabelGroup[] = [];
+  labels.forEach((raw, i) => {
+    const label = prettySetLabel(raw);
+    const last = groups[groups.length - 1];
+    if (last && last.label === label) last.to = i + 1;
+    else groups.push({ from: i + 1, to: i + 1, label });
+  });
+  return groups;
+}
+
+// One-line summary for list cards: "4 sets · 15 kg × 20" when every set
+// matches, "4 sets · 40 kg × 12 → 50 kg × 8" when they progress, and the
+// plain prescription when there is no per-set detail.
+export function exerciseSetSummary(ex: WorkoutExerciseEntry): string {
+  const labels = formatExerciseSetLabels(ex);
+  if (labels.length === 0) return "Logged";
+  if (!ex.setDetails || ex.setDetails.length === 0) return prettySetLabel(labels[0]);
+  const groups = groupSetLabels(labels);
+  const count = `${labels.length} set${labels.length === 1 ? "" : "s"}`;
+  if (groups.length === 1) return `${count} · ${groups[0].label}`;
+  return `${count} · ${groups[0].label} → ${groups[groups.length - 1].label}`;
+}
+
 export interface ExerciseTrendPoint {
   date: string;
   weightNum: number | null;

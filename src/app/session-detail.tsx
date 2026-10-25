@@ -6,14 +6,14 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { MuscleMap } from "@/components/ui/MuscleMap";
+import { MUSCLE_GROUP_LABEL, MuscleMap } from "@/components/ui/MuscleMap";
 import { StatCard } from "@/components/ui/StatCard";
 import { headline, Radius, Spacing } from "@/constants/theme";
 import { tapFeedback } from "@/lib/haptics";
 import type { PrescribedExercise } from "@/lib/queries/programs";
 import { useDeleteWorkoutSession, useSetWorkoutVisibility, useWorkouts, type WorkoutExerciseEntry } from "@/lib/queries/workouts";
 import { setPendingWorkoutTemplateSeed } from "@/lib/workout-template-seed";
-import { computeExerciseSetTotals, computeSessionTotals, formatExerciseSetLabels, formatRun } from "@/lib/workout-formatters";
+import { computeExerciseSetTotals, computeSessionTotals, formatExerciseSetLabels, formatRun, groupSetLabels } from "@/lib/workout-formatters";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 function formatLongDate(dateISO: string): string {
@@ -93,7 +93,7 @@ export default function SessionDetailScreen() {
         <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backButton} accessibilityRole="button" accessibilityLabel="Back">
           <Ionicons name="chevron-back" size={26} color={Color.textPrimary} />
         </Pressable>
-        <Text style={styles.headerTitle}>Session Detail</Text>
+        <Text style={styles.headerTitle}>Workout</Text>
         {session ? (
           <View style={styles.headerActions}>
             <Pressable
@@ -104,20 +104,23 @@ export default function SessionDetailScreen() {
                     : { pathname: "/edit-workout", params: { id: session.id } }
                 )
               }
-              hitSlop={12}
+              style={styles.headerIconButton}
+              accessibilityRole="button"
+              accessibilityLabel="Edit workout"
             >
-              <Text style={styles.editLink}>Edit</Text>
+              <Ionicons name="create-outline" size={20} color={Color.textPrimary} />
             </Pressable>
             <Pressable
               onPress={handleSaveAsTemplate}
-              hitSlop={12}
+              style={styles.headerIconButton}
+              accessibilityRole="button"
               accessibilityLabel="Save as template"
               disabled={session.exercises.length === 0}
             >
               <Ionicons
                 name="bookmark-outline"
-                size={18}
-                color={session.exercises.length === 0 ? Color.textFaint : Color.gold}
+                size={19}
+                color={session.exercises.length === 0 ? Color.textFaint : Color.textPrimary}
               />
             </Pressable>
             <Pressable
@@ -125,17 +128,18 @@ export default function SessionDetailScreen() {
                 tapFeedback();
                 setVisibility.mutate({ sessionId: session.id, isPrivate: !session.isPrivate });
               }}
-              hitSlop={12}
+              style={styles.headerIconButton}
+              accessibilityRole="button"
               accessibilityLabel={session.isPrivate ? "Show in Community feed" : "Hide from Community feed"}
             >
               <Ionicons
                 name={session.isPrivate ? "eye-off-outline" : "eye-outline"}
-                size={18}
-                color={Color.textMuted}
+                size={20}
+                color={Color.textPrimary}
               />
             </Pressable>
-            <Pressable onPress={handleDelete} hitSlop={12}>
-              <Ionicons name="trash-outline" size={18} color={Color.danger} />
+            <Pressable onPress={handleDelete} style={styles.headerIconButton} accessibilityRole="button" accessibilityLabel="Delete workout">
+              <Ionicons name="trash-outline" size={19} color={Color.danger} />
             </Pressable>
           </View>
         ) : (
@@ -177,47 +181,67 @@ export default function SessionDetailScreen() {
           {session.exercises.length > 0 ? (
             <>
               <Text style={styles.sectionLabel}>Exercises</Text>
-              <Card style={styles.list}>
+              <View style={styles.exerciseList}>
                 {session.exercises.map((ex, idx) => {
                   const exTotals = computeExerciseSetTotals(ex);
-                  const setLabels = formatExerciseSetLabels(ex);
+                  const groups = groupSetLabels(formatExerciseSetLabels(ex));
                   const section = ex.exerciseId ? sectionByExerciseId.get(ex.exerciseId) : undefined;
+                  const meta = [
+                    section ? MUSCLE_GROUP_LABEL[section].primary : null,
+                    `${exTotals.sets} set${exTotals.sets === 1 ? "" : "s"}`,
+                    exTotals.volume > 0 ? `${Math.round(exTotals.volume).toLocaleString()} kg` : null,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ");
                   return (
                     <Pressable
                       key={idx}
-                      onPress={() => router.push({ pathname: "/exercise-detail", params: { name: ex.name } })}
-                      style={[styles.row, idx > 0 && styles.rowDivider]}
+                      onPress={() => {
+                        tapFeedback();
+                        router.push({ pathname: "/exercise-detail", params: { name: ex.name } });
+                      }}
+                      style={({ pressed }) => [styles.exerciseCard, pressed && { opacity: 0.85 }]}
+                      accessibilityRole="button"
+                      accessibilityLabel={`${ex.name}, ${meta}`}
                     >
-                      <View style={{ flex: 1 }}>
-                        <View style={styles.exerciseTitleRow}>
-                          {section ? <MuscleMap section={section} size={16} /> : null}
-                          {ex.supersetGroup ? (
-                            <View style={styles.supersetBadge}>
-                              <Text style={styles.supersetBadgeText}>{ex.supersetGroup}</Text>
-                            </View>
-                          ) : null}
-                          <Text style={styles.rowTitle}>{ex.name}</Text>
+                      <View style={styles.exerciseHead}>
+                        <View style={styles.exerciseIcon}>
+                          {section ? (
+                            <MuscleMap section={section} size={22} />
+                          ) : (
+                            <Text style={styles.exerciseIndex}>{idx + 1}</Text>
+                          )}
                         </View>
-                        {setLabels.length > 0 ? (
-                          <View style={styles.setChipRow}>
-                            {setLabels.map((label, i) => (
-                              <View key={i} style={styles.setChip}>
-                                <Text style={styles.setChipText}>{label}</Text>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.exerciseName}>{ex.name}</Text>
+                          <View style={styles.exerciseMetaRow}>
+                            {ex.supersetGroup ? (
+                              <View style={styles.supersetBadge}>
+                                <Text style={styles.supersetBadgeText}>Superset {ex.supersetGroup.replace(/^ST/, "")}</Text>
                               </View>
-                            ))}
+                            ) : null}
+                            <Text style={styles.exerciseMeta}>{meta}</Text>
                           </View>
-                        ) : (
-                          <Text style={styles.rowSummary}>—</Text>
-                        )}
+                        </View>
+                        <Ionicons name="chevron-forward" size={18} color={Color.textFaint} />
                       </View>
-                      <View style={styles.rowMeta}>
-                        <Text style={styles.rowMetaText}>{exTotals.sets} sets</Text>
-                        <Ionicons name="chevron-forward" size={16} color={Color.textFaint} />
-                      </View>
+                      {groups.length > 0 ? (
+                        <View style={styles.setTable}>
+                          {groups.map((g, i) => (
+                            <View key={i} style={[styles.setRow, i > 0 && styles.setRowDivider]}>
+                              <Text style={styles.setNumber}>
+                                {g.from === g.to ? `Set ${g.from}` : `Sets ${g.from}–${g.to}`}
+                              </Text>
+                              <Text style={styles.setValue}>{g.label}</Text>
+                            </View>
+                          ))}
+                        </View>
+                      ) : null}
+                      {ex.notes ? <Text style={styles.exerciseNote}>{ex.notes}</Text> : null}
                     </Pressable>
                   );
                 })}
-              </Card>
+              </View>
             </>
           ) : null}
 
@@ -261,13 +285,13 @@ const useStyles = makeLegacyStyles((Color) =>
     },
     backButton: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center", marginLeft: -8 },
     headerTitle: { fontSize: 20, fontWeight: "600", color: Color.textPrimary, flexShrink: 1, textAlign: "center" },
-    headerActions: { flexDirection: "row", alignItems: "center", gap: Spacing.md },
-    editLink: { fontSize: 14, fontWeight: "600", color: Color.gold },
+    headerActions: { flexDirection: "row", alignItems: "center", gap: 8 },
+    headerIconButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: Color.surface2, alignItems: "center", justifyContent: "center" },
     centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
     emptyText: { fontSize: 14, color: Color.textMuted },
     scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
     title: { ...headline(28), color: Color.textPrimary },
-    date: { fontSize: 13, color: Color.textMuted, marginTop: 2 },
+    date: { fontSize: 15, color: Color.textMuted, marginTop: 2 },
     privateBadge: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 6 },
     privateBadgeText: { fontSize: 13, color: Color.textFaint },
     statsGrid: { gap: Spacing.sm, marginTop: Spacing.lg },
@@ -277,20 +301,23 @@ const useStyles = makeLegacyStyles((Color) =>
     row: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", padding: Spacing.md, gap: Spacing.sm },
     rowDivider: { borderTopWidth: 1, borderTopColor: Color.borderSubtle },
     rowTitle: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
-    exerciseTitleRow: { flexDirection: "row", alignItems: "center", gap: 6 },
-    supersetBadge: { borderRadius: 999, backgroundColor: Color.gold + "26", paddingHorizontal: 6, paddingVertical: 1 },
-    supersetBadgeText: { fontSize: 12, fontWeight: "700", color: Color.gold },
     rowSummary: { fontSize: 14, color: Color.textMuted, marginTop: 2 },
-    setChipRow: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: Spacing.xs },
-    setChip: {
-      borderRadius: Radius.sm,
-      backgroundColor: Color.surface2,
-      paddingHorizontal: 7,
-      paddingVertical: 3,
-    },
-    setChipText: { fontSize: 13, fontWeight: "500", color: Color.textSecondary, fontVariant: ["tabular-nums"] },
-    rowMeta: { flexDirection: "row", alignItems: "center", gap: 4 },
-    rowMetaText: { fontSize: 13, color: Color.textFaint },
+    exerciseList: { gap: Spacing.sm },
+    exerciseCard: { backgroundColor: Color.surface1, borderRadius: Radius.lg, padding: Spacing.md },
+    exerciseHead: { flexDirection: "row", alignItems: "center", gap: 12 },
+    exerciseIcon: { width: 44, height: 44, borderRadius: 22, backgroundColor: Color.surface2, alignItems: "center", justifyContent: "center" },
+    exerciseIndex: { fontSize: 16, fontWeight: "600", color: Color.textSecondary, fontVariant: ["tabular-nums"] },
+    exerciseName: { fontSize: 17, fontWeight: "600", color: Color.textPrimary },
+    exerciseMetaRow: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 6, marginTop: 3 },
+    exerciseMeta: { fontSize: 14, color: Color.textMuted },
+    supersetBadge: { borderRadius: Radius.pill, backgroundColor: Color.surface2, paddingHorizontal: 8, paddingVertical: 2 },
+    supersetBadgeText: { fontSize: 12, fontWeight: "600", color: Color.textSecondary },
+    setTable: { marginTop: 12, borderRadius: Radius.md, backgroundColor: Color.bg0, paddingHorizontal: 14 },
+    setRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", minHeight: 42, gap: Spacing.md },
+    setRowDivider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: Color.borderSubtle },
+    setNumber: { fontSize: 14, color: Color.textMuted, fontVariant: ["tabular-nums"] },
+    setValue: { flexShrink: 1, fontSize: 16, fontWeight: "600", color: Color.textPrimary, fontVariant: ["tabular-nums"], textAlign: "right" },
+    exerciseNote: { fontSize: 14, lineHeight: 20, color: Color.textMuted, marginTop: 10, fontStyle: "italic" },
     notesCard: { padding: Spacing.md },
     notesText: { fontSize: 13, color: Color.textSecondary, lineHeight: 19 },
   })

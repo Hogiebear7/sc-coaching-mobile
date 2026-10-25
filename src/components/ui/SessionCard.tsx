@@ -1,20 +1,15 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { Card } from "@/components/ui/Card";
-import { MuscleMap } from "@/components/ui/MuscleMap";
-import { Spacing } from "@/constants/theme";
+import { ExercisePreviewList } from "@/components/ui/ExercisePreviewList";
+import { Radius, Spacing } from "@/constants/theme";
+import { tapFeedback } from "@/lib/haptics";
 import type { ExerciseSection, WorkoutSessionSummary } from "@/lib/queries/workouts";
-import { formatExerciseLoad, formatRun } from "@/lib/workout-formatters";
 import { makeLegacyStyles } from "@/lib/theme";
+import { computeSessionTotals } from "@/lib/workout-formatters";
 
 function formatDate(dateISO: string): string {
-  return new Date(dateISO).toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" });
+  return new Date(`${dateISO.slice(0, 10)}T00:00:00`).toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" });
 }
-
-// A session with 8+ exercises used to print 8+ faint grey lines — useful
-// for exhaustiveness, useless for scanning. Cap the preview and roll the
-// rest into one "+N more" line; the full list is one tap away via onPress.
-const MAX_PREVIEW_LINES = 3;
 
 // Shared compact session summary — used on the Workouts tab (day detail +
 // recent list) and the full History screen so the three don't drift.
@@ -35,45 +30,47 @@ export function SessionCard({
   sectionByExerciseId?: Map<string, ExerciseSection>;
 }) {
   const styles = useStyles();
-  const previewExercises = session.exercises.slice(0, MAX_PREVIEW_LINES);
-  const remainingSlots = Math.max(0, MAX_PREVIEW_LINES - previewExercises.length);
-  const previewRuns = session.runs.slice(0, remainingSlots);
-  const hiddenCount = session.exercises.length + session.runs.length - previewExercises.length - previewRuns.length;
+  const totals = computeSessionTotals(session.exercises);
+  const stats = [
+    session.durationMins ? `${session.durationMins} min` : null,
+    `${session.exercises.length} exercise${session.exercises.length === 1 ? "" : "s"}`,
+    totals.totalVolume > 0 ? `${totals.totalVolume.toLocaleString()} kg` : null,
+  ].filter(Boolean) as string[];
 
   const content = (
-    <Card style={styles.card}>
+    <View style={styles.card}>
       <View style={styles.header}>
-        <Text style={styles.title}>{session.title}</Text>
+        <Text style={styles.title} numberOfLines={1}>
+          {session.title}
+        </Text>
         {showDate ? <Text style={styles.date}>{formatDate(session.date)}</Text> : null}
       </View>
-      <Text style={styles.meta}>
-        {session.exercises.length} exercise{session.exercises.length === 1 ? "" : "s"}
-        {session.durationMins ? ` · ${session.durationMins} min` : ""}
-      </Text>
-      {previewExercises.map((ex, i) => {
-        const section = ex.exerciseId ? sectionByExerciseId?.get(ex.exerciseId) : undefined;
-        return (
-          <View key={i} style={styles.lineRow}>
-            {section ? <MuscleMap section={section} size={12} /> : null}
-            <Text style={styles.line} numberOfLines={1}>
-              {ex.name}
-              {formatExerciseLoad(ex) ? ` — ${formatExerciseLoad(ex)}` : ""}
-            </Text>
+      <View style={styles.stats}>
+        {stats.map((s) => (
+          <View key={s} style={styles.statPill}>
+            <Text style={styles.statText}>{s}</Text>
           </View>
-        );
-      })}
-      {previewRuns.map((run, i) => (
-        <Text key={i} style={styles.line} numberOfLines={1}>
-          Run — {formatRun(run)}
-        </Text>
-      ))}
-      {hiddenCount > 0 ? <Text style={styles.moreLine}>+{hiddenCount} more</Text> : null}
-    </Card>
+        ))}
+      </View>
+      {session.exercises.length + session.runs.length > 0 ? (
+        <View style={styles.body}>
+          <ExercisePreviewList exercises={session.exercises} runs={session.runs} sectionByExerciseId={sectionByExerciseId} />
+        </View>
+      ) : null}
+    </View>
   );
 
   if (!onPress) return content;
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => pressed && styles.pressed}>
+    <Pressable
+      onPress={() => {
+        tapFeedback();
+        onPress();
+      }}
+      style={({ pressed }) => pressed && styles.pressed}
+      accessibilityRole="button"
+      accessibilityLabel={`${session.title}, ${formatDate(session.date)}, ${stats.join(", ")}`}
+    >
       {content}
     </Pressable>
   );
@@ -81,14 +78,14 @@ export function SessionCard({
 
 const useStyles = makeLegacyStyles((Color) =>
   StyleSheet.create({
-    card: { padding: Spacing.md, marginBottom: Spacing.sm },
-    header: { flexDirection: "row", justifyContent: "space-between", alignItems: "baseline" },
-    title: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
-    date: { fontSize: 13, color: Color.textMuted },
-    meta: { fontSize: 13, color: Color.textMuted, marginTop: 2 },
-    lineRow: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 4 },
-    line: { flex: 1, fontSize: 13, color: Color.textFaint },
-    moreLine: { fontSize: 13, color: Color.textMuted, fontWeight: "600", marginTop: 4 },
-    pressed: { opacity: 0.7 },
+    card: { backgroundColor: Color.surface1, borderRadius: Radius.lg, padding: Spacing.md, marginBottom: Spacing.sm },
+    header: { flexDirection: "row", justifyContent: "space-between", alignItems: "baseline", gap: Spacing.sm },
+    title: { flexShrink: 1, fontSize: 17, fontWeight: "600", color: Color.textPrimary },
+    date: { fontSize: 14, color: Color.textMuted },
+    stats: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 10 },
+    statPill: { borderRadius: Radius.pill, backgroundColor: Color.surface2, paddingHorizontal: 10, paddingVertical: 4 },
+    statText: { fontSize: 13, fontWeight: "500", color: Color.textSecondary, fontVariant: ["tabular-nums"] },
+    body: { marginTop: 14, paddingTop: 14, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: Color.borderSubtle },
+    pressed: { opacity: 0.85 },
   })
 );

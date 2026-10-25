@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Tabs, usePathname, useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import { PanResponder, Pressable, StyleSheet, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { QuickActionSheet } from "@/components/app/QuickActionSheet";
 import { impactFeedback, selectionFeedback } from "@/lib/haptics";
@@ -47,6 +48,7 @@ export default function TabsLayout() {
   const tier = useMemberTier();
   const { colors } = useAppTheme();
   const styles = useStyles();
+  const insets = useSafeAreaInsets();
   const [sheetOpen, setSheetOpen] = useState(false);
 
   const bar = barTabsForTier(tier);
@@ -86,8 +88,11 @@ export default function TabsLayout() {
             backgroundColor: colors.bg,
             borderTopColor: colors.hairline,
             borderTopWidth: StyleSheet.hairlineWidth,
-            height: 72,
+            // Room for Android's gesture bar / iOS home indicator: a fixed
+            // height would sit the labels on top of it.
+            height: 64 + insets.bottom,
             paddingTop: 8,
+            paddingBottom: insets.bottom + 4,
           },
           tabBarLabelStyle: { fontSize: 12, fontWeight: "600", marginTop: 2 },
           tabBarIcon: ({ color, focused }) => {

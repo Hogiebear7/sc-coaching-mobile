@@ -102,10 +102,10 @@ const useStyles = makeLegacyStyles((Color) =>
       marginBottom: Spacing.lg,
     },
     eyebrow: {
-      fontSize: 13,
+      fontSize: 14,
       fontWeight: "700",
       letterSpacing: 1,
-      color: Color.gold,
+      color: Color.brand,
       marginBottom: Spacing.sm,
     },
     title: {
@@ -113,8 +113,8 @@ const useStyles = makeLegacyStyles((Color) =>
       color: Color.textPrimary,
     },
     subtitle: {
-      fontSize: 14,
-      color: Color.textMuted,
+      fontSize: 16,
+      color: Color.textSecondary,
       marginTop: Spacing.sm,
       marginBottom: Spacing.xl,
     },
@@ -125,8 +125,9 @@ const useStyles = makeLegacyStyles((Color) =>
       marginTop: Spacing.sm,
     },
     forgotLink: {
-      color: Color.textMuted,
-      fontSize: 13,
+      color: Color.textSecondary,
+      textDecorationLine: "underline",
+      fontSize: 15,
       fontWeight: "600",
       textAlign: "center",
       marginTop: Spacing.lg,
@@ -146,7 +147,8 @@ const useStyles = makeLegacyStyles((Color) =>
       fontSize: 14,
     },
     link: {
-      color: Color.gold,
+      color: Color.textPrimary,
+      textDecorationLine: "underline",
       fontSize: 14,
       fontWeight: "600",
     },

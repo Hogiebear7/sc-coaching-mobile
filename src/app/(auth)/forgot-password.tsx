@@ -121,10 +121,10 @@ const useStyles = makeLegacyStyles((Color) =>
     },
     backButton: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center", marginLeft: -8 },
     eyebrow: {
-      fontSize: 13,
+      fontSize: 14,
       fontWeight: "700",
       letterSpacing: 1,
-      color: Color.gold,
+      color: Color.brand,
       marginBottom: Spacing.sm,
     },
     title: {
@@ -132,8 +132,8 @@ const useStyles = makeLegacyStyles((Color) =>
       color: Color.textPrimary,
     },
     subtitle: {
-      fontSize: 14,
-      color: Color.textMuted,
+      fontSize: 16,
+      color: Color.textSecondary,
       marginTop: Spacing.sm,
       marginBottom: Spacing.xl,
     },
@@ -161,7 +161,8 @@ const useStyles = makeLegacyStyles((Color) =>
       marginTop: Spacing.xl,
     },
     link: {
-      color: Color.gold,
+      color: Color.textPrimary,
+      textDecorationLine: "underline",
       fontSize: 14,
       fontWeight: "600",
     },

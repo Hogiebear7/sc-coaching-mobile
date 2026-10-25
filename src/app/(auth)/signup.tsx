@@ -787,10 +787,10 @@ const useStyles = makeLegacyStyles((Color) =>
       marginBottom: Spacing.md,
     },
     eyebrow: {
-      fontSize: 13,
+      fontSize: 14,
       fontWeight: "700",
       letterSpacing: 1,
-      color: Color.gold,
+      color: Color.brand,
       marginBottom: Spacing.sm,
     },
     title: {
@@ -941,7 +941,8 @@ const useStyles = makeLegacyStyles((Color) =>
       fontSize: 14,
     },
     link: {
-      color: Color.gold,
+      color: Color.textPrimary,
+      textDecorationLine: "underline",
       fontSize: 14,
       fontWeight: "600",
     },

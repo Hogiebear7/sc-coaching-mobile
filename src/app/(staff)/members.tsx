@@ -137,7 +137,7 @@ const useStyles = makeLegacyStyles((Color) =>
   StyleSheet.create({
     safe: { flex: 1, backgroundColor: Color.bg0 },
     header: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.md, paddingBottom: Spacing.sm },
-    headerTitle: { fontSize: 20, fontWeight: "700", fontStyle: "italic", color: Color.textPrimary },
+    headerTitle: { fontSize: 20, fontWeight: "600", color: Color.textPrimary, flexShrink: 1, textAlign: "center" },
     searchRow: {
       flexDirection: "row",
       alignItems: "center",

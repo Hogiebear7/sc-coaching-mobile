@@ -446,7 +446,7 @@ const useStyles = makeLegacyStyles((Color) =>
     headerLeft: { flexDirection: "row", alignItems: "center" },
     headerLogo: { marginRight: Spacing.sm },
     headerActions: { flexDirection: "row", alignItems: "center", gap: Spacing.md },
-    headerTitle: { fontSize: 20, fontWeight: "700", fontStyle: "italic", color: Color.textPrimary },
+    headerTitle: { fontSize: 20, fontWeight: "600", color: Color.textPrimary, flexShrink: 1, textAlign: "center" },
     centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
     errorText: { color: Color.textMuted, fontSize: 14, textAlign: "center" },
     scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },

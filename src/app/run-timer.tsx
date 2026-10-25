@@ -84,11 +84,11 @@ export default function RunTimerScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={22} color={Color.textPrimary} />
+        <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backButton} accessibilityRole="button" accessibilityLabel="Back">
+          <Ionicons name="chevron-back" size={26} color={Color.textPrimary} />
         </Pressable>
         <Text style={styles.headerTitle}>Run Timer</Text>
-        <View style={{ width: 22 }} />
+        <View style={{ width: 36 }} />
       </View>
 
       <View style={styles.body}>
@@ -136,8 +136,8 @@ const useStyles = makeLegacyStyles((Color) =>
       paddingHorizontal: Spacing.lg,
       paddingVertical: Spacing.md,
     },
-    backButton: { padding: 4 },
-    headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
+    backButton: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center", marginLeft: -8 },
+    headerTitle: { fontSize: 20, fontWeight: "600", color: Color.textPrimary, flexShrink: 1, textAlign: "center" },
     body: { flex: 1, alignItems: "center", paddingTop: Spacing.xxl, paddingHorizontal: Spacing.lg },
     clock: { ...figure(64, "700"), color: Color.gold },
     controlsRow: { flexDirection: "row", alignItems: "center", gap: Spacing.xl, marginTop: Spacing.xl },

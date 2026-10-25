@@ -183,8 +183,8 @@ export default function CommunityScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={22} color={Color.textPrimary} />
+        <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backButton} accessibilityRole="button" accessibilityLabel="Back">
+          <Ionicons name="chevron-back" size={26} color={Color.textPrimary} />
         </Pressable>
         <Text style={styles.headerTitle}>Community</Text>
         {/* "Find people" not "People" — this opens a name search to follow
@@ -411,8 +411,8 @@ const useStyles = makeLegacyStyles((Color) =>
       paddingHorizontal: Spacing.lg,
       paddingVertical: Spacing.md,
     },
-    backButton: { padding: 4 },
-    headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
+    backButton: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center", marginLeft: -8 },
+    headerTitle: { fontSize: 20, fontWeight: "600", color: Color.textPrimary, flexShrink: 1, textAlign: "center" },
     followButton: {
       flexDirection: "row",
       alignItems: "center",

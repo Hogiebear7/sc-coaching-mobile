@@ -78,11 +78,11 @@ export default function BarcodeScanScreen() {
     return (
       <SafeAreaView style={styles.safe} edges={["top"]}>
         <View style={styles.header}>
-          <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backButton}>
-            <Ionicons name="chevron-back" size={22} color={Color.textPrimary} />
+          <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backButton} accessibilityRole="button" accessibilityLabel="Back">
+            <Ionicons name="chevron-back" size={26} color={Color.textPrimary} />
           </Pressable>
           <Text style={styles.headerTitle}>Scan Barcode</Text>
-          <View style={{ width: 22 }} />
+          <View style={{ width: 36 }} />
         </View>
         <CameraPermissionDenied
           canAskAgain={permission.canAskAgain}
@@ -102,11 +102,11 @@ export default function BarcodeScanScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={22} color={Color.textPrimary} />
+        <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backButton} accessibilityRole="button" accessibilityLabel="Back">
+          <Ionicons name="chevron-back" size={26} color={Color.textPrimary} />
         </Pressable>
         <Text style={styles.headerTitle}>Scan Barcode</Text>
-        <View style={{ width: 22 }} />
+        <View style={{ width: 36 }} />
       </View>
 
       <View style={styles.cameraWrap}>
@@ -157,8 +157,8 @@ const useStyles = makeLegacyStyles((Color) =>
   StyleSheet.create({
     safe: { flex: 1, backgroundColor: Color.bg0 },
     header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md },
-    backButton: { padding: 4 },
-    headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
+    backButton: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center", marginLeft: -8 },
+    headerTitle: { fontSize: 20, fontWeight: "600", color: Color.textPrimary, flexShrink: 1, textAlign: "center" },
     centerFill: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: Spacing.xl },
     cameraWrap: { flex: 1, marginHorizontal: Spacing.lg, borderRadius: Radius.lg, overflow: "hidden", backgroundColor: Color.surface1 },
     frame: {

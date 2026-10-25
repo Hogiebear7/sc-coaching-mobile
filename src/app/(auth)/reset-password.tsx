@@ -96,8 +96,8 @@ export default function ResetPasswordScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
         <KeyboardAwareScroll contentContainerStyle={styles.scroll}>
-          <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backButton}>
-            <Ionicons name="chevron-back" size={22} color={Color.textPrimary} />
+          <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backButton} accessibilityRole="button" accessibilityLabel="Back">
+            <Ionicons name="chevron-back" size={26} color={Color.textPrimary} />
           </Pressable>
 
           <Text style={styles.eyebrow}>ACCOUNT ACCESS</Text>
@@ -172,7 +172,7 @@ const useStyles = makeLegacyStyles((Color) =>
       paddingHorizontal: Spacing.xl,
       paddingVertical: Spacing.xxl,
     },
-    backButton: { position: "absolute", top: Spacing.xl, left: Spacing.xl, padding: 4 },
+    backButton: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center", marginLeft: -8 },
     eyebrow: {
       fontSize: 13,
       fontWeight: "700",

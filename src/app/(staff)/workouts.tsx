@@ -120,7 +120,7 @@ const useStyles = makeLegacyStyles((Color) =>
       paddingHorizontal: Spacing.lg,
       paddingVertical: Spacing.md,
     },
-    headerTitle: { fontSize: 20, fontWeight: "700", fontStyle: "italic", color: Color.textPrimary },
+    headerTitle: { fontSize: 20, fontWeight: "600", color: Color.textPrimary, flexShrink: 1, textAlign: "center" },
     addButton: { padding: 4 },
     centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl, gap: Spacing.xs },
     errorText: { color: Color.textMuted, fontSize: 14, textAlign: "center" },

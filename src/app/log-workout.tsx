@@ -1270,8 +1270,8 @@ export default function LogWorkoutScreen() {
     <SafeAreaView style={styles.safe} edges={["top"]}>
       <LogWorkoutTour />
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={22} color={Color.textPrimary} />
+        <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backButton} accessibilityRole="button" accessibilityLabel="Back">
+          <Ionicons name="chevron-back" size={26} color={Color.textPrimary} />
         </Pressable>
         <Text style={styles.headerTitle}>Log Workout</Text>
         <Pressable onPress={handleDiscard} hitSlop={12}>
@@ -2032,8 +2032,8 @@ const useStyles = makeLegacyStyles((Color) =>
       paddingHorizontal: Spacing.lg,
       paddingVertical: Spacing.md,
     },
-    backButton: { padding: 4 },
-    headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
+    backButton: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center", marginLeft: -8 },
+    headerTitle: { fontSize: 20, fontWeight: "600", color: Color.textPrimary, flexShrink: 1, textAlign: "center" },
     discardText: { fontSize: 14, fontWeight: "500", color: Color.textMuted },
     saveTemplateRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, marginTop: Spacing.md, paddingVertical: 6 },
     saveTemplateText: { fontSize: 14, fontWeight: "600", color: Color.gold },

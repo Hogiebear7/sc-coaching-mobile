@@ -17,18 +17,19 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { PillButton, RoundIconButton, SectionTitle } from "@/components/app/primitives";
 import { BodyWeightCard } from "@/components/ui/BodyWeightCard";
-import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ContinueWorkoutPill } from "@/components/ui/ContinueWorkoutPill";
 import { InfoModal } from "@/components/ui/InfoModal";
 import { KeyboardAwareScroll } from "@/components/ui/KeyboardAwareScroll";
-import { MacroLegendRow, MacroPieChart, type MacroKind } from "@/components/ui/MacroPieChart";
-import { SectionHeader } from "@/components/ui/SectionHeader";
+import type { MacroKind } from "@/components/ui/MacroPieChart";
+import { ProgressBar } from "@/components/ui/ProgressBar";
+import { Segmented } from "@/components/ui/Segmented";
 import { UpsellCard } from "@/components/ui/Upsell";
-import { figure, headline, Radius, Spacing } from "@/constants/theme";
+import { AppRadius, AppSpace, appTitle, Spacing } from "@/constants/theme";
 import { ApiError } from "@/lib/auth-context";
-import { tapFeedback } from "@/lib/haptics";
+import { selectionFeedback, successFeedback, tapFeedback, warningFeedback } from "@/lib/haptics";
 import { hasAccess } from "@/lib/member-access";
 import { useFoodFavorites, useRemoveFoodFavorite, type FoodFavorite } from "@/lib/queries/food-favorites";
 import { useMemberTier } from "@/lib/queries/profile";
@@ -54,7 +55,7 @@ import {
 import { extractTargetProposal, type TargetProposal } from "@/lib/nutrition-target-proposal";
 import { classifyLoad, LOAD_BAND_LABEL } from "@/lib/nutrition-calc";
 import { todayDateString } from "@/lib/workout-formatters";
-import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
+import { makeStyles, useAppTheme } from "@/lib/theme";
 
 function shiftDate(dateISO: string, days: number): string {
   const [y, m, d] = dateISO.split("-").map(Number);
@@ -152,7 +153,7 @@ const HYDRATION_INFO_BODY =
 
 function HydrationCard({ date }: { date: string }) {
   const styles = useStyles();
-  const Color = useLegacyColors();
+  const { colors } = useAppTheme();
   const { data: hydration } = useHydration(date);
   const logWater = useLogWater();
   const reduceMotion = useReduceMotionPref();
@@ -199,10 +200,10 @@ function HydrationCard({ date }: { date: string }) {
   return (
     <Card style={styles.hydrationCard}>
       <View style={styles.hydrationLabelRow}>
-        <Ionicons name="water-outline" size={13} color={Color.textMuted} />
+        <Ionicons name="water-outline" size={16} color={colors.textMuted} />
         <Text style={styles.hydrationLabel}>Hydration</Text>
         <Pressable onPress={() => setShowInfo(true)} hitSlop={10} style={styles.hydrationInfoButton}>
-          <Ionicons name="information-circle-outline" size={14} color={Color.textFaint} />
+          <Ionicons name="information-circle-outline" size={18} color={colors.textMuted} />
         </Pressable>
       </View>
 
@@ -232,7 +233,7 @@ function HydrationCard({ date }: { date: string }) {
             <Pressable
               key={ml}
               onPress={() => {
-                tapFeedback();
+                successFeedback();
                 logWater.mutate({ date, deltaMl: ml });
               }}
               style={({ pressed }) => [
@@ -260,7 +261,7 @@ function HydrationCard({ date }: { date: string }) {
           }}
           keyboardType="decimal-pad"
           placeholder="Enter total litres, e.g. 1.5"
-          placeholderTextColor={Color.textFaint}
+          placeholderTextColor={colors.textMuted}
           style={styles.hydrationManualInput}
           onSubmitEditing={handleSetManual}
           returnKeyType="done"
@@ -284,16 +285,27 @@ function HydrationCard({ date }: { date: string }) {
   );
 }
 
-function EmphasisRow({ icon, tone, title, text }: { icon: keyof typeof Ionicons.glyphMap; tone: "neutral" | "gold" | "success"; title: string; text: string }) {
+function EmphasisRow({
+  icon,
+  tone,
+  title,
+  text,
+  divider = false,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  tone: "hydration" | "fuel" | "recovery";
+  title: string;
+  text: string;
+  divider?: boolean;
+}) {
   const styles = useStyles();
-  const Color = useLegacyColors();
-  const toneColor = tone === "gold" ? Color.gold : tone === "success" ? Color.success : Color.textSecondary;
-  const toneBorder = tone === "gold" ? Color.goldBorder : tone === "success" ? Color.success : Color.borderSubtle;
-  const toneBg = tone === "gold" ? Color.goldWeak : tone === "success" ? Color.successWeak : Color.surface2;
+  const { data: dc } = useAppTheme();
+  // One data hue per topic, as a soft disc behind the icon.
+  const hue = tone === "hydration" ? dc.hydration : tone === "fuel" ? dc.carbs : dc.readinessHigh;
   return (
-    <View style={styles.emphasisRow}>
-      <View style={[styles.emphasisIconWrap, { borderColor: toneBorder, backgroundColor: toneBg }]}>
-        <Ionicons name={icon} size={16} color={toneColor} />
+    <View style={[styles.emphasisRow, divider && styles.rowDivider]}>
+      <View style={[styles.emphasisIconWrap, { backgroundColor: `${hue}2e` }]}>
+        <Ionicons name={icon} size={18} color={hue} />
       </View>
       <View style={{ flex: 1 }}>
         <Text style={styles.emphasisTitle}>{title}</Text>
@@ -335,7 +347,7 @@ function CoachChat({
   initialMessages: NutritionAiMessage[];
 }) {
   const styles = useStyles();
-  const Color = useLegacyColors();
+  const { colors } = useAppTheme();
   const [messages, setMessages] = useState<NutritionAiMessage[]>(initialMessages);
   const [input, setInput] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -435,7 +447,7 @@ function CoachChat({
             );
           })
         )}
-        {send.isPending ? <ActivityIndicator color={Color.gold} style={{ marginTop: Spacing.sm }} /> : null}
+        {send.isPending ? <ActivityIndicator color={colors.text} style={{ marginTop: Spacing.sm }} /> : null}
       </View>
       {error ? <Text style={styles.error}>{error}</Text> : null}
       <View style={styles.chatInputRow}>
@@ -443,13 +455,22 @@ function CoachChat({
           value={input}
           onChangeText={setInput}
           placeholder="Ask the coach…"
-          placeholderTextColor={Color.textFaint}
+          placeholderTextColor={colors.textMuted}
           style={styles.chatInput}
           multiline
           onSubmitEditing={handleSend}
         />
-        <Pressable onPress={handleSend} disabled={send.isPending || !input.trim()} style={styles.sendButton}>
-          <Text style={styles.sendButtonText}>Send</Text>
+        <Pressable
+          onPress={() => {
+            tapFeedback();
+            handleSend();
+          }}
+          disabled={send.isPending || !input.trim()}
+          style={[styles.sendButton, (send.isPending || !input.trim()) && { opacity: 0.4 }]}
+          accessibilityRole="button"
+          accessibilityLabel="Send"
+        >
+          <Ionicons name="arrow-up" size={22} color={colors.onPrimary} />
         </Pressable>
       </View>
     </Card>
@@ -458,7 +479,7 @@ function CoachChat({
 
 export default function NutritionScreen() {
   const styles = useStyles();
-  const Color = useLegacyColors();
+  const { colors, data: dc } = useAppTheme();
   const router = useRouter();
   const tier = useMemberTier();
   const today = todayDateString();
@@ -487,6 +508,7 @@ export default function NutritionScreen() {
   // app, see log-food.tsx's favourites chips, which hit the exact same
   // issue first).
   function confirmRemoveFavorite(f: FoodFavorite) {
+    warningFeedback();
     Alert.alert("Remove favourite?", `"${f.name}" will be removed from your favourites.`, [
       { text: "Cancel", style: "cancel" },
       { text: "Remove", style: "destructive", onPress: () => removeFavorite.mutate(f.id) },
@@ -504,7 +526,7 @@ export default function NutritionScreen() {
   }
 
   function handleQuickAdd(food: { name: string; calories: number; proteinG: number; carbsG: number; fatG: number }) {
-    tapFeedback();
+    successFeedback();
     createEntry.mutate({
       date: selectedDate,
       mealType: defaultMealTypeForNow(),
@@ -516,11 +538,15 @@ export default function NutritionScreen() {
     });
   }
 
+  function addFood(mealType?: MealType) {
+    router.push({ pathname: "/log-food", params: mealType ? { date: selectedDate, mealType } : { date: selectedDate } });
+  }
+
   if (isLoading) {
     return (
       <SafeAreaView style={styles.safe}>
         <View style={styles.centerFill}>
-          <ActivityIndicator color={Color.gold} size="large" />
+          <ActivityIndicator color={colors.text} size="large" />
         </View>
       </SafeAreaView>
     );
@@ -531,7 +557,7 @@ export default function NutritionScreen() {
       <SafeAreaView style={styles.safe}>
         <View style={styles.centerFill}>
           <Text style={styles.errorText}>Couldn&apos;t load nutrition data.</Text>
-          <Button title="Retry" onPress={() => refetch()} variant="secondary" style={{ marginTop: Spacing.md }} />
+          <PillButton title="Try again" variant="secondary" onPress={() => refetch()} style={{ marginTop: 16 }} />
         </View>
       </SafeAreaView>
     );
@@ -556,230 +582,159 @@ export default function NutritionScreen() {
         ? `Last logged session: ${data.lastSessionTitle}${data.lastSessionDate ? ` (${data.lastSessionDate})` : ""}. Time most of today's carbs before and after training windows.`
         : "No workouts logged yet — once sessions are in the Workouts tab, fuelling emphasis follows your real training.";
 
+  const consumed = diary?.totals.calories ?? 0;
+  const hasTarget = !!target && target.mode !== "disabled" && target.calories !== null;
+  const remaining = hasTarget ? target!.calories! - consumed : 0;
+  const atToday = selectedDate === today;
+
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
       <KeyboardAwareScroll
         contentContainerStyle={styles.scroll}
-        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => refetch()} tintColor={Color.gold} />}
+        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => refetch()} tintColor={colors.text} />}
       >
+        <View style={styles.band}>
           <View style={styles.headerRow}>
-            <Text style={styles.heading}>Nutrition</Text>
-            <ContinueWorkoutPill />
+            <Text style={appTitle(34, colors.text)}>Nutrition</Text>
+            <View style={styles.headerActions}>
+              <ContinueWorkoutPill />
+              <RoundIconButton icon="barcode-outline" label="Scan a barcode" onPress={() => router.push("/barcode-scan")} />
+            </View>
           </View>
 
-          <View style={styles.dateNavRow}>
-            <Pressable onPress={() => setSelectedDate((d) => shiftDate(d, -1))} hitSlop={10} style={styles.dateArrow}>
-              <Ionicons name="chevron-back" size={18} color={Color.textSecondary} />
+          <View style={styles.dateNav}>
+            <Pressable
+              onPress={() => {
+                selectionFeedback();
+                setSelectedDate((d) => shiftDate(d, -1));
+              }}
+              hitSlop={6}
+              style={styles.dateArrow}
+              accessibilityRole="button"
+              accessibilityLabel="Previous day"
+            >
+              <Ionicons name="chevron-back" size={20} color={colors.text} />
             </Pressable>
             <Text style={styles.dateLabel}>{formatDateLabel(selectedDate, today)}</Text>
             <Pressable
-              onPress={() => selectedDate !== today && setSelectedDate((d) => shiftDate(d, 1))}
-              hitSlop={10}
-              style={styles.dateArrow}
-              disabled={selectedDate === today}
+              onPress={() => {
+                if (atToday) return;
+                selectionFeedback();
+                setSelectedDate((d) => shiftDate(d, 1));
+              }}
+              hitSlop={6}
+              style={[styles.dateArrow, atToday && { opacity: 0.35 }]}
+              disabled={atToday}
+              accessibilityRole="button"
+              accessibilityLabel="Next day"
             >
-              <Ionicons name="chevron-forward" size={18} color={selectedDate === today ? Color.textFaint : Color.textSecondary} />
+              <Ionicons name="chevron-forward" size={20} color={colors.text} />
             </Pressable>
           </View>
 
-          <Pressable onPress={() => router.push("/nutrition-targets")}>
-            <Card style={styles.targetCard} tier="hero">
-              {target && target.mode !== "disabled" && target.calories !== null ? (
-                <>
-                  <View style={styles.targetHeaderRow}>
-                    {target.fuelDayLabel ? <Text style={styles.fuelDayLabel}>{target.fuelDayLabel}</Text> : <View />}
-                    <View style={styles.viewWeekRow}>
-                      <Text style={styles.viewWeekText}>Day · Week</Text>
-                      <Ionicons name="chevron-forward" size={14} color={Color.textFaint} />
-                    </View>
-                  </View>
-                  <View style={styles.calorieRow}>
-                    <Text style={styles.calorieValue}>{diary?.totals.calories ?? 0}</Text>
-                    <Text style={styles.calorieTarget}> / {target.calories} kcal</Text>
-                  </View>
-                  <Text style={styles.calorieRemaining}>
-                    {target.calories - (diary?.totals.calories ?? 0) >= 0
-                      ? `${target.calories - (diary?.totals.calories ?? 0)} kcal remaining`
-                      : `${(diary?.totals.calories ?? 0) - target.calories} kcal over`}
-                  </Text>
-                  <View style={styles.macroBlock}>
-                    <MacroPieChart
-                      proteinG={diary?.totals.proteinG ?? 0}
-                      carbsG={diary?.totals.carbsG ?? 0}
-                      fatG={diary?.totals.fatG ?? 0}
-                      targetProteinG={target.proteinG}
-                      targetCarbsG={target.carbsG}
-                      targetFatG={target.fatG}
-                      onSlicePress={setMacroInfo}
-                    />
-                    <View style={styles.macroLegend}>
-                      <MacroLegendRow
-                        kind="protein"
-                        label="Protein"
-                        consumed={diary?.totals.proteinG ?? 0}
-                        target={target.proteinG}
-                        onPress={() => setMacroInfo("protein")}
-                      />
-                      <MacroLegendRow
-                        kind="carbs"
-                        label="Carbs"
-                        consumed={diary?.totals.carbsG ?? 0}
-                        target={target.carbsG}
-                        onPress={() => setMacroInfo("carbs")}
-                      />
-                      <MacroLegendRow
-                        kind="fat"
-                        label="Fat"
-                        consumed={diary?.totals.fatG ?? 0}
-                        target={target.fatG}
-                        onPress={() => setMacroInfo("fat")}
-                      />
-                    </View>
-                  </View>
-                </>
-              ) : (
-                <>
-                  <View style={styles.calorieRow}>
-                    <Text style={styles.calorieValue}>{diary?.totals.calories ?? 0}</Text>
-                    <Text style={styles.calorieTarget}> kcal logged</Text>
-                  </View>
-                  <Text style={styles.noTargetText}>
-                    {target?.mode === "disabled"
-                      ? "Your coach has turned off daily targets for now — logging still works."
-                      : "Setting up your target — add your weight in Profile so we can calculate it."}
-                  </Text>
-                </>
-              )}
-            </Card>
+          <Pressable onPress={() => router.push("/nutrition-targets")} accessibilityRole="button" accessibilityLabel="Calories and targets">
+            <View style={styles.calHead}>
+              <Text style={styles.calLabel}>{hasTarget && target?.fuelDayLabel ? target.fuelDayLabel : "Calories"}</Text>
+              <View style={styles.calLink}>
+                <Text style={styles.calLinkText}>Day · Week</Text>
+                <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+              </View>
+            </View>
+            <Text style={styles.calValue}>
+              {consumed.toLocaleString()}
+              <Text style={styles.calUnit}>{hasTarget ? ` / ${target!.calories!.toLocaleString()} kcal` : " kcal logged"}</Text>
+            </Text>
+            {hasTarget ? (
+              <>
+                <Text style={styles.calRemaining}>
+                  {remaining >= 0 ? `${remaining.toLocaleString()} kcal remaining` : `${Math.abs(remaining).toLocaleString()} kcal over`}
+                </Text>
+                <View style={{ marginTop: 10 }}>
+                  <ProgressBar pct={(consumed / target!.calories!) * 100} color={colors.text} />
+                </View>
+              </>
+            ) : (
+              <Text style={styles.calRemaining}>
+                {target?.mode === "disabled"
+                  ? "Your coach has turned off daily targets for now — logging still works."
+                  : "Setting up your target — add your weight in Profile so we can calculate it."}
+              </Text>
+            )}
           </Pressable>
 
-          <View style={styles.section}>
-            <SectionHeader label="HYDRATION" />
-            <HydrationCard date={selectedDate} />
-          </View>
-
-          {(recentFoods && recentFoods.length > 0) || (favorites && favorites.length > 0) ? (
-            <View style={styles.section}>
-              <SectionHeader label="QUICK ADD" />
-              <View style={styles.quickAddTabRow}>
-                <Pressable
-                  onPress={() => setQuickAddTab("recent")}
-                  style={[styles.quickAddTab, quickAddTab === "recent" && styles.quickAddTabActive]}
-                >
-                  <Text style={[styles.quickAddTabText, quickAddTab === "recent" && styles.quickAddTabTextActive]}>
-                    Recently added
-                  </Text>
-                </Pressable>
-                <Pressable
-                  onPress={() => setQuickAddTab("favourites")}
-                  style={[styles.quickAddTab, quickAddTab === "favourites" && styles.quickAddTabActive]}
-                >
-                  <Text style={[styles.quickAddTabText, quickAddTab === "favourites" && styles.quickAddTabTextActive]}>
-                    Favourites
-                  </Text>
-                </Pressable>
-              </View>
-              {quickAddTab === "recent" ? (
-                (recentFoods?.length ?? 0) > 0 ? (
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: Spacing.xs }}>
-                    {recentFoods!.slice(0, 10).map((f) => (
-                      <Pressable key={f.id} onPress={() => handleQuickAdd(f)} style={styles.quickAddChip}>
-                        <Text style={styles.quickAddChipText} numberOfLines={1} ellipsizeMode="tail">
-                          {f.name}
-                        </Text>
-                        <Text style={styles.quickAddChipSub}>{f.calories} kcal</Text>
-                      </Pressable>
-                    ))}
-                  </ScrollView>
-                ) : (
-                  <Text style={styles.quickAddEmptyText}>Nothing logged recently.</Text>
-                )
-              ) : (favorites?.length ?? 0) > 0 ? (
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: Spacing.xs }}>
-                  {favorites!.map((f: FoodFavorite) => (
-                    <View key={f.id} style={styles.quickAddChip}>
-                      <Pressable onPress={() => handleQuickAdd(f)}>
-                        <Text style={styles.quickAddChipText} numberOfLines={1} ellipsizeMode="tail">
-                          {f.name}
-                        </Text>
-                        <Text style={styles.quickAddChipSub}>{f.calories} kcal</Text>
-                      </Pressable>
-                      <Pressable
-                        onPress={() => confirmRemoveFavorite(f)}
-                        hitSlop={8}
-                        style={styles.quickAddChipDelete}
-                        accessibilityLabel={`Remove ${f.name} from favourites`}
-                      >
-                        <Ionicons name="close-circle" size={16} color={Color.textFaint} />
-                      </Pressable>
-                    </View>
-                  ))}
-                </ScrollView>
-              ) : (
-                <Text style={styles.quickAddEmptyText}>
-                  No favourites yet — save one from the star icon when adding a food.
-                </Text>
-              )}
+          {hasTarget ? (
+            <View style={styles.macroRow}>
+              <MacroBar label="Protein" consumed={diary?.totals.proteinG ?? 0} target={target!.proteinG} color={dc.protein} onPress={() => setMacroInfo("protein")} />
+              <MacroBar label="Carbs" consumed={diary?.totals.carbsG ?? 0} target={target!.carbsG} color={dc.carbs} onPress={() => setMacroInfo("carbs")} />
+              <MacroBar label="Fat" consumed={diary?.totals.fatG ?? 0} target={target!.fatG} color={dc.fat} onPress={() => setMacroInfo("fat")} />
             </View>
           ) : null}
 
-          <View style={styles.section}>
-            <SectionHeader
-              label="DIARY"
-              action={{ label: "+ Add food", onPress: () => router.push({ pathname: "/log-food", params: { date: selectedDate } }) }}
-            />
+          <PillButton title="Log food" onPress={() => addFood()} style={{ marginTop: 18 }} />
+        </View>
 
-            <Card style={styles.diaryCard}>
+        <View style={styles.body}>
+          {/* Diary */}
+          <View style={styles.section}>
+            <SectionTitle title="Diary" action="Add food" onAction={() => addFood()} />
+            <View style={styles.list}>
               {MEAL_TYPE_OPTIONS.map((meal, mealIdx) => {
                 const mealEntries = (diary?.entries ?? []).filter((e) => e.mealType === meal.value);
                 const mealCals = mealEntries.reduce((s, e) => s + e.calories, 0);
                 const hasEntries = mealEntries.length > 0;
                 const isExpanded = expandedMeals.has(meal.value);
                 return (
-                  <View key={meal.value} style={[styles.mealBlock, mealIdx > 0 && styles.mealBlockDivider]}>
-                    <Pressable
-                      onPress={() =>
-                        hasEntries
-                          ? toggleMealExpanded(meal.value)
-                          : router.push({ pathname: "/log-food", params: { date: selectedDate, mealType: meal.value } })
-                      }
-                      style={styles.mealHeader}
-                    >
-                      <Text style={styles.mealTitle}>{meal.label}</Text>
-                      <View style={styles.mealHeaderRight}>
-                        {hasEntries ? (
-                          <Text style={styles.mealCals}>
-                            {mealCals} kcal · {mealEntries.length} item{mealEntries.length === 1 ? "" : "s"}
+                  <View key={meal.value} style={mealIdx > 0 && styles.rowDivider}>
+                    <View style={styles.mealRow}>
+                      <Pressable
+                        onPress={() => (hasEntries ? toggleMealExpanded(meal.value) : addFood(meal.value))}
+                        style={styles.mealMain}
+                        accessibilityRole="button"
+                        accessibilityState={hasEntries ? { expanded: isExpanded } : undefined}
+                        accessibilityLabel={hasEntries ? `${meal.label}, ${mealCals} kcal` : `Add ${meal.label}`}
+                      >
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.rowTitle}>{meal.label}</Text>
+                          <Text style={styles.rowSub}>
+                            {hasEntries
+                              ? `${mealCals} kcal · ${mealEntries.length} item${mealEntries.length === 1 ? "" : "s"}`
+                              : "Nothing logged"}
                           </Text>
-                        ) : (
-                          <Text style={styles.mealAddHint}>Add</Text>
-                        )}
-                        {hasEntries ? (
-                          <Pressable
-                            hitSlop={8}
-                            onPress={() => router.push({ pathname: "/log-food", params: { date: selectedDate, mealType: meal.value } })}
-                          >
-                            <Ionicons name="add-circle-outline" size={16} color={Color.gold} />
-                          </Pressable>
-                        ) : null}
-                        <Ionicons
-                          name={!hasEntries ? "add-circle-outline" : isExpanded ? "chevron-up" : "chevron-down"}
-                          size={16}
-                          color={hasEntries ? Color.textFaint : Color.gold}
-                        />
-                      </View>
-                    </Pressable>
+                        </View>
+                        {hasEntries ? <Ionicons name={isExpanded ? "chevron-up" : "chevron-down"} size={18} color={colors.textMuted} /> : null}
+                      </Pressable>
+                      <Pressable
+                        onPress={() => addFood(meal.value)}
+                        style={styles.mealAdd}
+                        hitSlop={4}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Add food to ${meal.label}`}
+                      >
+                        <Ionicons name="add" size={20} color={colors.text} />
+                      </Pressable>
+                    </View>
                     {hasEntries && isExpanded
                       ? mealEntries.map((e) => (
                           <View key={e.id} style={styles.entryRow}>
                             <View style={{ flex: 1 }}>
                               <Text style={styles.entryName}>{e.name}</Text>
-                              <Text style={styles.entryMacros}>
-                                {e.calories} kcal · P{e.proteinG} C{e.carbsG} F{e.fatG}
-                              </Text>
+                              <View style={styles.entryMacros}>
+                                <Text style={styles.entryKcal}>{e.calories} kcal</Text>
+                                <MacroChip letter="P" value={e.proteinG} color={dc.protein} />
+                                <MacroChip letter="C" value={e.carbsG} color={dc.carbs} />
+                                <MacroChip letter="F" value={e.fatG} color={dc.fat} />
+                              </View>
                             </View>
-                            <Pressable onPress={() => deleteEntry.mutate({ id: e.id, date: selectedDate })} hitSlop={8}>
-                              <Ionicons name="close-circle-outline" size={16} color={Color.textFaint} />
+                            <Pressable
+                              onPress={() => {
+                                warningFeedback();
+                                deleteEntry.mutate({ id: e.id, date: selectedDate });
+                              }}
+                              hitSlop={10}
+                              accessibilityRole="button"
+                              accessibilityLabel={`Remove ${e.name}`}
+                            >
+                              <Ionicons name="trash-outline" size={18} color={colors.textMuted} />
                             </Pressable>
                           </View>
                         ))
@@ -787,91 +742,138 @@ export default function NutritionScreen() {
                   </View>
                 );
               })}
-            </Card>
+            </View>
           </View>
 
+          {/* Quick add */}
+          {(recentFoods && recentFoods.length > 0) || (favorites && favorites.length > 0) ? (
+            <View style={styles.section}>
+              <SectionTitle title="Quick add" />
+              <View style={{ marginBottom: 12 }}>
+                <Segmented
+                  options={["recent", "favourites"] as const}
+                  value={quickAddTab}
+                  onChange={setQuickAddTab}
+                  format={(t) => (t === "recent" ? "Recent" : "Favourites")}
+                />
+              </View>
+              {quickAddTab === "recent" ? (
+                (recentFoods?.length ?? 0) > 0 ? (
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.quickRow}>
+                    {recentFoods!.slice(0, 10).map((f) => (
+                      <Pressable
+                        key={f.id}
+                        onPress={() => handleQuickAdd(f)}
+                        style={({ pressed }) => [styles.quickChip, pressed && styles.pressed]}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Add ${f.name}, ${f.calories} kcal`}
+                      >
+                        <Text style={styles.quickChipText} numberOfLines={2}>
+                          {f.name}
+                        </Text>
+                        <View style={styles.quickChipFoot}>
+                          <Text style={styles.quickChipSub}>{f.calories} kcal</Text>
+                          <Ionicons name="add-circle" size={20} color={colors.text} />
+                        </View>
+                      </Pressable>
+                    ))}
+                  </ScrollView>
+                ) : (
+                  <Text style={styles.quietText}>Nothing logged recently.</Text>
+                )
+              ) : (favorites?.length ?? 0) > 0 ? (
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.quickRow}>
+                  {favorites!.map((f: FoodFavorite) => (
+                    <View key={f.id} style={styles.quickChip}>
+                      <Pressable onPress={() => handleQuickAdd(f)} accessibilityRole="button" accessibilityLabel={`Add ${f.name}, ${f.calories} kcal`} style={{ flex: 1 }}>
+                        <Text style={[styles.quickChipText, { paddingRight: 18 }]} numberOfLines={2}>
+                          {f.name}
+                        </Text>
+                        <View style={styles.quickChipFoot}>
+                          <Text style={styles.quickChipSub}>{f.calories} kcal</Text>
+                          <Ionicons name="add-circle" size={20} color={colors.text} />
+                        </View>
+                      </Pressable>
+                      <Pressable
+                        onPress={() => confirmRemoveFavorite(f)}
+                        hitSlop={10}
+                        style={styles.quickChipDelete}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Remove ${f.name} from favourites`}
+                      >
+                        <Ionicons name="close" size={16} color={colors.textMuted} />
+                      </Pressable>
+                    </View>
+                  ))}
+                </ScrollView>
+              ) : (
+                <Text style={styles.quietText}>No favourites yet — save one from the star icon when adding a food.</Text>
+              )}
+            </View>
+          ) : null}
+
+          {/* Hydration */}
           <View style={styles.section}>
-            <SectionHeader label="MORE TOOLS" />
-            {hasAccess(tier, "nutritionMoreTools") ? (
-              <Card tier="quiet">
-                <Pressable onPress={() => router.push("/drink-calculator")} style={styles.moreRow}>
-                  <View style={styles.drinkCardIcon}>
-                    <Ionicons name="water-outline" size={18} color={Color.gold} />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.drinkCardTitle}>Sports Drink Calculator</Text>
-                    <Text style={styles.drinkCardSub}>Sport, sweat rate, and conditions — tailored to you</Text>
-                  </View>
-                  <Ionicons name="chevron-forward" size={18} color={Color.textFaint} />
-                </Pressable>
-                <Pressable onPress={() => router.push("/weekly-training")} style={[styles.moreRow, styles.moreRowDivider]}>
-                  <View style={styles.drinkCardIcon}>
-                    <Ionicons name="calendar-outline" size={18} color={Color.gold} />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.drinkCardTitle}>Weekly Training</Text>
-                    <Text style={styles.drinkCardSub}>Your typical week — gym, sport, anything else</Text>
-                  </View>
-                  <Ionicons name="chevron-forward" size={18} color={Color.textFaint} />
-                </Pressable>
-                <Pressable onPress={() => router.push("/meal-suggest")} style={[styles.moreRow, styles.moreRowDivider]}>
-                  <View style={styles.drinkCardIcon}>
-                    <Ionicons name="camera-outline" size={18} color={Color.gold} />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.drinkCardTitle}>What Can I Make?</Text>
-                    <Text style={styles.drinkCardSub}>Photo or list your ingredients for meal ideas</Text>
-                  </View>
-                  <Ionicons name="chevron-forward" size={18} color={Color.textFaint} />
-                </Pressable>
-                <Pressable onPress={() => router.push("/shopping-list")} style={[styles.moreRow, styles.moreRowDivider]}>
-                  <View style={styles.drinkCardIcon}>
-                    <Ionicons name="cart-outline" size={18} color={Color.gold} />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.drinkCardTitle}>Shopping List</Text>
-                    <Text style={styles.drinkCardSub}>Your list, plus ingredients from saved recipes</Text>
-                  </View>
-                  <Ionicons name="chevron-forward" size={18} color={Color.textFaint} />
-                </Pressable>
-              </Card>
-            ) : (
-              <UpsellCard
-                icon="construct-outline"
-                title="More Tools"
-                body="Sports drink calculator, weekly training, meal ideas, and shopping list"
+            <SectionTitle title="Hydration" />
+            <HydrationCard date={selectedDate} />
+          </View>
+
+          {/* Emphasis */}
+          <View style={styles.section}>
+            <SectionTitle title="Today's emphasis" />
+            <View style={styles.list}>
+              <EmphasisRow icon="water-outline" tone="hydration" title="Hydration" text={hydrationLine} />
+              <EmphasisRow icon="flash-outline" tone="fuel" title="Training fuel" text={trainingLine} divider />
+              <EmphasisRow
+                icon="heart-outline"
+                tone="recovery"
+                title="Micros & recovery"
+                text="Spread protein across 3–4 meals, get colour on every plate for micronutrients, and keep the last big meal 2–3 hours before sleep. Repair happens between sessions, not during them."
+                divider
               />
+            </View>
+          </View>
+
+          {/* Weight */}
+          <View style={styles.section}>
+            <SectionTitle title="Weight check-in" />
+            <BodyWeightCard compact />
+          </View>
+
+          {/* Tools */}
+          <View style={styles.section}>
+            <SectionTitle title="More tools" />
+            {hasAccess(tier, "nutritionMoreTools") ? (
+              <View style={styles.list}>
+                {TOOL_ROWS.map((r, i) => (
+                  <Pressable
+                    key={r.href}
+                    onPress={() => {
+                      tapFeedback();
+                      router.push(r.href as never);
+                    }}
+                    style={({ pressed }) => [styles.row, i > 0 && styles.rowDivider, pressed && styles.pressed]}
+                    accessibilityRole="button"
+                  >
+                    <Ionicons name={r.icon} size={22} color={colors.text} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.rowTitle}>{r.title}</Text>
+                      <Text style={styles.rowSub}>{r.sub}</Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+                  </Pressable>
+                ))}
+              </View>
+            ) : (
+              <UpsellCard icon="construct-outline" title="More Tools" body="Sports drink calculator, weekly training, meal ideas, and shopping list" />
             )}
           </View>
 
           <View style={styles.section}>
-            <SectionHeader label="WEIGHT CHECK-IN" />
-            <BodyWeightCard compact />
+            <CoachChat configured={data.aiNutritionCoachConfigured} initialMessages={data.initialAiNutritionMessages} />
           </View>
-
-          <View style={styles.section}>
-            <SectionHeader label={"TODAY'S EMPHASIS"} />
-            <Card style={styles.emphasisCard}>
-              <EmphasisRow icon="water-outline" tone="neutral" title="Hydration" text={hydrationLine} />
-              <View style={styles.emphasisDivider} />
-              <EmphasisRow icon="flash-outline" tone="gold" title="Training fuel" text={trainingLine} />
-              <View style={styles.emphasisDivider} />
-              <EmphasisRow
-                icon="heart-outline"
-                tone="success"
-                title="Micros & recovery"
-                text="Spread protein across 3–4 meals, get colour on every plate for micronutrients, and keep the last big meal 2–3 hours before sleep. Repair happens between sessions, not during them."
-              />
-            </Card>
-          </View>
-
-          <View style={styles.section}>
-            <CoachChat
-              configured={data.aiNutritionCoachConfigured}
-              initialMessages={data.initialAiNutritionMessages}
-            />
-          </View>
-        </KeyboardAwareScroll>
+        </View>
+      </KeyboardAwareScroll>
 
       <InfoModal
         visible={macroInfo !== null}
@@ -883,233 +885,209 @@ export default function NutritionScreen() {
   );
 }
 
-const useStyles = makeLegacyStyles((Color) =>
+const TOOL_ROWS: { href: string; icon: keyof typeof Ionicons.glyphMap; title: string; sub: string }[] = [
+  { href: "/drink-calculator", icon: "water-outline", title: "Sports drink calculator", sub: "Sport, sweat rate and conditions, tailored to you" },
+  { href: "/weekly-training", icon: "calendar-outline", title: "Weekly training", sub: "Your typical week: gym, sport, anything else" },
+  { href: "/meal-suggest", icon: "camera-outline", title: "What can I make?", sub: "Photo or list your ingredients for meal ideas" },
+  { href: "/shopping-list", icon: "cart-outline", title: "Shopping list", sub: "Your list, plus ingredients from saved recipes" },
+];
+
+// One macro: label, consumed / target, and a bar in the macro's data colour.
+function MacroBar({ label, consumed, target, color, onPress }: { label: string; consumed: number; target: number | null; color: string; onPress: () => void }) {
+  const styles = useStyles();
+  return (
+    <Pressable
+      onPress={() => {
+        tapFeedback();
+        onPress();
+      }}
+      style={styles.macro}
+      accessibilityRole="button"
+      accessibilityLabel={`${label}, ${Math.round(consumed)} of ${target ?? "no target"} grams. About ${label}.`}
+    >
+      <View style={styles.macroHead}>
+        <View style={[styles.macroDot, { backgroundColor: color }]} />
+        <Text style={styles.macroLabel}>{label}</Text>
+      </View>
+      <Text style={styles.macroValue}>
+        {Math.round(consumed)}
+        <Text style={styles.macroUnit}>{target ? ` / ${target}g` : "g"}</Text>
+      </Text>
+      <ProgressBar pct={target ? (consumed / target) * 100 : 0} color={color} />
+    </Pressable>
+  );
+}
+
+function MacroChip({ letter, value, color }: { letter: string; value: number; color: string }) {
+  const styles = useStyles();
+  return (
+    <View style={styles.macroChip}>
+      <View style={[styles.macroChipDot, { backgroundColor: color }]} />
+      <Text style={styles.macroChipText}>
+        {letter} {value}
+      </Text>
+    </View>
+  );
+}
+
+const useStyles = makeStyles((c, dc) =>
   StyleSheet.create({
-    safe: { flex: 1, backgroundColor: Color.bg0 },
-    centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
-    errorText: { color: Color.textMuted, fontSize: 14 },
-    scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
-    headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: Spacing.md, marginBottom: Spacing.md },
-    heading: { ...headline(34), color: Color.textPrimary },
-    dateNavRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: Spacing.lg, marginBottom: Spacing.md },
-    dateArrow: { padding: 4 },
-    dateLabel: { fontSize: 14, fontWeight: "600", color: Color.textPrimary, minWidth: 100, textAlign: "center" },
-    targetCard: { padding: Spacing.lg, marginBottom: Spacing.lg },
-    targetHeaderRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: Spacing.xs },
-    fuelDayLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.5, textTransform: "uppercase", color: Color.gold },
-    viewWeekRow: { flexDirection: "row", alignItems: "center", gap: 2 },
-    viewWeekText: { fontSize: 11, fontWeight: "600", color: Color.textFaint },
-    calorieRow: { flexDirection: "row", alignItems: "baseline" },
-    calorieValue: { ...figure(34), color: Color.gold },
-    calorieTarget: { fontSize: 14, color: Color.textMuted },
-    calorieRemaining: { fontSize: 12, color: Color.textMuted, marginTop: 2 },
-    noTargetText: { fontSize: 12, color: Color.textMuted, marginTop: Spacing.xs },
-    macroBlock: { flexDirection: "row", alignItems: "center", gap: Spacing.lg, marginTop: Spacing.md },
-    macroLegend: { flex: 1 },
-    section: { marginBottom: Spacing.xl },
-    quickAddChip: {
-      position: "relative",
-      borderRadius: Radius.md,
-      borderWidth: 1,
-      borderColor: Color.borderSubtle,
-      backgroundColor: Color.surface1,
-      paddingHorizontal: Spacing.sm,
-      paddingVertical: 8,
-      width: 116,
+    safe: { flex: 1, backgroundColor: c.bg },
+    centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: 24 },
+    errorText: { color: c.textMuted, fontSize: 16 },
+    scroll: { paddingBottom: 40 },
+    pressed: { opacity: 0.85 },
+
+    band: {
+      backgroundColor: c.surface,
+      borderBottomLeftRadius: 28,
+      borderBottomRightRadius: 28,
+      paddingHorizontal: AppSpace.gutter,
+      paddingBottom: 20,
     },
-    quickAddChipText: { fontSize: 12, fontWeight: "600", color: Color.textPrimary },
-    quickAddChipSub: { fontSize: 10, color: Color.textMuted, marginTop: 2 },
-    quickAddChipDelete: { position: "absolute", top: 2, right: 2, padding: 2 },
-    quickAddTabRow: { flexDirection: "row", gap: Spacing.xs, marginBottom: Spacing.sm },
-    quickAddTab: {
-      borderRadius: Radius.pill,
-      borderWidth: 1,
-      borderColor: Color.borderSubtle,
-      paddingHorizontal: Spacing.sm,
-      paddingVertical: 5,
-    },
-    quickAddTabActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
-    quickAddTabText: { fontSize: 11, fontWeight: "600", color: Color.textMuted },
-    quickAddTabTextActive: { color: Color.gold },
-    quickAddEmptyText: { fontSize: 12, color: Color.textFaint },
-    diaryCard: { padding: 0 },
-    mealBlock: { padding: Spacing.md },
-    mealBlockDivider: { borderTopWidth: 1, borderTopColor: Color.borderSubtle },
-    mealHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-    mealTitle: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
-    mealHeaderRight: { flexDirection: "row", alignItems: "center", gap: 6 },
-    mealCals: { fontSize: 11, color: Color.textMuted },
-    mealAddHint: { fontSize: 11, color: Color.gold, fontWeight: "600" },
-    // Indented + a left accent line so an expanded meal's entries read as
-    // nested under their header, not just another row in the same list.
-    entryRow: {
+    headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingTop: 12 },
+    headerActions: { flexDirection: "row", alignItems: "center", gap: 10 },
+    dateNav: {
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
-      paddingTop: Spacing.sm,
-      paddingLeft: Spacing.sm,
-      marginTop: Spacing.sm,
-      marginLeft: 4,
-      borderTopWidth: 1,
-      borderTopColor: Color.borderSubtle,
-      borderLeftWidth: 2,
-      borderLeftColor: Color.borderSubtle,
+      alignSelf: "center",
+      marginTop: 14,
+      marginBottom: 16,
+      backgroundColor: c.control,
+      borderRadius: AppRadius.control,
+      padding: 4,
+      minWidth: 220,
     },
-    entryName: { fontSize: 13, fontWeight: "500", color: Color.textPrimary },
-    entryMacros: { fontSize: 10, color: Color.textMuted, marginTop: 2 },
-    hydrationCard: { padding: Spacing.md },
-    hydrationLabelRow: { flexDirection: "row", alignItems: "center", gap: 5, marginBottom: 2 },
-    hydrationLabel: { fontSize: 11, fontWeight: "600", color: Color.textMuted, letterSpacing: 0.2 },
-    hydrationInfoButton: { padding: 1 },
-    hydrationMetricValue: {
-      ...figure(30),
-      color: Color.textPrimary,
-      marginBottom: 7,
+    dateArrow: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center" },
+    dateLabel: { fontSize: 16, fontWeight: "600", color: c.text, textAlign: "center", flex: 1 },
+    calHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+    calLabel: { fontSize: 15, color: c.textMuted },
+    calLink: { flexDirection: "row", alignItems: "center", gap: 2 },
+    calLinkText: { fontSize: 14, color: c.textMuted },
+    calValue: { fontSize: 40, fontWeight: "500", color: c.text, fontVariant: ["tabular-nums"], marginTop: 2 },
+    calUnit: { fontSize: 17, fontWeight: "400", color: c.textSecondary },
+    calRemaining: { fontSize: 15, color: c.textSecondary, marginTop: 2, lineHeight: 21 },
+    macroRow: { flexDirection: "row", gap: 10, marginTop: 18 },
+    macro: { flex: 1, backgroundColor: c.surfaceHi, borderRadius: AppRadius.inner + 4, padding: 12, gap: 6 },
+    macroHead: { flexDirection: "row", alignItems: "center", gap: 6 },
+    macroDot: { width: 8, height: 8, borderRadius: 4 },
+    macroLabel: { fontSize: 14, color: c.textSecondary },
+    macroValue: { fontSize: 20, fontWeight: "500", color: c.text, fontVariant: ["tabular-nums"] },
+    macroUnit: { fontSize: 13, fontWeight: "400", color: c.textMuted },
+
+    body: { paddingHorizontal: AppSpace.gutter, paddingTop: AppSpace.section },
+    section: { marginBottom: AppSpace.section },
+    list: { backgroundColor: c.surface, borderRadius: AppRadius.card, overflow: "hidden" },
+    row: { flexDirection: "row", alignItems: "center", gap: 14, minHeight: 62, paddingHorizontal: 16, paddingVertical: 10 },
+    rowDivider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: c.hairline },
+    rowTitle: { fontSize: 16, color: c.text },
+    rowSub: { fontSize: 14, color: c.textMuted, marginTop: 2 },
+    quietText: { fontSize: 15, color: c.textMuted },
+
+    mealRow: { flexDirection: "row", alignItems: "center", paddingRight: 10 },
+    mealMain: { flex: 1, flexDirection: "row", alignItems: "center", gap: 10, minHeight: 62, paddingLeft: 16, paddingRight: 6, paddingVertical: 10 },
+    mealAdd: { width: 40, height: 40, borderRadius: 20, backgroundColor: c.control, alignItems: "center", justifyContent: "center" },
+    entryRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 12,
+      marginHorizontal: 16,
+      paddingVertical: 10,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: c.hairline,
     },
-    hydrationMetricTarget: { fontSize: 15, fontWeight: "500", color: Color.textMuted },
-    hydrationEmptyText: { fontSize: 11, color: Color.textMuted, lineHeight: 16 },
-    hydrationBodyRow: { flexDirection: "row", alignItems: "center", gap: 13 },
+    entryName: { fontSize: 15, color: c.text },
+    entryMacros: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 8, marginTop: 4 },
+    entryKcal: { fontSize: 13, color: c.textMuted, fontVariant: ["tabular-nums"] },
+    macroChip: { flexDirection: "row", alignItems: "center", gap: 4 },
+    macroChipDot: { width: 6, height: 6, borderRadius: 3 },
+    macroChipText: { fontSize: 13, color: c.textMuted, fontVariant: ["tabular-nums"] },
+
+    quickRow: { gap: 10 },
+    quickChip: { width: 132, minHeight: 92, backgroundColor: c.surface, borderRadius: AppRadius.card, padding: 12 },
+    quickChipText: { fontSize: 15, color: c.text, lineHeight: 20 },
+    quickChipFoot: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: "auto", paddingTop: 8 },
+    quickChipSub: { fontSize: 13, color: c.textMuted },
+    quickChipDelete: { position: "absolute", top: 6, right: 6, width: 28, height: 28, borderRadius: 14, alignItems: "center", justifyContent: "center" },
+
+    // Hydration card
+    hydrationCard: { padding: 16 },
+    hydrationLabelRow: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 2 },
+    hydrationLabel: { fontSize: 15, color: c.textMuted },
+    hydrationInfoButton: { padding: 2 },
+    hydrationMetricValue: { fontSize: 32, fontWeight: "500", color: c.text, fontVariant: ["tabular-nums"], marginBottom: 10 },
+    hydrationMetricTarget: { fontSize: 16, fontWeight: "400", color: c.textMuted },
+    hydrationEmptyText: { fontSize: 14, color: c.textMuted, lineHeight: 20 },
+    hydrationBodyRow: { flexDirection: "row", alignItems: "center", gap: 16 },
     hydrationSideCol: { flex: 1 },
-    hydrationSideText: { fontSize: 13, fontWeight: "500", color: Color.textSecondary, lineHeight: 18 },
+    hydrationSideText: { fontSize: 16, fontWeight: "500", color: c.textSecondary, lineHeight: 22 },
     bottleWrap: { width: 64, alignItems: "center" },
-    bottleCap: {
-      width: 24,
-      height: 8,
-      borderTopLeftRadius: 4,
-      borderTopRightRadius: 4,
-      backgroundColor: Color.textFaint,
-    },
-    bottleNeck: {
-      width: 28,
-      height: 14,
-      backgroundColor: Color.surface2,
-      borderWidth: 1,
-      borderBottomWidth: 0,
-      borderColor: Color.borderSubtle,
-    },
-    bottleBody: {
-      width: 64,
-      height: 136,
-      borderRadius: 16,
-      borderWidth: 1,
-      borderColor: Color.borderSubtle,
-      backgroundColor: Color.surface2,
-      overflow: "hidden",
-      justifyContent: "flex-end",
-    },
-    bottleFill: { width: "100%", backgroundColor: Color.accentData },
+    bottleCap: { width: 24, height: 8, borderTopLeftRadius: 4, borderTopRightRadius: 4, backgroundColor: c.textMuted },
+    bottleNeck: { width: 28, height: 14, backgroundColor: c.control },
+    bottleBody: { width: 64, height: 136, borderRadius: 16, backgroundColor: c.control, overflow: "hidden", justifyContent: "flex-end" },
+    bottleFill: { width: "100%", backgroundColor: dc.hydration },
     // Decorative glass-sheen highlight — purely visual, not tied to hydration
     // data, so it's fine as a static overlay rather than anything animated.
     bottleSheen: { position: "absolute", top: 0, left: 0, bottom: 0, width: "45%" },
-    hydrationQuickAddRow: { flexDirection: "row", gap: Spacing.xs, marginTop: 14 },
-    hydrationChip: {
-      flex: 1,
-      alignItems: "center",
-      borderRadius: Radius.pill,
-      borderWidth: 1,
-      borderColor: Color.borderSubtle,
-      backgroundColor: Color.surface1,
-      paddingVertical: 10,
-    },
-    // The recommended +500ml action — gold-accented like the rest of the
-    // app's primary/interactive elements, so the accent stays on something
-    // actionable rather than spent on a passive metric.
-    hydrationChipPrimary: { borderColor: Color.goldBorder, backgroundColor: Color.goldWeak },
-    hydrationChipText: { fontSize: 12, fontWeight: "600", color: Color.textSecondary },
-    hydrationChipTextPrimary: { color: Color.gold, fontWeight: "700" },
-    pressed: { opacity: 0.85 },
-    hydrationManualDivider: { height: 1, backgroundColor: Color.borderSubtle, marginTop: Spacing.md },
-    hydrationManualLabel: { fontSize: 11, color: Color.textFaint, marginTop: Spacing.sm, marginBottom: 4 },
-    hydrationManualRow: { flexDirection: "row", gap: Spacing.xs },
+    hydrationQuickAddRow: { flexDirection: "row", gap: 8, marginTop: 16 },
+    hydrationChip: { flex: 1, alignItems: "center", justifyContent: "center", minHeight: 44, borderRadius: AppRadius.control, backgroundColor: c.control },
+    // The recommended +500ml is the one solid pill.
+    hydrationChipPrimary: { backgroundColor: c.primary },
+    hydrationChipText: { fontSize: 15, fontWeight: "600", color: c.text },
+    hydrationChipTextPrimary: { color: c.onPrimary },
+    hydrationManualDivider: { height: StyleSheet.hairlineWidth, backgroundColor: c.hairline, marginTop: 16 },
+    hydrationManualLabel: { fontSize: 14, color: c.textMuted, marginTop: 12, marginBottom: 6 },
+    hydrationManualRow: { flexDirection: "row", gap: 8 },
     hydrationManualInput: {
       flex: 1,
-      height: 38,
-      borderRadius: Radius.md,
-      borderWidth: 1,
-      borderColor: Color.borderSubtle,
-      backgroundColor: Color.surface1,
-      paddingHorizontal: Spacing.sm,
-      fontSize: 12,
-      color: Color.textPrimary,
+      height: 46,
+      borderRadius: AppRadius.inner + 2,
+      backgroundColor: c.control,
+      paddingHorizontal: 14,
+      fontSize: 16,
+      color: c.text,
     },
-    hydrationManualButton: {
-      justifyContent: "center",
-      borderRadius: Radius.md,
-      borderWidth: 1,
-      borderColor: Color.goldBorder,
-      backgroundColor: Color.goldWeak,
-      paddingHorizontal: Spacing.md,
-    },
-    hydrationManualButtonDisabled: { opacity: 0.5 },
-    hydrationManualButtonText: { fontSize: 12, fontWeight: "700", color: Color.gold },
-    hydrationManualError: { fontSize: 11, color: Color.danger, marginTop: 6 },
-    moreRow: { flexDirection: "row", alignItems: "center", gap: Spacing.sm, padding: Spacing.md },
-    moreRowDivider: { borderTopWidth: 1, borderTopColor: Color.borderSubtle },
-    drinkCardIcon: {
-      width: 36,
-      height: 36,
-      borderRadius: Radius.md,
-      borderWidth: 1,
-      borderColor: Color.goldBorder,
-      backgroundColor: Color.goldWeak,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    drinkCardTitle: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
-    drinkCardSub: { fontSize: 11, color: Color.textMuted, marginTop: 2 },
-    chatCard: { padding: Spacing.md },
-    chatTitle: { fontSize: 15, fontWeight: "600", color: Color.textPrimary, marginBottom: Spacing.sm },
-    chatUnavailable: { fontSize: 12, color: Color.textMuted },
-    chatMessages: { minHeight: 60, marginBottom: Spacing.sm },
-    chatEmpty: { fontSize: 12, color: Color.textMuted, lineHeight: 17 },
-    bubble: { borderRadius: Radius.md, padding: Spacing.sm, marginBottom: Spacing.xs, maxWidth: "85%" },
-    bubbleUser: { alignSelf: "flex-end", backgroundColor: Color.goldWeak },
-    bubbleAssistant: { alignSelf: "flex-start", backgroundColor: Color.surface2 },
-    bubbleUserText: { fontSize: 13, color: Color.gold },
-    bubbleAssistantText: { fontSize: 13, color: Color.textSecondary, lineHeight: 18 },
-    showMoreText: { fontSize: 11, fontWeight: "700", color: Color.gold },
-    proposalBlock: { marginTop: Spacing.sm, paddingTop: Spacing.sm, borderTopWidth: 1, borderTopColor: Color.borderSubtle },
-    proposalSummary: { fontSize: 11, color: Color.textMuted },
-    applyButton: {
-      marginTop: Spacing.xs,
-      alignSelf: "flex-start",
-      borderRadius: Radius.md,
-      borderWidth: 1,
-      borderColor: Color.goldBorder,
-      backgroundColor: Color.goldWeak,
-      paddingHorizontal: Spacing.sm,
-      paddingVertical: 6,
-    },
-    applyButtonDisabled: { opacity: 0.7 },
-    applyButtonText: { fontSize: 12, fontWeight: "600", color: Color.gold },
-    error: { fontSize: 11, color: Color.danger, marginBottom: Spacing.xs },
-    chatInputRow: { flexDirection: "row", gap: Spacing.sm, alignItems: "flex-end" },
+    hydrationManualButton: { justifyContent: "center", borderRadius: AppRadius.control, backgroundColor: c.primary, paddingHorizontal: 20, minHeight: 46 },
+    hydrationManualButtonDisabled: { opacity: 0.4 },
+    hydrationManualButtonText: { fontSize: 15, fontWeight: "600", color: c.onPrimary },
+    hydrationManualError: { fontSize: 14, color: c.danger, marginTop: 6 },
+
+    // Emphasis
+    emphasisRow: { flexDirection: "row", gap: 14, padding: 16 },
+    emphasisIconWrap: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center" },
+    emphasisTitle: { fontSize: 16, fontWeight: "600", color: c.text },
+    emphasisText: { fontSize: 15, color: c.textSecondary, marginTop: 4, lineHeight: 21 },
+
+    // Coach chat
+    chatCard: { padding: 16 },
+    chatTitle: { fontSize: 18, fontWeight: "600", color: c.text, marginBottom: 10 },
+    chatUnavailable: { fontSize: 15, color: c.textMuted },
+    chatMessages: { minHeight: 60, marginBottom: 10 },
+    chatEmpty: { fontSize: 15, color: c.textMuted, lineHeight: 21 },
+    bubble: { borderRadius: 18, paddingHorizontal: 14, paddingVertical: 10, marginBottom: 8, maxWidth: "85%" },
+    bubbleUser: { alignSelf: "flex-end", backgroundColor: c.primary },
+    bubbleAssistant: { alignSelf: "flex-start", backgroundColor: c.control },
+    bubbleUserText: { fontSize: 15, color: c.onPrimary, lineHeight: 21 },
+    bubbleAssistantText: { fontSize: 15, color: c.text, lineHeight: 21 },
+    showMoreText: { fontSize: 14, fontWeight: "600", color: c.textSecondary, textDecorationLine: "underline" },
+    proposalBlock: { marginTop: 10, paddingTop: 10, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: c.hairline },
+    proposalSummary: { fontSize: 14, color: c.textSecondary },
+    applyButton: { marginTop: 8, alignSelf: "flex-start", borderRadius: AppRadius.control, backgroundColor: c.primary, paddingHorizontal: 16, minHeight: 40, justifyContent: "center" },
+    applyButtonDisabled: { opacity: 0.6 },
+    applyButtonText: { fontSize: 14, fontWeight: "600", color: c.onPrimary },
+    error: { fontSize: 14, color: c.danger, marginBottom: 8 },
+    chatInputRow: { flexDirection: "row", gap: 8, alignItems: "flex-end" },
     chatInput: {
       flex: 1,
-      borderRadius: Radius.md,
-      borderWidth: 1,
-      borderColor: Color.borderSubtle,
-      backgroundColor: Color.surface1,
-      color: Color.textPrimary,
-      paddingHorizontal: Spacing.sm,
-      paddingVertical: 10,
-      fontSize: 13,
-      maxHeight: 100,
+      borderRadius: 22,
+      backgroundColor: c.control,
+      color: c.text,
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      fontSize: 16,
+      maxHeight: 110,
     },
-    sendButton: { backgroundColor: Color.gold, borderRadius: Radius.md, paddingHorizontal: Spacing.md, paddingVertical: 12 },
-    sendButtonText: { fontSize: 12, fontWeight: "700", color: Color.goldForeground },
-    emphasisCard: { padding: 0 },
-    emphasisRow: { flexDirection: "row", gap: Spacing.sm, padding: Spacing.md },
-    emphasisDivider: { height: 1, backgroundColor: Color.borderSubtle, marginHorizontal: Spacing.md },
-    emphasisIconWrap: {
-      width: 32,
-      height: 32,
-      borderRadius: Radius.md,
-      borderWidth: 1,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    emphasisTitle: { fontSize: 14, fontWeight: "700", color: Color.textPrimary },
-    emphasisText: { fontSize: 12, color: Color.textMuted, marginTop: 4, lineHeight: 17 },
+    sendButton: { backgroundColor: c.primary, borderRadius: 22, width: 46, height: 46, alignItems: "center", justifyContent: "center" },
   })
 );

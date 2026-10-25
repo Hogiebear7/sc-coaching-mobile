@@ -237,12 +237,12 @@ export default function NutritionTargetsScreen() {
                     {d.calories !== null ? (
                       <>
                         <Text style={[styles.dayChipCalories, isToday && styles.dayChipTextToday]}>{d.calories}</Text>
-                        <Text style={styles.dayChipUnit}>kcal</Text>
+                        <Text style={[styles.dayChipUnit, isToday && styles.dayChipTextToday]}>kcal</Text>
                       </>
                     ) : (
-                      <Text style={styles.dayChipUnit}>—</Text>
+                      <Text style={[styles.dayChipUnit, isToday && styles.dayChipTextToday]}>—</Text>
                     )}
-                    {d.fuelDay ? <View style={[styles.dayChipDot, { backgroundColor: fuelDotColor(d.fuelDay) }]} /> : null}
+                    {d.fuelDay ? <View style={[styles.dayChipDot, { backgroundColor: isToday ? Color.goldForeground : fuelDotColor(d.fuelDay) }]} /> : null}
                   </Pressable>
                 );
               })}
@@ -303,10 +303,9 @@ const useStyles = makeLegacyStyles((Color) =>
     rationaleLine: { fontSize: 14, color: Color.textMuted, lineHeight: 20, marginTop: 4 },
     emptyText: { fontSize: 15, lineHeight: 21, color: Color.textMuted, textAlign: "center" },
     weekAvgText: { fontSize: 14, color: Color.textMuted, textAlign: "center", marginBottom: Spacing.md },
-    weekStrip: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.sm, justifyContent: "center" },
+    weekStrip: { flexDirection: "row", gap: 4 },
     dayChip: {
-      width: "13%",
-      minWidth: 44,
+      flex: 1,
       borderRadius: Radius.md,
       borderWidth: 1,
       borderColor: "transparent",

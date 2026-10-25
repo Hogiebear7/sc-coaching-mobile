@@ -367,7 +367,7 @@ const useStyles = makeLegacyStyles((Color) =>
     consentText: { flex: 1, fontSize: 12, color: Color.textSecondary, lineHeight: 17 },
     error: { fontSize: 12, color: Color.danger, marginTop: Spacing.sm },
     cameraWrap: { flex: 1, marginHorizontal: Spacing.lg, borderRadius: Radius.lg, overflow: "hidden", backgroundColor: Color.surface1 },
-    overlay: { ...StyleSheet.absoluteFill, backgroundColor: "rgba(10,21,38,0.85)", alignItems: "center", justifyContent: "center" },
+    overlay: { ...StyleSheet.absoluteFill, backgroundColor: `${Color.bg0}e6`, alignItems: "center", justifyContent: "center" },
     captureButton: {
       alignSelf: "center",
       width: 68,

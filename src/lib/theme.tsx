@@ -19,12 +19,10 @@ import { resolveScheme, type ColorScheme, type ThemePreference } from "@/lib/the
 // App theme (App v2). Components read colours from here instead of importing
 // a fixed palette, so a light theme is a palette swap rather than a rewrite.
 //
-// LIGHT_MODE_AVAILABLE stays false until every screen reads the palette
-// (Phase 2): until then a half-converted app in light mode would show dark
-// legacy screens next to light ones, so the resolved scheme is pinned to dark
-// and the Settings picker is hidden. The stored preference is still honoured
-// the moment the flag flips.
-export const LIGHT_MODE_AVAILABLE = false;
+// LIGHT_MODE_AVAILABLE gates the Settings picker; every screen now reads
+// the palette, so it is on. Members start on dark (the S&C look) and opt in
+// to Light or System from Settings → Preferences → Appearance.
+export const LIGHT_MODE_AVAILABLE = true;
 
 export type { ColorScheme, ThemePreference } from "@/lib/theme-scheme";
 
@@ -44,7 +42,7 @@ const DARK_VALUE: ThemeContextValue = {
   colors: DarkPalette,
   data: DataColor,
   legacy: Color,
-  preference: "system",
+  preference: "dark",
   setPreference: () => {},
 };
 
@@ -52,7 +50,7 @@ const ThemeContext = createContext<ThemeContextValue>(DARK_VALUE);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const system = useColorScheme();
-  const [preference, setPreferenceState] = useState<ThemePreference>("system");
+  const [preference, setPreferenceState] = useState<ThemePreference>("dark");
 
   useEffect(() => {
     AsyncStorage.getItem(STORAGE_KEY)

@@ -291,3 +291,24 @@ icons are theirs. Draw our own if we use the ideas.
   coach's plan comes first. A self-built flow is only for app-only members,
   if ever.
 - Copying their muscle-map illustrations or exercise photography.
+
+---
+
+## 8. Artwork inventory, for later inspiration (added 25 Oct 2026)
+
+These are notes on the *kinds* of artwork both MacroFactor apps use, so we
+can commission or draw our own in the S&C style later. Do not copy, trace
+or extract any of these assets.
+
+| Artwork | Where it appears | Style | S&C idea |
+|---|---|---|---|
+| **Flat food illustrations** | Nutrition: food log favourites and recents, quick-add chips | Small (~32dp) full-colour flat icons, one per food type (tomato, cherries, burger, egg, pasta), no outlines | A small set of our own food-group icons (protein, carbs, veg, fruit, dairy, drinks, snacks) in our data colours. We already have `food-icons.ts` as a fallback tier |
+| **Body-fat silhouettes** | Nutrition onboarding (3×3 grid, 3–4% up to 40%+) | Flat grey torsos with simple darker line work for muscle definition, a selected state with a white border and a check chip | Only if we add a body-fat question. Simple neutral silhouettes in navy tones, both sexes |
+| **Muscle-map body (front and back)** | Workouts: workout-complete hero, Levels tab, muscle-focus rows, target-muscle cards | Flat grey segmented anatomy with highlighted muscles in a single blue, plus small cropped thumbnails per muscle | We already have `BodyDiagram`, `MuscleMap` and `MuscleSetLevels`. Restyle them to a single highlight hue and add cropped per-muscle thumbnails |
+| **Exercise photos** | Workouts: preview rows, logger thumbnail strip | Real photos of one model on a light-grey studio backdrop, the same framing for every exercise | Our own consistent exercise shots or short loops, filmed in the S&C gym against one plain wall |
+| **Monochrome glyph icons** | Both: option cards (sex, activity, diet type, training type, protein level, gym type), More lists, shortcuts | Solid white glyphs, ~28dp, chunky and friendly, one per option | A consistent solid icon set. Ionicons filled covers most; commission a few sport-specific ones (sled, kettlebell, rower) |
+| **Coloured data blocks** | Nutrition: the 7-day macro column chart and pills | Rounded colour blocks with the value inside (blue kcal, coral P, yellow F, green C) | Our weekly plan view: one block per day, coloured by session type |
+| **Planet/orbit animation** | Nutrition: "building your program" moment | Three coloured planets on thin orbit rings, in the data colours | A short, branded loading moment: rings in our readiness colours, under ~1.5s |
+| **Phone mock-ups** | Both: feature tour carousels | A real screen inside a thin device frame, under a huge wide-caps headline | Our App Store screenshots and the first-run tour |
+| **Achievement chips** | Workouts: PR cards (trophy and star badge icons) | Outlined cards with an icon, value, "New!" tag and record type | PB cards in workout summary. Gold is fine here as a celebration colour |
+| **Wordmark** | Both: wide geometric caps (MF monogram) | Custom wide display face for titles | We keep Teko and our own mark. Their wide-caps titling is the reason the screens feel branded |

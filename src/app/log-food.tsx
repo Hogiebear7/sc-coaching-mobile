@@ -23,7 +23,7 @@ import {
   type FoodDomain,
   type FoodRecord,
 } from "@/lib/queries/food-catalog";
-import { tapFeedback } from "@/lib/haptics";
+import { selectionFeedback, tapFeedback } from "@/lib/haptics";
 import { hasAccess } from "@/lib/member-access";
 import { useAddFoodFavorite, useFoodFavorites, useRemoveFoodFavorite, type FoodFavorite } from "@/lib/queries/food-favorites";
 import { MEAL_TYPE_OPTIONS, useCreateFoodEntry, useRecentFoods, type MealType } from "@/lib/queries/nutrition-diary";
@@ -66,7 +66,7 @@ function FoodResultRow({ food, onPress }: { food: FoodRecord; onPress: () => voi
   const styles = useStyles();
   const Color = useLegacyColors();
   return (
-    <Pressable onPress={onPress} style={styles.resultRow}>
+    <Pressable onPress={onPress} style={({ pressed }) => [styles.resultRow, pressed && { opacity: 0.8 }]} accessibilityRole="button" accessibilityLabel={`Add ${food.name}`}>
       <FoodResultThumb food={food} />
       <View style={{ flex: 1 }}>
         <Text style={styles.resultName} numberOfLines={1}>
@@ -77,7 +77,7 @@ function FoodResultRow({ food, onPress }: { food: FoodRecord; onPress: () => voi
           {food.domain === "branded" && !food.verified ? " · unverified" : ""}
         </Text>
       </View>
-      <Ionicons name="add-circle-outline" size={20} color={Color.gold} />
+      <Ionicons name="add-circle" size={26} color={Color.textPrimary} />
     </Pressable>
   );
 }
@@ -414,7 +414,7 @@ export default function LogFoodScreen() {
           <Text style={styles.fieldLabel}>Meal</Text>
           <View style={styles.mealRow}>
             {MEAL_TYPE_OPTIONS.map((opt) => (
-              <Pressable key={opt.value} onPress={() => setMealType(opt.value)} style={[styles.mealChip, mealType === opt.value && styles.mealChipActive]}>
+              <Pressable key={opt.value} onPress={() => { if (mealType !== opt.value) selectionFeedback(); setMealType(opt.value); }} style={[styles.mealChip, mealType === opt.value && styles.mealChipActive]} accessibilityRole="radio" accessibilityState={{ selected: mealType === opt.value }}>
                 <Text style={[styles.mealChipText, mealType === opt.value && styles.mealChipTextActive]}>{opt.label}</Text>
               </Pressable>
             ))}
@@ -424,7 +424,7 @@ export default function LogFoodScreen() {
             <>
               <Text style={[styles.fieldLabel, { marginTop: Spacing.md }]}>Search foods</Text>
               <View style={styles.searchRow}>
-                <Ionicons name="search-outline" size={16} color={Color.textFaint} />
+                <Ionicons name="search" size={20} color={Color.textMuted} />
                 <TextInput
                   value={query}
                   onChangeText={(v) => {
@@ -455,21 +455,21 @@ export default function LogFoodScreen() {
                   onPress={() => router.push({ pathname: "/describe-food", params: { date, mealType } })}
                   style={styles.methodChip}
                 >
-                  <Ionicons name="chatbubble-ellipses-outline" size={17} color={Color.gold} />
+                  <Ionicons name="sparkles-outline" size={20} color={Color.gold} />
                   <Text style={styles.methodChipText}>Describe</Text>
                 </Pressable>
                 <Pressable
                   onPress={() => router.push({ pathname: "/label-scan", params: { date, mealType } })}
                   style={[styles.methodChip, styles.methodChipPrimary]}
                 >
-                  <Ionicons name="camera-outline" size={17} color={Color.goldForeground} />
+                  <Ionicons name="camera-outline" size={20} color={Color.goldForeground} />
                   <Text style={[styles.methodChipText, styles.methodChipTextPrimary]}>Photo</Text>
                 </Pressable>
                 <Pressable
                   onPress={() => router.push({ pathname: "/barcode-scan", params: { date, mealType } })}
                   style={styles.methodChip}
                 >
-                  <Ionicons name="barcode-outline" size={17} color={Color.gold} />
+                  <Ionicons name="barcode-outline" size={20} color={Color.gold} />
                   <Text style={styles.methodChipText}>Barcode</Text>
                 </Pressable>
               </View>
@@ -495,7 +495,7 @@ export default function LogFoodScreen() {
                   if (items.length === 0) return null;
                   return (
                     <View key={group.key} style={styles.resultGroup}>
-                      <Text style={styles.resultGroupLabel}>{group.label.toUpperCase()}</Text>
+                      <Text style={styles.resultGroupLabel}>{group.label}</Text>
                       {items.map((food) => (
                         <FoodResultRow key={food.id} food={food} onPress={() => selectSearchResult(food)} />
                       ))}
@@ -803,37 +803,33 @@ const useStyles = makeLegacyStyles((Color) =>
     headerTitle: { fontSize: 20, fontWeight: "600", color: Color.textPrimary, flexShrink: 1, textAlign: "center" },
     scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
     fieldLabel: { fontSize: 14, fontWeight: "500", color: Color.textSecondary, marginBottom: 6 },
-    mealRow: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
-    mealChip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.md, paddingVertical: 8 },
-    mealChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
-    mealChipText: { fontSize: 14, fontWeight: "600", color: Color.textMuted },
-    mealChipTextActive: { color: Color.gold },
+    mealRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+    mealChip: { borderRadius: Radius.pill, backgroundColor: Color.surface1, paddingHorizontal: 16, minHeight: 40, justifyContent: "center" },
+    mealChipActive: { backgroundColor: Color.gold },
+    mealChipText: { fontSize: 15, fontWeight: "600", color: Color.textSecondary },
+    mealChipTextActive: { color: Color.goldForeground },
     searchRow: {
       flexDirection: "row",
       alignItems: "center",
       gap: Spacing.sm,
-      paddingHorizontal: Spacing.md,
-      height: 44,
-      borderRadius: Radius.md,
-      borderWidth: 1,
-      borderColor: Color.borderSubtle,
-      backgroundColor: Color.surface1,
+      paddingHorizontal: 16,
+      height: 50,
+      borderRadius: Radius.pill,
+      backgroundColor: Color.surface2,
     },
-    searchInput: { flex: 1, color: Color.textPrimary, fontSize: 14 },
-    methodsRow: { flexDirection: "row", gap: Spacing.xs, marginTop: Spacing.sm },
+    searchInput: { flex: 1, color: Color.textPrimary, fontSize: 16 },
+    methodsRow: { flexDirection: "row", gap: 8, marginTop: 12 },
     methodChip: {
       flex: 1,
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "center",
       gap: 6,
-      height: 44,
-      borderRadius: Radius.md,
-      borderWidth: 1,
-      borderColor: Color.goldBorder,
-      backgroundColor: Color.goldWeak,
+      height: 48,
+      borderRadius: Radius.pill,
+      backgroundColor: Color.surface1,
     },
-    methodChipText: { fontSize: 13, fontWeight: "700", color: Color.gold },
+    methodChipText: { fontSize: 15, fontWeight: "600", color: Color.gold },
     // Photo's primary treatment — same solid-fill language as the main CTA,
     // border kept (Button's own primary variant keeps its border over the
     // fill too) so it doesn't look like a different component, just the
@@ -866,14 +862,15 @@ const useStyles = makeLegacyStyles((Color) =>
     resultRow: {
       flexDirection: "row",
       alignItems: "center",
-      gap: Spacing.sm,
+      gap: 12,
+      minHeight: 60,
       paddingVertical: 8,
       borderTopWidth: 1,
       borderTopColor: Color.borderSubtle,
     },
-    resultName: { fontSize: 13, fontWeight: "600", color: Color.textPrimary },
+    resultName: { fontSize: 16, fontWeight: "500", color: Color.textPrimary },
     resultSub: { fontSize: 13, color: Color.textMuted, marginTop: 2 },
-    resultThumb: { width: 36, height: 36, borderRadius: Radius.pill, backgroundColor: Color.surface2 },
+    resultThumb: { width: 42, height: 42, borderRadius: Radius.pill, backgroundColor: Color.surface2 },
     resultIconTile: {
       width: 36,
       height: 36,

@@ -1,35 +1,18 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
-import { Image, type ImageStyle } from "expo-image";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
-import {
-  ActivityIndicator,
-  Modal,
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { ActivityIndicator, Modal, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { BrandMark } from "@/components/ui/BrandMark";
+import { MetricTile, PillButton, RoundIconButton, SectionTitle, TileGrid, WeekStrip } from "@/components/app/primitives";
 import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
 import { ContinueWorkoutPill } from "@/components/ui/ContinueWorkoutPill";
-import { EmptyState } from "@/components/ui/EmptyState";
-import { InfoModal } from "@/components/ui/InfoModal";
-import { ReadinessRing } from "@/components/ui/ReadinessRing";
-import { ReadinessSparkline } from "@/components/ui/ReadinessSparkline";
-import { SectionHeader } from "@/components/ui/SectionHeader";
-import { StatCard } from "@/components/ui/StatCard";
-import { UpsellRow } from "@/components/ui/Upsell";
-import { Color, headline, Radius, Spacing } from "@/constants/theme";
+import { AppColor, AppRadius, AppSpace, appTitle, Color, DataColor, figure, Radius, readinessColor, Spacing } from "@/constants/theme";
 import { useAuth } from "@/lib/auth-context";
-import { hasAccess, isMembershipTier } from "@/lib/member-access";
+import { hasAccess } from "@/lib/member-access";
 import { POST_SIGNUP_SETUP_KEY_PREFIX } from "@/lib/post-signup-setup";
+import { useBodyWeightLogs } from "@/lib/queries/body-weight";
 import { useCommunityHighlight } from "@/lib/queries/community";
 import { useDashboard } from "@/lib/queries/dashboard";
 import { useNotifications } from "@/lib/queries/notifications";
@@ -140,15 +123,38 @@ function formatClassDate(dateISO: string): string {
   return d.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" });
 }
 
+// Last 7 days of the 14-day readiness trend, labelled from todayISO.
+function lastSevenDays(todayISO: string, trend: (number | null)[]) {
+  const [y, m, d] = todayISO.split("-").map(Number);
+  const today = new Date(y, (m ?? 1) - 1, d ?? 1);
+  const recent = trend.slice(-7);
+  while (recent.length < 7) recent.unshift(null);
+  return recent.map((score, i) => {
+    const day = new Date(today);
+    day.setDate(today.getDate() - (6 - i));
+    return {
+      letter: day.toLocaleDateString(undefined, { weekday: "narrow" }),
+      date: day.getDate(),
+      score,
+      isToday: i === 6,
+    };
+  });
+}
+
+// Home (App v2 prototype, docs/design-inspiration-macrofactor-2026-10.md):
+// a screen title with round inbox buttons, a lighter top band holding the
+// week's readiness strip and today's single next action, then uniform metric
+// tiles grouped by topic, then the club as list rows. Colour lives on data
+// only; the one primary action is white.
 export default function DashboardScreen() {
   const router = useRouter();
   const { data, isLoading, isError, refetch, isRefetching } = useDashboard();
   const { data: communityHighlight } = useCommunityHighlight();
   const { data: notifications } = useNotifications();
+  const { data: weights } = useBodyWeightLogs();
   const unreadCount = notifications?.filter((n) => n.readAt === null).length ?? 0;
   const { data: profile } = useProfile();
   const memberTier = profile?.memberTier ?? "free";
-  const [infoModal, setInfoModal] = useState<"load" | "sleep" | null>(null);
 
   const onRefresh = useCallback(() => {
     refetch();
@@ -158,7 +164,7 @@ export default function DashboardScreen() {
     return (
       <SafeAreaView style={styles.safe}>
         <View style={styles.centerFill}>
-          <ActivityIndicator color={Color.gold} size="large" />
+          <ActivityIndicator color={AppColor.text} size="large" />
         </View>
       </SafeAreaView>
     );
@@ -169,412 +175,226 @@ export default function DashboardScreen() {
       <SafeAreaView style={styles.safe}>
         <View style={styles.centerFill}>
           <Text style={styles.errorText}>Couldn&apos;t load your dashboard.</Text>
-          <Button title="Retry" onPress={() => refetch()} variant="secondary" style={{ marginTop: Spacing.md }} />
+          <PillButton title="Try again" onPress={() => refetch()} variant="secondary" style={{ marginTop: 16 }} />
         </View>
       </SafeAreaView>
     );
   }
 
   const readiness = data.readiness;
+  const week = lastSevenDays(data.todayISO, readiness.trend);
+  const recentWeights = [...(weights ?? [])].sort((a, b) => a.date.localeCompare(b.date)).slice(-7);
+  const latestWeight = recentWeights[recentWeights.length - 1]?.weightKg ?? null;
+
+  const todayAction =
+    readiness.today === null
+      ? { label: "Log today's check-in", href: "/(tabs)/recovery" }
+      : { label: "Plan today's session", href: "/(tabs)/workouts" };
 
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
       <ScrollView
         contentContainerStyle={styles.scroll}
-        refreshControl={
-          <RefreshControl refreshing={isRefetching} onRefresh={onRefresh} tintColor={Color.gold} />
-        }
+        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={onRefresh} tintColor={AppColor.text} />}
       >
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.headerRow}>
-            <BrandMark height={22} style={styles.headerLogo} />
+        {/* Top band: title, inbox buttons, the week, today's one action */}
+        <View style={styles.band}>
+          <View style={styles.titleRow}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.eyebrow}>{formatTodayLabel().toUpperCase()}</Text>
-              <Text style={styles.greeting} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
+              <Text style={styles.dateLine}>{formatTodayLabel()}</Text>
+              <Text style={appTitle(38)} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
                 {greetingPrefix()} {data.firstName}
               </Text>
             </View>
-            <View style={styles.headerActions}>
-              <Pressable
+            <View style={styles.titleActions}>
+              <RoundIconButton
+                icon="notifications-outline"
+                label={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : "Notifications"}
+                badge={unreadCount > 0 ? (unreadCount > 9 ? "9+" : String(unreadCount)) : null}
                 onPress={() => router.push("/notifications")}
-                hitSlop={8}
-                style={styles.bellWrap}
-              >
-                <Ionicons name="notifications-outline" size={22} color={Color.textMuted} />
-                {unreadCount > 0 ? (
-                  <View style={styles.bellBadge}>
-                    <Text style={styles.bellBadgeText}>{unreadCount > 9 ? "9+" : unreadCount}</Text>
-                  </View>
-                ) : null}
-              </Pressable>
-              <Pressable onPress={() => router.push("/profile")} hitSlop={8}>
-                {profile?.avatarDataUrl ? (
-                  <Image source={{ uri: profile.avatarDataUrl }} style={styles.avatarThumb as ImageStyle} contentFit="cover" />
-                ) : (
-                  <Ionicons name="person-circle-outline" size={24} color={Color.textMuted} />
-                )}
-              </Pressable>
+              />
+              <RoundIconButton icon="chatbubble-ellipses-outline" label="Messages" onPress={() => router.push("/messages")} />
             </View>
           </View>
-          {/* Own row, right-aligned under the bell/avatar — sharing the top
-              row with the greeting squeezed the name's available width
-              (and wrapped it) whenever a workout was in progress. Renders
-              nothing itself when there's no active draft. */}
           <View style={styles.continueRow}>
             <ContinueWorkoutPill />
           </View>
-          <Text style={styles.subGreeting}>Ready when you are.</Text>
+
+          <WeekStrip days={week} />
+
+          <View style={styles.todayRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.todayLabel}>Readiness today</Text>
+              <Text style={styles.todayStatus}>
+                {readiness.today !== null ? (
+                  <>
+                    <Text style={{ color: readinessColor(readiness.today) }}>{readiness.today}</Text>
+                    {"  "}
+                    {readiness.status}
+                  </>
+                ) : (
+                  "No check-in yet"
+                )}
+              </Text>
+              <Text style={styles.todayGuidance} numberOfLines={3}>
+                {readiness.today !== null
+                  ? readiness.guidance
+                  : "Sleep, soreness and fatigue give you a score and today's guidance."}
+              </Text>
+            </View>
+          </View>
+          <PillButton title={todayAction.label} onPress={() => router.push(todayAction.href as never)} />
         </View>
 
-        {/* Top-of-Home is tier-aware by job-to-be-done, not just by
-            entitlement: a real membership member's job here is "when's my
-            next session" — booking stays prominent, unchanged. An App
-            Subscription member never books through this app at all, so the
-            same slot becomes their actual daily job, training. A free
-            member's job is deciding whether to become one of the above —
-            handled as one calm card, Tier 2 (app-only, the broadly
-            relevant path for non-local members) framed as the primary next
-            step and Tier 1 membership as a quieter secondary link, never
-            two equally-loud CTAs. */}
-        {memberTier === "membership" ? (
-          <View style={styles.section}>
-            <SectionHeader
-              label="NEXT SESSION"
-              right={
-                data.hasMonthPasses ? (
-                  <View style={styles.chip}>
-                    <Text style={styles.chipText}>
-                      {data.monthPassesRemaining === null
-                        ? "Unlimited classes"
-                        : `${data.monthPassesRemaining} left this month`}
-                    </Text>
-                  </View>
-                ) : undefined
-              }
-            />
-            <Card style={styles.nextSessionCard}>
-              {data.nextSession ? (
-                <View style={styles.nextSessionRow}>
-                  <View style={styles.nextSessionTime}>
-                    <Text style={styles.nextSessionTimeText}>
-                      {data.nextSession.startTime.split(":")[0]}
-                    </Text>
-                    <Text style={styles.nextSessionTimeSub}>:{data.nextSession.startTime.split(":")[1]}</Text>
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.nextSessionTitle}>{data.nextSession.title}</Text>
-                    <Text style={styles.nextSessionMeta}>
-                      {formatClassDate(data.nextSession.date)} · {data.nextSession.durationMins} min
-                    </Text>
-                  </View>
-                </View>
-              ) : (
-                <EmptyState
-                  icon="calendar-outline"
-                  title="No session booked yet"
-                  body="Book your next session to keep your training on track."
-                  actionLabel="Book next session"
-                  onAction={() => router.push("/(tabs)/schedule")}
-                  variant="primary"
-                />
-              )}
-            </Card>
-          </View>
-        ) : memberTier === "app_subscription" ? (
-          <View style={styles.section}>
-            <SectionHeader label="TODAY" />
-            <Card style={styles.nextSessionCard}>
-              <Pressable onPress={() => router.push("/(tabs)/workouts")} style={styles.nextSessionRow}>
-                <View style={styles.nextSessionTime}>
-                  <Ionicons name="flash-outline" size={22} color={Color.gold} />
+        {/* Up next — tier-aware, same job logic as before */}
+        <View style={styles.section}>
+          <SectionTitle
+            title="Up next"
+            action={memberTier === "membership" ? "Schedule" : undefined}
+            onAction={() => router.push("/(tabs)/schedule")}
+          />
+          {memberTier === "membership" ? (
+            data.nextSession ? (
+              <Pressable onPress={() => router.push("/(tabs)/schedule")} style={styles.nextCard} accessibilityRole="button">
+                <View style={styles.nextTime}>
+                  <Text style={styles.nextDay}>{formatClassDate(data.nextSession.date)}</Text>
+                  <Text style={styles.nextClock}>{data.nextSession.startTime}</Text>
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.nextSessionTitle}>Today&apos;s workout</Text>
-                  <Text style={styles.nextSessionMeta} numberOfLines={1}>
-                    {data.quickActions.programmeEnabled && data.quickActions.programmeTitle
-                      ? data.quickActions.programmeTitle
-                      : "Log & review sessions"}
+                  <Text style={styles.nextTitle} numberOfLines={1}>{data.nextSession.title}</Text>
+                  <Text style={styles.nextMeta}>
+                    {data.nextSession.durationMins} min
+                    {data.hasMonthPasses
+                      ? ` · ${data.monthPassesRemaining === null ? "Unlimited" : `${data.monthPassesRemaining} left`} this month`
+                      : ""}
                   </Text>
                 </View>
-                <Ionicons name="chevron-forward" size={18} color={Color.textFaint} />
+                <Ionicons name="chevron-forward" size={18} color={AppColor.textMuted} />
               </Pressable>
-            </Card>
-          </View>
-        ) : (
-          <View style={styles.section}>
-            <SectionHeader label="YOUR ACCESS" />
-            <Card style={styles.freeCard}>
-              <View style={styles.freeCardIcon}>
-                <Ionicons name="location-outline" size={18} color={Color.gold} />
-              </View>
-              <Text style={styles.freeCardTitle}>Find a coach near you</Text>
-              <Text style={styles.freeCardBody}>
-                Search nearby gyms and coaches — or unlock digital coaching from S&C, wherever you train.
-              </Text>
-              <Button title="Find a coach" onPress={() => router.push("/find-a-coach" as never)} style={{ marginTop: Spacing.md }} />
-              <Pressable onPress={() => router.push("/membership")} hitSlop={8} style={styles.freeCardSecondary}>
-                <Text style={styles.freeCardSecondaryText}>Or see S&C&apos;s app plans</Text>
-              </Pressable>
-            </Card>
-          </View>
-        )}
-
-        {/* Readiness — the one dominant module on Home: hero surface tier,
-            a bigger ring, and (when there's no check-in yet) a real action
-            instead of a dead-end line of text. */}
-        <View style={styles.section}>
-          <SectionHeader label="READINESS" />
-          <Card style={styles.readinessCard} tier="hero">
-            {readiness.today !== null ? (
-              <>
-                <View style={styles.readinessRow}>
-                  <ReadinessRing score={readiness.today} size={88} />
-                  <View style={styles.readinessTextWrap}>
-                    <View style={styles.readinessStatusRow}>
-                      <Text style={styles.readinessStatus}>{readiness.status}</Text>
-                      {readiness.delta !== null && readiness.delta !== 0 && (
-                        <View
-                          style={[
-                            styles.deltaChip,
-                            { borderColor: readiness.delta > 0 ? Color.success : Color.warning },
-                          ]}
-                        >
-                          <Ionicons
-                            name={readiness.delta > 0 ? "arrow-up" : "arrow-down"}
-                            size={9}
-                            color={readiness.delta > 0 ? Color.success : Color.warning}
-                          />
-                          <Text
-                            style={[
-                              styles.deltaText,
-                              { color: readiness.delta > 0 ? Color.success : Color.warning },
-                            ]}
-                          >
-                            {Math.abs(readiness.delta)}
-                          </Text>
-                        </View>
-                      )}
-                    </View>
-                    <Text style={styles.readinessGuidance}>{readiness.guidance}</Text>
-                    {readiness.phaseNote ? (
-                      <Text style={styles.readinessGuidance}>{readiness.phaseNote}</Text>
-                    ) : null}
-                    {readiness.pregnancyNote ? (
-                      <Text style={styles.readinessGuidance}>{readiness.pregnancyNote}</Text>
-                    ) : null}
-                  </View>
-                </View>
-
-                {readiness.hasTrend ? (
-                  <View style={styles.trendRow}>
-                    <ReadinessSparkline series={readiness.trend} />
-                    <Text style={styles.trendLabel}>Readiness · 14d trend</Text>
-                  </View>
-                ) : null}
-              </>
             ) : (
-              <EmptyState
-                icon="heart-outline"
-                title="No check-in yet"
-                body="Log today's recovery to get a readiness score and session guidance."
-                actionLabel="Log check-in"
-                onAction={() => router.push("/(tabs)/recovery")}
-                variant="primary"
-              />
-            )}
-          </Card>
-
-          <View style={styles.kpiRow}>
-            <StatCard
-              label="7-Day Load"
-              value={data.kpis.sevenDaySum > 0 ? String(data.kpis.sevenDaySum) : "—"}
-              subtext={data.kpis.daysWithLoad > 0 ? data.kpis.loadBandLabel : "log a workout or check-in"}
-              onInfoPress={() => setInfoModal("load")}
-            />
-            <StatCard
-              label="Sleep"
-              value={data.kpis.sleepHours != null ? String(data.kpis.sleepHours) : "—"}
-              unit={data.kpis.sleepHours != null ? "h" : undefined}
-              subtext={data.kpis.sleepQuality != null ? `quality ${data.kpis.sleepQuality}/5` : "last check-in"}
-              onInfoPress={() => setInfoModal("sleep")}
-            />
-            <StatCard label="Sessions" value={String(data.kpis.sessionsLast7)} subtext="7 days" />
-          </View>
-        </View>
-
-        <InfoModal
-          visible={infoModal === "load"}
-          onClose={() => setInfoModal(null)}
-          title="7-Day Load"
-          body={
-            "Training duration × RPE, added up over a rolling 7-day window ending today. Pulled from your logged " +
-            "workouts (duration and how-did-that-feel RPE), or your recovery check-in's own numbers if you filled " +
-            "those in instead. Days you don't log anything simply add nothing — a quiet week, a rest day, or a " +
-            "brand-new account all show a lower number rather than a broken one. It resets naturally as old days " +
-            "roll out of the window, so you're always seeing your most recent week, not a running total.\n\n" +
-            "Where you land:\n" +
-            "· Under 1,000 — Light. A couple of easy sessions or a deload week.\n" +
-            "· 1,000–2,399 — Moderate. A normal, sustainable training week.\n" +
-            "· 2,400+ — High. Roughly five hard hour-long sessions — a big week.\n\n" +
-            "A high number isn't automatically a bad thing — it just means you've accumulated a lot of work. What " +
-            "matters is how it sits against your readiness: a high load paired with low readiness is the combination " +
-            "the app watches for and trims your next session down for, since that's when the injury/burnout risk " +
-            "actually shows up."
-          }
-        />
-        <InfoModal
-          visible={infoModal === "sleep"}
-          onClose={() => setInfoModal(null)}
-          title="Sleep"
-          body="Your most recent recovery check-in's sleep hours and quality rating. Log a check-in on the Recovery tab any morning to update it — it always shows your latest entry, not an average."
-        />
-
-        {/* Nutrition */}
-        <View style={styles.section}>
-          <SectionHeader label="NUTRITION" />
-          <Card>
-            <Pressable onPress={() => router.push("/(tabs)/nutrition")} style={styles.rowCard}>
-              <View style={styles.rowCardIcon}>
-                <Ionicons name="nutrition-outline" size={20} color={Color.gold} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.rowCardTitle}>Fuel today&apos;s training</Text>
-                <Text style={styles.rowCardSub}>
-                  {data.nutrition.dietaryPreference
-                    ? `${data.nutrition.dietaryPreference[0].toUpperCase()}${data.nutrition.dietaryPreference.slice(1)} · log meals & hydration`
-                    : "Log meals & hydration"}
-                </Text>
-              </View>
-              <Ionicons name="chevron-forward" size={18} color={Color.textFaint} />
-            </Pressable>
-          </Card>
-        </View>
-
-        {/* Club — lower-priority utility info relative to Readiness/Next
-            Session/Nutrition above, so it gets the quiet tier rather than
-            competing at the same visual weight as everything else. */}
-        <View style={styles.section}>
-          <SectionHeader label="YOUR CLUB" />
-          <Card tier="quiet">
-            <Pressable onPress={() => router.push("/membership")} style={[styles.rowCard, styles.rowCardDivider]}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.rowCardLabel}>MEMBERSHIP</Text>
-                <Text style={styles.rowCardTitle}>{data.club.planName ?? "No active plan"}</Text>
-                {data.club.remainingSessionsLabel ? (
-                  <Text style={styles.rowCardSub}>{data.club.remainingSessionsLabel}</Text>
-                ) : !data.club.hasSubscription ? (
-                  <Text style={styles.rowCardSub}>Choose a plan to start booking sessions</Text>
-                ) : null}
-              </View>
-              <View
-                style={[
-                  styles.statusChip,
-                  data.club.needsAttention && { borderColor: Color.danger, backgroundColor: Color.dangerWeak },
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.statusChipText,
-                    data.club.needsAttention && { color: Color.danger },
-                  ]}
-                >
-                  {!data.club.hasSubscription ? "Get started" : data.club.statusLabel}
-                </Text>
-              </View>
-            </Pressable>
-            {isMembershipTier(memberTier) ? (
-              <Pressable onPress={() => router.push("/messages")} style={[styles.rowCard, styles.rowCardDivider]}>
-                <View style={styles.rowCardIcon}>
-                  <Ionicons name="chatbubble-ellipses-outline" size={18} color={Color.gold} />
-                </View>
+              <View style={styles.nextCard}>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.rowCardTitle}>Coach</Text>
-                  <Text style={styles.rowCardSub}>Message your coach</Text>
+                  <Text style={styles.nextTitle}>Nothing booked</Text>
+                  <Text style={styles.nextMeta}>Book your next class in a couple of taps.</Text>
                 </View>
-                <Ionicons name="chevron-forward" size={18} color={Color.textFaint} />
-              </Pressable>
-            ) : (
-              <UpsellRow icon="chatbubble-ellipses-outline" title="Coach" copyVariant="membership" />
-            )}
-            <Pressable
-              onPress={() => router.push({ pathname: "/workout-library", params: { tab: "exercises" } })}
-              style={[styles.rowCard, styles.rowCardDivider]}
-            >
-              <View style={styles.rowCardIcon}>
-                <Ionicons name="body-outline" size={18} color={Color.gold} />
+                <PillButton title="Book" variant="secondary" onPress={() => router.push("/(tabs)/schedule")} />
               </View>
+            )
+          ) : memberTier === "app_subscription" ? (
+            <Pressable onPress={() => router.push("/(tabs)/workouts")} style={styles.nextCard} accessibilityRole="button">
               <View style={{ flex: 1 }}>
-                <Text style={styles.rowCardTitle}>Library</Text>
-                <Text style={styles.rowCardSub}>Exercises, demonstrations & your saved workouts</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={18} color={Color.textFaint} />
-            </Pressable>
-            {/* Community — one quiet pointer, never a feed preview. Always
-                opens the Community hub itself now, not whatever specific
-                win/leaderboard spot the highlight points at — tapping a
-                row titled "View your community" landing on a single
-                stranger's workout page read as broken, not personalized.
-                The highlight (when there is one) still shows, just as the
-                smaller second line, so the nudge survives without being
-                the thing you tap into. Sits last, lowest-priority row on
-                Home — see the Community entry-point plan for why this
-                isn't a bottom tab. */}
-            <Pressable onPress={() => router.push("/community")} style={styles.rowCard}>
-              <View style={styles.rowCardIcon}>
-                <Ionicons name="people-outline" size={18} color={Color.gold} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.rowCardTitle} numberOfLines={1}>
-                  View your community
-                </Text>
-                <Text style={styles.rowCardSub} numberOfLines={1}>
-                  {communityHighlight?.text ?? "See member wins and leaderboards"}
-                </Text>
-              </View>
-              <Ionicons name="chevron-forward" size={18} color={Color.textFaint} />
-            </Pressable>
-          </Card>
-        </View>
-
-        {/* Quick actions — these used to be two identical cards with the
-            same gold icon, same size, same weight, so nothing told you
-            which one mattered more. Today's workout is the genuinely
-            high-frequency action during a training day, so it gets the
-            accent top-border (the one place on Home that signal is worth
-            spending) and a bigger icon; View profile drops to a quiet,
-            un-accented row underneath rather than competing for the same
-            attention. */}
-        <View style={styles.section}>
-          <SectionHeader label="QUICK ACTIONS" />
-          <Card accent style={styles.primaryActionCard}>
-            <Pressable onPress={() => router.push("/(tabs)/workouts")} style={styles.primaryActionInner}>
-              <View style={styles.primaryActionIcon}>
-                <Ionicons name="flash-outline" size={22} color={Color.gold} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.primaryActionTitle}>Today&apos;s workout</Text>
-                <Text style={styles.primaryActionSub} numberOfLines={1}>
+                <Text style={styles.nextTitle}>Today&apos;s workout</Text>
+                <Text style={styles.nextMeta} numberOfLines={1}>
                   {data.quickActions.programmeEnabled && data.quickActions.programmeTitle
                     ? data.quickActions.programmeTitle
-                    : "Log & review sessions"}
+                    : "Log and review sessions"}
                 </Text>
               </View>
-              <Ionicons name="chevron-forward" size={18} color={Color.textFaint} />
+              <Ionicons name="chevron-forward" size={18} color={AppColor.textMuted} />
             </Pressable>
-          </Card>
-          <Card tier="quiet">
-            <Pressable onPress={() => router.push("/profile")} style={styles.rowCard}>
-              <Ionicons name="person-outline" size={18} color={Color.textMuted} />
+          ) : (
+            <View style={styles.nextCard}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.rowCardTitle}>View profile</Text>
-                <Text style={styles.rowCardSub} numberOfLines={1}>
-                  {data.quickActions.primaryGoal ?? "Goals & intake"}
-                </Text>
+                <Text style={styles.nextTitle}>Find a coach near you</Text>
+                <Text style={styles.nextMeta}>Or unlock digital coaching from S&amp;C.</Text>
               </View>
-              <Ionicons name="chevron-forward" size={18} color={Color.textFaint} />
-            </Pressable>
-          </Card>
+              <PillButton title="Find" variant="secondary" onPress={() => router.push("/find-a-coach" as never)} />
+            </View>
+          )}
+        </View>
+
+        {/* Recovery tiles */}
+        <View style={styles.section}>
+          <SectionTitle title="Recovery" action="See all" onAction={() => router.push("/(tabs)/recovery")} />
+          <TileGrid>
+            <MetricTile
+              title="Readiness"
+              window="Last 7 days"
+              value={readiness.today !== null ? String(readiness.today) : null}
+              unit="/100"
+              color={readinessColor(readiness.today)}
+              bars={week.map((w) => w.score)}
+              note="Log a check-in to start your trend"
+              onPress={() => router.push("/readiness" as never)}
+            />
+            <MetricTile
+              title="Sleep"
+              window="Last check-in"
+              value={data.kpis.sleepHours !== null ? String(data.kpis.sleepHours) : null}
+              unit="h"
+              color={DataColor.sleep}
+              note={data.kpis.sleepQuality !== null ? `Quality ${data.kpis.sleepQuality}/10` : "Logged with your check-in"}
+              onPress={() => router.push("/(tabs)/recovery")}
+            />
+            <MetricTile
+              title="Training load"
+              window="Last 7 days"
+              value={data.kpis.sevenDaySum > 0 ? data.kpis.sevenDaySum.toLocaleString() : null}
+              color={DataColor.load}
+              note={data.kpis.daysWithLoad > 0 ? data.kpis.loadBandLabel : "Log time and effort"}
+              onPress={() => router.push("/(tabs)/recovery")}
+            />
+            <MetricTile
+              title="Sessions"
+              window="Last 7 days"
+              value={String(data.kpis.sessionsLast7)}
+              unit={data.kpis.sessionsLast7 === 1 ? "workout" : "workouts"}
+              color={DataColor.sessions}
+              note="Log a workout from +"
+              onPress={() => router.push("/(tabs)/workouts")}
+            />
+          </TileGrid>
+        </View>
+
+        {/* Body and fuel tiles */}
+        <View style={styles.section}>
+          <SectionTitle title="Body & fuel" />
+          <TileGrid>
+            <MetricTile
+              title="Weight"
+              window={recentWeights.length > 1 ? `Last ${recentWeights.length} entries` : "Latest"}
+              value={latestWeight !== null ? latestWeight.toFixed(1) : null}
+              unit="kg"
+              color={DataColor.weight}
+              bars={recentWeights.length > 1 ? recentWeights.map((w) => w.weightKg) : undefined}
+              note="Add a weigh-in"
+              onPress={() => router.push("/profile")}
+            />
+            <MetricTile
+              title="Nutrition"
+              window="Today"
+              value={null}
+              color={DataColor.protein}
+              note={
+                data.nutrition.dietaryPreference && data.nutrition.dietaryPreference !== "standard"
+                  ? `${data.nutrition.dietaryPreference} · log meals and water`
+                  : "Log meals and water"
+              }
+              onPress={() => router.push("/(tabs)/nutrition")}
+            />
+          </TileGrid>
+        </View>
+
+        {/* Club */}
+        <View style={styles.section}>
+          <SectionTitle title="Club" />
+          <View style={styles.list}>
+            <ListRow
+              icon="card-outline"
+              title={data.club.planName ?? "No active plan"}
+              detail={data.club.remainingSessionsLabel ?? data.club.statusLabel ?? "Choose a plan"}
+              attention={data.club.needsAttention}
+              onPress={() => router.push("/membership")}
+            />
+            <ListRow icon="chatbubble-ellipses-outline" title="Coach" detail="Message your coach" onPress={() => router.push("/messages")} divider />
+            <ListRow
+              icon="people-outline"
+              title="Community"
+              detail={communityHighlight?.text ?? "Member wins and leaderboards"}
+              onPress={() => router.push("/community")}
+              divider
+            />
+          </View>
         </View>
       </ScrollView>
       <PostSignupSetupModal />
@@ -582,298 +402,69 @@ export default function DashboardScreen() {
   );
 }
 
+function ListRow({
+  icon,
+  title,
+  detail,
+  onPress,
+  divider,
+  attention,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  title: string;
+  detail: string;
+  onPress: () => void;
+  divider?: boolean;
+  attention?: boolean;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      style={({ pressed }) => [styles.row, divider && styles.rowDivider, pressed && { opacity: 0.8 }]}
+    >
+      <Ionicons name={icon} size={22} color={attention ? Color.warning : AppColor.text} />
+      <View style={{ flex: 1 }}>
+        <Text style={styles.rowTitle} numberOfLines={1}>{title}</Text>
+        <Text style={[styles.rowDetail, attention && { color: Color.warning }]} numberOfLines={1}>{detail}</Text>
+      </View>
+      <Ionicons name="chevron-forward" size={18} color={AppColor.textMuted} />
+    </Pressable>
+  );
+}
+
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Color.bg0 },
-  centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
-  errorText: { color: Color.textMuted, fontSize: 14 },
-  scroll: {
-    paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.xxl,
-  },
-  header: {
-    paddingTop: Spacing.md,
-    paddingBottom: Spacing.lg,
-  },
-  headerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  headerLogo: {
-    marginRight: Spacing.sm,
-  },
-  headerActions: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.md,
-  },
-  continueRow: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    marginTop: Spacing.sm,
-  },
-  bellWrap: {
-    position: "relative",
-  },
-  avatarThumb: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-  },
-  bellBadge: {
-    position: "absolute",
-    top: -4,
-    right: -6,
-    minWidth: 15,
-    height: 15,
-    borderRadius: 8,
-    backgroundColor: Color.gold,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 3,
-  },
-  bellBadgeText: {
-    fontSize: 9,
-    fontWeight: "700",
-    color: Color.goldForeground,
-  },
-  eyebrow: {
-    fontSize: 10,
-    fontWeight: "700",
-    letterSpacing: 1,
-    color: Color.gold,
-    marginBottom: 4,
-  },
-  greeting: {
-    ...headline(40),
-    color: Color.textPrimary,
-  },
-  subGreeting: {
-    fontSize: 13,
-    color: Color.textMuted,
-    marginTop: 4,
-  },
-  section: {
-    marginBottom: Spacing.xl,
-  },
-  chip: {
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 3,
-  },
-  chipText: {
-    fontSize: 10,
-    fontWeight: "600",
-    color: Color.textSecondary,
-  },
-  nextSessionCard: {
-    padding: 0,
-  },
-  nextSessionRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: Spacing.md,
-    gap: Spacing.md,
-  },
-  nextSessionTime: {
-    width: 56,
-    height: 56,
-    borderRadius: 8,
-    backgroundColor: Color.goldWeak,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  nextSessionTimeText: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: Color.gold,
-  },
-  nextSessionTimeSub: {
-    fontSize: 11,
-    color: Color.gold,
-    opacity: 0.8,
-  },
-  nextSessionTitle: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: Color.textPrimary,
-  },
-  nextSessionMeta: {
-    fontSize: 12,
-    color: Color.textMuted,
-    marginTop: 2,
-  },
-  freeCard: {
-    padding: Spacing.lg,
-    alignItems: "flex-start",
-  },
-  freeCardIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    backgroundColor: Color.goldWeak,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: Spacing.sm,
-  },
-  freeCardTitle: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: Color.textPrimary,
-  },
-  freeCardBody: {
-    fontSize: 12,
-    color: Color.textMuted,
-    marginTop: 4,
-    lineHeight: 17,
-  },
-  freeCardSecondary: {
-    marginTop: Spacing.md,
-    alignSelf: "center",
-  },
-  freeCardSecondaryText: {
-    fontSize: 12,
-    fontWeight: "500",
-    color: Color.textFaint,
-    textDecorationLine: "underline",
-  },
-  readinessCard: {
-    padding: Spacing.md,
-  },
-  readinessRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.md,
-  },
-  readinessTextWrap: {
-    flex: 1,
-  },
-  trendRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginTop: Spacing.md,
-    paddingTop: Spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: Color.borderSubtle,
-  },
-  trendLabel: {
-    fontSize: 10,
-    fontWeight: "500",
-    color: Color.textFaint,
-  },
-  readinessStatusRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.xs,
-  },
-  readinessStatus: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: Color.textPrimary,
-  },
-  deltaChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 2,
-    borderRadius: 999,
-    borderWidth: 1,
-    paddingHorizontal: 6,
-    paddingVertical: 1,
-  },
-  deltaText: {
-    fontSize: 10,
-    fontWeight: "700",
-  },
-  readinessGuidance: {
-    fontSize: 12,
-    color: Color.textMuted,
-    marginTop: 4,
-    lineHeight: 16,
-  },
-  kpiRow: {
-    flexDirection: "row",
-    gap: Spacing.sm,
-    marginTop: Spacing.sm,
-  },
-  rowCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: Spacing.md,
-    gap: Spacing.md,
-  },
-  rowCardDivider: {
-    borderBottomWidth: 1,
-    borderBottomColor: Color.borderSubtle,
-  },
-  rowCardIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 8,
-    backgroundColor: Color.goldWeak,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  rowCardLabel: {
-    fontSize: 10,
-    fontWeight: "700",
-    letterSpacing: 0.4,
-    color: Color.textMuted,
-    marginBottom: 2,
-  },
-  rowCardTitle: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: Color.textPrimary,
-  },
-  rowCardSub: {
-    fontSize: 11,
-    color: Color.textMuted,
-    marginTop: 2,
-  },
-  statusChip: {
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: Color.goldBorder,
-    backgroundColor: Color.goldWeak,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 4,
-  },
-  statusChipText: {
-    fontSize: 10,
-    fontWeight: "600",
-    color: Color.gold,
-  },
-  primaryActionCard: {
-    marginBottom: Spacing.sm,
-  },
-  primaryActionInner: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: Spacing.md,
-    gap: Spacing.md,
-  },
-  primaryActionIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 8,
-    backgroundColor: Color.goldWeak,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  primaryActionTitle: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: Color.textPrimary,
-  },
-  primaryActionSub: {
-    fontSize: 12,
-    color: Color.textMuted,
-    marginTop: 2,
-  },
+  safe: { flex: 1, backgroundColor: AppColor.bg },
+  centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: 24 },
+  errorText: { fontSize: 16, color: AppColor.textSecondary },
+  scroll: { paddingBottom: 40 },
+
+  band: { backgroundColor: AppColor.surface, paddingHorizontal: AppSpace.gutter, paddingTop: 12, paddingBottom: 20, borderBottomLeftRadius: 24, borderBottomRightRadius: 24, gap: 16 },
+  titleRow: { flexDirection: "row", alignItems: "center", gap: 12 },
+  dateLine: { fontSize: 14, color: AppColor.textMuted, marginBottom: 2 },
+  titleActions: { flexDirection: "row", gap: 8 },
+  continueRow: { alignItems: "flex-end", marginTop: -8 },
+  todayRow: { flexDirection: "row" },
+  todayLabel: { fontSize: 14, color: AppColor.textMuted },
+  todayStatus: { marginTop: 2, fontSize: 22, fontWeight: "600", color: AppColor.text },
+  todayGuidance: { marginTop: 4, fontSize: 15, lineHeight: 21, color: AppColor.textSecondary },
+
+  section: { paddingHorizontal: AppSpace.gutter, marginTop: AppSpace.section },
+
+  nextCard: { flexDirection: "row", alignItems: "center", gap: 14, backgroundColor: AppColor.surface, borderRadius: AppRadius.card, padding: 16, minHeight: 76 },
+  nextTime: { width: 72, borderRadius: AppRadius.inner, backgroundColor: AppColor.control, paddingVertical: 8, alignItems: "center" },
+  nextDay: { fontSize: 12, color: AppColor.textSecondary },
+  nextClock: { ...figure(26), color: AppColor.text },
+  nextTitle: { fontSize: 17, fontWeight: "600", color: AppColor.text },
+  nextMeta: { marginTop: 2, fontSize: 14, color: AppColor.textMuted },
+
+  list: { backgroundColor: AppColor.surface, borderRadius: AppRadius.card, overflow: "hidden" },
+  row: { flexDirection: "row", alignItems: "center", gap: 16, minHeight: 64, paddingHorizontal: 16 },
+  rowDivider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: AppColor.hairline },
+  rowTitle: { fontSize: 16, fontWeight: "500", color: AppColor.text },
+  rowDetail: { marginTop: 2, fontSize: 14, color: AppColor.textMuted },
+
+  // First-signup setup modal (unchanged from the previous Home)
   setupBackdrop: {
     flex: 1,
     backgroundColor: "rgba(4,10,20,0.72)",

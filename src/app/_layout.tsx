@@ -171,6 +171,7 @@ function AuthGate() {
       <Stack.Screen name="exercise-library-detail" options={{ presentation: "card" }} />
       <Stack.Screen name="profile" options={{ presentation: "card" }} />
       <Stack.Screen name="settings" options={{ presentation: "card" }} />
+      <Stack.Screen name="readiness" options={{ presentation: "card" }} />
       <Stack.Screen name="staff-member" options={{ presentation: "card" }} />
       <Stack.Screen name="staff-message-thread" options={{ presentation: "card" }} />
       <Stack.Screen name="staff-program-builder" options={{ presentation: "card" }} />

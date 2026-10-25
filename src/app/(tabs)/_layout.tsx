@@ -1,171 +1,119 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Tabs, usePathname, useRouter } from "expo-router";
-import { useMemo } from "react";
-import { Animated, Dimensions, Easing, PanResponder, View } from "react-native";
+import { useMemo, useState } from "react";
+import { PanResponder, Pressable, StyleSheet, View } from "react-native";
 
-import { Color } from "@/constants/theme";
+import { QuickActionSheet } from "@/components/app/QuickActionSheet";
+import { AppColor } from "@/constants/theme";
 
-const SCREEN_WIDTH = Dimensions.get("window").width;
-
-// Same 5 routes, in tab-bar order, as hrefs — used both to resolve "which
-// tab am I on" from the current pathname and to know what "next"/"previous"
-// means for a swipe. Deliberately still 5 — Community is a Home module +
-// deep-link destination (src/app/community.tsx), not a bottom tab; see the
-// Community entry-point plan for why. Only promote it here later if real
-// usage earns it a peer slot alongside these five.
-const TAB_ROUTES = ["/(tabs)", "/(tabs)/schedule", "/(tabs)/workouts", "/(tabs)/recovery", "/(tabs)/nutrition"];
-const TAB_SEGMENTS = ["index", "schedule", "workouts", "recovery", "nutrition"];
+// App v2 tab bar (prototype, docs/design-inspiration-macrofactor-2026-10.md):
+// Home · Schedule · (+) · Train · More. The centre "+" is not a screen — it
+// opens the quick-action sheet. Recovery and Nutrition stay as routes in this
+// group (every existing link to them keeps working) but leave the bar; they
+// are reached from Home tiles, the "+" sheet and More.
+const SWIPE_ROUTES = ["/(tabs)", "/(tabs)/schedule", "/(tabs)/workouts", "/(tabs)/more"];
+const SWIPE_SEGMENTS = ["index", "schedule", "workouts", "more"];
 
 function currentTabIndex(pathname: string): number {
   const segment = pathname.replace(/^\/+|\/+$/g, "") || "index";
-  const idx = TAB_SEGMENTS.indexOf(segment);
-  return idx === -1 ? 0 : idx;
+  return SWIPE_SEGMENTS.indexOf(segment);
 }
 
-// A page-turn-style transition between the 5 tabs, built on expo-router's
-// built-in bottom-tabs scene interpolator hook (the same mechanism behind
-// its stock "shift"/"fade" presets) rather than a third-party page-flip
-// library — those are mostly unmaintained and render unreliably on
-// Android. `current.progress` runs -1 (scene now to the left of the
-// active tab) → 0 (active) → 1 (scene to the right), driven continuously
-// by the same Animated.timing each tab press starts, so every scene
-// rotates and slides in the direction matching real tab order — moving
-// right through the tabs reads as pages turning forward, and back again
-// in reverse.
-//
-// Tuned to read as an actual page flip rather than a tilt: rotation
-// sweeps almost all the way to edge-on (88°) before the scene disappears,
-// it travels a full half-screen so the page visibly swings toward its
-// edge instead of just wobbling in place, and a shadow peaks mid-turn
-// (the page "lifting" and catching light) then fades back to flat at
-// rest — the cue that actually reads as paper turning, not a spin.
-function pageTurnStyleInterpolator({ current }: { current: { progress: Animated.Value } }) {
-  const progress = current.progress;
-  return {
-    sceneStyle: {
-      opacity: progress.interpolate({
-        inputRange: [-1, -0.3, 0, 0.3, 1],
-        outputRange: [0, 1, 1, 1, 0],
-      }),
-      transform: [
-        { perspective: 1000 },
-        {
-          rotateY: progress.interpolate({
-            inputRange: [-1, 0, 1],
-            outputRange: ["-88deg", "0deg", "88deg"],
-          }),
-        },
-        {
-          translateX: progress.interpolate({
-            inputRange: [-1, 0, 1],
-            outputRange: [-SCREEN_WIDTH * 0.5, 0, SCREEN_WIDTH * 0.5],
-          }),
-        },
-      ],
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: 0 },
-      shadowRadius: 16,
-      shadowOpacity: progress.interpolate({
-        inputRange: [-1, -0.6, -0.25, 0, 0.25, 0.6, 1],
-        outputRange: [0, 0.45, 0.25, 0, 0.25, 0.45, 0],
-      }),
-      elevation: progress.interpolate({
-        inputRange: [-1, -0.6, 0, 0.6, 1],
-        outputRange: [0, 14, 0, 14, 0],
-      }),
-    },
-  };
-}
-
-const pageTurnTransitionSpec = {
-  animation: "timing" as const,
-  config: { duration: 300, easing: Easing.inOut(Easing.ease) },
-};
-
-// Matches the web app's BottomNavBar exactly (app/(dashboard)/dashboard/
-// bottom-nav.tsx): Home, Schedule, Workouts, Recovery, Nutrition. Declared
-// explicitly via <Tabs.Screen> rather than left to file-based
-// auto-discovery — Expo Router's directory-order fallback isn't guaranteed
-// to match filename order across platforms.
-const ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
-  index: "home-outline",
-  schedule: "calendar-outline",
-  workouts: "barbell-outline",
-  recovery: "heart-outline",
-  nutrition: "nutrition-outline",
+const ICONS: Record<string, [keyof typeof Ionicons.glyphMap, keyof typeof Ionicons.glyphMap]> = {
+  index: ["grid-outline", "grid"],
+  schedule: ["calendar-outline", "calendar"],
+  workouts: ["barbell-outline", "barbell"],
+  more: ["ellipsis-horizontal-circle-outline", "ellipsis-horizontal-circle"],
 };
 
 const LABELS: Record<string, string> = {
   index: "Home",
   schedule: "Schedule",
-  workouts: "Workouts",
-  recovery: "Recovery",
-  nutrition: "Nutrition",
+  workouts: "Train",
+  more: "More",
 };
 
 export default function TabsLayout() {
   const router = useRouter();
   const pathname = usePathname();
+  const [sheetOpen, setSheetOpen] = useState(false);
 
-  // Recreated per pathname change (cheap) rather than once via useRef, so
-  // the release handler always reads the tab we're actually on — a
-  // useRef'd responder would close over whatever pathname was current the
-  // first time this component rendered.
-  //
-  // The capture threshold is deliberately generous (60px, and horizontal
-  // movement has to clearly dominate vertical) rather than the usual
-  // hair-trigger swipe feel: several screens have their own horizontal
-  // ScrollViews (the date strip, exercise/trend chip rows, food quick-add
-  // chips), and RN's responder system lets an ancestor's *Capture handler
-  // steal an in-progress gesture from a descendant at any point — so a
-  // twitchy threshold here would fight those scroll views for every drag
-  // instead of just the swipes that are clearly "change tab."
+  // Horizontal swipe between the four screen tabs. Generous threshold so it
+  // never fights horizontal scrollers inside screens.
   const panResponder = useMemo(
     () =>
       PanResponder.create({
-        onMoveShouldSetPanResponderCapture: (_evt, gestureState) => {
-          const { dx, dy } = gestureState;
-          return Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 2;
-        },
-        onPanResponderRelease: (_evt, gestureState) => {
+        onMoveShouldSetPanResponderCapture: (_evt, { dx, dy }) => Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 2,
+        onPanResponderRelease: (_evt, { dx }) => {
           const idx = currentTabIndex(pathname);
-          if (gestureState.dx < 0 && idx < TAB_ROUTES.length - 1) {
-            router.push(TAB_ROUTES[idx + 1] as never);
-          } else if (gestureState.dx > 0 && idx > 0) {
-            router.push(TAB_ROUTES[idx - 1] as never);
-          }
+          if (idx === -1) return;
+          if (dx < 0 && idx < SWIPE_ROUTES.length - 1) router.push(SWIPE_ROUTES[idx + 1] as never);
+          else if (dx > 0 && idx > 0) router.push(SWIPE_ROUTES[idx - 1] as never);
         },
       }),
     [pathname, router]
   );
 
   return (
-    <View style={{ flex: 1 }} {...panResponder.panHandlers}>
+    <View style={{ flex: 1, backgroundColor: AppColor.bg }} {...panResponder.panHandlers}>
       <Tabs
         screenOptions={({ route }) => ({
           headerShown: false,
-          tabBarActiveTintColor: Color.gold,
-          tabBarInactiveTintColor: Color.textFaint,
+          sceneStyle: { backgroundColor: AppColor.bg },
+          tabBarActiveTintColor: AppColor.text,
+          tabBarInactiveTintColor: AppColor.textMuted,
           tabBarStyle: {
-            backgroundColor: Color.surface1,
-            borderTopColor: Color.borderSubtle,
-            borderTopWidth: 1,
+            backgroundColor: AppColor.bg,
+            borderTopColor: AppColor.hairline,
+            borderTopWidth: StyleSheet.hairlineWidth,
+            height: 72,
+            paddingTop: 8,
           },
-          tabBarLabelStyle: { fontSize: 10, fontWeight: "600" },
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name={ICONS[route.name] ?? "ellipse-outline"} size={size - 2} color={color} />
-          ),
+          tabBarLabelStyle: { fontSize: 12, fontWeight: "600", marginTop: 2 },
+          tabBarIcon: ({ color, focused }) => {
+            const pair = ICONS[route.name];
+            return pair ? (
+              <View style={{ alignItems: "center" }}>
+                <Ionicons name={focused ? pair[1] : pair[0]} size={24} color={color} />
+                {focused ? <View style={styles.brandDot} /> : null}
+              </View>
+            ) : null;
+          },
           title: LABELS[route.name] ?? route.name,
-          sceneStyleInterpolator: pageTurnStyleInterpolator,
-          transitionSpec: pageTurnTransitionSpec,
         })}
       >
         <Tabs.Screen name="index" />
         <Tabs.Screen name="schedule" />
+        <Tabs.Screen
+          name="add"
+          options={{
+            title: "",
+            tabBarButton: () => (
+              <View style={styles.addSlot}>
+                <Pressable
+                  onPress={() => setSheetOpen(true)}
+                  accessibilityRole="button"
+                  accessibilityLabel="Log something"
+                  style={({ pressed }) => [styles.addBtn, pressed && { transform: [{ scale: 0.96 }] }]}
+                >
+                  <Ionicons name="add" size={30} color={AppColor.onPrimary} />
+                </Pressable>
+              </View>
+            ),
+          }}
+        />
         <Tabs.Screen name="workouts" />
-        <Tabs.Screen name="recovery" />
-        <Tabs.Screen name="nutrition" />
+        <Tabs.Screen name="more" />
+        <Tabs.Screen name="recovery" options={{ href: null }} />
+        <Tabs.Screen name="nutrition" options={{ href: null }} />
       </Tabs>
+      <QuickActionSheet visible={sheetOpen} onClose={() => setSheetOpen(false)} />
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  brandDot: { position: "absolute", top: -9, width: 4, height: 4, borderRadius: 2, backgroundColor: AppColor.brand },
+  addSlot: { flex: 1, alignItems: "center", justifyContent: "center" },
+  addBtn: { width: 54, height: 54, borderRadius: 27, backgroundColor: AppColor.primary, alignItems: "center", justifyContent: "center", marginTop: -6 },
+});

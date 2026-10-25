@@ -121,3 +121,58 @@ export const FontSize = {
   xl: 24,
   xxl: 32,
 } as const;
+
+// ─── App v2 tokens (prototype, docs/design-inspiration-macrofactor-2026-10.md)
+// Chrome and data are separate jobs. Chrome is near-monochrome navy-black
+// with WHITE as the primary action; gold is the brand mark only (logo,
+// current tab, celebrations). Colour otherwise appears only on data, one hue
+// per metric everywhere it shows. Soft geometry: 16dp borderless cards,
+// pill controls, 48dp round icon buttons.
+export const AppColor = {
+  bg: "#060d18",
+  surface: "#0f1a2c",
+  surfaceHi: "#16243a",
+  control: "#1d2d47",
+  hairline: "rgba(255,255,255,0.08)",
+  text: "#fcfeff",
+  textSecondary: "rgba(255,255,255,0.72)",
+  textMuted: "rgba(255,255,255,0.5)",
+  primary: "#ffffff",
+  onPrimary: "#0a1526",
+  brand: "#c6a15b",
+} as const;
+
+// One hue per metric, used on its tile, chart, legend and explainer.
+export const DataColor = {
+  readinessHigh: "#7ccf9d",
+  readinessMid: "#55c4fe",
+  readinessLow: "#e9b452",
+  load: "#5b9dff",
+  sleep: "#9a8cff",
+  sessions: "#ef8a5b",
+  weight: "#c08cf0",
+  hydration: "#4fd3e3",
+  protein: MacroColor.protein,
+  carbs: MacroColor.carbs,
+  fat: MacroColor.fat,
+} as const;
+
+export function readinessColor(score: number | null): string {
+  if (score === null) return AppColor.textMuted;
+  if (score >= 60) return DataColor.readinessHigh;
+  if (score >= 40) return DataColor.readinessMid;
+  return DataColor.readinessLow;
+}
+
+export const AppRadius = { card: 16, control: 999, inner: 10 } as const;
+export const AppSpace = { gutter: 16, gap: 10, section: 28 } as const;
+
+// Screen title: the one loud Teko moment per screen.
+export function appTitle(size = 34): TextStyle {
+  return { ...headline(size), letterSpacing: size * 0.02 };
+}
+
+// Values: platform sans, regular weight, with a separately styled unit.
+export function appValue(size = 26): TextStyle {
+  return { fontSize: size, fontWeight: "500", color: AppColor.text, fontVariant: ["tabular-nums"] };
+}

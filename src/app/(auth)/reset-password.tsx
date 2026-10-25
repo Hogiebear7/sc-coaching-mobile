@@ -202,8 +202,8 @@ const useStyles = makeLegacyStyles((Color) =>
     successBox: {
       borderRadius: 12,
       borderWidth: 1,
-      borderColor: Color.borderSubtle,
-      backgroundColor: Color.surface1,
+      borderColor: "transparent",
+      backgroundColor: Color.surface2,
       padding: Spacing.lg,
       alignItems: "flex-start",
     },

@@ -125,8 +125,8 @@ const useStyles = makeLegacyStyles((Color) =>
       padding: Spacing.sm,
       borderRadius: Radius.md,
       borderWidth: 1,
-      borderColor: Color.borderSubtle,
-      backgroundColor: Color.surface1,
+      borderColor: "transparent",
+      backgroundColor: Color.surface2,
     },
     header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: Spacing.sm },
     navButton: {

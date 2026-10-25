@@ -511,7 +511,7 @@ const useStyles = makeLegacyStyles((Color) =>
     presetChipTextActive: { color: Color.gold },
     hintText: { fontSize: 13, color: Color.textMuted, marginTop: Spacing.sm, lineHeight: 16 },
     hintTextSmall: { fontSize: 12, color: Color.textFaint, marginTop: 4, lineHeight: 14 },
-    durationBox: { borderRadius: Radius.md, borderWidth: 1, borderColor: Color.borderSubtle, backgroundColor: Color.surface1, alignItems: "center", justifyContent: "center", paddingVertical: 10 },
+    durationBox: { borderRadius: Radius.md, borderWidth: 1, borderColor: "transparent", backgroundColor: Color.surface2, alignItems: "center", justifyContent: "center", paddingVertical: 10 },
     durationValue: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
     durationSub: { fontSize: 12, color: Color.textFaint, marginTop: 2 },
     infoCard: { padding: Spacing.md, marginTop: Spacing.md },

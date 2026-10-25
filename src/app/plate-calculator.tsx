@@ -198,7 +198,7 @@ const useStyles = makeLegacyStyles((Color) =>
     headerTitle: { fontSize: 20, fontWeight: "600", color: Color.textPrimary, flexShrink: 1, textAlign: "center" },
     scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
     unitRow: { flexDirection: "row", gap: Spacing.xs, marginBottom: Spacing.lg },
-    unitChip: { flex: 1, alignItems: "center", paddingVertical: 10, borderRadius: Radius.md, borderWidth: 1, borderColor: Color.borderSubtle, backgroundColor: Color.surface1 },
+    unitChip: { flex: 1, alignItems: "center", paddingVertical: 10, borderRadius: Radius.md, borderWidth: 1, borderColor: "transparent", backgroundColor: Color.surface2 },
     unitChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
     unitChipText: { fontSize: 13, fontWeight: "600", color: Color.textMuted },
     unitChipTextActive: { color: Color.gold },

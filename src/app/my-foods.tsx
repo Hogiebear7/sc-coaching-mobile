@@ -33,7 +33,7 @@ export default function MyFoodsScreen() {
           </Text>
           <View style={styles.rowSubRow}>
             <Text style={styles.rowSub}>
-              {item.nutrition100g.calories} kcal / 100g{item.barcode ? " · linked to a barcode" : ""}
+              {Math.round(item.nutrition100g.calories)} kcal / 100g{item.barcode ? " · linked to a barcode" : ""}
             </Text>
             {badge ? (
               <View style={[styles.badge, { borderColor: Color[badge.color] }]}>

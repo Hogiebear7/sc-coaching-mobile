@@ -181,7 +181,7 @@ const useStyles = makeLegacyStyles((Color) =>
     emptySub: { fontSize: 14, color: Color.textMuted, marginTop: 4, textAlign: "center", maxWidth: 260 },
     bubble: { maxWidth: "85%", borderRadius: Radius.md, padding: Spacing.sm },
     bubbleStaff: { alignSelf: "flex-end", backgroundColor: Color.goldWeak },
-    bubbleMember: { alignSelf: "flex-start", borderWidth: 1, borderColor: Color.borderSubtle, backgroundColor: Color.surface1 },
+    bubbleMember: { alignSelf: "flex-start", borderWidth: 1, borderColor: "transparent", backgroundColor: Color.surface2 },
     bubbleStaffText: { fontSize: 13, color: Color.gold, lineHeight: 18 },
     bubbleMemberText: { fontSize: 13, color: Color.textSecondary, lineHeight: 18 },
     bubbleTime: { fontSize: 12, color: Color.textFaint, marginTop: 4 },

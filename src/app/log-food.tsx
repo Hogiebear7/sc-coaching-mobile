@@ -73,7 +73,7 @@ function FoodResultRow({ food, onPress }: { food: FoodRecord; onPress: () => voi
           {food.brandName ? `${food.brandName} — ${food.name}` : food.name}
         </Text>
         <Text style={styles.resultSub}>
-          {food.nutrition100g.calories} kcal / 100g
+          {Math.round(food.nutrition100g.calories)} kcal / 100g
           {food.domain === "branded" && !food.verified ? " · unverified" : ""}
         </Text>
       </View>
@@ -720,7 +720,7 @@ export default function LogFoodScreen() {
             </>
           ) : (
             <View style={styles.fallbackSection}>
-              <Text style={styles.sectionLabel}>CAN&apos;T FIND YOUR FOOD?</Text>
+              <Text style={styles.sectionLabel}>Can&apos;t find your food?</Text>
 
               <Pressable onPress={() => setManualOpen(true)} style={styles.fallbackLink}>
                 <Text style={styles.fallbackLinkText}>Log it manually</Text>
@@ -847,8 +847,8 @@ const useStyles = makeLegacyStyles((Color) =>
       padding: Spacing.sm,
       borderRadius: Radius.md,
       borderWidth: 1,
-      borderColor: Color.borderSubtle,
-      backgroundColor: Color.surface1,
+      borderColor: "transparent",
+      backgroundColor: Color.surface2,
     },
     customFoodRow: { flexDirection: "row", gap: Spacing.lg, marginTop: Spacing.md },
     quickLink: { flexDirection: "row", alignItems: "center", gap: 4 },
@@ -896,8 +896,8 @@ const useStyles = makeLegacyStyles((Color) =>
       width: 112,
       borderRadius: Radius.md,
       borderWidth: 1,
-      borderColor: Color.borderSubtle,
-      backgroundColor: Color.surface1,
+      borderColor: "transparent",
+      backgroundColor: Color.surface2,
       paddingHorizontal: Spacing.sm,
       paddingVertical: Spacing.sm,
     },

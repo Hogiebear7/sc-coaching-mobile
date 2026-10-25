@@ -84,3 +84,19 @@ Every other screen: theme colours, monochrome accents, softer radii, minimum tex
 sentence-case section labels and standard headers. These are the candidates for Phase 3
 screen-by-screen work, in this order: log-workout, log-food, session-detail and
 exercise-detail, profile, settings, messages, community, membership, auth, staff.
+
+## Shared workout pieces
+
+- **ExercisePreviewList** (`components/ui`): the exercise rows inside any workout card
+  (History, Workouts tab, Community activity and workout detail). Each row is a muscle icon
+  in a round chip, the exercise name, and one summary line from `exerciseSetSummary`
+  ("4 sets · 15 kg × 20", or "first → last" when sets progress). Never print every set in
+  a list card.
+- **Session detail set table**: identical consecutive sets collapse into one row
+  ("Sets 1–4 · 15 kg × 20") via `groupSetLabels`.
+- **LikeButton** (`components/app`): the only place the like red (`LIKE_RED`) is used. Liking
+  pops the heart and bursts a ring and dots; unliking just settles. The animation is skipped
+  when Reduce motion is on. Likes update optimistically.
+- **Bottom sheets** for short tasks over a list (comments): top radius 24, grab handle,
+  44dp round close and send buttons, safe-area bottom padding.
+- **Trend entries** show the latest five, with Show all / Show fewer.

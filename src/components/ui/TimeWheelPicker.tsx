@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { ScrollView, StyleSheet, Text, View, type NativeSyntheticEvent, type NativeScrollEvent } from "react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { Spacing } from "@/constants/theme";
 import { tapFeedback } from "@/lib/haptics";
@@ -49,8 +49,11 @@ function WheelColumn({
     };
   }, []);
 
-  function commitFromOffset(e: NativeSyntheticEvent<NativeScrollEvent>) {
-    const index = Math.round(e.nativeEvent.contentOffset.y / ITEM_HEIGHT);
+  // Takes the offset, not the event: React Native releases a scroll event's
+  // nativeEvent once the handler returns, so reading it later (the settle
+  // timer below) crashed with "contentOffset of null".
+  function commitFromOffset(offsetY: number) {
+    const index = Math.round(offsetY / ITEM_HEIGHT);
     const clamped = Math.max(0, Math.min(max, index));
     if (clamped !== value) {
       suppressNextSync.current = true;
@@ -68,13 +71,13 @@ function WheelColumn({
           snapToInterval={ITEM_HEIGHT}
           decelerationRate="fast"
           contentContainerStyle={{ paddingVertical: ITEM_HEIGHT * PADDING_ROWS }}
-          onMomentumScrollEnd={commitFromOffset}
+          onMomentumScrollEnd={(e) => commitFromOffset(e.nativeEvent.contentOffset.y)}
           onScrollEndDrag={(e) => {
             // A slow drag that never picks up momentum doesn't always fire
             // onMomentumScrollEnd on every platform — this catches that
             // case too; if momentum does follow, it just re-confirms the
             // same index onChange already no-ops against.
-            if (e.nativeEvent.velocity && Math.abs(e.nativeEvent.velocity.y) < 0.05) commitFromOffset(e);
+            if (e.nativeEvent.velocity && Math.abs(e.nativeEvent.velocity.y) < 0.05) commitFromOffset(e.nativeEvent.contentOffset.y);
           }}
           // Trackpad/mouse-wheel scrolling (web) doesn't reliably fire
           // onMomentumScrollEnd/onScrollEndDrag the way a touch drag does —
@@ -86,8 +89,8 @@ function WheelColumn({
           // onChange just no-ops the second time.
           onScroll={(e) => {
             if (settleTimer.current) clearTimeout(settleTimer.current);
-            const evt = e;
-            settleTimer.current = setTimeout(() => commitFromOffset(evt), 120);
+            const y = e.nativeEvent.contentOffset.y;
+            settleTimer.current = setTimeout(() => commitFromOffset(y), 120);
           }}
           scrollEventThrottle={16}
         >

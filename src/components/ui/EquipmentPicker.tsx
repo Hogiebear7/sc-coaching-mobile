@@ -3,8 +3,9 @@ import { useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 
 import { Card } from "@/components/ui/Card";
-import { Color, Radius, Spacing } from "@/constants/theme";
+import { Radius, Spacing } from "@/constants/theme";
 import type { EquipmentCatalogData, EquipmentItem } from "@/lib/queries/gym-profiles";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 // Search + category-grouped chip picker over the equipment catalog — shared
 // between gym-profile-builder.tsx (saved profiles) and the workout
@@ -20,6 +21,8 @@ export function EquipmentPicker({
   selectedSlugs: string[];
   onToggle: (slug: string) => void;
 }) {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const [query, setQuery] = useState("");
   const [openCategories, setOpenCategories] = useState<Set<string>>(new Set());
 
@@ -106,27 +109,29 @@ export function EquipmentPicker({
   );
 }
 
-const styles = StyleSheet.create({
-  searchWrap: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.sm,
-    marginBottom: Spacing.sm,
-    paddingHorizontal: Spacing.sm,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-  },
-  searchInput: { flex: 1, paddingVertical: 10, fontSize: 13, color: Color.textPrimary },
-  categoryCard: { padding: Spacing.md, marginBottom: Spacing.sm },
-  categoryHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  categoryHeaderRight: { flexDirection: "row", alignItems: "center", gap: Spacing.sm },
-  categoryLabel: { fontSize: 13, fontWeight: "600", color: Color.textPrimary },
-  categoryCount: { fontSize: 11, color: Color.textFaint, fontVariant: ["tabular-nums"] },
-  equipmentChipWrap: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: Spacing.sm },
-  equipmentChip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.sm, paddingVertical: 6 },
-  equipmentChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
-  equipmentChipText: { fontSize: 11, fontWeight: "500", color: Color.textMuted },
-  equipmentChipTextActive: { color: Color.gold },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    searchWrap: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: Spacing.sm,
+      marginBottom: Spacing.sm,
+      paddingHorizontal: Spacing.sm,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface1,
+    },
+    searchInput: { flex: 1, paddingVertical: 10, fontSize: 13, color: Color.textPrimary },
+    categoryCard: { padding: Spacing.md, marginBottom: Spacing.sm },
+    categoryHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+    categoryHeaderRight: { flexDirection: "row", alignItems: "center", gap: Spacing.sm },
+    categoryLabel: { fontSize: 13, fontWeight: "600", color: Color.textPrimary },
+    categoryCount: { fontSize: 11, color: Color.textFaint, fontVariant: ["tabular-nums"] },
+    equipmentChipWrap: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: Spacing.sm },
+    equipmentChip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.sm, paddingVertical: 6 },
+    equipmentChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
+    equipmentChipText: { fontSize: 11, fontWeight: "500", color: Color.textMuted },
+    equipmentChipTextActive: { color: Color.gold },
+  })
+);

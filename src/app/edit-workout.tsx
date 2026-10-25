@@ -11,7 +11,7 @@ import { DateField } from "@/components/ui/DateField";
 import { ExerciseAutocomplete } from "@/components/ui/ExerciseAutocomplete";
 import { SupersetChips } from "@/components/ui/SupersetChips";
 import { TextField } from "@/components/ui/TextField";
-import { Color, Radius, Spacing } from "@/constants/theme";
+import { Radius, Spacing } from "@/constants/theme";
 import { tapFeedback } from "@/lib/haptics";
 import { ApiError } from "@/lib/api-client";
 import { useExerciseLibraryNameIndex } from "@/lib/queries/exercise-library";
@@ -24,6 +24,7 @@ import {
   type WorkoutSetType,
 } from "@/lib/queries/workouts";
 import { formatAsKg, formatDuration, getPersonalExerciseNames, parseDuration, todayDateString } from "@/lib/workout-formatters";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 type EditSetRow = {
   key: string;
@@ -132,6 +133,8 @@ function newRunRow(): EditRunRow {
 // breakdowns, superset grouping, and default set type aren't editable here
 // either; they're preserved as-is on save (see EditExerciseRow above).
 export default function EditWorkoutScreen() {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id?: string }>();
   const { data, isLoading } = useWorkouts();
@@ -543,54 +546,56 @@ export default function EditWorkoutScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Color.bg0 },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-  },
-  backButton: { padding: 4 },
-  headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
-  centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
-  emptyText: { fontSize: 14, color: Color.textMuted, textAlign: "center" },
-  scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
-  multiline: { minHeight: 80, textAlignVertical: "top", paddingTop: Spacing.sm },
-  sectionHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: Spacing.lg, marginBottom: Spacing.sm },
-  sectionLabel: { fontSize: 11, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted },
-  addChip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.md, paddingVertical: 6 },
-  addChipText: { fontSize: 12, fontWeight: "600", color: Color.textSecondary },
-  emptyHint: { fontSize: 13, color: Color.textFaint, paddingVertical: Spacing.md },
-  entryCard: { padding: Spacing.md, marginBottom: Spacing.md },
-  entryHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: Spacing.sm },
-  entryLabel: { fontSize: 13, fontWeight: "700", color: Color.textPrimary },
-  removeText: { fontSize: 13, fontWeight: "600", color: Color.danger },
-  fieldLabel: { fontSize: 13, fontWeight: "500", color: Color.textSecondary, marginBottom: 6 },
-  gridRow: { flexDirection: "row", gap: Spacing.sm },
-  gridInput: { flex: 1 },
-  setColumnHeader: { flexDirection: "row", alignItems: "center", gap: Spacing.xs, marginTop: Spacing.sm, paddingHorizontal: 2 },
-  setColumnLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.4, color: Color.textFaint, textTransform: "uppercase" },
-  setEditRow: { flexDirection: "row", alignItems: "center", gap: Spacing.xs, marginTop: Spacing.xs, padding: 4 },
-  setNumber: { fontSize: 13, fontWeight: "700", color: Color.textPrimary, textAlign: "center" },
-  setTypeTag: { fontSize: 7, fontWeight: "700", color: Color.gold, textAlign: "center", textTransform: "uppercase" },
-  setInput: {
-    height: 40,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-    paddingHorizontal: Spacing.sm,
-    fontSize: 14,
-    color: Color.textPrimary,
-  },
-  setRowActions: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: Spacing.sm },
-  addSetText: { fontSize: 12, fontWeight: "600", color: Color.gold },
-  removeSetText: { fontSize: 12, color: Color.textMuted },
-  perSideRow: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: Spacing.sm },
-  perSideText: { fontSize: 12, fontWeight: "500", color: Color.textMuted },
-  perSideTextActive: { color: Color.textPrimary },
-  error: { fontSize: 13, color: Color.danger, marginTop: Spacing.sm },
-  actionsRow: { flexDirection: "row", gap: Spacing.sm, marginTop: Spacing.lg },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: Color.bg0 },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: Spacing.lg,
+      paddingVertical: Spacing.md,
+    },
+    backButton: { padding: 4 },
+    headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
+    centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
+    emptyText: { fontSize: 14, color: Color.textMuted, textAlign: "center" },
+    scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
+    multiline: { minHeight: 80, textAlignVertical: "top", paddingTop: Spacing.sm },
+    sectionHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: Spacing.lg, marginBottom: Spacing.sm },
+    sectionLabel: { fontSize: 11, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted },
+    addChip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.md, paddingVertical: 6 },
+    addChipText: { fontSize: 12, fontWeight: "600", color: Color.textSecondary },
+    emptyHint: { fontSize: 13, color: Color.textFaint, paddingVertical: Spacing.md },
+    entryCard: { padding: Spacing.md, marginBottom: Spacing.md },
+    entryHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: Spacing.sm },
+    entryLabel: { fontSize: 13, fontWeight: "700", color: Color.textPrimary },
+    removeText: { fontSize: 13, fontWeight: "600", color: Color.danger },
+    fieldLabel: { fontSize: 13, fontWeight: "500", color: Color.textSecondary, marginBottom: 6 },
+    gridRow: { flexDirection: "row", gap: Spacing.sm },
+    gridInput: { flex: 1 },
+    setColumnHeader: { flexDirection: "row", alignItems: "center", gap: Spacing.xs, marginTop: Spacing.sm, paddingHorizontal: 2 },
+    setColumnLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.4, color: Color.textFaint, textTransform: "uppercase" },
+    setEditRow: { flexDirection: "row", alignItems: "center", gap: Spacing.xs, marginTop: Spacing.xs, padding: 4 },
+    setNumber: { fontSize: 13, fontWeight: "700", color: Color.textPrimary, textAlign: "center" },
+    setTypeTag: { fontSize: 7, fontWeight: "700", color: Color.gold, textAlign: "center", textTransform: "uppercase" },
+    setInput: {
+      height: 40,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface1,
+      paddingHorizontal: Spacing.sm,
+      fontSize: 14,
+      color: Color.textPrimary,
+    },
+    setRowActions: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: Spacing.sm },
+    addSetText: { fontSize: 12, fontWeight: "600", color: Color.gold },
+    removeSetText: { fontSize: 12, color: Color.textMuted },
+    perSideRow: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: Spacing.sm },
+    perSideText: { fontSize: 12, fontWeight: "500", color: Color.textMuted },
+    perSideTextActive: { color: Color.textPrimary },
+    error: { fontSize: 13, color: Color.danger, marginTop: Spacing.sm },
+    actionsRow: { flexDirection: "row", gap: Spacing.sm, marginTop: Spacing.lg },
+  })
+);

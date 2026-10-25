@@ -10,7 +10,7 @@ import { Card } from "@/components/ui/Card";
 import { ExerciseAutocomplete } from "@/components/ui/ExerciseAutocomplete";
 import { SupersetChips } from "@/components/ui/SupersetChips";
 import { TextField } from "@/components/ui/TextField";
-import { Color, Radius, Spacing } from "@/constants/theme";
+import { Radius, Spacing } from "@/constants/theme";
 import { tapFeedback } from "@/lib/haptics";
 import { ApiError } from "@/lib/api-client";
 import { useExerciseLibraryNameIndex } from "@/lib/queries/exercise-library";
@@ -21,6 +21,7 @@ import {
   type WorkoutSetType,
 } from "@/lib/queries/workouts";
 import { formatAsKg } from "@/lib/workout-formatters";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 let keySeq = 0;
 function nextKey(): string {
@@ -66,6 +67,8 @@ function newExerciseRow(): EditExerciseRow {
 // get around to filling in everyone's weights, so this has no time limit —
 // members can fix their own numbers whenever they notice.
 export default function EditClassWorkoutScreen() {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id?: string }>();
   const { data, isLoading } = useWorkouts();
@@ -301,38 +304,40 @@ export default function EditClassWorkoutScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Color.bg0 },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-  },
-  backButton: { padding: 4 },
-  headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
-  centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
-  emptyText: { fontSize: 14, color: Color.textMuted, textAlign: "center" },
-  scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
-  subhead: { fontSize: 14, fontWeight: "700", color: Color.textPrimary, marginTop: Spacing.sm },
-  hint: { fontSize: 12, color: Color.textMuted, marginTop: 4, lineHeight: 17 },
-  multiline: { minHeight: 80, textAlignVertical: "top", paddingTop: Spacing.sm, marginTop: Spacing.md },
-  sectionHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: Spacing.lg, marginBottom: Spacing.sm },
-  sectionLabel: { fontSize: 11, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted },
-  addChip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.md, paddingVertical: 6 },
-  addChipText: { fontSize: 12, fontWeight: "600", color: Color.textSecondary },
-  emptyHint: { fontSize: 13, color: Color.textFaint, paddingVertical: Spacing.md },
-  entryCard: { padding: Spacing.md, marginBottom: Spacing.md },
-  entryHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: Spacing.sm },
-  entryLabel: { fontSize: 13, fontWeight: "700", color: Color.textPrimary },
-  removeText: { fontSize: 13, fontWeight: "600", color: Color.danger },
-  fieldLabel: { fontSize: 13, fontWeight: "500", color: Color.textSecondary, marginBottom: 6 },
-  gridRow: { flexDirection: "row", gap: Spacing.sm },
-  gridInput: { flex: 1 },
-  perSideRow: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: Spacing.sm },
-  perSideText: { fontSize: 12, fontWeight: "500", color: Color.textMuted },
-  perSideTextActive: { color: Color.textPrimary },
-  error: { fontSize: 13, color: Color.danger, marginTop: Spacing.sm },
-  actionsRow: { flexDirection: "row", gap: Spacing.sm, marginTop: Spacing.lg },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: Color.bg0 },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: Spacing.lg,
+      paddingVertical: Spacing.md,
+    },
+    backButton: { padding: 4 },
+    headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
+    centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
+    emptyText: { fontSize: 14, color: Color.textMuted, textAlign: "center" },
+    scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
+    subhead: { fontSize: 14, fontWeight: "700", color: Color.textPrimary, marginTop: Spacing.sm },
+    hint: { fontSize: 12, color: Color.textMuted, marginTop: 4, lineHeight: 17 },
+    multiline: { minHeight: 80, textAlignVertical: "top", paddingTop: Spacing.sm, marginTop: Spacing.md },
+    sectionHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: Spacing.lg, marginBottom: Spacing.sm },
+    sectionLabel: { fontSize: 11, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted },
+    addChip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.md, paddingVertical: 6 },
+    addChipText: { fontSize: 12, fontWeight: "600", color: Color.textSecondary },
+    emptyHint: { fontSize: 13, color: Color.textFaint, paddingVertical: Spacing.md },
+    entryCard: { padding: Spacing.md, marginBottom: Spacing.md },
+    entryHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: Spacing.sm },
+    entryLabel: { fontSize: 13, fontWeight: "700", color: Color.textPrimary },
+    removeText: { fontSize: 13, fontWeight: "600", color: Color.danger },
+    fieldLabel: { fontSize: 13, fontWeight: "500", color: Color.textSecondary, marginBottom: 6 },
+    gridRow: { flexDirection: "row", gap: Spacing.sm },
+    gridInput: { flex: 1 },
+    perSideRow: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: Spacing.sm },
+    perSideText: { fontSize: 12, fontWeight: "500", color: Color.textMuted },
+    perSideTextActive: { color: Color.textPrimary },
+    error: { fontSize: 13, color: Color.danger, marginTop: Spacing.sm },
+    actionsRow: { flexDirection: "row", gap: Spacing.sm, marginTop: Spacing.lg },
+  })
+);

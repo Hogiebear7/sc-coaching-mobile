@@ -7,17 +7,20 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { CommentSheet } from "@/components/ui/CommentSheet";
-import { Color, Spacing } from "@/constants/theme";
+import { Spacing } from "@/constants/theme";
 import { formatCommunityDate, formatPbExerciseName, formatWorkoutTitle } from "@/lib/community-formatters";
 import { tapFeedback } from "@/lib/haptics";
 import { useCommunityWorkoutItem, useToggleWorkoutLike } from "@/lib/queries/community";
 import { formatExerciseLoad, formatRun } from "@/lib/workout-formatters";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 // Deep-link target for community notifications (a like, a comment, a
 // mention) — opens straight to the specific workout that prompted the
 // notification, comments already open, rather than dropping the member at
 // the Community root to go hunting for it.
 export default function CommunityWorkoutScreen() {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data: item, isLoading, isError } = useCommunityWorkoutItem(id ?? "");
@@ -120,49 +123,51 @@ export default function CommunityWorkoutScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Color.bg0 },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-  },
-  backButton: { padding: 4 },
-  headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
-  centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
-  emptyText: { color: Color.textMuted, fontSize: 14 },
-  body: { paddingHorizontal: Spacing.lg },
-  card: { padding: Spacing.md },
-  cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  authorName: { fontSize: 13, fontWeight: "700", color: Color.textPrimary },
-  date: { fontSize: 11, color: Color.textFaint },
-  title: { fontSize: 17, fontWeight: "700", color: Color.textPrimary, marginTop: 4 },
-  pbBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    alignSelf: "flex-start",
-    marginTop: Spacing.xs,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 3,
-    borderRadius: 999,
-    backgroundColor: Color.goldWeak,
-  },
-  pbBadgeText: { fontSize: 10, fontWeight: "700", color: Color.gold },
-  line: { fontSize: 13, color: Color.textMuted, marginTop: Spacing.sm },
-  actions: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.lg,
-    marginTop: Spacing.md,
-    paddingTop: Spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: Color.borderSubtle,
-  },
-  actionButton: { flexDirection: "row", alignItems: "center", gap: 4, minHeight: 32, paddingVertical: 4 },
-  actionButtonPending: { opacity: 0.5 },
-  actionText: { fontSize: 12, fontWeight: "500", color: Color.textFaint },
-  actionError: { fontSize: 11, color: Color.danger, marginLeft: "auto" },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: Color.bg0 },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: Spacing.lg,
+      paddingVertical: Spacing.md,
+    },
+    backButton: { padding: 4 },
+    headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
+    centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
+    emptyText: { color: Color.textMuted, fontSize: 14 },
+    body: { paddingHorizontal: Spacing.lg },
+    card: { padding: Spacing.md },
+    cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+    authorName: { fontSize: 13, fontWeight: "700", color: Color.textPrimary },
+    date: { fontSize: 11, color: Color.textFaint },
+    title: { fontSize: 17, fontWeight: "700", color: Color.textPrimary, marginTop: 4 },
+    pbBadge: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 4,
+      alignSelf: "flex-start",
+      marginTop: Spacing.xs,
+      paddingHorizontal: Spacing.sm,
+      paddingVertical: 3,
+      borderRadius: 999,
+      backgroundColor: Color.goldWeak,
+    },
+    pbBadgeText: { fontSize: 10, fontWeight: "700", color: Color.gold },
+    line: { fontSize: 13, color: Color.textMuted, marginTop: Spacing.sm },
+    actions: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: Spacing.lg,
+      marginTop: Spacing.md,
+      paddingTop: Spacing.md,
+      borderTopWidth: 1,
+      borderTopColor: Color.borderSubtle,
+    },
+    actionButton: { flexDirection: "row", alignItems: "center", gap: 4, minHeight: 32, paddingVertical: 4 },
+    actionButtonPending: { opacity: 0.5 },
+    actionText: { fontSize: 12, fontWeight: "500", color: Color.textFaint },
+    actionError: { fontSize: 11, color: Color.danger, marginLeft: "auto" },
+  })
+);

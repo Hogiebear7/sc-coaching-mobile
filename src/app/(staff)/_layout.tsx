@@ -1,8 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
 
-import { Color } from "@/constants/theme";
 import { useStaffMessageThreads } from "@/lib/queries/staff";
+import { useLegacyColors } from "@/lib/theme";
 
 // Staff/admin get a completely separate tab set from members — coaches
 // don't have a ProfileRecord (profiles are member-owned; see
@@ -25,6 +25,7 @@ const LABELS: Record<string, string> = {
 };
 
 export default function StaffTabsLayout() {
+  const Color = useLegacyColors();
   const { data: threads } = useStaffMessageThreads();
   const unreadCount = threads?.reduce((sum, t) => sum + t.unreadFromMemberCount, 0) ?? 0;
 

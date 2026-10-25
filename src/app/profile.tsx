@@ -22,7 +22,7 @@ import { CyclePhaseChart } from "@/components/ui/CyclePhaseChart";
 import { DateField } from "@/components/ui/DateField";
 import { GoalTimelineCard } from "@/components/ui/GoalTimelineCard";
 import { TextField } from "@/components/ui/TextField";
-import { Color, Radius, Spacing } from "@/constants/theme";
+import { Radius, Spacing } from "@/constants/theme";
 import { ApiError, useAuth } from "@/lib/auth-context";
 import { useCycleData } from "@/lib/queries/cycle";
 import { COUNTRIES } from "@/lib/country-options";
@@ -35,6 +35,7 @@ import {
   type Gender,
   type PrimaryGoal,
 } from "@/lib/queries/profile";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 const GENDERS: Gender[] = ["Male", "Female", "Other"];
 const GOALS: PrimaryGoal[] = [
@@ -59,6 +60,7 @@ function Chip({
   onPress: () => void;
   variant?: "primary" | "secondary";
 }) {
+  const styles = useStyles();
   const activeStyle = variant === "secondary" ? styles.chipActiveSecondary : styles.chipActive;
   const activeTextStyle = variant === "secondary" ? styles.chipTextActiveSecondary : styles.chipTextActive;
   return (
@@ -75,6 +77,8 @@ function truncateSummary(value: string, max: number): string {
 }
 
 function CollapsibleSection({ title, summary, children }: { title: string; summary: string; children: ReactNode }) {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const [open, setOpen] = useState(false);
   return (
     <View>
@@ -91,6 +95,7 @@ function CollapsibleSection({ title, summary, children }: { title: string; summa
 }
 
 function SummaryRow({ label, value }: { label: string; value: string }) {
+  const styles = useStyles();
   return (
     <View style={styles.summaryRow}>
       <Text style={styles.summaryLabel}>{label}</Text>
@@ -112,6 +117,8 @@ function formatDistanceKm(km: number): string {
 }
 
 export default function ProfileScreen() {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const router = useRouter();
   const { user, logout, viewMode, setViewMode } = useAuth();
   const isStaffRole = !!user && user.role !== "member";
@@ -674,124 +681,126 @@ export default function ProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Color.bg0 },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-  },
-  backButton: { padding: 4 },
-  headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
-  centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
-  errorText: { color: Color.textMuted, fontSize: 14 },
-  scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
-  identityRow: { flexDirection: "row", alignItems: "center", gap: Spacing.md, marginBottom: Spacing.lg },
-  avatar: { width: 60, height: 60, borderRadius: Radius.pill },
-  avatarPlaceholder: {
-    width: 60,
-    height: 60,
-    borderRadius: Radius.pill,
-    backgroundColor: Color.goldWeak,
-    borderWidth: 1,
-    borderColor: Color.goldBorder,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  avatarInitial: { fontSize: 22, fontWeight: "700", color: Color.gold },
-  identityName: { fontSize: 20, fontWeight: "700", fontStyle: "italic", color: Color.textPrimary },
-  identityEmail: { fontSize: 12, color: Color.textMuted, marginTop: 2 },
-  changeEmailForm: { marginTop: -Spacing.sm, marginBottom: Spacing.lg },
-  changeEmailLink: { fontSize: 12, fontWeight: "600", color: Color.gold, marginTop: 4 },
-  cancelText: { fontSize: 13, color: Color.textMuted },
-  errorInline: { color: Color.danger, fontSize: 12, marginTop: 6 },
-  savedInline: { color: Color.success, fontSize: 12, marginTop: 2 },
-  statsRow: { flexDirection: "row", gap: Spacing.sm, marginBottom: Spacing.xl },
-  statCard: { flex: 1, padding: Spacing.md, alignItems: "center" },
-  statValue: { fontSize: 16, fontWeight: "700", color: Color.gold, fontVariant: ["tabular-nums"] },
-  statLabel: { fontSize: 11, color: Color.textMuted, marginTop: 4 },
-  sectionLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginBottom: Spacing.sm },
-  sectionLabelSpaced: { marginTop: Spacing.xl },
-  label: { fontSize: 13, fontWeight: "500", color: Color.textSecondary, marginBottom: 6 },
-  labelSpaced: { marginTop: Spacing.md },
-  chipRow: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.xs },
-  chip: {
-    paddingHorizontal: Spacing.md,
-    paddingVertical: 8,
-    borderRadius: Radius.pill,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-  },
-  chipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
-  chipText: { fontSize: 12, fontWeight: "500", color: Color.textMuted },
-  chipTextActive: { color: Color.gold },
-  // Same light-blue "secondary selection" language as the secondary
-  // muscle-group picker in workout-generator.tsx — reused here so Secondary
-  // goal reads as a distinct, lower-emphasis choice from Primary's gold.
-  chipActiveSecondary: { borderColor: Color.accentData, backgroundColor: "rgba(85,196,254,0.12)" },
-  chipTextActiveSecondary: { color: Color.accentData },
-  multiline: { height: 90, paddingTop: 12, textAlignVertical: "top" },
-  error: { color: Color.danger, fontSize: 13, marginTop: Spacing.sm },
-  saved: { color: Color.success, fontSize: 13, marginTop: Spacing.sm },
-  closingDivider: { height: 1, backgroundColor: Color.borderSubtle, marginTop: Spacing.xl, marginBottom: Spacing.lg },
-  cycleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.sm,
-    marginTop: Spacing.lg,
-    padding: Spacing.md,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-  },
-  cycleRowIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.goldBorder,
-    backgroundColor: Color.goldWeak,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  settingTitle: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
-  settingSub: { fontSize: 11, color: Color.textMuted, marginTop: 2 },
-  phasePreview: {
-    marginTop: Spacing.sm,
-    padding: Spacing.md,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-  },
-  phasePreviewLabel: { fontSize: 12, fontWeight: "600", color: Color.textPrimary, marginBottom: Spacing.sm },
-  dietaryCard: { padding: Spacing.md },
-  dietaryHint: { fontSize: 12, color: Color.textMuted, marginBottom: Spacing.md },
-  collapsibleHeader: { flexDirection: "row", alignItems: "center", gap: Spacing.sm },
-  collapsibleSummary: { fontSize: 12, color: Color.textMuted, marginTop: 2 },
-  detailsCard: { padding: Spacing.md },
-  summaryRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 7,
-    gap: Spacing.md,
-  },
-  summaryLabel: { fontSize: 12, color: Color.textMuted },
-  summaryValue: { fontSize: 13, fontWeight: "500", color: Color.textPrimary, flexShrink: 1, textAlign: "right" },
-  editRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    marginTop: Spacing.sm,
-    paddingTop: Spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: Color.borderSubtle,
-  },
-  editRowText: { fontSize: 12, fontWeight: "600", color: Color.gold },
-  doneRow: { alignItems: "center", marginTop: Spacing.md, paddingVertical: 6 },
-  doneRowText: { fontSize: 12, fontWeight: "600", color: Color.textMuted },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: Color.bg0 },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: Spacing.lg,
+      paddingVertical: Spacing.md,
+    },
+    backButton: { padding: 4 },
+    headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
+    centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
+    errorText: { color: Color.textMuted, fontSize: 14 },
+    scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
+    identityRow: { flexDirection: "row", alignItems: "center", gap: Spacing.md, marginBottom: Spacing.lg },
+    avatar: { width: 60, height: 60, borderRadius: Radius.pill },
+    avatarPlaceholder: {
+      width: 60,
+      height: 60,
+      borderRadius: Radius.pill,
+      backgroundColor: Color.goldWeak,
+      borderWidth: 1,
+      borderColor: Color.goldBorder,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    avatarInitial: { fontSize: 22, fontWeight: "700", color: Color.gold },
+    identityName: { fontSize: 20, fontWeight: "700", fontStyle: "italic", color: Color.textPrimary },
+    identityEmail: { fontSize: 12, color: Color.textMuted, marginTop: 2 },
+    changeEmailForm: { marginTop: -Spacing.sm, marginBottom: Spacing.lg },
+    changeEmailLink: { fontSize: 12, fontWeight: "600", color: Color.gold, marginTop: 4 },
+    cancelText: { fontSize: 13, color: Color.textMuted },
+    errorInline: { color: Color.danger, fontSize: 12, marginTop: 6 },
+    savedInline: { color: Color.success, fontSize: 12, marginTop: 2 },
+    statsRow: { flexDirection: "row", gap: Spacing.sm, marginBottom: Spacing.xl },
+    statCard: { flex: 1, padding: Spacing.md, alignItems: "center" },
+    statValue: { fontSize: 16, fontWeight: "700", color: Color.gold, fontVariant: ["tabular-nums"] },
+    statLabel: { fontSize: 11, color: Color.textMuted, marginTop: 4 },
+    sectionLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginBottom: Spacing.sm },
+    sectionLabelSpaced: { marginTop: Spacing.xl },
+    label: { fontSize: 13, fontWeight: "500", color: Color.textSecondary, marginBottom: 6 },
+    labelSpaced: { marginTop: Spacing.md },
+    chipRow: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.xs },
+    chip: {
+      paddingHorizontal: Spacing.md,
+      paddingVertical: 8,
+      borderRadius: Radius.pill,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+    },
+    chipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
+    chipText: { fontSize: 12, fontWeight: "500", color: Color.textMuted },
+    chipTextActive: { color: Color.gold },
+    // Same light-blue "secondary selection" language as the secondary
+    // muscle-group picker in workout-generator.tsx — reused here so Secondary
+    // goal reads as a distinct, lower-emphasis choice from Primary's gold.
+    chipActiveSecondary: { borderColor: Color.accentData, backgroundColor: "rgba(85,196,254,0.12)" },
+    chipTextActiveSecondary: { color: Color.accentData },
+    multiline: { height: 90, paddingTop: 12, textAlignVertical: "top" },
+    error: { color: Color.danger, fontSize: 13, marginTop: Spacing.sm },
+    saved: { color: Color.success, fontSize: 13, marginTop: Spacing.sm },
+    closingDivider: { height: 1, backgroundColor: Color.borderSubtle, marginTop: Spacing.xl, marginBottom: Spacing.lg },
+    cycleRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: Spacing.sm,
+      marginTop: Spacing.lg,
+      padding: Spacing.md,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface1,
+    },
+    cycleRowIcon: {
+      width: 36,
+      height: 36,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.goldBorder,
+      backgroundColor: Color.goldWeak,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    settingTitle: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
+    settingSub: { fontSize: 11, color: Color.textMuted, marginTop: 2 },
+    phasePreview: {
+      marginTop: Spacing.sm,
+      padding: Spacing.md,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface1,
+    },
+    phasePreviewLabel: { fontSize: 12, fontWeight: "600", color: Color.textPrimary, marginBottom: Spacing.sm },
+    dietaryCard: { padding: Spacing.md },
+    dietaryHint: { fontSize: 12, color: Color.textMuted, marginBottom: Spacing.md },
+    collapsibleHeader: { flexDirection: "row", alignItems: "center", gap: Spacing.sm },
+    collapsibleSummary: { fontSize: 12, color: Color.textMuted, marginTop: 2 },
+    detailsCard: { padding: Spacing.md },
+    summaryRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      paddingVertical: 7,
+      gap: Spacing.md,
+    },
+    summaryLabel: { fontSize: 12, color: Color.textMuted },
+    summaryValue: { fontSize: 13, fontWeight: "500", color: Color.textPrimary, flexShrink: 1, textAlign: "right" },
+    editRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+      marginTop: Spacing.sm,
+      paddingTop: Spacing.sm,
+      borderTopWidth: 1,
+      borderTopColor: Color.borderSubtle,
+    },
+    editRowText: { fontSize: 12, fontWeight: "600", color: Color.gold },
+    doneRow: { alignItems: "center", marginTop: Spacing.md, paddingVertical: 6 },
+    doneRowText: { fontSize: 12, fontWeight: "600", color: Color.textMuted },
+  })
+);

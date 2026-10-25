@@ -1,9 +1,10 @@
 import { useWindowDimensions, View } from "react-native";
 import Body, { type ExtendedBodyPart, type Slug } from "react-native-body-highlighter";
 
-import { Color } from "@/constants/theme";
+import { LiveColor as Color } from "@/constants/theme";
 import { BODY_ZONES, type BodyZoneKey } from "@/lib/body-zones";
 import { SLUG_LABEL, ZONE_FOR_SLUG } from "@/lib/muscle-slug-map";
+import { useLegacyColors } from "@/lib/theme";
 
 // Real anatomical silhouette (react-native-body-highlighter) instead of
 // the earlier geometric-block placeholder — genuine front/back SVG paths
@@ -41,15 +42,13 @@ export interface BodyDiagramProps {
 // background, tappable-but-unselected parts sit one step brighter (an
 // implicit "you can tap these" cue), unavailable parts fade further than
 // decorative ones so they read as excluded rather than merely quiet.
-const DECORATIVE_FILL = Color.surface1;
-const AVAILABLE_FILL = Color.surface2;
-const UNAVAILABLE_FILL = "rgba(255,255,255,0.04)";
 // Secondary uses the app's existing data-accent blue rather than a second
 // gold tone, so primary vs secondary reads unambiguously at a glance
 // without inventing a new brand color.
 const SECONDARY_FILL = Color.accentData;
 
 export function BodyDiagram({ view, sex, zoneSelection, isZoneAvailable, onToggleZone }: BodyDiagramProps) {
+  const Color = useLegacyColors();
   const { width } = useWindowDimensions();
   const scale = Math.min(Math.max((width - HORIZONTAL_INSET) / NATIVE_W, 1.3), 2.3);
 
@@ -65,8 +64,8 @@ export function BodyDiagram({ view, sex, zoneSelection, isZoneAvailable, onToggl
           : state === "secondary"
             ? SECONDARY_FILL
             : available
-              ? AVAILABLE_FILL
-              : UNAVAILABLE_FILL;
+              ? Color.surface2
+              : Color.surface1;
       acc.push({ slug, color });
       return acc;
     },
@@ -93,7 +92,7 @@ export function BodyDiagram({ view, sex, zoneSelection, isZoneAvailable, onToggl
         side={view}
         scale={scale}
         border={Color.borderSubtle}
-        defaultFill={DECORATIVE_FILL}
+        defaultFill={Color.surface1}
         onBodyPartPress={handlePress}
       />
     </View>

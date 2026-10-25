@@ -2,8 +2,9 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { Pressable, StyleSheet, Text } from "react-native";
 
-import { Color, Radius, Spacing } from "@/constants/theme";
+import { Radius, Spacing } from "@/constants/theme";
 import { useWorkoutDraft } from "@/lib/workout-draft";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 /**
  * Jump straight back into an in-progress workout from anywhere in the app —
@@ -12,6 +13,8 @@ import { useWorkoutDraft } from "@/lib/workout-draft";
  * no active draft.
  */
 export function ContinueWorkoutPill() {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const router = useRouter();
   const { hasContent } = useWorkoutDraft();
 
@@ -25,15 +28,17 @@ export function ContinueWorkoutPill() {
   );
 }
 
-const styles = StyleSheet.create({
-  pill: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 2,
-    backgroundColor: Color.gold,
-    borderRadius: Radius.pill,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: 8,
-  },
-  pillText: { fontSize: 12, fontWeight: "700", color: Color.goldForeground },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    pill: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 2,
+      backgroundColor: Color.gold,
+      borderRadius: Radius.pill,
+      paddingHorizontal: Spacing.md,
+      paddingVertical: 8,
+    },
+    pillText: { fontSize: 12, fontWeight: "700", color: Color.goldForeground },
+  })
+);

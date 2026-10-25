@@ -1,7 +1,8 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
 
-import { Color, MacroColor, Spacing } from "@/constants/theme";
+import { MacroColor, Spacing } from "@/constants/theme";
+import { makeLegacyStyles } from "@/lib/theme";
 
 const SIZE = 124;
 const CENTER = SIZE / 2;
@@ -152,6 +153,7 @@ export function MacroLegendRow({
   target: number | null;
   onPress: () => void;
 }) {
+  const styles = useStyles();
   return (
     <Pressable onPress={onPress} style={styles.legendRow} hitSlop={4}>
       <View style={[styles.dot, { backgroundColor: MacroColor[kind] }]} />
@@ -164,9 +166,11 @@ export function MacroLegendRow({
   );
 }
 
-const styles = StyleSheet.create({
-  legendRow: { flexDirection: "row", alignItems: "center", paddingVertical: 5 },
-  dot: { width: 9, height: 9, borderRadius: 5, marginRight: Spacing.sm },
-  legendLabel: { flex: 1, fontSize: 12.5, fontWeight: "600", color: Color.textSecondary },
-  legendValue: { fontSize: 12, color: Color.textMuted, fontVariant: ["tabular-nums"] },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    legendRow: { flexDirection: "row", alignItems: "center", paddingVertical: 5 },
+    dot: { width: 9, height: 9, borderRadius: 5, marginRight: Spacing.sm },
+    legendLabel: { flex: 1, fontSize: 12.5, fontWeight: "600", color: Color.textSecondary },
+    legendValue: { fontSize: 12, color: Color.textMuted, fontVariant: ["tabular-nums"] },
+  })
+);

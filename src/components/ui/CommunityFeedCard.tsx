@@ -2,10 +2,11 @@ import { Ionicons } from "@expo/vector-icons";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { Card } from "@/components/ui/Card";
-import { Color, Spacing } from "@/constants/theme";
+import { Spacing } from "@/constants/theme";
 import { formatActivitySummary, formatCommunityDate, formatWorkoutTitle } from "@/lib/community-formatters";
 import { tapFeedback } from "@/lib/haptics";
 import { useToggleWorkoutLike, type CommunityFeedItem } from "@/lib/queries/community";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 const MAX_PREVIEW_LINES = 3;
 
@@ -14,6 +15,8 @@ const MAX_PREVIEW_LINES = 3;
 // like/comment behavior, so an activity item looks and behaves identically
 // wherever it's shown.
 export function CommunityFeedCard({ item, onOpenComments }: { item: CommunityFeedItem; onOpenComments: () => void }) {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const toggleLike = useToggleWorkoutLike();
   const summary = formatActivitySummary(item.exercises, item.runs, MAX_PREVIEW_LINES);
   const isLiking = toggleLike.isPending && toggleLike.variables === item.id;
@@ -82,36 +85,38 @@ export function CommunityFeedCard({ item, onOpenComments }: { item: CommunityFee
   );
 }
 
-const styles = StyleSheet.create({
-  feedCard: { padding: Spacing.md, marginBottom: Spacing.sm },
-  feedHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: Spacing.sm },
-  authorName: { fontSize: 13, fontWeight: "700", color: Color.textPrimary, flexShrink: 1 },
-  feedDate: { fontSize: 11, color: Color.textFaint },
-  feedTitleRow: { flexDirection: "row", alignItems: "center", gap: Spacing.xs, marginTop: 4 },
-  feedTitle: { fontSize: 15, fontWeight: "600", color: Color.textPrimary, flexShrink: 1 },
-  feedPbBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 3,
-    borderRadius: 999,
-    backgroundColor: Color.goldWeak,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-  },
-  feedPbBadgeText: { fontSize: 10, fontWeight: "700", color: Color.gold },
-  feedLine: { fontSize: 12, color: Color.textMuted, marginTop: 4 },
-  feedMore: { fontSize: 11, color: Color.textFaint, marginTop: 2 },
-  feedActions: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.lg,
-    marginTop: Spacing.sm,
-    paddingTop: Spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: Color.borderSubtle,
-  },
-  feedActionButton: { flexDirection: "row", alignItems: "center", gap: 4, minHeight: 32, paddingVertical: 4 },
-  feedActionButtonPending: { opacity: 0.5 },
-  feedActionText: { fontSize: 11, fontWeight: "500", color: Color.textFaint },
-  feedActionError: { fontSize: 11, color: Color.danger, marginLeft: "auto" },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    feedCard: { padding: Spacing.md, marginBottom: Spacing.sm },
+    feedHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: Spacing.sm },
+    authorName: { fontSize: 13, fontWeight: "700", color: Color.textPrimary, flexShrink: 1 },
+    feedDate: { fontSize: 11, color: Color.textFaint },
+    feedTitleRow: { flexDirection: "row", alignItems: "center", gap: Spacing.xs, marginTop: 4 },
+    feedTitle: { fontSize: 15, fontWeight: "600", color: Color.textPrimary, flexShrink: 1 },
+    feedPbBadge: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 3,
+      borderRadius: 999,
+      backgroundColor: Color.goldWeak,
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+    },
+    feedPbBadgeText: { fontSize: 10, fontWeight: "700", color: Color.gold },
+    feedLine: { fontSize: 12, color: Color.textMuted, marginTop: 4 },
+    feedMore: { fontSize: 11, color: Color.textFaint, marginTop: 2 },
+    feedActions: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: Spacing.lg,
+      marginTop: Spacing.sm,
+      paddingTop: Spacing.sm,
+      borderTopWidth: 1,
+      borderTopColor: Color.borderSubtle,
+    },
+    feedActionButton: { flexDirection: "row", alignItems: "center", gap: 4, minHeight: 32, paddingVertical: 4 },
+    feedActionButtonPending: { opacity: 0.5 },
+    feedActionText: { fontSize: 11, fontWeight: "500", color: Color.textFaint },
+    feedActionError: { fontSize: 11, color: Color.danger, marginLeft: "auto" },
+  })
+);

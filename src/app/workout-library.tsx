@@ -6,15 +6,17 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { Color, Radius, Spacing } from "@/constants/theme";
+import { Radius, Spacing } from "@/constants/theme";
 import { exerciseMatchesEquipmentSlugs } from "@/lib/equipment-matching";
 import { useExerciseLibrary, type ExerciseLibraryRecord } from "@/lib/queries/exercise-library";
 import { useEquipmentCatalog, useGymProfiles } from "@/lib/queries/gym-profiles";
 import { useWorkoutTemplates, type WorkoutTemplate } from "@/lib/queries/workout-templates";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 type LibraryTab = "exercises" | "workouts";
 
 function TemplateCard({ template, onPress, onStart }: { template: WorkoutTemplate; onPress: () => void; onStart: () => void }) {
+  const styles = useStyles();
   return (
     <Card style={styles.templateCard}>
       <Pressable onPress={onPress}>
@@ -32,6 +34,8 @@ function TemplateCard({ template, onPress, onStart }: { template: WorkoutTemplat
 }
 
 function WorkoutsTab({ router }: { router: ReturnType<typeof useRouter> }) {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const { data: templates, isLoading, isError, refetch } = useWorkoutTemplates();
   const active = (templates ?? []).filter((t) => !t.archivedAt);
 
@@ -91,6 +95,8 @@ function WorkoutsTab({ router }: { router: ReturnType<typeof useRouter> }) {
 }
 
 function ExercisesTab({ router }: { router: ReturnType<typeof useRouter> }) {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const { data, isLoading, isError, refetch } = useExerciseLibrary();
   const { data: gymProfilesData } = useGymProfiles();
   const { data: equipmentCatalogData } = useEquipmentCatalog();
@@ -229,6 +235,8 @@ function ExercisesTab({ router }: { router: ReturnType<typeof useRouter> }) {
 }
 
 export default function WorkoutLibraryScreen() {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const router = useRouter();
   const { tab: initialTab } = useLocalSearchParams<{ tab?: string }>();
   const [tab, setTab] = useState<LibraryTab>(initialTab === "exercises" ? "exercises" : "workouts");
@@ -263,92 +271,94 @@ export default function WorkoutLibraryScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Color.bg0 },
-  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md },
-  backButton: { padding: 4 },
-  addButton: { padding: 4 },
-  headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
-  tabBar: {
-    flexDirection: "row",
-    gap: 4,
-    marginHorizontal: Spacing.lg,
-    marginBottom: Spacing.sm,
-    padding: 4,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-  },
-  tabButton: { flex: 1, paddingVertical: Spacing.sm, borderRadius: Radius.sm, alignItems: "center" },
-  tabButtonActive: { backgroundColor: Color.surface2 },
-  tabButtonText: { fontSize: 13, fontWeight: "600", color: Color.textMuted },
-  tabButtonTextActive: { color: Color.textPrimary },
-  centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl, gap: Spacing.xs },
-  errorText: { color: Color.textMuted, fontSize: 14 },
-  scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
-  emptyCard: { alignItems: "center", padding: Spacing.xl, gap: 4 },
-  emptyText: { fontSize: 13, fontWeight: "600", color: Color.textSecondary, marginTop: Spacing.xs },
-  emptySub: { fontSize: 12, color: Color.textMuted, textAlign: "center" },
-  generatorBanner: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.sm,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.goldBorder,
-    backgroundColor: Color.goldWeak,
-    padding: Spacing.md,
-    marginBottom: Spacing.md,
-  },
-  generatorBannerIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: Radius.pill,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: Color.surface1,
-  },
-  generatorBannerTitle: { fontSize: 14, fontWeight: "700", color: Color.textPrimary },
-  generatorBannerSub: { fontSize: 11, color: Color.textMuted, marginTop: 2 },
-  templateCard: { padding: Spacing.md, marginBottom: Spacing.sm },
-  templateName: { fontSize: 15, fontWeight: "600", color: Color.textPrimary },
-  templatePreview: { fontSize: 12, color: Color.textMuted, marginTop: 4 },
-  templateCount: { fontSize: 11, color: Color.textFaint, marginTop: 4 },
-  searchWrap: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.sm,
-    marginHorizontal: Spacing.lg,
-    marginBottom: Spacing.sm,
-    paddingHorizontal: Spacing.sm,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-  },
-  searchInput: { flex: 1, paddingVertical: 10, fontSize: 13, color: Color.textPrimary },
-  equipmentFilterRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    marginHorizontal: Spacing.lg,
-    marginBottom: Spacing.sm,
-  },
-  equipmentFilterText: { flex: 1, fontSize: 11, color: Color.textMuted },
-  equipmentFilterAction: { fontSize: 11, fontWeight: "600", color: Color.gold },
-  // flexShrink: 0 is load-bearing — react-native-web's ScrollView defaults to
-  // flexShrink: 1 on its outer wrapper, so without this the FlatList below
-  // (which wants all remaining vertical space) squeezes this row down toward
-  // 0 height instead of leaving it at its natural content-based size.
-  bodyPartScroll: { flexGrow: 0, flexShrink: 0, marginBottom: Spacing.sm },
-  bodyPartRow: { paddingHorizontal: Spacing.lg, gap: Spacing.xs },
-  bodyPartChip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.md, paddingVertical: 6 },
-  bodyPartChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
-  bodyPartChipText: { fontSize: 12, fontWeight: "600", color: Color.textMuted, textTransform: "capitalize" },
-  bodyPartChipTextActive: { color: Color.gold },
-  separator: { height: 1, backgroundColor: Color.borderSubtle },
-  exerciseRow: { flexDirection: "row", alignItems: "center", paddingVertical: Spacing.md, gap: Spacing.sm },
-  exerciseName: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
-  exerciseMeta: { fontSize: 11, color: Color.textMuted, marginTop: 2, textTransform: "capitalize" },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: Color.bg0 },
+    header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md },
+    backButton: { padding: 4 },
+    addButton: { padding: 4 },
+    headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
+    tabBar: {
+      flexDirection: "row",
+      gap: 4,
+      marginHorizontal: Spacing.lg,
+      marginBottom: Spacing.sm,
+      padding: 4,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface1,
+    },
+    tabButton: { flex: 1, paddingVertical: Spacing.sm, borderRadius: Radius.sm, alignItems: "center" },
+    tabButtonActive: { backgroundColor: Color.surface2 },
+    tabButtonText: { fontSize: 13, fontWeight: "600", color: Color.textMuted },
+    tabButtonTextActive: { color: Color.textPrimary },
+    centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl, gap: Spacing.xs },
+    errorText: { color: Color.textMuted, fontSize: 14 },
+    scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
+    emptyCard: { alignItems: "center", padding: Spacing.xl, gap: 4 },
+    emptyText: { fontSize: 13, fontWeight: "600", color: Color.textSecondary, marginTop: Spacing.xs },
+    emptySub: { fontSize: 12, color: Color.textMuted, textAlign: "center" },
+    generatorBanner: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: Spacing.sm,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.goldBorder,
+      backgroundColor: Color.goldWeak,
+      padding: Spacing.md,
+      marginBottom: Spacing.md,
+    },
+    generatorBannerIcon: {
+      width: 36,
+      height: 36,
+      borderRadius: Radius.pill,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: Color.surface1,
+    },
+    generatorBannerTitle: { fontSize: 14, fontWeight: "700", color: Color.textPrimary },
+    generatorBannerSub: { fontSize: 11, color: Color.textMuted, marginTop: 2 },
+    templateCard: { padding: Spacing.md, marginBottom: Spacing.sm },
+    templateName: { fontSize: 15, fontWeight: "600", color: Color.textPrimary },
+    templatePreview: { fontSize: 12, color: Color.textMuted, marginTop: 4 },
+    templateCount: { fontSize: 11, color: Color.textFaint, marginTop: 4 },
+    searchWrap: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: Spacing.sm,
+      marginHorizontal: Spacing.lg,
+      marginBottom: Spacing.sm,
+      paddingHorizontal: Spacing.sm,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface1,
+    },
+    searchInput: { flex: 1, paddingVertical: 10, fontSize: 13, color: Color.textPrimary },
+    equipmentFilterRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+      marginHorizontal: Spacing.lg,
+      marginBottom: Spacing.sm,
+    },
+    equipmentFilterText: { flex: 1, fontSize: 11, color: Color.textMuted },
+    equipmentFilterAction: { fontSize: 11, fontWeight: "600", color: Color.gold },
+    // flexShrink: 0 is load-bearing — react-native-web's ScrollView defaults to
+    // flexShrink: 1 on its outer wrapper, so without this the FlatList below
+    // (which wants all remaining vertical space) squeezes this row down toward
+    // 0 height instead of leaving it at its natural content-based size.
+    bodyPartScroll: { flexGrow: 0, flexShrink: 0, marginBottom: Spacing.sm },
+    bodyPartRow: { paddingHorizontal: Spacing.lg, gap: Spacing.xs },
+    bodyPartChip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.md, paddingVertical: 6 },
+    bodyPartChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
+    bodyPartChipText: { fontSize: 12, fontWeight: "600", color: Color.textMuted, textTransform: "capitalize" },
+    bodyPartChipTextActive: { color: Color.gold },
+    separator: { height: 1, backgroundColor: Color.borderSubtle },
+    exerciseRow: { flexDirection: "row", alignItems: "center", paddingVertical: Spacing.md, gap: Spacing.sm },
+    exerciseName: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
+    exerciseMeta: { fontSize: 11, color: Color.textMuted, marginTop: 2, textTransform: "capitalize" },
+  })
+);

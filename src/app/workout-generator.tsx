@@ -33,7 +33,7 @@ import { EquipmentPicker } from "@/components/ui/EquipmentPicker";
 import { KeyboardAwareScroll } from "@/components/ui/KeyboardAwareScroll";
 import { MonthDatePicker } from "@/components/ui/MonthDatePicker";
 import { TextField } from "@/components/ui/TextField";
-import { Color, Radius, Spacing } from "@/constants/theme";
+import { LiveColor as Color, Radius, Spacing } from "@/constants/theme";
 import { CARDIO_VENDOR_VALUE, findBodyZone, vendorValuesPresentForZone, type BodyZoneKey } from "@/lib/body-zones";
 import { equipmentSlugMatchesVendorString } from "@/lib/equipment-matching";
 import { tapFeedback } from "@/lib/haptics";
@@ -44,6 +44,7 @@ import { useGenerateProgramme } from "@/lib/queries/programs";
 import { useProfile } from "@/lib/queries/profile";
 import { useWorkoutHelperTier, type SessionTier } from "@/lib/queries/workout-helper";
 import { generateStructuredWorkout, generateWorkout } from "@/lib/workout-generator";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 type GeneratorMode = "workout" | "programme";
 
@@ -154,6 +155,8 @@ function ChipGroup({
   onToggle: (value: string) => void;
   variant?: "primary" | "secondary";
 }) {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const activeStyle = variant === "primary" ? styles.chipActive : styles.chipActiveSecondary;
   const activeTextStyle = variant === "primary" ? styles.chipTextActive : styles.chipTextActiveSecondary;
   const dotColor = variant === "primary" ? Color.gold : Color.accentData;
@@ -212,6 +215,8 @@ function SelectedMusclesSection({
   onRemove: (value: string) => void;
   emptyHint: string;
 }) {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const [expanded, setExpanded] = useState(false);
   const names = values.map((v) => labels[v] ?? humanizeZoneValue(v));
   const dotColor = variant === "primary" ? Color.gold : Color.accentData;
@@ -276,6 +281,8 @@ function SelectedMusclesSection({
 // checkmark on the selected row) minus the search bar, which a 16-item
 // list doesn't need.
 function SportField({ value, onChange }: { value: string | null; onChange: (value: string | null) => void }) {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const [open, setOpen] = useState(false);
 
   function select(sport: string | null) {
@@ -323,6 +330,8 @@ function SportField({ value, onChange }: { value: string | null; onChange: (valu
 }
 
 export default function WorkoutGeneratorScreen() {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const router = useRouter();
   const { data, isLoading, isError, refetch } = useExerciseLibrary();
   const { data: gymProfilesData } = useGymProfiles();
@@ -1099,258 +1108,260 @@ export default function WorkoutGeneratorScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Color.bg0 },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-  },
-  backButton: { padding: 4 },
-  headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
-  modeToggleWrap: {
-    flexDirection: "row",
-    justifyContent: "center",
-    gap: Spacing.sm,
-    paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.md,
-  },
-  modePill: {
-    minWidth: 120,
-    alignItems: "center",
-    borderRadius: Radius.pill,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: 10,
-  },
-  modePillActive: { borderColor: Color.goldBorder, backgroundColor: Color.goldWeak },
-  modePillText: { fontSize: 13, fontWeight: "700", color: Color.textMuted },
-  modePillTextActive: { color: Color.gold },
-  centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
-  errorText: { color: Color.textMuted, fontSize: 14 },
-  scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
-  tierCard: { padding: Spacing.md, marginTop: Spacing.md },
-  tierHeaderRow: { flexDirection: "row", alignItems: "center", gap: Spacing.xs },
-  tierDot: { width: 8, height: 8, borderRadius: 4 },
-  tierTitle: { fontSize: 13, fontWeight: "700", color: Color.textPrimary },
-  tierRationale: { fontSize: 12, color: Color.textMuted, marginTop: 4, lineHeight: 17 },
-  sectionLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginTop: Spacing.lg },
-  sectionSub: { fontSize: 12, color: Color.textFaint, marginTop: 2, marginBottom: Spacing.sm },
-  // The one loud label per logical group ("Programme setup", "Practical
-  // constraints", "Context for AI") — everything under it uses the quieter
-  // fieldLabel below, so the page reads as three groups, not six-plus
-  // equally-shouting eyebrows in a row.
-  groupHeader: {
-    fontSize: 15,
-    fontWeight: "700",
-    letterSpacing: -0.2,
-    color: Color.textPrimary,
-    marginTop: Spacing.xl,
-    marginBottom: Spacing.sm,
-  },
-  fieldLabel: { fontSize: 11, fontWeight: "600", color: Color.textSecondary, marginBottom: 6 },
-  chipRow: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.xs },
-  chipIconRow: { flexDirection: "row", alignItems: "center" },
-  // Sport field — a tap-to-open modal list (see SportField), not a chip
-  // row, so 16 sports never require horizontal scrolling to browse.
-  sportField: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    height: 44,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-    paddingHorizontal: Spacing.md,
-  },
-  sportFieldValue: { fontSize: 14, color: Color.textPrimary },
-  sportFieldPlaceholder: { fontSize: 14, color: Color.textFaint },
-  sportModalSafe: { flex: 1, backgroundColor: Color.bg0 },
-  sportModalHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-  },
-  sportModalTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
-  sportRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: Color.borderSubtle,
-  },
-  sportRowText: { fontSize: 14, color: Color.textPrimary },
-  // Selected-custom-date summary — replaces the raw calendar once a date is
-  // picked, rather than leaving the picker permanently open or showing a
-  // second control alongside the still-highlighted duration chips.
-  customEndDateRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    marginTop: Spacing.sm,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 8,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.goldBorder,
-    backgroundColor: Color.goldWeak,
-  },
-  customEndDateText: { flex: 1, fontSize: 12, fontWeight: "600", color: Color.textPrimary },
-  changeLinkText: { fontSize: 12, fontWeight: "600", color: Color.gold },
-  equipmentStatus: { fontSize: 12, color: Color.textFaint, marginTop: 2, marginBottom: Spacing.sm },
-  chip: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderRadius: Radius.pill,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: 8,
-  },
-  chipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
-  chipActiveSecondary: { borderColor: Color.accentData, backgroundColor: "rgba(85,196,254,0.12)" },
-  chipText: { fontSize: 12, fontWeight: "600", color: Color.textMuted, textTransform: "capitalize" },
-  chipTextActive: { color: Color.gold },
-  chipTextActiveSecondary: { color: Color.accentData },
-  // Collapsed-by-default review area — replaces the old always-open chip
-  // wall. Header alone (dot + title + live count/name summary + chevron)
-  // is the whole feedback loop; expanding is only for removing chips.
-  summaryGroup: { marginTop: Spacing.md, gap: Spacing.xs },
-  summarySection: {
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-    overflow: "hidden",
-  },
-  summaryHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.sm,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm + 2,
-  },
-  summaryDot: { width: 8, height: 8, borderRadius: 4 },
-  summaryHeaderText: { flex: 1 },
-  summaryTitle: { fontSize: 12, fontWeight: "700", color: Color.textPrimary },
-  summaryMeta: { fontSize: 12, fontWeight: "500", color: Color.textMuted },
-  summaryEmptyText: {
-    fontSize: 11,
-    color: Color.textFaint,
-    lineHeight: 16,
-    paddingHorizontal: Spacing.md,
-    paddingBottom: Spacing.sm,
-  },
-  summaryChipRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: Spacing.xs,
-    paddingHorizontal: Spacing.md,
-    paddingBottom: Spacing.sm,
-  },
-  fullListToggle: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    marginTop: Spacing.sm,
-    paddingVertical: 6,
-  },
-  fullListToggleText: { fontSize: 11, fontWeight: "600", color: Color.textMuted },
-  // The diagram module reads as one contained "picker" panel — Front/Back,
-  // Primary/Secondary, the silhouette, and the cardio pill all live inside
-  // it, rather than floating loose against the screen background.
-  diagramCard: { marginTop: Spacing.xs },
-  diagramCardInner: { padding: Spacing.md, alignItems: "center" },
-  segmentGroup: {
-    flexDirection: "row",
-    gap: 4,
-    padding: 4,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.bg0,
-  },
-  segment: { minWidth: 64, alignItems: "center", paddingHorizontal: Spacing.md, paddingVertical: 8, borderRadius: Radius.sm },
-  segmentActive: { backgroundColor: Color.surface2 },
-  segmentText: { fontSize: 12, fontWeight: "600", color: Color.textMuted },
-  segmentTextActive: { color: Color.textPrimary },
-  // Both modes shown at once (rather than one button whose label changes)
-  // so it's always visually obvious which one is active, and the dot color
-  // pre-teaches the gold/blue coding used on the silhouette itself.
-  modeSegmentGroup: {
-    flexDirection: "row",
-    gap: Spacing.xs,
-    marginTop: Spacing.sm,
-  },
-  modeSegment: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    borderRadius: Radius.pill,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.bg0,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: 8,
-  },
-  modeSegmentActivePrimary: { borderColor: Color.goldBorder, backgroundColor: Color.goldWeak },
-  modeSegmentActiveSecondary: { borderColor: Color.accentData, backgroundColor: "rgba(85,196,254,0.12)" },
-  modeDot: { width: 7, height: 7, borderRadius: 4 },
-  modeSegmentText: { fontSize: 12, fontWeight: "600", color: Color.textMuted },
-  modeSegmentTextActivePrimary: { color: Color.gold },
-  modeSegmentTextActiveSecondary: { color: Color.accentData },
-  diagramWrap: { alignItems: "center", paddingVertical: Spacing.md },
-  cardioChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    borderRadius: Radius.pill,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: 8,
-    marginTop: Spacing.xs,
-  },
-  cardioChipText: { fontSize: 12, fontWeight: "600", color: Color.textMuted },
-  profileRow: { gap: Spacing.xs, paddingBottom: 2 },
-  profileChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    borderRadius: Radius.pill,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: 8,
-  },
-  profileChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
-  profileChipIcon: { fontSize: 14 },
-  profileChipText: { fontSize: 12, fontWeight: "600", color: Color.textMuted },
-  profileChipTextActive: { color: Color.gold },
-  addProfileChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    borderRadius: Radius.pill,
-    borderWidth: 1,
-    borderColor: Color.goldBorder,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: 8,
-  },
-  addProfileChipText: { fontSize: 12, fontWeight: "600", color: Color.gold },
-  emptyProfileHint: { fontSize: 11, color: Color.textFaint, marginTop: Spacing.xs, lineHeight: 15 },
-  editEquipmentRow: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: Spacing.sm, marginBottom: Spacing.sm },
-  editEquipmentText: { fontSize: 12, fontWeight: "600", color: Color.textMuted },
-  error: { fontSize: 12, color: Color.danger, marginTop: Spacing.md },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: Color.bg0 },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: Spacing.lg,
+      paddingVertical: Spacing.md,
+    },
+    backButton: { padding: 4 },
+    headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
+    modeToggleWrap: {
+      flexDirection: "row",
+      justifyContent: "center",
+      gap: Spacing.sm,
+      paddingHorizontal: Spacing.lg,
+      paddingBottom: Spacing.md,
+    },
+    modePill: {
+      minWidth: 120,
+      alignItems: "center",
+      borderRadius: Radius.pill,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface1,
+      paddingHorizontal: Spacing.lg,
+      paddingVertical: 10,
+    },
+    modePillActive: { borderColor: Color.goldBorder, backgroundColor: Color.goldWeak },
+    modePillText: { fontSize: 13, fontWeight: "700", color: Color.textMuted },
+    modePillTextActive: { color: Color.gold },
+    centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
+    errorText: { color: Color.textMuted, fontSize: 14 },
+    scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
+    tierCard: { padding: Spacing.md, marginTop: Spacing.md },
+    tierHeaderRow: { flexDirection: "row", alignItems: "center", gap: Spacing.xs },
+    tierDot: { width: 8, height: 8, borderRadius: 4 },
+    tierTitle: { fontSize: 13, fontWeight: "700", color: Color.textPrimary },
+    tierRationale: { fontSize: 12, color: Color.textMuted, marginTop: 4, lineHeight: 17 },
+    sectionLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginTop: Spacing.lg },
+    sectionSub: { fontSize: 12, color: Color.textFaint, marginTop: 2, marginBottom: Spacing.sm },
+    // The one loud label per logical group ("Programme setup", "Practical
+    // constraints", "Context for AI") — everything under it uses the quieter
+    // fieldLabel below, so the page reads as three groups, not six-plus
+    // equally-shouting eyebrows in a row.
+    groupHeader: {
+      fontSize: 15,
+      fontWeight: "700",
+      letterSpacing: -0.2,
+      color: Color.textPrimary,
+      marginTop: Spacing.xl,
+      marginBottom: Spacing.sm,
+    },
+    fieldLabel: { fontSize: 11, fontWeight: "600", color: Color.textSecondary, marginBottom: 6 },
+    chipRow: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.xs },
+    chipIconRow: { flexDirection: "row", alignItems: "center" },
+    // Sport field — a tap-to-open modal list (see SportField), not a chip
+    // row, so 16 sports never require horizontal scrolling to browse.
+    sportField: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      height: 44,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface1,
+      paddingHorizontal: Spacing.md,
+    },
+    sportFieldValue: { fontSize: 14, color: Color.textPrimary },
+    sportFieldPlaceholder: { fontSize: 14, color: Color.textFaint },
+    sportModalSafe: { flex: 1, backgroundColor: Color.bg0 },
+    sportModalHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: Spacing.lg,
+      paddingVertical: Spacing.md,
+    },
+    sportModalTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
+    sportRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: Spacing.lg,
+      paddingVertical: Spacing.md,
+      borderBottomWidth: 1,
+      borderBottomColor: Color.borderSubtle,
+    },
+    sportRowText: { fontSize: 14, color: Color.textPrimary },
+    // Selected-custom-date summary — replaces the raw calendar once a date is
+    // picked, rather than leaving the picker permanently open or showing a
+    // second control alongside the still-highlighted duration chips.
+    customEndDateRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+      marginTop: Spacing.sm,
+      paddingHorizontal: Spacing.sm,
+      paddingVertical: 8,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.goldBorder,
+      backgroundColor: Color.goldWeak,
+    },
+    customEndDateText: { flex: 1, fontSize: 12, fontWeight: "600", color: Color.textPrimary },
+    changeLinkText: { fontSize: 12, fontWeight: "600", color: Color.gold },
+    equipmentStatus: { fontSize: 12, color: Color.textFaint, marginTop: 2, marginBottom: Spacing.sm },
+    chip: {
+      flexDirection: "row",
+      alignItems: "center",
+      borderRadius: Radius.pill,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      paddingHorizontal: Spacing.md,
+      paddingVertical: 8,
+    },
+    chipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
+    chipActiveSecondary: { borderColor: Color.accentData, backgroundColor: "rgba(85,196,254,0.12)" },
+    chipText: { fontSize: 12, fontWeight: "600", color: Color.textMuted, textTransform: "capitalize" },
+    chipTextActive: { color: Color.gold },
+    chipTextActiveSecondary: { color: Color.accentData },
+    // Collapsed-by-default review area — replaces the old always-open chip
+    // wall. Header alone (dot + title + live count/name summary + chevron)
+    // is the whole feedback loop; expanding is only for removing chips.
+    summaryGroup: { marginTop: Spacing.md, gap: Spacing.xs },
+    summarySection: {
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface1,
+      overflow: "hidden",
+    },
+    summaryHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: Spacing.sm,
+      paddingHorizontal: Spacing.md,
+      paddingVertical: Spacing.sm + 2,
+    },
+    summaryDot: { width: 8, height: 8, borderRadius: 4 },
+    summaryHeaderText: { flex: 1 },
+    summaryTitle: { fontSize: 12, fontWeight: "700", color: Color.textPrimary },
+    summaryMeta: { fontSize: 12, fontWeight: "500", color: Color.textMuted },
+    summaryEmptyText: {
+      fontSize: 11,
+      color: Color.textFaint,
+      lineHeight: 16,
+      paddingHorizontal: Spacing.md,
+      paddingBottom: Spacing.sm,
+    },
+    summaryChipRow: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: Spacing.xs,
+      paddingHorizontal: Spacing.md,
+      paddingBottom: Spacing.sm,
+    },
+    fullListToggle: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 6,
+      marginTop: Spacing.sm,
+      paddingVertical: 6,
+    },
+    fullListToggleText: { fontSize: 11, fontWeight: "600", color: Color.textMuted },
+    // The diagram module reads as one contained "picker" panel — Front/Back,
+    // Primary/Secondary, the silhouette, and the cardio pill all live inside
+    // it, rather than floating loose against the screen background.
+    diagramCard: { marginTop: Spacing.xs },
+    diagramCardInner: { padding: Spacing.md, alignItems: "center" },
+    segmentGroup: {
+      flexDirection: "row",
+      gap: 4,
+      padding: 4,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.bg0,
+    },
+    segment: { minWidth: 64, alignItems: "center", paddingHorizontal: Spacing.md, paddingVertical: 8, borderRadius: Radius.sm },
+    segmentActive: { backgroundColor: Color.surface2 },
+    segmentText: { fontSize: 12, fontWeight: "600", color: Color.textMuted },
+    segmentTextActive: { color: Color.textPrimary },
+    // Both modes shown at once (rather than one button whose label changes)
+    // so it's always visually obvious which one is active, and the dot color
+    // pre-teaches the gold/blue coding used on the silhouette itself.
+    modeSegmentGroup: {
+      flexDirection: "row",
+      gap: Spacing.xs,
+      marginTop: Spacing.sm,
+    },
+    modeSegment: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+      borderRadius: Radius.pill,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.bg0,
+      paddingHorizontal: Spacing.md,
+      paddingVertical: 8,
+    },
+    modeSegmentActivePrimary: { borderColor: Color.goldBorder, backgroundColor: Color.goldWeak },
+    modeSegmentActiveSecondary: { borderColor: Color.accentData, backgroundColor: "rgba(85,196,254,0.12)" },
+    modeDot: { width: 7, height: 7, borderRadius: 4 },
+    modeSegmentText: { fontSize: 12, fontWeight: "600", color: Color.textMuted },
+    modeSegmentTextActivePrimary: { color: Color.gold },
+    modeSegmentTextActiveSecondary: { color: Color.accentData },
+    diagramWrap: { alignItems: "center", paddingVertical: Spacing.md },
+    cardioChip: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+      borderRadius: Radius.pill,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      paddingHorizontal: Spacing.md,
+      paddingVertical: 8,
+      marginTop: Spacing.xs,
+    },
+    cardioChipText: { fontSize: 12, fontWeight: "600", color: Color.textMuted },
+    profileRow: { gap: Spacing.xs, paddingBottom: 2 },
+    profileChip: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+      borderRadius: Radius.pill,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface1,
+      paddingHorizontal: Spacing.md,
+      paddingVertical: 8,
+    },
+    profileChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
+    profileChipIcon: { fontSize: 14 },
+    profileChipText: { fontSize: 12, fontWeight: "600", color: Color.textMuted },
+    profileChipTextActive: { color: Color.gold },
+    addProfileChip: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 4,
+      borderRadius: Radius.pill,
+      borderWidth: 1,
+      borderColor: Color.goldBorder,
+      paddingHorizontal: Spacing.md,
+      paddingVertical: 8,
+    },
+    addProfileChipText: { fontSize: 12, fontWeight: "600", color: Color.gold },
+    emptyProfileHint: { fontSize: 11, color: Color.textFaint, marginTop: Spacing.xs, lineHeight: 15 },
+    editEquipmentRow: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: Spacing.sm, marginBottom: Spacing.sm },
+    editEquipmentText: { fontSize: 12, fontWeight: "600", color: Color.textMuted },
+    error: { fontSize: 12, color: Color.danger, marginTop: Spacing.md },
+  })
+);

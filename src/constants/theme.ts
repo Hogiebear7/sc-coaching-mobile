@@ -9,21 +9,17 @@
 import type { TextStyle } from "react-native";
 
 export const Color = {
-  // Surfaces
-  bg0: "#0a1526",
-  surface1: "#10203a",
-  surface2: "#142b4a",
-  surface3: "#24405f",
+  // Surfaces. Dark values follow the App v2 near-black navy so legacy
+  // screens and rebuilt ones sit on the same ground.
+  bg0: "#060d18",
+  surface1: "#0f1a2c",
+  surface2: "#16243a",
+  surface3: "#1d2d47",
 
-  // Borders (white at fixed opacity). Deliberately softer than the web
-  // app's literal values — web's borders sit against a much larger canvas
-  // where a crisper line reads as structure; stacked on a phone screen,
-  // the same weight repeated across every card/chip/row edge added up to
-  // visual noise, so these run about a third lighter than their web
-  // equivalents (borderSubtle) or a fifth lighter (borderDefault, which
-  // still needs to read as a clear step up for hero cards/active states).
-  borderSubtle: "rgba(255,255,255,0.11)",
-  borderDefault: "rgba(255,255,255,0.22)",
+  // Borders (white at fixed opacity). Deliberately soft: stacked on a phone
+  // screen, crisp lines on every card/chip/row edge add up to visual noise.
+  borderSubtle: "rgba(255,255,255,0.09)",
+  borderDefault: "rgba(255,255,255,0.18)",
 
   // Text
   textPrimary: "#fcfeff",
@@ -31,7 +27,8 @@ export const Color = {
   textMuted: "rgba(255,255,255,0.55)",
   textFaint: "rgba(255,255,255,0.35)",
 
-  // Gold accent (primary)
+  // Gold accent (legacy primary; App v2 keeps it for the brand mark and
+  // celebrations only, and screens drop it as they are rebuilt)
   gold: "#c6a15b",
   goldHover: "#e0be7c",
   goldForeground: "#0a1526",
@@ -46,7 +43,49 @@ export const Color = {
   warningWeak: "rgba(233,180,82,0.14)",
   danger: "#e62b34",
   dangerWeak: "rgba(230,43,52,0.12)",
-} as const;
+
+  // Neutral washes (were inline white-alpha literals)
+  overlayFaint: "rgba(255,255,255,0.05)",
+  overlayStrong: "rgba(255,255,255,0.12)",
+};
+
+export type LegacyPalette = { [K in keyof typeof Color]: string };
+
+// The legacy palette for the current theme, updated in place by
+// ThemeProvider. Only for module-level helpers that run during render but
+// sit outside a component (status-colour lookups and the like); components
+// use useLegacyColors() instead.
+export const LiveColor: LegacyPalette = { ...Color };
+
+// Light twin of the legacy tokens, key for key. Screens read these through
+// makeLegacyStyles / useLegacyColors (lib/theme.tsx) so the whole app
+// switches together.
+export const ColorLight: LegacyPalette = {
+  bg0: "#f3f5f9",
+  surface1: "#ffffff",
+  surface2: "#eaeef4",
+  surface3: "#dde3ec",
+  borderSubtle: "rgba(10,21,38,0.10)",
+  borderDefault: "rgba(10,21,38,0.20)",
+  textPrimary: "#0a1526",
+  textSecondary: "rgba(10,21,38,0.78)",
+  textMuted: "rgba(10,21,38,0.56)",
+  textFaint: "rgba(10,21,38,0.40)",
+  gold: "#9c7631",
+  goldHover: "#b38a42",
+  goldForeground: "#ffffff",
+  goldWeak: "rgba(156,118,49,0.12)",
+  goldBorder: "rgba(156,118,49,0.45)",
+  accentData: "#1784c4",
+  success: "#2e8a57",
+  successWeak: "rgba(46,138,87,0.12)",
+  warning: "#a86f0c",
+  warningWeak: "rgba(168,111,12,0.12)",
+  danger: "#c8323a",
+  dangerWeak: "rgba(200,50,58,0.10)",
+  overlayFaint: "rgba(10,21,38,0.04)",
+  overlayStrong: "rgba(10,21,38,0.09)",
+};
 
 // Macro-nutrient color coding — protein/carbs/fat — deliberately distinct
 // from Color.danger/success/gold so a macro chip never reads as an error
@@ -245,11 +284,11 @@ export const AppRadius = { card: 16, control: 999, inner: 10 } as const;
 export const AppSpace = { gutter: 16, gap: 10, section: 28 } as const;
 
 // Screen title: the one loud Teko moment per screen.
-export function appTitle(size = 34): TextStyle {
-  return { ...headline(size), letterSpacing: size * 0.02, color: AppColor.text };
+export function appTitle(size = 34, color: string = AppColor.text): TextStyle {
+  return { ...headline(size), letterSpacing: size * 0.02, color };
 }
 
 // Values: platform sans, regular weight, with a separately styled unit.
-export function appValue(size = 26): TextStyle {
-  return { fontSize: size, fontWeight: "500", color: AppColor.text, fontVariant: ["tabular-nums"] };
+export function appValue(size = 26, color: string = AppColor.text): TextStyle {
+  return { fontSize: size, fontWeight: "500", color, fontVariant: ["tabular-nums"] };
 }

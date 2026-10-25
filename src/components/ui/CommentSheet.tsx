@@ -3,7 +3,7 @@ import { useState } from "react";
 import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 
-import { Color, Radius, Spacing } from "@/constants/theme";
+import { Radius, Spacing } from "@/constants/theme";
 import { useAuth } from "@/lib/auth-context";
 import { formatCommunityDate } from "@/lib/community-formatters";
 import { tapFeedback } from "@/lib/haptics";
@@ -17,6 +17,7 @@ import {
 } from "@/lib/queries/community";
 
 import { MemberSearchSheet } from "./MemberSearchSheet";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 // Comment thread + composer for one workout session. Same plain-Modal
 // pattern as ExerciseSwapSheet — a single shared instance in the Community
@@ -30,6 +31,8 @@ export function CommentSheet({
   onClose: () => void;
   workoutSessionId: string;
 }) {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const { user } = useAuth();
   const { data: comments, isLoading } = useWorkoutComments(workoutSessionId);
   const postComment = usePostComment(workoutSessionId);
@@ -217,74 +220,76 @@ export function CommentSheet({
   );
 }
 
-const styles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    backgroundColor: "rgba(4,10,20,0.72)",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: Spacing.xl,
-  },
-  avoidingView: { width: "100%", alignItems: "center" },
-  card: {
-    width: "100%",
-    maxWidth: 400,
-    maxHeight: "85%",
-    borderRadius: Radius.lg,
-    borderWidth: 1,
-    borderColor: Color.borderDefault,
-    backgroundColor: Color.surface1,
-    padding: Spacing.lg,
-    paddingTop: Spacing.xl,
-  },
-  title: { fontSize: 15, fontWeight: "700", color: Color.textPrimary },
-  list: { marginTop: Spacing.sm, flexGrow: 0 },
-  empty: { fontSize: 12, color: Color.textMuted, textAlign: "center", paddingVertical: Spacing.lg },
-  commentRow: { paddingVertical: Spacing.sm, borderTopWidth: 1, borderTopColor: Color.borderSubtle },
-  commentHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  commentAuthor: { fontSize: 13, fontWeight: "600", color: Color.textPrimary },
-  commentDate: { fontSize: 11, color: Color.textFaint },
-  commentBody: { fontSize: 13, color: Color.textSecondary, marginTop: 2, lineHeight: 18 },
-  commentActions: { flexDirection: "row", marginTop: 4 },
-  commentActionText: { fontSize: 11, fontWeight: "600", color: Color.textFaint },
-  commentActionTextDisabled: { opacity: 0.6 },
-  errorText: { fontSize: 11, color: Color.danger, marginTop: 4 },
-  reportRow: { flexDirection: "row", gap: Spacing.xs, marginTop: Spacing.xs, alignItems: "center" },
-  reportInput: {
-    flex: 1,
-    height: 34,
-    borderRadius: Radius.sm,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.bg0,
-    paddingHorizontal: Spacing.sm,
-    fontSize: 12,
-    color: Color.textPrimary,
-  },
-  reportSubmit: { paddingHorizontal: Spacing.sm, paddingVertical: 8 },
-  reportSubmitText: { fontSize: 12, fontWeight: "600", color: Color.danger },
-  composerRow: {
-    flexDirection: "row",
-    alignItems: "flex-end",
-    gap: Spacing.xs,
-    marginTop: Spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: Color.borderSubtle,
-    paddingTop: Spacing.sm,
-  },
-  composerInput: {
-    flex: 1,
-    maxHeight: 80,
-    minHeight: 36,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.bg0,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 8,
-    fontSize: 13,
-    color: Color.textPrimary,
-  },
-  sendButton: { padding: 8 },
-  closeButton: { position: "absolute", top: Spacing.md, right: Spacing.md, padding: 4 },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    backdrop: {
+      flex: 1,
+      backgroundColor: "rgba(4,10,20,0.72)",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: Spacing.xl,
+    },
+    avoidingView: { width: "100%", alignItems: "center" },
+    card: {
+      width: "100%",
+      maxWidth: 400,
+      maxHeight: "85%",
+      borderRadius: Radius.lg,
+      borderWidth: 1,
+      borderColor: Color.borderDefault,
+      backgroundColor: Color.surface1,
+      padding: Spacing.lg,
+      paddingTop: Spacing.xl,
+    },
+    title: { fontSize: 15, fontWeight: "700", color: Color.textPrimary },
+    list: { marginTop: Spacing.sm, flexGrow: 0 },
+    empty: { fontSize: 12, color: Color.textMuted, textAlign: "center", paddingVertical: Spacing.lg },
+    commentRow: { paddingVertical: Spacing.sm, borderTopWidth: 1, borderTopColor: Color.borderSubtle },
+    commentHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+    commentAuthor: { fontSize: 13, fontWeight: "600", color: Color.textPrimary },
+    commentDate: { fontSize: 11, color: Color.textFaint },
+    commentBody: { fontSize: 13, color: Color.textSecondary, marginTop: 2, lineHeight: 18 },
+    commentActions: { flexDirection: "row", marginTop: 4 },
+    commentActionText: { fontSize: 11, fontWeight: "600", color: Color.textFaint },
+    commentActionTextDisabled: { opacity: 0.6 },
+    errorText: { fontSize: 11, color: Color.danger, marginTop: 4 },
+    reportRow: { flexDirection: "row", gap: Spacing.xs, marginTop: Spacing.xs, alignItems: "center" },
+    reportInput: {
+      flex: 1,
+      height: 34,
+      borderRadius: Radius.sm,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.bg0,
+      paddingHorizontal: Spacing.sm,
+      fontSize: 12,
+      color: Color.textPrimary,
+    },
+    reportSubmit: { paddingHorizontal: Spacing.sm, paddingVertical: 8 },
+    reportSubmitText: { fontSize: 12, fontWeight: "600", color: Color.danger },
+    composerRow: {
+      flexDirection: "row",
+      alignItems: "flex-end",
+      gap: Spacing.xs,
+      marginTop: Spacing.sm,
+      borderTopWidth: 1,
+      borderTopColor: Color.borderSubtle,
+      paddingTop: Spacing.sm,
+    },
+    composerInput: {
+      flex: 1,
+      maxHeight: 80,
+      minHeight: 36,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.bg0,
+      paddingHorizontal: Spacing.sm,
+      paddingVertical: 8,
+      fontSize: 13,
+      color: Color.textPrimary,
+    },
+    sendButton: { padding: 8 },
+    closeButton: { position: "absolute", top: Spacing.md, right: Spacing.md, padding: 4 },
+  })
+);

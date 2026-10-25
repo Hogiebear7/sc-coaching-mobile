@@ -8,10 +8,11 @@ import { KeyboardAwareScroll } from "@/components/ui/KeyboardAwareScroll";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { TextField } from "@/components/ui/TextField";
-import { Color, Radius, Spacing } from "@/constants/theme";
+import { Radius, Spacing } from "@/constants/theme";
 import { ApiError } from "@/lib/api-client";
 import { tapFeedback } from "@/lib/haptics";
 import { useStaffNutritionTarget, useUpdateStaffNutritionTarget, type NutritionTargetMode } from "@/lib/queries/nutrition-diary";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 // Quick presets so a coach isn't doing macro math on their phone — grams
 // derived from a simple 4/4/9 kcal-per-gram split at common ratios.
@@ -28,6 +29,8 @@ const MODE_OPTIONS: { value: NutritionTargetMode; label: string; hint: string }[
 ];
 
 export default function StaffNutritionTargetScreen() {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const router = useRouter();
   const { userId } = useLocalSearchParams<{ userId: string }>();
   const { data: existing, isLoading } = useStaffNutritionTarget(userId);
@@ -179,37 +182,39 @@ export default function StaffNutritionTargetScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Color.bg0 },
-  centerFill: { flex: 1, alignItems: "center", justifyContent: "center" },
-  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md },
-  backButton: { padding: 4 },
-  headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
-  scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
-  modeRow: { flexDirection: "row", gap: Spacing.xs, marginBottom: Spacing.sm },
-  modeChip: { flex: 1, borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingVertical: 8, alignItems: "center" },
-  modeChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
-  modeChipText: { fontSize: 12, fontWeight: "600", color: Color.textMuted },
-  modeChipTextActive: { color: Color.gold },
-  sectionLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginBottom: Spacing.sm },
-  presetRow: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.xs, marginBottom: Spacing.lg },
-  presetChip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.sm, paddingVertical: 6 },
-  presetChipText: { fontSize: 11, fontWeight: "600", color: Color.textSecondary },
-  gridRow: { flexDirection: "row", gap: Spacing.sm, marginBottom: Spacing.md },
-  numberField: { flex: 1 },
-  fieldLabel: { fontSize: 12, fontWeight: "500", color: Color.textSecondary, marginBottom: 4 },
-  input: {
-    height: 44,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-    paddingHorizontal: Spacing.sm,
-    fontSize: 14,
-    color: Color.textPrimary,
-  },
-  multiline: { height: 70, paddingTop: 10, textAlignVertical: "top" },
-  hintCard: { padding: Spacing.md, marginTop: Spacing.sm },
-  hintText: { fontSize: 12, color: Color.textMuted, lineHeight: 17 },
-  error: { fontSize: 12, color: Color.danger, marginTop: Spacing.md },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: Color.bg0 },
+    centerFill: { flex: 1, alignItems: "center", justifyContent: "center" },
+    header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md },
+    backButton: { padding: 4 },
+    headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
+    scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
+    modeRow: { flexDirection: "row", gap: Spacing.xs, marginBottom: Spacing.sm },
+    modeChip: { flex: 1, borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingVertical: 8, alignItems: "center" },
+    modeChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
+    modeChipText: { fontSize: 12, fontWeight: "600", color: Color.textMuted },
+    modeChipTextActive: { color: Color.gold },
+    sectionLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginBottom: Spacing.sm },
+    presetRow: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.xs, marginBottom: Spacing.lg },
+    presetChip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.sm, paddingVertical: 6 },
+    presetChipText: { fontSize: 11, fontWeight: "600", color: Color.textSecondary },
+    gridRow: { flexDirection: "row", gap: Spacing.sm, marginBottom: Spacing.md },
+    numberField: { flex: 1 },
+    fieldLabel: { fontSize: 12, fontWeight: "500", color: Color.textSecondary, marginBottom: 4 },
+    input: {
+      height: 44,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface1,
+      paddingHorizontal: Spacing.sm,
+      fontSize: 14,
+      color: Color.textPrimary,
+    },
+    multiline: { height: 70, paddingTop: 10, textAlignVertical: "top" },
+    hintCard: { padding: Spacing.md, marginTop: Spacing.sm },
+    hintText: { fontSize: 12, color: Color.textMuted, lineHeight: 17 },
+    error: { fontSize: 12, color: Color.danger, marginTop: Spacing.md },
+  })
+);

@@ -13,7 +13,7 @@ import { Card } from "@/components/ui/Card";
 import { Collapsible } from "@/components/ui/Collapsible";
 import { ThemePicker } from "@/components/ui/ThemePicker";
 import { UpsellCard, UpsellRow } from "@/components/ui/Upsell";
-import { Color, Radius, Spacing } from "@/constants/theme";
+import { Radius, Spacing } from "@/constants/theme";
 import { ApiError } from "@/lib/api-client";
 import { useAuth } from "@/lib/auth-context";
 import { isBatteryOptimizationRelevant, openBatteryOptimizationSettings } from "@/lib/battery-optimization";
@@ -33,6 +33,7 @@ import {
   useSetUnits,
   type MeasurementUnits,
 } from "@/lib/queries/profile";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 const REMINDER_PRESETS = [
   { label: "24 hours before", mins: 1440 },
@@ -46,6 +47,7 @@ const REMINDER_PRESETS = [
 const REST_TIMER_PRESETS = [30, 60, 90, 120, 180, 300];
 
 function SectionLabel({ children }: { children: string }) {
+  const styles = useStyles();
   return <Text style={styles.sectionLabel}>{children}</Text>;
 }
 
@@ -62,6 +64,8 @@ function Row({
   onPress?: () => void;
   right?: React.ReactNode;
 }) {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const Wrapper = onPress ? Pressable : View;
   return (
     <Wrapper onPress={onPress} style={styles.row}>
@@ -78,6 +82,8 @@ function Row({
 }
 
 export default function SettingsScreen() {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const router = useRouter();
   const { user } = useAuth();
   const { restartTour } = useTour();
@@ -525,113 +531,115 @@ export default function SettingsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Color.bg0 },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-  },
-  backButton: { padding: 4 },
-  headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
-  centerFill: { flex: 1 },
-  scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
-  sectionLabel: {
-    fontSize: 10,
-    fontWeight: "700",
-    letterSpacing: 0.6,
-    color: Color.textMuted,
-    marginTop: Spacing.lg,
-    marginBottom: Spacing.sm,
-  },
-  settingsCard: { padding: 0 },
-  row: { flexDirection: "row", alignItems: "center", padding: Spacing.md, gap: Spacing.sm },
-  rowIcon: {
-    width: 30,
-    height: 30,
-    borderRadius: Radius.sm,
-    backgroundColor: Color.goldWeak,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  rowTitle: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
-  rowSub: { fontSize: 11, color: Color.textMuted, marginTop: 2 },
-  divider: { borderTopWidth: 1, borderTopColor: Color.borderSubtle },
-  identityRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.md,
-    marginBottom: Spacing.lg,
-  },
-  identityName: { fontSize: 20, fontWeight: "700", fontStyle: "italic", color: Color.textPrimary },
-  identityEmail: { fontSize: 12, color: Color.textMuted, marginTop: 2 },
-  avatar: { width: 60, height: 60, borderRadius: Radius.pill },
-  avatarPlaceholder: {
-    width: 60,
-    height: 60,
-    borderRadius: Radius.pill,
-    backgroundColor: Color.goldWeak,
-    borderWidth: 1,
-    borderColor: Color.goldBorder,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  avatarInitial: { fontSize: 22, fontWeight: "700", color: Color.gold },
-  avatarActions: { flexDirection: "row", gap: Spacing.md, marginTop: 6 },
-  linkText: { fontSize: 12, fontWeight: "600", color: Color.gold },
-  linkTextDanger: { fontSize: 12, fontWeight: "600", color: Color.danger },
-  error: { fontSize: 11, color: Color.danger, marginTop: 4 },
-  unitsToggle: { flexDirection: "row", gap: 6 },
-  unitsChip: {
-    borderRadius: Radius.pill,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 6,
-  },
-  unitsChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
-  unitsChipText: { fontSize: 12, fontWeight: "600", color: Color.textMuted },
-  unitsChipTextActive: { color: Color.gold },
-  chipRow: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.xs },
-  chip: {
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 6,
-    borderRadius: Radius.pill,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-  },
-  chipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
-  chipText: { fontSize: 11, fontWeight: "500", color: Color.textMuted },
-  chipTextActive: { color: Color.gold },
-  customRow: { flexDirection: "row", gap: Spacing.sm, marginTop: Spacing.sm },
-  customInput: {
-    flex: 1,
-    height: 40,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface2,
-    paddingHorizontal: Spacing.sm,
-    fontSize: 13,
-    color: Color.textPrimary,
-  },
-  addButton: {
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    paddingHorizontal: Spacing.md,
-    justifyContent: "center",
-  },
-  addButtonText: { fontSize: 12, fontWeight: "600", color: Color.textSecondary },
-  reminderActions: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginTop: Spacing.md,
-  },
-  reminderSaveButton: { height: 36, paddingHorizontal: Spacing.lg },
-  saved: { color: Color.success, fontSize: 12 },
-  buildInfo: { fontSize: 11, color: Color.textFaint, textAlign: "center", marginTop: Spacing.xl },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: Color.bg0 },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: Spacing.lg,
+      paddingVertical: Spacing.md,
+    },
+    backButton: { padding: 4 },
+    headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
+    centerFill: { flex: 1 },
+    scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
+    sectionLabel: {
+      fontSize: 10,
+      fontWeight: "700",
+      letterSpacing: 0.6,
+      color: Color.textMuted,
+      marginTop: Spacing.lg,
+      marginBottom: Spacing.sm,
+    },
+    settingsCard: { padding: 0 },
+    row: { flexDirection: "row", alignItems: "center", padding: Spacing.md, gap: Spacing.sm },
+    rowIcon: {
+      width: 30,
+      height: 30,
+      borderRadius: Radius.sm,
+      backgroundColor: Color.goldWeak,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    rowTitle: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
+    rowSub: { fontSize: 11, color: Color.textMuted, marginTop: 2 },
+    divider: { borderTopWidth: 1, borderTopColor: Color.borderSubtle },
+    identityRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: Spacing.md,
+      marginBottom: Spacing.lg,
+    },
+    identityName: { fontSize: 20, fontWeight: "700", fontStyle: "italic", color: Color.textPrimary },
+    identityEmail: { fontSize: 12, color: Color.textMuted, marginTop: 2 },
+    avatar: { width: 60, height: 60, borderRadius: Radius.pill },
+    avatarPlaceholder: {
+      width: 60,
+      height: 60,
+      borderRadius: Radius.pill,
+      backgroundColor: Color.goldWeak,
+      borderWidth: 1,
+      borderColor: Color.goldBorder,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    avatarInitial: { fontSize: 22, fontWeight: "700", color: Color.gold },
+    avatarActions: { flexDirection: "row", gap: Spacing.md, marginTop: 6 },
+    linkText: { fontSize: 12, fontWeight: "600", color: Color.gold },
+    linkTextDanger: { fontSize: 12, fontWeight: "600", color: Color.danger },
+    error: { fontSize: 11, color: Color.danger, marginTop: 4 },
+    unitsToggle: { flexDirection: "row", gap: 6 },
+    unitsChip: {
+      borderRadius: Radius.pill,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      paddingHorizontal: Spacing.sm,
+      paddingVertical: 6,
+    },
+    unitsChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
+    unitsChipText: { fontSize: 12, fontWeight: "600", color: Color.textMuted },
+    unitsChipTextActive: { color: Color.gold },
+    chipRow: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.xs },
+    chip: {
+      paddingHorizontal: Spacing.sm,
+      paddingVertical: 6,
+      borderRadius: Radius.pill,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+    },
+    chipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
+    chipText: { fontSize: 11, fontWeight: "500", color: Color.textMuted },
+    chipTextActive: { color: Color.gold },
+    customRow: { flexDirection: "row", gap: Spacing.sm, marginTop: Spacing.sm },
+    customInput: {
+      flex: 1,
+      height: 40,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface2,
+      paddingHorizontal: Spacing.sm,
+      fontSize: 13,
+      color: Color.textPrimary,
+    },
+    addButton: {
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      paddingHorizontal: Spacing.md,
+      justifyContent: "center",
+    },
+    addButtonText: { fontSize: 12, fontWeight: "600", color: Color.textSecondary },
+    reminderActions: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginTop: Spacing.md,
+    },
+    reminderSaveButton: { height: 36, paddingHorizontal: Spacing.lg },
+    saved: { color: Color.success, fontSize: 12 },
+    buildInfo: { fontSize: 11, color: Color.textFaint, textAlign: "center", marginTop: Spacing.xl },
+  })
+);

@@ -6,13 +6,14 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { Color, Radius, Spacing } from "@/constants/theme";
+import { Radius, Spacing } from "@/constants/theme";
 import { ApiError } from "@/lib/api-client";
 import { trackEvent } from "@/lib/analytics";
 import { tapFeedback } from "@/lib/haptics";
 import { useDescribeFoodText, type IdentifiedFoodItem } from "@/lib/queries/food-catalog";
 import { useCreateFoodEntry, type MealType } from "@/lib/queries/nutrition-diary";
 import { todayDateString } from "@/lib/workout-formatters";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 type Stage = "input" | "interpreting" | "reviewing";
 
@@ -33,6 +34,8 @@ function defaultMealTypeForNow(): MealType {
 // (editable cards, one AI call, nothing saved until the member confirms),
 // just entered by describing the food instead of photographing it.
 export default function DescribeFoodScreen() {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const router = useRouter();
   const { date, mealType } = useLocalSearchParams<{ date?: string; mealType?: string }>();
   const [stage, setStage] = useState<Stage>("input");
@@ -275,54 +278,56 @@ export default function DescribeFoodScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Color.bg0 },
-  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md },
-  backButton: { padding: 4 },
-  headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
-  subhead: { fontSize: 12, color: Color.textMuted, textAlign: "center", paddingHorizontal: Spacing.xl, marginBottom: Spacing.sm },
-  centerFill: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: Spacing.xl },
-  confirmIconWrap: { width: 56, height: 56, borderRadius: 28, backgroundColor: Color.gold, alignItems: "center", justifyContent: "center" },
-  confirmTitle: { fontSize: 17, fontWeight: "700", color: Color.textPrimary, marginTop: Spacing.md },
-  confirmText: { fontSize: 13, color: Color.textMuted, textAlign: "center", marginTop: 6, lineHeight: 19 },
-  inputWrap: { flex: 1, paddingHorizontal: Spacing.xl, paddingTop: Spacing.lg },
-  descriptionInput: {
-    marginTop: Spacing.lg,
-    minHeight: 100,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    fontSize: 14,
-    color: Color.textPrimary,
-    textAlignVertical: "top",
-  },
-  manualLink: { alignItems: "center", paddingVertical: Spacing.lg },
-  manualLinkText: { fontSize: 13, color: Color.gold, fontWeight: "600" },
-  manualLinkQuiet: { alignItems: "center", paddingVertical: Spacing.sm },
-  manualLinkQuietText: { fontSize: 12, color: Color.textFaint, fontWeight: "500" },
-  scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
-  itemCard: { padding: Spacing.md, marginBottom: Spacing.md, gap: Spacing.sm },
-  itemCardExcluded: { opacity: 0.5 },
-  itemHeaderRow: { flexDirection: "row", alignItems: "center", gap: Spacing.sm },
-  checkbox: { padding: 2 },
-  nameInput: { flex: 1, fontSize: 14, fontWeight: "700", color: Color.textPrimary, paddingVertical: 4 },
-  servingText: { fontSize: 12, color: Color.textMuted },
-  gridRow: { flexDirection: "row", gap: Spacing.sm },
-  numberField: { flex: 1 },
-  fieldLabel: { fontSize: 11, fontWeight: "500", color: Color.textSecondary, marginBottom: 4 },
-  input: {
-    height: 40,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-    paddingHorizontal: Spacing.sm,
-    fontSize: 13,
-    color: Color.textPrimary,
-  },
-  emptyText: { fontSize: 13, color: Color.textMuted, textAlign: "center", marginTop: Spacing.xl },
-  error: { fontSize: 12, color: Color.danger, marginTop: Spacing.sm, textAlign: "center" },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: Color.bg0 },
+    header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md },
+    backButton: { padding: 4 },
+    headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
+    subhead: { fontSize: 12, color: Color.textMuted, textAlign: "center", paddingHorizontal: Spacing.xl, marginBottom: Spacing.sm },
+    centerFill: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: Spacing.xl },
+    confirmIconWrap: { width: 56, height: 56, borderRadius: 28, backgroundColor: Color.gold, alignItems: "center", justifyContent: "center" },
+    confirmTitle: { fontSize: 17, fontWeight: "700", color: Color.textPrimary, marginTop: Spacing.md },
+    confirmText: { fontSize: 13, color: Color.textMuted, textAlign: "center", marginTop: 6, lineHeight: 19 },
+    inputWrap: { flex: 1, paddingHorizontal: Spacing.xl, paddingTop: Spacing.lg },
+    descriptionInput: {
+      marginTop: Spacing.lg,
+      minHeight: 100,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface1,
+      paddingHorizontal: Spacing.md,
+      paddingVertical: Spacing.sm,
+      fontSize: 14,
+      color: Color.textPrimary,
+      textAlignVertical: "top",
+    },
+    manualLink: { alignItems: "center", paddingVertical: Spacing.lg },
+    manualLinkText: { fontSize: 13, color: Color.gold, fontWeight: "600" },
+    manualLinkQuiet: { alignItems: "center", paddingVertical: Spacing.sm },
+    manualLinkQuietText: { fontSize: 12, color: Color.textFaint, fontWeight: "500" },
+    scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
+    itemCard: { padding: Spacing.md, marginBottom: Spacing.md, gap: Spacing.sm },
+    itemCardExcluded: { opacity: 0.5 },
+    itemHeaderRow: { flexDirection: "row", alignItems: "center", gap: Spacing.sm },
+    checkbox: { padding: 2 },
+    nameInput: { flex: 1, fontSize: 14, fontWeight: "700", color: Color.textPrimary, paddingVertical: 4 },
+    servingText: { fontSize: 12, color: Color.textMuted },
+    gridRow: { flexDirection: "row", gap: Spacing.sm },
+    numberField: { flex: 1 },
+    fieldLabel: { fontSize: 11, fontWeight: "500", color: Color.textSecondary, marginBottom: 4 },
+    input: {
+      height: 40,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface1,
+      paddingHorizontal: Spacing.sm,
+      fontSize: 13,
+      color: Color.textPrimary,
+    },
+    emptyText: { fontSize: 13, color: Color.textMuted, textAlign: "center", marginTop: Spacing.xl },
+    error: { fontSize: 12, color: Color.danger, marginTop: Spacing.sm, textAlign: "center" },
+  })
+);

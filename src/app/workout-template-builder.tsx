@@ -10,7 +10,7 @@ import { ExerciseAutocomplete } from "@/components/ui/ExerciseAutocomplete";
 import { KeyboardAwareScroll } from "@/components/ui/KeyboardAwareScroll";
 import { SupersetChips } from "@/components/ui/SupersetChips";
 import { TextField } from "@/components/ui/TextField";
-import { Color, Radius, Spacing } from "@/constants/theme";
+import { Radius, Spacing } from "@/constants/theme";
 import { ApiError } from "@/lib/api-client";
 import { useExerciseLibraryNameIndex } from "@/lib/queries/exercise-library";
 import { tapFeedback } from "@/lib/haptics";
@@ -23,6 +23,7 @@ import {
 } from "@/lib/queries/workout-templates";
 import { SET_TYPE_OPTIONS, useWorkouts, type WorkoutSetType } from "@/lib/queries/workouts";
 import { takePendingWorkoutTemplateSeed } from "@/lib/workout-template-seed";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 let keySeq = 0;
 function nextKey(): string {
@@ -119,6 +120,7 @@ function rowsToExercises(rows: ExerciseRow[]): PrescribedExercise[] {
 }
 
 function SetTypeChips({ value, onChange }: { value: WorkoutSetType; onChange: (v: WorkoutSetType) => void }) {
+  const styles = useStyles();
   return (
     <View style={styles.setTypeRow}>
       {SET_TYPE_OPTIONS.map((opt) => (
@@ -131,6 +133,8 @@ function SetTypeChips({ value, onChange }: { value: WorkoutSetType; onChange: (v
 }
 
 export default function WorkoutTemplateBuilderScreen() {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const router = useRouter();
   const { templateId } = useLocalSearchParams<{ templateId?: string }>();
   const { data: templates, isLoading } = useWorkoutTemplates();
@@ -397,45 +401,47 @@ export default function WorkoutTemplateBuilderScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Color.bg0 },
-  centerFill: { flex: 1, alignItems: "center", justifyContent: "center" },
-  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md },
-  backButton: { padding: 4 },
-  headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
-  scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
-  sectionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: Spacing.sm, marginBottom: Spacing.sm },
-  sectionLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted },
-  addChip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.sm, paddingVertical: 6 },
-  addChipText: { fontSize: 11, fontWeight: "600", color: Color.textSecondary },
-  exerciseCard: { padding: Spacing.md, marginBottom: Spacing.sm },
-  entryHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: Spacing.sm },
-  entryLabel: { fontSize: 12, fontWeight: "600", color: Color.textMuted },
-  removeText: { fontSize: 12, color: Color.danger },
-  fieldLabel: { fontSize: 12, fontWeight: "500", color: Color.textSecondary, marginBottom: 4 },
-  repsHeaderRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: Spacing.sm },
-  perSideRow: { flexDirection: "row", alignItems: "center", gap: 6 },
-  perSideText: { fontSize: 11, fontWeight: "500", color: Color.textMuted },
-  perSideTextActive: { color: Color.gold },
-  gridRow: { flexDirection: "row", gap: Spacing.sm, marginTop: Spacing.sm },
-  numberField: { flex: 1 },
-  smallInput: {
-    height: 40,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-    paddingHorizontal: Spacing.sm,
-    fontSize: 13,
-    color: Color.textPrimary,
-  },
-  setTypeRow: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
-  setTypeChip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.sm, paddingVertical: 6 },
-  setTypeChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
-  setTypeChipText: { fontSize: 11, fontWeight: "500", color: Color.textMuted },
-  setTypeChipTextActive: { color: Color.gold },
-  error: { fontSize: 12, color: Color.danger, marginTop: Spacing.md },
-  secondaryRow: { alignItems: "center", marginTop: Spacing.md, paddingVertical: Spacing.sm },
-  secondaryRowText: { fontSize: 13, color: Color.textMuted, fontWeight: "600" },
-  deleteText: { fontSize: 13, color: Color.danger, fontWeight: "600" },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: Color.bg0 },
+    centerFill: { flex: 1, alignItems: "center", justifyContent: "center" },
+    header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md },
+    backButton: { padding: 4 },
+    headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
+    scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
+    sectionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: Spacing.sm, marginBottom: Spacing.sm },
+    sectionLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted },
+    addChip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.sm, paddingVertical: 6 },
+    addChipText: { fontSize: 11, fontWeight: "600", color: Color.textSecondary },
+    exerciseCard: { padding: Spacing.md, marginBottom: Spacing.sm },
+    entryHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: Spacing.sm },
+    entryLabel: { fontSize: 12, fontWeight: "600", color: Color.textMuted },
+    removeText: { fontSize: 12, color: Color.danger },
+    fieldLabel: { fontSize: 12, fontWeight: "500", color: Color.textSecondary, marginBottom: 4 },
+    repsHeaderRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: Spacing.sm },
+    perSideRow: { flexDirection: "row", alignItems: "center", gap: 6 },
+    perSideText: { fontSize: 11, fontWeight: "500", color: Color.textMuted },
+    perSideTextActive: { color: Color.gold },
+    gridRow: { flexDirection: "row", gap: Spacing.sm, marginTop: Spacing.sm },
+    numberField: { flex: 1 },
+    smallInput: {
+      height: 40,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface1,
+      paddingHorizontal: Spacing.sm,
+      fontSize: 13,
+      color: Color.textPrimary,
+    },
+    setTypeRow: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
+    setTypeChip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.sm, paddingVertical: 6 },
+    setTypeChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
+    setTypeChipText: { fontSize: 11, fontWeight: "500", color: Color.textMuted },
+    setTypeChipTextActive: { color: Color.gold },
+    error: { fontSize: 12, color: Color.danger, marginTop: Spacing.md },
+    secondaryRow: { alignItems: "center", marginTop: Spacing.md, paddingVertical: Spacing.sm },
+    secondaryRowText: { fontSize: 13, color: Color.textMuted, fontWeight: "600" },
+    deleteText: { fontSize: 13, color: Color.danger, fontWeight: "600" },
+  })
+);

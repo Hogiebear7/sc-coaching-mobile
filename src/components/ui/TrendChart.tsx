@@ -2,8 +2,9 @@ import { useState } from "react";
 import { StyleSheet, Text, View, type GestureResponderEvent, type LayoutChangeEvent } from "react-native";
 import Svg, { Circle, G, Line, Polyline, Text as SvgText } from "react-native-svg";
 
-import { Color, Radius } from "@/constants/theme";
+import { Radius } from "@/constants/theme";
 import { computeTrendStats, type TrendPoint } from "@/lib/workout-formatters";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 // A hardcoded width clipped on narrower phones — the card's actual available
 // width varies by device, so the chart now measures it via onLayout instead.
@@ -30,6 +31,8 @@ function shortDate(iso: string): string {
 // over the plot area highlights the nearest point in a callout, same
 // interaction as WeightTrendChart.
 export function TrendChart({ points, formatValue = (v: number) => String(v) }: { points: TrendPoint[]; formatValue?: (v: number) => string }) {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const [chartW, setChartW] = useState(DEFAULT_CHART_W);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
 
@@ -177,26 +180,28 @@ export function TrendChart({ points, formatValue = (v: number) => String(v) }: {
   );
 }
 
-const styles = StyleSheet.create({
-  emptyWrap: { paddingVertical: 24, alignItems: "center" },
-  emptyText: { fontSize: 12, color: Color.textMuted },
-  wrap: { width: "100%" },
-  statsRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
-  statRight: { alignItems: "flex-end" },
-  statLabel: { fontSize: 10, fontWeight: "600", color: Color.textMuted, textTransform: "uppercase", letterSpacing: 0.4 },
-  statValue: { fontSize: 16, fontWeight: "700", color: Color.textPrimary, marginTop: 2, fontVariant: ["tabular-nums"] },
-  chartWrap: { width: "100%", alignItems: "center", marginTop: 6 },
-  tooltip: {
-    position: "absolute",
-    width: TOOLTIP_W,
-    alignItems: "center",
-    paddingVertical: 5,
-    paddingHorizontal: 8,
-    borderRadius: Radius.sm,
-    borderWidth: 1,
-    borderColor: Color.borderDefault,
-    backgroundColor: Color.surface2,
-  },
-  tooltipValue: { fontSize: 12, fontWeight: "700", color: Color.textPrimary, fontVariant: ["tabular-nums"] },
-  tooltipDate: { fontSize: 9, color: Color.textMuted, marginTop: 1 },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    emptyWrap: { paddingVertical: 24, alignItems: "center" },
+    emptyText: { fontSize: 12, color: Color.textMuted },
+    wrap: { width: "100%" },
+    statsRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
+    statRight: { alignItems: "flex-end" },
+    statLabel: { fontSize: 10, fontWeight: "600", color: Color.textMuted, textTransform: "uppercase", letterSpacing: 0.4 },
+    statValue: { fontSize: 16, fontWeight: "700", color: Color.textPrimary, marginTop: 2, fontVariant: ["tabular-nums"] },
+    chartWrap: { width: "100%", alignItems: "center", marginTop: 6 },
+    tooltip: {
+      position: "absolute",
+      width: TOOLTIP_W,
+      alignItems: "center",
+      paddingVertical: 5,
+      paddingHorizontal: 8,
+      borderRadius: Radius.sm,
+      borderWidth: 1,
+      borderColor: Color.borderDefault,
+      backgroundColor: Color.surface2,
+    },
+    tooltipValue: { fontSize: 12, fontWeight: "700", color: Color.textPrimary, fontVariant: ["tabular-nums"] },
+    tooltipDate: { fontSize: 9, color: Color.textMuted, marginTop: 1 },
+  })
+);

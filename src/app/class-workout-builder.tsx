@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ExerciseAutocomplete } from "@/components/ui/ExerciseAutocomplete";
 import { KeyboardAwareScroll } from "@/components/ui/KeyboardAwareScroll";
-import { Color, Radius, Spacing } from "@/constants/theme";
+import { LiveColor as Color, Radius, Spacing } from "@/constants/theme";
 import { ApiError } from "@/lib/api-client";
 import { useExerciseLibraryNameIndex } from "@/lib/queries/exercise-library";
 import { tapFeedback } from "@/lib/haptics";
@@ -24,6 +24,7 @@ import {
   useSaveClassWorkout,
   type ClassWorkoutExerciseEntry,
 } from "@/lib/queries/staff";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 let keySeq = 0;
 function nextKey(): string {
@@ -86,6 +87,8 @@ function newCircuitStation(): CircuitStation {
 }
 
 function MovementsEditor({ movements, onChange }: { movements: string[]; onChange: (m: string[]) => void }) {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const [draftText, setDraftText] = useState("");
   function add() {
     const v = draftText.trim();
@@ -102,7 +105,7 @@ function MovementsEditor({ movements, onChange }: { movements: string[]; onChang
           onChangeText={setDraftText}
           placeholder="e.g. 10 Burpees"
           placeholderTextColor={Color.textFaint}
-          style={[inputStyleBase, { flex: 1 }]}
+          style={[inputStyleBase(), { flex: 1 }]}
           onSubmitEditing={add}
           returnKeyType="done"
         />
@@ -127,6 +130,8 @@ function MovementsEditor({ movements, onChange }: { movements: string[]; onChang
 }
 
 function StationsEditor({ stations, onChange }: { stations: CircuitStation[]; onChange: (s: CircuitStation[]) => void }) {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   function updateStation(key: string, patch: Partial<CircuitStation>) {
     onChange(stations.map((s) => (s.key === key ? { ...s, ...patch } : s)));
   }
@@ -140,7 +145,7 @@ function StationsEditor({ stations, onChange }: { stations: CircuitStation[]; on
             onChangeText={(v) => updateStation(s.key, { name: v })}
             placeholder={`Station ${i + 1} name`}
             placeholderTextColor={Color.textFaint}
-            style={[inputStyleBase, { flex: 1 }]}
+            style={[inputStyleBase(), { flex: 1 }]}
           />
           <Pressable onPress={() => updateStation(s.key, { mode: s.mode === "reps" ? "time" : "reps" })} style={styles.formatModeChip}>
             <Text style={styles.formatModeText}>{s.mode === "reps" ? "Reps" : "Time"}</Text>
@@ -151,7 +156,7 @@ function StationsEditor({ stations, onChange }: { stations: CircuitStation[]; on
             keyboardType="number-pad"
             placeholder={s.mode === "reps" ? "reps" : "secs"}
             placeholderTextColor={Color.textFaint}
-            style={[inputStyleBase, { width: 56, paddingHorizontal: 4 }]}
+            style={[inputStyleBase(), { width: 56, paddingHorizontal: 4 }]}
           />
           <Pressable onPress={() => onChange(stations.filter((row) => row.key !== s.key))} hitSlop={6}>
             <Ionicons name="close" size={16} color={Color.textFaint} />
@@ -218,7 +223,7 @@ function memberRowsFromTemplate(
     });
 }
 
-const inputStyleBase = {
+const inputStyleBase = () => ({
   height: 40,
   borderRadius: Radius.md,
   borderWidth: 1,
@@ -227,9 +232,11 @@ const inputStyleBase = {
   paddingHorizontal: Spacing.sm,
   fontSize: 13,
   color: Color.textPrimary,
-};
+});
 
 export default function ClassWorkoutBuilderScreen() {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const router = useRouter();
   const { classId, classTitle, classDate, startTime } = useLocalSearchParams<{
     classId: string;
@@ -420,7 +427,7 @@ export default function ClassWorkoutBuilderScreen() {
                       onChangeText={(v) => updateTemplate(row.key, { weight: v })}
                       placeholder="Weight"
                       placeholderTextColor={Color.textFaint}
-                      style={[inputStyleBase, { flex: 1 }]}
+                      style={[inputStyleBase(), { flex: 1 }]}
                     />
                     <TextInput
                       value={row.reps}
@@ -428,7 +435,7 @@ export default function ClassWorkoutBuilderScreen() {
                       placeholder="Reps"
                       placeholderTextColor={Color.textFaint}
                       keyboardType="number-pad"
-                      style={[inputStyleBase, { flex: 1 }]}
+                      style={[inputStyleBase(), { flex: 1 }]}
                     />
                     <TextInput
                       value={row.sets}
@@ -436,7 +443,7 @@ export default function ClassWorkoutBuilderScreen() {
                       placeholder="Sets"
                       placeholderTextColor={Color.textFaint}
                       keyboardType="number-pad"
-                      style={[inputStyleBase, { flex: 1 }]}
+                      style={[inputStyleBase(), { flex: 1 }]}
                     />
                   </View>
                 </View>
@@ -453,7 +460,7 @@ export default function ClassWorkoutBuilderScreen() {
               placeholder="Session notes (optional) — warm-up, focus, scaling options"
               placeholderTextColor={Color.textFaint}
               multiline
-              style={[inputStyleBase, styles.notesInput]}
+              style={[inputStyleBase(), styles.notesInput]}
             />
 
             <Text style={[styles.rowLabel, { marginTop: Spacing.md }]}>Format</Text>
@@ -482,15 +489,15 @@ export default function ClassWorkoutBuilderScreen() {
                 <View style={styles.gridRow}>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.rowLabel}>Rest / station (s)</Text>
-                    <TextInput value={circuitRestStation} onChangeText={setCircuitRestStation} keyboardType="number-pad" style={inputStyleBase} />
+                    <TextInput value={circuitRestStation} onChangeText={setCircuitRestStation} keyboardType="number-pad" style={inputStyleBase()} />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.rowLabel}>Rest / round (s)</Text>
-                    <TextInput value={circuitRestRound} onChangeText={setCircuitRestRound} keyboardType="number-pad" style={inputStyleBase} />
+                    <TextInput value={circuitRestRound} onChangeText={setCircuitRestRound} keyboardType="number-pad" style={inputStyleBase()} />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.rowLabel}>Rounds</Text>
-                    <TextInput value={circuitRounds} onChangeText={setCircuitRounds} keyboardType="number-pad" style={inputStyleBase} />
+                    <TextInput value={circuitRounds} onChangeText={setCircuitRounds} keyboardType="number-pad" style={inputStyleBase()} />
                   </View>
                 </View>
               </View>
@@ -499,7 +506,7 @@ export default function ClassWorkoutBuilderScreen() {
             {format === "amrap" ? (
               <View style={styles.formatConfig}>
                 <Text style={styles.rowLabel}>Time cap (mins)</Text>
-                <TextInput value={amrapMins} onChangeText={setAmrapMins} keyboardType="number-pad" style={inputStyleBase} />
+                <TextInput value={amrapMins} onChangeText={setAmrapMins} keyboardType="number-pad" style={inputStyleBase()} />
                 <MovementsEditor movements={amrapMovements} onChange={setAmrapMovements} />
               </View>
             ) : null}
@@ -509,11 +516,11 @@ export default function ClassWorkoutBuilderScreen() {
                 <View style={styles.gridRow}>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.rowLabel}>Interval (secs)</Text>
-                    <TextInput value={emomIntervalSecs} onChangeText={setEmomIntervalSecs} keyboardType="number-pad" style={inputStyleBase} />
+                    <TextInput value={emomIntervalSecs} onChangeText={setEmomIntervalSecs} keyboardType="number-pad" style={inputStyleBase()} />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.rowLabel}>Total (mins)</Text>
-                    <TextInput value={emomTotalMins} onChangeText={setEmomTotalMins} keyboardType="number-pad" style={inputStyleBase} />
+                    <TextInput value={emomTotalMins} onChangeText={setEmomTotalMins} keyboardType="number-pad" style={inputStyleBase()} />
                   </View>
                 </View>
                 <MovementsEditor movements={emomMovements} onChange={setEmomMovements} />
@@ -525,15 +532,15 @@ export default function ClassWorkoutBuilderScreen() {
                 <View style={styles.gridRow}>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.rowLabel}>Work (secs)</Text>
-                    <TextInput value={tabataWork} onChangeText={setTabataWork} keyboardType="number-pad" style={inputStyleBase} />
+                    <TextInput value={tabataWork} onChangeText={setTabataWork} keyboardType="number-pad" style={inputStyleBase()} />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.rowLabel}>Rest (secs)</Text>
-                    <TextInput value={tabataRest} onChangeText={setTabataRest} keyboardType="number-pad" style={inputStyleBase} />
+                    <TextInput value={tabataRest} onChangeText={setTabataRest} keyboardType="number-pad" style={inputStyleBase()} />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.rowLabel}>Rounds</Text>
-                    <TextInput value={tabataRounds} onChangeText={setTabataRounds} keyboardType="number-pad" style={inputStyleBase} />
+                    <TextInput value={tabataRounds} onChangeText={setTabataRounds} keyboardType="number-pad" style={inputStyleBase()} />
                   </View>
                 </View>
                 <MovementsEditor movements={tabataMovements} onChange={setTabataMovements} />
@@ -576,7 +583,7 @@ export default function ClassWorkoutBuilderScreen() {
                                   onChangeText={(v) => updateMemberRow(member.userId, member.existingExercises, row.key, { weight: v })}
                                   placeholder="Weight"
                                   placeholderTextColor={Color.textFaint}
-                                  style={[inputStyleBase, { flex: 1 }]}
+                                  style={[inputStyleBase(), { flex: 1 }]}
                                 />
                                 <TextInput
                                   value={row.reps}
@@ -584,7 +591,7 @@ export default function ClassWorkoutBuilderScreen() {
                                   placeholder="Reps"
                                   placeholderTextColor={Color.textFaint}
                                   keyboardType="number-pad"
-                                  style={[inputStyleBase, { flex: 1 }]}
+                                  style={[inputStyleBase(), { flex: 1 }]}
                                 />
                                 <TextInput
                                   value={row.sets}
@@ -592,7 +599,7 @@ export default function ClassWorkoutBuilderScreen() {
                                   placeholder="Sets"
                                   placeholderTextColor={Color.textFaint}
                                   keyboardType="number-pad"
-                                  style={[inputStyleBase, { flex: 1 }]}
+                                  style={[inputStyleBase(), { flex: 1 }]}
                                 />
                                 <TextInput
                                   value={row.rpe}
@@ -600,7 +607,7 @@ export default function ClassWorkoutBuilderScreen() {
                                   placeholder="RPE"
                                   placeholderTextColor={Color.textFaint}
                                   keyboardType="number-pad"
-                                  style={[inputStyleBase, { flex: 1 }]}
+                                  style={[inputStyleBase(), { flex: 1 }]}
                                 />
                               </View>
                             </View>
@@ -613,7 +620,7 @@ export default function ClassWorkoutBuilderScreen() {
                             }}
                             placeholder="Notes for this member (optional)"
                             placeholderTextColor={Color.textFaint}
-                            style={inputStyleBase}
+                            style={inputStyleBase()}
                           />
                         </View>
                       ) : null}
@@ -635,100 +642,102 @@ export default function ClassWorkoutBuilderScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Color.bg0 },
-  centerFill: { flex: 1, alignItems: "center", justifyContent: "center" },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-  },
-  backButton: { padding: 4 },
-  headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
-  headerSubtitle: { fontSize: 11, color: Color.textMuted, marginTop: 2 },
-  scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
-  intro: { fontSize: 12, color: Color.textMuted, lineHeight: 18, marginBottom: Spacing.md },
-  errorBanner: {
-    fontSize: 12,
-    color: Color.danger,
-    backgroundColor: Color.dangerWeak,
-    borderRadius: Radius.md,
-    padding: Spacing.sm,
-    marginBottom: Spacing.md,
-  },
-  successBanner: {
-    fontSize: 12,
-    color: Color.gold,
-    backgroundColor: Color.goldWeak,
-    borderRadius: Radius.md,
-    padding: Spacing.sm,
-    marginBottom: Spacing.md,
-  },
-  sectionCard: { padding: Spacing.md, marginBottom: Spacing.md },
-  sectionTitle: { fontSize: 15, fontWeight: "700", color: Color.textPrimary },
-  sectionHint: { fontSize: 12, color: Color.textMuted, marginTop: 4 },
-  templateRow: {
-    backgroundColor: Color.surface2,
-    borderRadius: Radius.md,
-    padding: Spacing.sm,
-    marginBottom: Spacing.sm,
-  },
-  entryHeader: { flexDirection: "row", alignItems: "center", gap: Spacing.sm, marginBottom: Spacing.sm },
-  removeButton: { paddingHorizontal: Spacing.sm, paddingVertical: 8 },
-  removeText: { fontSize: 12, color: Color.danger },
-  gridRow: { flexDirection: "row", gap: Spacing.sm },
-  gridRow4: { flexDirection: "row", gap: Spacing.xs },
-  addChip: {
-    borderRadius: Radius.pill,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 6,
-    alignSelf: "flex-start",
-    marginTop: Spacing.xs,
-  },
-  addChipText: { fontSize: 11, fontWeight: "600", color: Color.textSecondary },
-  notesInput: { marginTop: Spacing.md, minHeight: 64, textAlignVertical: "top", paddingVertical: Spacing.sm },
-  memberWell: {
-    backgroundColor: Color.surface2,
-    borderRadius: Radius.md,
-    padding: Spacing.sm,
-    marginBottom: Spacing.sm,
-  },
-  memberHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  memberName: { fontSize: 13, fontWeight: "600", color: Color.textPrimary },
-  memberStatus: { fontSize: 11, color: Color.textMuted },
-  memberBody: { marginTop: Spacing.sm, paddingTop: Spacing.sm, borderTopWidth: 1, borderTopColor: Color.borderSubtle },
-  rowLabel: { fontSize: 12, fontWeight: "600", color: Color.textPrimary, marginBottom: 6 },
-  formatRow: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.xs, marginTop: Spacing.xs },
-  formatChip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.sm, paddingVertical: 8 },
-  formatChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
-  formatChipText: { fontSize: 12, fontWeight: "600", color: Color.textMuted },
-  formatChipTextActive: { color: Color.gold },
-  formatConfig: { marginTop: Spacing.sm },
-  formatAddButton: {
-    width: 40,
-    height: 40,
-    borderRadius: Radius.md,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: Color.gold,
-  },
-  formatModeChip: { paddingHorizontal: Spacing.sm, paddingVertical: 8, borderRadius: Radius.md, borderWidth: 1, borderColor: Color.borderSubtle },
-  formatModeText: { fontSize: 10, fontWeight: "700", color: Color.textMuted },
-  stationRow: { flexDirection: "row", alignItems: "center", gap: Spacing.xs, marginBottom: Spacing.xs },
-  movementsList: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: Spacing.sm },
-  movementChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    borderRadius: Radius.pill,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 6,
-  },
-  movementChipText: { fontSize: 11, color: Color.textSecondary, fontWeight: "500" },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: Color.bg0 },
+    centerFill: { flex: 1, alignItems: "center", justifyContent: "center" },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingHorizontal: Spacing.lg,
+      paddingVertical: Spacing.md,
+    },
+    backButton: { padding: 4 },
+    headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
+    headerSubtitle: { fontSize: 11, color: Color.textMuted, marginTop: 2 },
+    scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
+    intro: { fontSize: 12, color: Color.textMuted, lineHeight: 18, marginBottom: Spacing.md },
+    errorBanner: {
+      fontSize: 12,
+      color: Color.danger,
+      backgroundColor: Color.dangerWeak,
+      borderRadius: Radius.md,
+      padding: Spacing.sm,
+      marginBottom: Spacing.md,
+    },
+    successBanner: {
+      fontSize: 12,
+      color: Color.gold,
+      backgroundColor: Color.goldWeak,
+      borderRadius: Radius.md,
+      padding: Spacing.sm,
+      marginBottom: Spacing.md,
+    },
+    sectionCard: { padding: Spacing.md, marginBottom: Spacing.md },
+    sectionTitle: { fontSize: 15, fontWeight: "700", color: Color.textPrimary },
+    sectionHint: { fontSize: 12, color: Color.textMuted, marginTop: 4 },
+    templateRow: {
+      backgroundColor: Color.surface2,
+      borderRadius: Radius.md,
+      padding: Spacing.sm,
+      marginBottom: Spacing.sm,
+    },
+    entryHeader: { flexDirection: "row", alignItems: "center", gap: Spacing.sm, marginBottom: Spacing.sm },
+    removeButton: { paddingHorizontal: Spacing.sm, paddingVertical: 8 },
+    removeText: { fontSize: 12, color: Color.danger },
+    gridRow: { flexDirection: "row", gap: Spacing.sm },
+    gridRow4: { flexDirection: "row", gap: Spacing.xs },
+    addChip: {
+      borderRadius: Radius.pill,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      paddingHorizontal: Spacing.sm,
+      paddingVertical: 6,
+      alignSelf: "flex-start",
+      marginTop: Spacing.xs,
+    },
+    addChipText: { fontSize: 11, fontWeight: "600", color: Color.textSecondary },
+    notesInput: { marginTop: Spacing.md, minHeight: 64, textAlignVertical: "top", paddingVertical: Spacing.sm },
+    memberWell: {
+      backgroundColor: Color.surface2,
+      borderRadius: Radius.md,
+      padding: Spacing.sm,
+      marginBottom: Spacing.sm,
+    },
+    memberHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+    memberName: { fontSize: 13, fontWeight: "600", color: Color.textPrimary },
+    memberStatus: { fontSize: 11, color: Color.textMuted },
+    memberBody: { marginTop: Spacing.sm, paddingTop: Spacing.sm, borderTopWidth: 1, borderTopColor: Color.borderSubtle },
+    rowLabel: { fontSize: 12, fontWeight: "600", color: Color.textPrimary, marginBottom: 6 },
+    formatRow: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.xs, marginTop: Spacing.xs },
+    formatChip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.sm, paddingVertical: 8 },
+    formatChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
+    formatChipText: { fontSize: 12, fontWeight: "600", color: Color.textMuted },
+    formatChipTextActive: { color: Color.gold },
+    formatConfig: { marginTop: Spacing.sm },
+    formatAddButton: {
+      width: 40,
+      height: 40,
+      borderRadius: Radius.md,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: Color.gold,
+    },
+    formatModeChip: { paddingHorizontal: Spacing.sm, paddingVertical: 8, borderRadius: Radius.md, borderWidth: 1, borderColor: Color.borderSubtle },
+    formatModeText: { fontSize: 10, fontWeight: "700", color: Color.textMuted },
+    stationRow: { flexDirection: "row", alignItems: "center", gap: Spacing.xs, marginBottom: Spacing.xs },
+    movementsList: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: Spacing.sm },
+    movementChip: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+      borderRadius: Radius.pill,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface1,
+      paddingHorizontal: Spacing.sm,
+      paddingVertical: 6,
+    },
+    movementChipText: { fontSize: 11, color: Color.textSecondary, fontWeight: "500" },
+  })
+);

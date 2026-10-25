@@ -3,13 +3,16 @@ import { useRouter } from "expo-router";
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { Color, Radius, Spacing } from "@/constants/theme";
+import { Radius, Spacing } from "@/constants/theme";
 import { FREE_CUSTOM_FOOD_LIMIT, hasAccess } from "@/lib/member-access";
 import { getFoodSubmissionEligibility, useMyCustomFoods, useMySubmissions, type FoodRecord } from "@/lib/queries/food-catalog";
 import { useMemberTier } from "@/lib/queries/profile";
 import { SUBMISSION_STATUS_COPY } from "@/lib/submission-status";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 export default function MyFoodsScreen() {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const router = useRouter();
   const tier = useMemberTier();
   const { data: foods, isLoading } = useMyCustomFoods();
@@ -99,30 +102,32 @@ export default function MyFoodsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Color.bg0 },
-  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md },
-  backButton: { padding: 4 },
-  headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
-  limitBanner: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.sm },
-  limitBannerText: { fontSize: 12, color: Color.textFaint },
-  centerFill: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: Spacing.xl },
-  emptyTitle: { fontSize: 15, fontWeight: "700", color: Color.textPrimary, marginTop: Spacing.md },
-  emptyText: { fontSize: 13, color: Color.textMuted, textAlign: "center", marginTop: 6, lineHeight: 19 },
-  list: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.sm,
-    paddingVertical: Spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: Color.borderSubtle,
-  },
-  rowName: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
-  rowSubRow: { flexDirection: "row", alignItems: "center", gap: Spacing.xs, marginTop: 2 },
-  rowSub: { fontSize: 11, color: Color.textMuted },
-  badge: { borderWidth: 1, borderRadius: Radius.pill, paddingHorizontal: 6, paddingVertical: 1 },
-  badgeText: { fontSize: 9, fontWeight: "700" },
-  shareButton: { padding: 6 },
-  footerHint: { fontSize: 11, color: Color.textMuted, lineHeight: 16, marginTop: Spacing.md, paddingHorizontal: 2 },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: Color.bg0 },
+    header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md },
+    backButton: { padding: 4 },
+    headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
+    limitBanner: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.sm },
+    limitBannerText: { fontSize: 12, color: Color.textFaint },
+    centerFill: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: Spacing.xl },
+    emptyTitle: { fontSize: 15, fontWeight: "700", color: Color.textPrimary, marginTop: Spacing.md },
+    emptyText: { fontSize: 13, color: Color.textMuted, textAlign: "center", marginTop: 6, lineHeight: 19 },
+    list: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
+    row: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: Spacing.sm,
+      paddingVertical: Spacing.md,
+      borderBottomWidth: 1,
+      borderBottomColor: Color.borderSubtle,
+    },
+    rowName: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
+    rowSubRow: { flexDirection: "row", alignItems: "center", gap: Spacing.xs, marginTop: 2 },
+    rowSub: { fontSize: 11, color: Color.textMuted },
+    badge: { borderWidth: 1, borderRadius: Radius.pill, paddingHorizontal: 6, paddingVertical: 1 },
+    badgeText: { fontSize: 9, fontWeight: "700" },
+    shareButton: { padding: 6 },
+    footerHint: { fontSize: 11, color: Color.textMuted, lineHeight: 16, marginTop: Spacing.md, paddingHorizontal: 2 },
+  })
+);

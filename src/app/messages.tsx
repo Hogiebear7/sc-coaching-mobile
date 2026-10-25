@@ -17,7 +17,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { UpsellCard } from "@/components/ui/Upsell";
-import { Color, Radius, Spacing } from "@/constants/theme";
+import { LiveColor as Color, Radius, Spacing } from "@/constants/theme";
 import { ApiError } from "@/lib/api-client";
 import { hasAccess, isMembershipTier } from "@/lib/member-access";
 import {
@@ -28,6 +28,7 @@ import {
   type CoachMessage,
 } from "@/lib/queries/messages";
 import { useMemberTier } from "@/lib/queries/profile";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 type Tab = "ai" | "coach";
 
@@ -52,6 +53,8 @@ function AiCoachTab({
   initialMessages: AiMessage[];
   context: import("@/lib/queries/messages").CoachingContextDisplay | null;
 }) {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const [messages, setMessages] = useState<AiMessage[]>(initialMessages);
   const [input, setInput] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -181,6 +184,8 @@ function AiCoachTab({
 }
 
 function CoachTab({ messages }: { messages: CoachMessage[] }) {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const [body, setBody] = useState("");
   const [error, setError] = useState<string | null>(null);
   const send = useSendCoachMessage();
@@ -262,6 +267,8 @@ function CoachTab({ messages }: { messages: CoachMessage[] }) {
 }
 
 export default function MessagesScreen() {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const router = useRouter();
   const { data, isLoading, isError, refetch } = useMessages();
   const [tab, setTab] = useState<Tab>("ai");
@@ -305,98 +312,100 @@ export default function MessagesScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Color.bg0 },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-  },
-  backButton: { padding: 4 },
-  headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
-  centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
-  errorText: { color: Color.textMuted, fontSize: 14 },
-  tabBar: {
-    flexDirection: "row",
-    gap: 4,
-    marginHorizontal: Spacing.lg,
-    marginBottom: Spacing.sm,
-    padding: 4,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-  },
-  tabButton: {
-    flex: 1,
-    paddingVertical: Spacing.sm,
-    borderRadius: Radius.sm,
-    alignItems: "center",
-  },
-  tabButtonActive: { backgroundColor: Color.surface2 },
-  tabButtonText: { fontSize: 13, fontWeight: "600", color: Color.textMuted },
-  tabButtonTextActive: { color: Color.textPrimary },
-  contextRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: Spacing.xs,
-    paddingHorizontal: Spacing.lg,
-    marginBottom: Spacing.sm,
-  },
-  contextChip: {
-    borderRadius: Radius.pill,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 4,
-  },
-  contextChipText: { fontSize: 11, fontWeight: "500", color: Color.textSecondary },
-  contextChipValue: { fontWeight: "700", color: Color.textPrimary },
-  thread: { paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md, gap: Spacing.sm },
-  emptyState: { alignItems: "center", paddingVertical: Spacing.xxl },
-  emptyTitle: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
-  emptySub: { fontSize: 12, color: Color.textMuted, marginTop: 4, textAlign: "center", maxWidth: 260 },
-  bubble: { maxWidth: "85%", borderRadius: Radius.md, padding: Spacing.sm },
-  bubbleUser: { alignSelf: "flex-end", backgroundColor: Color.goldWeak },
-  bubbleAssistant: { alignSelf: "flex-start", borderWidth: 1, borderColor: Color.borderSubtle, backgroundColor: Color.surface1 },
-  bubbleUserText: { fontSize: 13, color: Color.gold, lineHeight: 18 },
-  bubbleAssistantText: { fontSize: 13, color: Color.textSecondary, lineHeight: 18 },
-  bubbleTime: { fontSize: 10, color: Color.textFaint, marginTop: 4 },
-  bubbleTimeUser: { color: "rgba(198,161,91,0.6)" },
-  unavailableCard: { margin: Spacing.lg, padding: Spacing.lg, alignItems: "center", gap: Spacing.xs },
-  unavailableTitle: { fontSize: 14, fontWeight: "600", color: Color.textPrimary, marginTop: 4 },
-  unavailableSub: { fontSize: 12, color: Color.textMuted, textAlign: "center" },
-  error: { fontSize: 11, color: Color.danger, marginHorizontal: Spacing.lg, marginBottom: Spacing.xs },
-  inputRow: {
-    flexDirection: "row",
-    gap: Spacing.sm,
-    alignItems: "flex-end",
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: Color.borderSubtle,
-  },
-  input: {
-    flex: 1,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-    color: Color.textPrimary,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 10,
-    fontSize: 13,
-    maxHeight: 100,
-  },
-  sendButton: {
-    backgroundColor: Color.gold,
-    borderRadius: Radius.md,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: 12,
-  },
-  sendButtonDisabled: { opacity: 0.5 },
-  sendButtonText: { fontSize: 12, fontWeight: "700", color: Color.goldForeground },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: Color.bg0 },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: Spacing.lg,
+      paddingVertical: Spacing.md,
+    },
+    backButton: { padding: 4 },
+    headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
+    centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
+    errorText: { color: Color.textMuted, fontSize: 14 },
+    tabBar: {
+      flexDirection: "row",
+      gap: 4,
+      marginHorizontal: Spacing.lg,
+      marginBottom: Spacing.sm,
+      padding: 4,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface1,
+    },
+    tabButton: {
+      flex: 1,
+      paddingVertical: Spacing.sm,
+      borderRadius: Radius.sm,
+      alignItems: "center",
+    },
+    tabButtonActive: { backgroundColor: Color.surface2 },
+    tabButtonText: { fontSize: 13, fontWeight: "600", color: Color.textMuted },
+    tabButtonTextActive: { color: Color.textPrimary },
+    contextRow: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: Spacing.xs,
+      paddingHorizontal: Spacing.lg,
+      marginBottom: Spacing.sm,
+    },
+    contextChip: {
+      borderRadius: Radius.pill,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface1,
+      paddingHorizontal: Spacing.sm,
+      paddingVertical: 4,
+    },
+    contextChipText: { fontSize: 11, fontWeight: "500", color: Color.textSecondary },
+    contextChipValue: { fontWeight: "700", color: Color.textPrimary },
+    thread: { paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md, gap: Spacing.sm },
+    emptyState: { alignItems: "center", paddingVertical: Spacing.xxl },
+    emptyTitle: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
+    emptySub: { fontSize: 12, color: Color.textMuted, marginTop: 4, textAlign: "center", maxWidth: 260 },
+    bubble: { maxWidth: "85%", borderRadius: Radius.md, padding: Spacing.sm },
+    bubbleUser: { alignSelf: "flex-end", backgroundColor: Color.goldWeak },
+    bubbleAssistant: { alignSelf: "flex-start", borderWidth: 1, borderColor: Color.borderSubtle, backgroundColor: Color.surface1 },
+    bubbleUserText: { fontSize: 13, color: Color.gold, lineHeight: 18 },
+    bubbleAssistantText: { fontSize: 13, color: Color.textSecondary, lineHeight: 18 },
+    bubbleTime: { fontSize: 10, color: Color.textFaint, marginTop: 4 },
+    bubbleTimeUser: { color: "rgba(198,161,91,0.6)" },
+    unavailableCard: { margin: Spacing.lg, padding: Spacing.lg, alignItems: "center", gap: Spacing.xs },
+    unavailableTitle: { fontSize: 14, fontWeight: "600", color: Color.textPrimary, marginTop: 4 },
+    unavailableSub: { fontSize: 12, color: Color.textMuted, textAlign: "center" },
+    error: { fontSize: 11, color: Color.danger, marginHorizontal: Spacing.lg, marginBottom: Spacing.xs },
+    inputRow: {
+      flexDirection: "row",
+      gap: Spacing.sm,
+      alignItems: "flex-end",
+      paddingHorizontal: Spacing.lg,
+      paddingVertical: Spacing.md,
+      borderTopWidth: 1,
+      borderTopColor: Color.borderSubtle,
+    },
+    input: {
+      flex: 1,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface1,
+      color: Color.textPrimary,
+      paddingHorizontal: Spacing.sm,
+      paddingVertical: 10,
+      fontSize: 13,
+      maxHeight: 100,
+    },
+    sendButton: {
+      backgroundColor: Color.gold,
+      borderRadius: Radius.md,
+      paddingHorizontal: Spacing.md,
+      paddingVertical: 12,
+    },
+    sendButtonDisabled: { opacity: 0.5 },
+    sendButtonText: { fontSize: 12, fontWeight: "700", color: Color.goldForeground },
+  })
+);

@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { IconSelect } from "@/components/ui/IconSelect";
 import { Segmented } from "@/components/ui/Segmented";
-import { Color, Radius, Spacing } from "@/constants/theme";
+import { LiveColor as Color, Radius, Spacing } from "@/constants/theme";
 import type { DrinkSettings } from "@/lib/drink-settings";
 import { useNutrition, useSaveDrinkSettings } from "@/lib/queries/nutrition";
 import {
@@ -25,6 +25,7 @@ import {
   type SweatProfile,
   type TempProfile,
 } from "@/lib/nutrition-calc";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 const BOTTLE_OPTIONS = [500, 750, 1000] as const;
 const RUN_PRESETS = [
@@ -152,6 +153,8 @@ const INGREDIENT_BENEFITS: {
 ];
 
 export default function DrinkCalculatorScreen() {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const router = useRouter();
   const { data, isLoading, isError, refetch } = useNutrition();
   const saveSettings = useSaveDrinkSettings();
@@ -473,78 +476,80 @@ export default function DrinkCalculatorScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Color.bg0 },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-  },
-  backButton: { padding: 4 },
-  headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
-  centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
-  errorText: { color: Color.textMuted, fontSize: 14 },
-  scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
-  fieldLabel: { fontSize: 11, fontWeight: "600", color: Color.textMuted, marginBottom: 6, marginTop: Spacing.md, textTransform: "uppercase", letterSpacing: 0.4 },
-  sectionLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginBottom: Spacing.sm },
-  gridRow: { flexDirection: "row", gap: Spacing.sm },
-  textInput: {
-    height: 44,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-    paddingHorizontal: Spacing.md,
-    fontSize: 14,
-    color: Color.textPrimary,
-  },
-  presetRow: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.xs, marginTop: Spacing.sm },
-  presetChip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.sm, paddingVertical: 6 },
-  presetChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
-  presetChipText: { fontSize: 11, fontWeight: "500", color: Color.textMuted },
-  presetChipTextActive: { color: Color.gold },
-  hintText: { fontSize: 11, color: Color.textMuted, marginTop: Spacing.sm, lineHeight: 16 },
-  hintTextSmall: { fontSize: 10, color: Color.textFaint, marginTop: 4, lineHeight: 14 },
-  durationBox: { borderRadius: Radius.md, borderWidth: 1, borderColor: Color.borderSubtle, backgroundColor: Color.surface1, alignItems: "center", justifyContent: "center", paddingVertical: 10 },
-  durationValue: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
-  durationSub: { fontSize: 9, color: Color.textFaint, marginTop: 2 },
-  infoCard: { padding: Spacing.md, marginTop: Spacing.md },
-  infoText: { fontSize: 11, color: Color.textMuted, lineHeight: 16 },
-  infoTextGold: { fontSize: 11, color: Color.gold, fontWeight: "600", marginTop: Spacing.xs, lineHeight: 16 },
-  mixedForText: { fontSize: 10, color: Color.textFaint, marginTop: Spacing.sm, marginBottom: Spacing.sm },
-  ingredientsCard: { padding: 0 },
-  ingredientRow: { flexDirection: "row", justifyContent: "space-between", paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm },
-  ingredientRowDivider: { borderTopWidth: 1, borderTopColor: Color.borderSubtle },
-  ingredientName: { fontSize: 13, color: Color.textSecondary },
-  ingredientAmount: { fontSize: 13, fontWeight: "600", color: Color.textPrimary },
-  totalsRow: { flexDirection: "row", gap: Spacing.xs, marginTop: Spacing.sm },
-  totalCell: { flex: 1, padding: Spacing.sm, alignItems: "center" },
-  totalLabel: { fontSize: 9, fontWeight: "700", color: Color.textMuted, textTransform: "uppercase" },
-  totalValue: { fontSize: 13, fontWeight: "700", color: Color.textPrimary, marginTop: 4 },
-  sodiumBadge: { flexDirection: "row", alignItems: "center", gap: 6, alignSelf: "flex-start", borderRadius: Radius.pill, borderWidth: 1, paddingHorizontal: Spacing.sm, paddingVertical: 6, marginTop: Spacing.md },
-  sodiumDot: { width: 6, height: 6, borderRadius: 3 },
-  sodiumBadgeText: { fontSize: 11, fontWeight: "600" },
-  sodiumExplainerText: { fontSize: 11, color: Color.textMuted, marginTop: Spacing.xs, lineHeight: 16 },
-  phasesGrid: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.xs, marginTop: Spacing.sm },
-  phaseCell: { flexGrow: 1, flexBasis: "30%", padding: Spacing.sm, alignItems: "center" },
-  phaseLabel: { fontSize: 9, fontWeight: "700", color: Color.textMuted, textTransform: "uppercase" },
-  phaseAmount: { fontSize: 13, fontWeight: "700", color: Color.textPrimary, marginTop: 4 },
-  phaseTip: { fontSize: 9, color: Color.textFaint, marginTop: 2, textAlign: "center" },
-  extraText: { fontSize: 11, color: Color.warning, marginTop: Spacing.sm, lineHeight: 16 },
-  footerNote: { fontSize: 11, color: Color.textFaint, marginTop: Spacing.xl, lineHeight: 16 },
-  benefitsHeader: { flexDirection: "row", alignItems: "center", gap: Spacing.sm, paddingVertical: Spacing.sm },
-  benefitsTitle: { fontSize: 14, fontWeight: "700", color: Color.textPrimary },
-  benefitsSubtitle: { fontSize: 11, color: Color.textMuted, marginTop: 2 },
-  benefitCard: { padding: Spacing.sm, marginTop: Spacing.xs },
-  benefitRow: { flexDirection: "row", alignItems: "flex-start", gap: Spacing.sm },
-  benefitNameRow: { flexDirection: "row", alignItems: "center", gap: Spacing.xs, flexWrap: "wrap" },
-  benefitName: { fontSize: 13, fontWeight: "700", color: Color.textPrimary },
-  benefitTag: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.goldBorder, backgroundColor: Color.goldWeak, paddingHorizontal: 8, paddingVertical: 2 },
-  benefitTagText: { fontSize: 10, fontWeight: "600", color: Color.gold },
-  benefitSummary: { fontSize: 11, color: Color.textMuted, marginTop: 4, lineHeight: 15 },
-  benefitDetail: { marginTop: Spacing.sm, paddingTop: Spacing.sm, borderTopWidth: 1, borderTopColor: Color.borderSubtle, gap: Spacing.xs },
-  benefitDetailText: { fontSize: 11, color: Color.textMuted, lineHeight: 16 },
-  benefitDetailLabel: { fontWeight: "600", color: Color.textSecondary },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: Color.bg0 },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: Spacing.lg,
+      paddingVertical: Spacing.md,
+    },
+    backButton: { padding: 4 },
+    headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
+    centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
+    errorText: { color: Color.textMuted, fontSize: 14 },
+    scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
+    fieldLabel: { fontSize: 11, fontWeight: "600", color: Color.textMuted, marginBottom: 6, marginTop: Spacing.md, textTransform: "uppercase", letterSpacing: 0.4 },
+    sectionLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginBottom: Spacing.sm },
+    gridRow: { flexDirection: "row", gap: Spacing.sm },
+    textInput: {
+      height: 44,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface1,
+      paddingHorizontal: Spacing.md,
+      fontSize: 14,
+      color: Color.textPrimary,
+    },
+    presetRow: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.xs, marginTop: Spacing.sm },
+    presetChip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.sm, paddingVertical: 6 },
+    presetChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
+    presetChipText: { fontSize: 11, fontWeight: "500", color: Color.textMuted },
+    presetChipTextActive: { color: Color.gold },
+    hintText: { fontSize: 11, color: Color.textMuted, marginTop: Spacing.sm, lineHeight: 16 },
+    hintTextSmall: { fontSize: 10, color: Color.textFaint, marginTop: 4, lineHeight: 14 },
+    durationBox: { borderRadius: Radius.md, borderWidth: 1, borderColor: Color.borderSubtle, backgroundColor: Color.surface1, alignItems: "center", justifyContent: "center", paddingVertical: 10 },
+    durationValue: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
+    durationSub: { fontSize: 9, color: Color.textFaint, marginTop: 2 },
+    infoCard: { padding: Spacing.md, marginTop: Spacing.md },
+    infoText: { fontSize: 11, color: Color.textMuted, lineHeight: 16 },
+    infoTextGold: { fontSize: 11, color: Color.gold, fontWeight: "600", marginTop: Spacing.xs, lineHeight: 16 },
+    mixedForText: { fontSize: 10, color: Color.textFaint, marginTop: Spacing.sm, marginBottom: Spacing.sm },
+    ingredientsCard: { padding: 0 },
+    ingredientRow: { flexDirection: "row", justifyContent: "space-between", paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm },
+    ingredientRowDivider: { borderTopWidth: 1, borderTopColor: Color.borderSubtle },
+    ingredientName: { fontSize: 13, color: Color.textSecondary },
+    ingredientAmount: { fontSize: 13, fontWeight: "600", color: Color.textPrimary },
+    totalsRow: { flexDirection: "row", gap: Spacing.xs, marginTop: Spacing.sm },
+    totalCell: { flex: 1, padding: Spacing.sm, alignItems: "center" },
+    totalLabel: { fontSize: 9, fontWeight: "700", color: Color.textMuted, textTransform: "uppercase" },
+    totalValue: { fontSize: 13, fontWeight: "700", color: Color.textPrimary, marginTop: 4 },
+    sodiumBadge: { flexDirection: "row", alignItems: "center", gap: 6, alignSelf: "flex-start", borderRadius: Radius.pill, borderWidth: 1, paddingHorizontal: Spacing.sm, paddingVertical: 6, marginTop: Spacing.md },
+    sodiumDot: { width: 6, height: 6, borderRadius: 3 },
+    sodiumBadgeText: { fontSize: 11, fontWeight: "600" },
+    sodiumExplainerText: { fontSize: 11, color: Color.textMuted, marginTop: Spacing.xs, lineHeight: 16 },
+    phasesGrid: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.xs, marginTop: Spacing.sm },
+    phaseCell: { flexGrow: 1, flexBasis: "30%", padding: Spacing.sm, alignItems: "center" },
+    phaseLabel: { fontSize: 9, fontWeight: "700", color: Color.textMuted, textTransform: "uppercase" },
+    phaseAmount: { fontSize: 13, fontWeight: "700", color: Color.textPrimary, marginTop: 4 },
+    phaseTip: { fontSize: 9, color: Color.textFaint, marginTop: 2, textAlign: "center" },
+    extraText: { fontSize: 11, color: Color.warning, marginTop: Spacing.sm, lineHeight: 16 },
+    footerNote: { fontSize: 11, color: Color.textFaint, marginTop: Spacing.xl, lineHeight: 16 },
+    benefitsHeader: { flexDirection: "row", alignItems: "center", gap: Spacing.sm, paddingVertical: Spacing.sm },
+    benefitsTitle: { fontSize: 14, fontWeight: "700", color: Color.textPrimary },
+    benefitsSubtitle: { fontSize: 11, color: Color.textMuted, marginTop: 2 },
+    benefitCard: { padding: Spacing.sm, marginTop: Spacing.xs },
+    benefitRow: { flexDirection: "row", alignItems: "flex-start", gap: Spacing.sm },
+    benefitNameRow: { flexDirection: "row", alignItems: "center", gap: Spacing.xs, flexWrap: "wrap" },
+    benefitName: { fontSize: 13, fontWeight: "700", color: Color.textPrimary },
+    benefitTag: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.goldBorder, backgroundColor: Color.goldWeak, paddingHorizontal: 8, paddingVertical: 2 },
+    benefitTagText: { fontSize: 10, fontWeight: "600", color: Color.gold },
+    benefitSummary: { fontSize: 11, color: Color.textMuted, marginTop: 4, lineHeight: 15 },
+    benefitDetail: { marginTop: Spacing.sm, paddingTop: Spacing.sm, borderTopWidth: 1, borderTopColor: Color.borderSubtle, gap: Spacing.xs },
+    benefitDetailText: { fontSize: 11, color: Color.textMuted, lineHeight: 16 },
+    benefitDetailLabel: { fontWeight: "600", color: Color.textSecondary },
+  })
+);

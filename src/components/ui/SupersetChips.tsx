@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { Color, Radius, Spacing } from "@/constants/theme";
+import { Radius, Spacing } from "@/constants/theme";
+import { makeLegacyStyles } from "@/lib/theme";
 
 // Computes the next unused "ST<n>" label given the groups already assigned
 // in scope, so "+ New" always offers the next free slot.
@@ -27,6 +28,7 @@ export function SupersetChips({
   allGroups: (string | null)[];
   onChange: (v: string | null) => void;
 }) {
+  const styles = useStyles();
   const existingGroups = Array.from(new Set(allGroups.filter((g): g is string => !!g)));
   return (
     <View style={styles.row}>
@@ -49,16 +51,18 @@ export function SupersetChips({
   );
 }
 
-const styles = StyleSheet.create({
-  row: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
-  chip: {
-    borderRadius: Radius.pill,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 6,
-  },
-  chipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
-  chipText: { fontSize: 11, fontWeight: "500", color: Color.textMuted },
-  chipTextActive: { color: Color.gold },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    row: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
+    chip: {
+      borderRadius: Radius.pill,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      paddingHorizontal: Spacing.sm,
+      paddingVertical: 6,
+    },
+    chipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
+    chipText: { fontSize: 11, fontWeight: "500", color: Color.textMuted },
+    chipTextActive: { color: Color.gold },
+  })
+);

@@ -2,7 +2,18 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useColorScheme } from "react-native";
 
-import { DarkPalette, DataColor, DataColorLight, LightPalette, type AppPalette, type DataPalette } from "@/constants/theme";
+import {
+  Color,
+  ColorLight,
+  DarkPalette,
+  DataColor,
+  DataColorLight,
+  LightPalette,
+  LiveColor,
+  type AppPalette,
+  type DataPalette,
+  type LegacyPalette,
+} from "@/constants/theme";
 import { resolveScheme, type ColorScheme, type ThemePreference } from "@/lib/theme-scheme";
 
 // App theme (App v2). Components read colours from here instead of importing
@@ -23,6 +34,7 @@ type ThemeContextValue = {
   scheme: ColorScheme;
   colors: AppPalette;
   data: DataPalette;
+  legacy: LegacyPalette;
   preference: ThemePreference;
   setPreference: (p: ThemePreference) => void;
 };
@@ -31,6 +43,7 @@ const DARK_VALUE: ThemeContextValue = {
   scheme: "dark",
   colors: DarkPalette,
   data: DataColor,
+  legacy: Color,
   preference: "system",
   setPreference: () => {},
 };
@@ -56,10 +69,12 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<ThemeContextValue>(() => {
     const scheme = resolveScheme(preference, system, LIGHT_MODE_AVAILABLE);
+    Object.assign(LiveColor, scheme === "light" ? ColorLight : Color);
     return {
       scheme,
       colors: scheme === "light" ? LightPalette : DarkPalette,
       data: scheme === "light" ? DataColorLight : DataColor,
+      legacy: scheme === "light" ? ColorLight : Color,
       preference,
       setPreference,
     };
@@ -75,14 +90,35 @@ export function useAppTheme(): ThemeContextValue {
 // Themed StyleSheet factory: `const useStyles = makeStyles((c) => ({ ... }))`
 // at module level, then `const styles = useStyles()` in the component. The
 // sheet is rebuilt only when the palette changes.
-export function makeStyles<T>(factory: (c: AppPalette, d: DataPalette) => T): () => T {
+export function makeStyles<T>(factory: (c: AppPalette, d: DataPalette, legacy: LegacyPalette) => T): () => T {
   const cache = new Map<AppPalette, T>();
   return function useStyles() {
-    const { colors, data } = useAppTheme();
+    const { colors, data, legacy } = useAppTheme();
     let sheet = cache.get(colors);
     if (!sheet) {
-      sheet = factory(colors, data);
+      sheet = factory(colors, data, legacy);
       cache.set(colors, sheet);
+    }
+    return sheet;
+  };
+}
+
+// Legacy-token twins of the two helpers above, for screens written against
+// the original `Color` names (bg0, surface1, gold…). The codemod that
+// converted them names the factory parameter `Color`, so stylesheet bodies
+// read exactly as before.
+export function useLegacyColors(): LegacyPalette {
+  return useAppTheme().legacy;
+}
+
+export function makeLegacyStyles<T>(factory: (c: LegacyPalette) => T): () => T {
+  const cache = new Map<LegacyPalette, T>();
+  return function useStyles() {
+    const legacy = useLegacyColors();
+    let sheet = cache.get(legacy);
+    if (!sheet) {
+      sheet = factory(legacy);
+      cache.set(legacy, sheet);
     }
     return sheet;
   };

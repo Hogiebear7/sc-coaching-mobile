@@ -4,11 +4,14 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Switch, Text, Vie
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Card } from "@/components/ui/Card";
-import { Color, Spacing } from "@/constants/theme";
+import { Spacing } from "@/constants/theme";
 import { useAuth } from "@/lib/auth-context";
 import { useCommunityPrivacy, useSetCommunityPrivacy } from "@/lib/queries/community";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 export default function CommunityPrivacyScreen() {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const router = useRouter();
   const { user } = useAuth();
   const { data, isLoading } = useCommunityPrivacy();
@@ -140,23 +143,25 @@ export default function CommunityPrivacyScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Color.bg0 },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-  },
-  backButton: { padding: 4 },
-  headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
-  scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
-  intro: { fontSize: 12, color: Color.textSecondary, lineHeight: 17, marginBottom: Spacing.lg },
-  card: { padding: Spacing.md },
-  cardSpaced: { marginTop: Spacing.md },
-  settingRow: { flexDirection: "row", alignItems: "center", gap: Spacing.md, paddingVertical: Spacing.sm },
-  settingRowDivider: { borderTopWidth: 1, borderTopColor: Color.borderSubtle },
-  settingTitle: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
-  settingSub: { fontSize: 12, color: Color.textMuted, marginTop: 2, lineHeight: 16 },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: Color.bg0 },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: Spacing.lg,
+      paddingVertical: Spacing.md,
+    },
+    backButton: { padding: 4 },
+    headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
+    scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
+    intro: { fontSize: 12, color: Color.textSecondary, lineHeight: 17, marginBottom: Spacing.lg },
+    card: { padding: Spacing.md },
+    cardSpaced: { marginTop: Spacing.md },
+    settingRow: { flexDirection: "row", alignItems: "center", gap: Spacing.md, paddingVertical: Spacing.sm },
+    settingRowDivider: { borderTopWidth: 1, borderTopColor: Color.borderSubtle },
+    settingTitle: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
+    settingSub: { fontSize: 12, color: Color.textMuted, marginTop: 2, lineHeight: 16 },
+  })
+);

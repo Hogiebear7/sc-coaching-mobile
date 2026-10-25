@@ -3,9 +3,10 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useEffect, useState } from "react";
 import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
 
-import { Color, Radius, Spacing } from "@/constants/theme";
+import { Radius, Spacing } from "@/constants/theme";
 import { useAuth } from "@/lib/auth-context";
 import { tapFeedback } from "@/lib/haptics";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 const STORAGE_PREFIX = "log-workout-tour-seen-v1-";
 
@@ -24,6 +25,8 @@ const TIPS = [
 // own small, self-contained version rather than being force-fit into that
 // system. Member-only, same as the tab tour.
 export function LogWorkoutTour() {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const { user } = useAuth();
   const [visible, setVisible] = useState(false);
   const userId = user?.role === "member" ? user.id : null;
@@ -73,51 +76,53 @@ export function LogWorkoutTour() {
   );
 }
 
-const styles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    backgroundColor: "rgba(4,10,20,0.72)",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: Spacing.xl,
-  },
-  card: {
-    width: "100%",
-    maxWidth: 380,
-    borderRadius: Radius.lg,
-    borderWidth: 1,
-    borderColor: Color.borderDefault,
-    backgroundColor: Color.surface1,
-    padding: Spacing.xl,
-    alignItems: "center",
-  },
-  icon: {
-    width: 44,
-    height: 44,
-    borderRadius: Radius.pill,
-    borderWidth: 1,
-    borderColor: Color.goldBorder,
-    backgroundColor: Color.goldWeak,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: Spacing.md,
-  },
-  title: { fontSize: 18, fontWeight: "700", color: Color.textPrimary, textAlign: "center" },
-  description: { fontSize: 13, color: Color.textMuted, textAlign: "center", marginTop: Spacing.sm },
-  tipList: { width: "100%", marginTop: Spacing.lg, gap: Spacing.sm },
-  tipRow: { flexDirection: "row", alignItems: "flex-start", gap: Spacing.sm },
-  tipBullet: { width: 5, height: 5, borderRadius: Radius.pill, backgroundColor: Color.gold, marginTop: 6 },
-  tipText: { flex: 1, fontSize: 13, color: Color.textSecondary, lineHeight: 18 },
-  gotItButton: {
-    width: "100%",
-    marginTop: Spacing.xl,
-    height: 48,
-    borderRadius: Radius.pill,
-    borderWidth: 1,
-    borderColor: Color.goldBorder,
-    backgroundColor: Color.gold,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  gotItText: { fontSize: 15, fontWeight: "600", color: Color.goldForeground },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    backdrop: {
+      flex: 1,
+      backgroundColor: "rgba(4,10,20,0.72)",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: Spacing.xl,
+    },
+    card: {
+      width: "100%",
+      maxWidth: 380,
+      borderRadius: Radius.lg,
+      borderWidth: 1,
+      borderColor: Color.borderDefault,
+      backgroundColor: Color.surface1,
+      padding: Spacing.xl,
+      alignItems: "center",
+    },
+    icon: {
+      width: 44,
+      height: 44,
+      borderRadius: Radius.pill,
+      borderWidth: 1,
+      borderColor: Color.goldBorder,
+      backgroundColor: Color.goldWeak,
+      alignItems: "center",
+      justifyContent: "center",
+      marginBottom: Spacing.md,
+    },
+    title: { fontSize: 18, fontWeight: "700", color: Color.textPrimary, textAlign: "center" },
+    description: { fontSize: 13, color: Color.textMuted, textAlign: "center", marginTop: Spacing.sm },
+    tipList: { width: "100%", marginTop: Spacing.lg, gap: Spacing.sm },
+    tipRow: { flexDirection: "row", alignItems: "flex-start", gap: Spacing.sm },
+    tipBullet: { width: 5, height: 5, borderRadius: Radius.pill, backgroundColor: Color.gold, marginTop: 6 },
+    tipText: { flex: 1, fontSize: 13, color: Color.textSecondary, lineHeight: 18 },
+    gotItButton: {
+      width: "100%",
+      marginTop: Spacing.xl,
+      height: 48,
+      borderRadius: Radius.pill,
+      borderWidth: 1,
+      borderColor: Color.goldBorder,
+      backgroundColor: Color.gold,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    gotItText: { fontSize: 15, fontWeight: "600", color: Color.goldForeground },
+  })
+);

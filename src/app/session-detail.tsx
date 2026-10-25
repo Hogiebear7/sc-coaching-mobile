@@ -8,12 +8,13 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { MuscleMap } from "@/components/ui/MuscleMap";
 import { StatCard } from "@/components/ui/StatCard";
-import { Color, headline, Radius, Spacing } from "@/constants/theme";
+import { headline, Radius, Spacing } from "@/constants/theme";
 import { tapFeedback } from "@/lib/haptics";
 import type { PrescribedExercise } from "@/lib/queries/programs";
 import { useDeleteWorkoutSession, useSetWorkoutVisibility, useWorkouts, type WorkoutExerciseEntry } from "@/lib/queries/workouts";
 import { setPendingWorkoutTemplateSeed } from "@/lib/workout-template-seed";
 import { computeExerciseSetTotals, computeSessionTotals, formatExerciseSetLabels, formatRun } from "@/lib/workout-formatters";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 function formatLongDate(dateISO: string): string {
   return new Date(`${dateISO}T00:00:00`).toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long", year: "numeric" });
@@ -45,6 +46,8 @@ function toPrescribedExercise(ex: WorkoutExerciseEntry): PrescribedExercise {
 }
 
 export default function SessionDetailScreen() {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id?: string }>();
   const { data, isLoading } = useWorkouts();
@@ -246,47 +249,49 @@ export default function SessionDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Color.bg0 },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-  },
-  backButton: { padding: 4 },
-  headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
-  headerActions: { flexDirection: "row", alignItems: "center", gap: Spacing.md },
-  editLink: { fontSize: 14, fontWeight: "600", color: Color.gold },
-  centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
-  emptyText: { fontSize: 14, color: Color.textMuted },
-  scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
-  title: { ...headline(28), color: Color.textPrimary },
-  date: { fontSize: 13, color: Color.textMuted, marginTop: 2 },
-  privateBadge: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 6 },
-  privateBadgeText: { fontSize: 11, color: Color.textFaint },
-  statsGrid: { gap: Spacing.sm, marginTop: Spacing.lg },
-  statsRow: { flexDirection: "row", gap: Spacing.sm },
-  sectionLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginTop: Spacing.xl, marginBottom: Spacing.sm },
-  list: { padding: 0, overflow: "hidden" },
-  row: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", padding: Spacing.md, gap: Spacing.sm },
-  rowDivider: { borderTopWidth: 1, borderTopColor: Color.borderSubtle },
-  rowTitle: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
-  exerciseTitleRow: { flexDirection: "row", alignItems: "center", gap: 6 },
-  supersetBadge: { borderRadius: 999, backgroundColor: Color.gold + "26", paddingHorizontal: 6, paddingVertical: 1 },
-  supersetBadgeText: { fontSize: 10, fontWeight: "700", color: Color.gold },
-  rowSummary: { fontSize: 12, color: Color.textMuted, marginTop: 2 },
-  setChipRow: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: Spacing.xs },
-  setChip: {
-    borderRadius: Radius.sm,
-    backgroundColor: Color.surface2,
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-  },
-  setChipText: { fontSize: 11, fontWeight: "500", color: Color.textSecondary, fontVariant: ["tabular-nums"] },
-  rowMeta: { flexDirection: "row", alignItems: "center", gap: 4 },
-  rowMetaText: { fontSize: 11, color: Color.textFaint },
-  notesCard: { padding: Spacing.md },
-  notesText: { fontSize: 13, color: Color.textSecondary, lineHeight: 19 },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: Color.bg0 },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: Spacing.lg,
+      paddingVertical: Spacing.md,
+    },
+    backButton: { padding: 4 },
+    headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
+    headerActions: { flexDirection: "row", alignItems: "center", gap: Spacing.md },
+    editLink: { fontSize: 14, fontWeight: "600", color: Color.gold },
+    centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
+    emptyText: { fontSize: 14, color: Color.textMuted },
+    scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
+    title: { ...headline(28), color: Color.textPrimary },
+    date: { fontSize: 13, color: Color.textMuted, marginTop: 2 },
+    privateBadge: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 6 },
+    privateBadgeText: { fontSize: 11, color: Color.textFaint },
+    statsGrid: { gap: Spacing.sm, marginTop: Spacing.lg },
+    statsRow: { flexDirection: "row", gap: Spacing.sm },
+    sectionLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginTop: Spacing.xl, marginBottom: Spacing.sm },
+    list: { padding: 0, overflow: "hidden" },
+    row: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", padding: Spacing.md, gap: Spacing.sm },
+    rowDivider: { borderTopWidth: 1, borderTopColor: Color.borderSubtle },
+    rowTitle: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
+    exerciseTitleRow: { flexDirection: "row", alignItems: "center", gap: 6 },
+    supersetBadge: { borderRadius: 999, backgroundColor: Color.gold + "26", paddingHorizontal: 6, paddingVertical: 1 },
+    supersetBadgeText: { fontSize: 10, fontWeight: "700", color: Color.gold },
+    rowSummary: { fontSize: 12, color: Color.textMuted, marginTop: 2 },
+    setChipRow: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: Spacing.xs },
+    setChip: {
+      borderRadius: Radius.sm,
+      backgroundColor: Color.surface2,
+      paddingHorizontal: 7,
+      paddingVertical: 3,
+    },
+    setChipText: { fontSize: 11, fontWeight: "500", color: Color.textSecondary, fontVariant: ["tabular-nums"] },
+    rowMeta: { flexDirection: "row", alignItems: "center", gap: 4 },
+    rowMetaText: { fontSize: 11, color: Color.textFaint },
+    notesCard: { padding: Spacing.md },
+    notesText: { fontSize: 13, color: Color.textSecondary, lineHeight: 19 },
+  })
+);

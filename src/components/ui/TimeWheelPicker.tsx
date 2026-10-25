@@ -1,8 +1,9 @@
 import { useEffect, useRef } from "react";
 import { ScrollView, StyleSheet, Text, View, type NativeSyntheticEvent, type NativeScrollEvent } from "react-native";
 
-import { Color, Spacing } from "@/constants/theme";
+import { Spacing } from "@/constants/theme";
 import { tapFeedback } from "@/lib/haptics";
+import { makeLegacyStyles } from "@/lib/theme";
 
 const ITEM_HEIGHT = 40;
 // One row above, one below the selected row — matches the 3-row wheel look
@@ -24,6 +25,7 @@ function WheelColumn({
   onChange: (v: number) => void;
   label: string;
 }) {
+  const styles = useStyles();
   const scrollRef = useRef<ScrollView>(null);
   const suppressNextSync = useRef(false);
   const settleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -123,6 +125,7 @@ export function TimeWheelPicker({
   showHours?: boolean;
   maxHours?: number;
 }) {
+  const styles = useStyles();
   const h = showHours ? Math.floor(totalSecs / 3600) : 0;
   const m = Math.floor((totalSecs % 3600) / 60);
   const s = totalSecs % 60;
@@ -142,23 +145,25 @@ export function TimeWheelPicker({
   );
 }
 
-const styles = StyleSheet.create({
-  wrap: { flexDirection: "row", alignItems: "flex-start", justifyContent: "center" },
-  column: { alignItems: "center", width: 64 },
-  viewport: { height: ITEM_HEIGHT * (PADDING_ROWS * 2 + 1), width: "100%", overflow: "hidden" },
-  row: { height: ITEM_HEIGHT, alignItems: "center", justifyContent: "center" },
-  rowText: { fontSize: 20, fontWeight: "600", color: Color.textFaint, fontVariant: ["tabular-nums"] },
-  rowTextActive: { fontSize: 24, fontWeight: "700", color: Color.gold },
-  selectionFrame: {
-    position: "absolute",
-    left: 4,
-    right: 4,
-    top: ITEM_HEIGHT * PADDING_ROWS,
-    height: ITEM_HEIGHT,
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: Color.goldBorder,
-  },
-  columnLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginTop: Spacing.xs, textTransform: "uppercase" },
-  colon: { fontSize: 20, fontWeight: "700", color: Color.textFaint, marginTop: ITEM_HEIGHT * PADDING_ROWS + (ITEM_HEIGHT - 20) / 2 - 4 },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    wrap: { flexDirection: "row", alignItems: "flex-start", justifyContent: "center" },
+    column: { alignItems: "center", width: 64 },
+    viewport: { height: ITEM_HEIGHT * (PADDING_ROWS * 2 + 1), width: "100%", overflow: "hidden" },
+    row: { height: ITEM_HEIGHT, alignItems: "center", justifyContent: "center" },
+    rowText: { fontSize: 20, fontWeight: "600", color: Color.textFaint, fontVariant: ["tabular-nums"] },
+    rowTextActive: { fontSize: 24, fontWeight: "700", color: Color.gold },
+    selectionFrame: {
+      position: "absolute",
+      left: 4,
+      right: 4,
+      top: ITEM_HEIGHT * PADDING_ROWS,
+      height: ITEM_HEIGHT,
+      borderTopWidth: 1,
+      borderBottomWidth: 1,
+      borderColor: Color.goldBorder,
+    },
+    columnLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginTop: Spacing.xs, textTransform: "uppercase" },
+    colon: { fontSize: 20, fontWeight: "700", color: Color.textFaint, marginTop: ITEM_HEIGHT * PADDING_ROWS + (ITEM_HEIGHT - 20) / 2 - 4 },
+  })
+);

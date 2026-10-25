@@ -7,7 +7,7 @@ import { KeyboardAwareScroll } from "@/components/ui/KeyboardAwareScroll";
 
 import { Button } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/TextField";
-import { Color, Radius, Spacing } from "@/constants/theme";
+import { Radius, Spacing } from "@/constants/theme";
 import { ApiError } from "@/lib/api-client";
 import { trackEvent } from "@/lib/analytics";
 import { setDraftLabelPhoto } from "@/lib/draft-photo-cache";
@@ -21,6 +21,7 @@ import {
   type FoodNutrition100g,
   type FoodRecord,
 } from "@/lib/queries/food-catalog";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 const PREFILL_BANNER_COPY: Record<string, string> = {
   label_scan_ocr: "We read what we could from the label — please double-check every field before saving.",
@@ -52,6 +53,8 @@ function nutrition100gFromServing(
 }
 
 export default function CustomFoodScreen() {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const router = useRouter();
   const params = useLocalSearchParams<{
     id?: string;
@@ -319,32 +322,34 @@ export default function CustomFoodScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Color.bg0 },
-  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md },
-  backButton: { padding: 4 },
-  headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
-  scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
-  hintBanner: { flexDirection: "row", gap: Spacing.xs, alignItems: "flex-start", backgroundColor: Color.goldWeak, borderRadius: Radius.md, padding: Spacing.sm, marginBottom: Spacing.md },
-  hintBannerText: { flex: 1, fontSize: 11, color: Color.textSecondary, lineHeight: 15 },
-  photoChip: { flexDirection: "row", gap: Spacing.xs, alignItems: "center", marginBottom: Spacing.md },
-  photoChipText: { flex: 1, fontSize: 11, color: Color.textMuted, lineHeight: 15 },
-  sectionLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginTop: Spacing.sm, marginBottom: Spacing.sm },
-  sectionCaption: { fontSize: 11, color: Color.textMuted, lineHeight: 15, marginTop: -Spacing.xs, marginBottom: Spacing.sm },
-  gridRow: { flexDirection: "row", gap: Spacing.sm },
-  numberField: { flex: 1, marginBottom: Spacing.md },
-  fieldLabel: { fontSize: 12, fontWeight: "500", color: Color.textSecondary, marginBottom: 6 },
-  input: {
-    height: 44,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-    paddingHorizontal: Spacing.sm,
-    fontSize: 14,
-    color: Color.textPrimary,
-  },
-  error: { fontSize: 12, color: Color.danger, marginTop: Spacing.sm },
-  shareLink: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, marginTop: Spacing.md, paddingVertical: 6 },
-  shareLinkText: { fontSize: 12, fontWeight: "600", color: Color.gold },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: Color.bg0 },
+    header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md },
+    backButton: { padding: 4 },
+    headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
+    scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
+    hintBanner: { flexDirection: "row", gap: Spacing.xs, alignItems: "flex-start", backgroundColor: Color.goldWeak, borderRadius: Radius.md, padding: Spacing.sm, marginBottom: Spacing.md },
+    hintBannerText: { flex: 1, fontSize: 11, color: Color.textSecondary, lineHeight: 15 },
+    photoChip: { flexDirection: "row", gap: Spacing.xs, alignItems: "center", marginBottom: Spacing.md },
+    photoChipText: { flex: 1, fontSize: 11, color: Color.textMuted, lineHeight: 15 },
+    sectionLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginTop: Spacing.sm, marginBottom: Spacing.sm },
+    sectionCaption: { fontSize: 11, color: Color.textMuted, lineHeight: 15, marginTop: -Spacing.xs, marginBottom: Spacing.sm },
+    gridRow: { flexDirection: "row", gap: Spacing.sm },
+    numberField: { flex: 1, marginBottom: Spacing.md },
+    fieldLabel: { fontSize: 12, fontWeight: "500", color: Color.textSecondary, marginBottom: 6 },
+    input: {
+      height: 44,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface1,
+      paddingHorizontal: Spacing.sm,
+      fontSize: 14,
+      color: Color.textPrimary,
+    },
+    error: { fontSize: 12, color: Color.danger, marginTop: Spacing.sm },
+    shareLink: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, marginTop: Spacing.md, paddingVertical: 6 },
+    shareLinkText: { fontSize: 12, fontWeight: "600", color: Color.gold },
+  })
+);

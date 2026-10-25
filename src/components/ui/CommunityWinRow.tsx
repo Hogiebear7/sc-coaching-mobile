@@ -1,8 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { Color, Spacing } from "@/constants/theme";
+import { Spacing } from "@/constants/theme";
 import { formatCommunityDate, formatPbHeadline } from "@/lib/community-formatters";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 // Minimal shape either CommunityFeedItem or the dedicated wins endpoint's
 // CommunityWinEntry satisfies — this row only ever needs these four fields,
@@ -19,6 +20,8 @@ export interface WinLike {
 // tap behavior (open that session's comments in place), so a win looks and
 // behaves identically wherever it's shown.
 export function CommunityWinRow({ item, isLast, onPress }: { item: WinLike; isLast: boolean; onPress: () => void }) {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const headline = formatPbHeadline(item.authorName, item.personalBestExercise);
   return (
     <Pressable onPress={onPress} style={[styles.row, !isLast && styles.rowDivider]}>
@@ -36,18 +39,20 @@ export function CommunityWinRow({ item, isLast, onPress }: { item: WinLike; isLa
   );
 }
 
-const styles = StyleSheet.create({
-  row: { flexDirection: "row", alignItems: "center", gap: Spacing.sm, padding: Spacing.md },
-  rowDivider: { borderBottomWidth: 1, borderBottomColor: Color.borderSubtle },
-  icon: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    backgroundColor: Color.goldWeak,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  text: { fontSize: 13, color: Color.textSecondary, lineHeight: 18 },
-  author: { fontWeight: "700", color: Color.textPrimary },
-  date: { fontSize: 11, color: Color.textFaint, marginTop: 2 },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    row: { flexDirection: "row", alignItems: "center", gap: Spacing.sm, padding: Spacing.md },
+    rowDivider: { borderBottomWidth: 1, borderBottomColor: Color.borderSubtle },
+    icon: {
+      width: 32,
+      height: 32,
+      borderRadius: 8,
+      backgroundColor: Color.goldWeak,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    text: { fontSize: 13, color: Color.textSecondary, lineHeight: 18 },
+    author: { fontWeight: "700", color: Color.textPrimary },
+    date: { fontSize: 11, color: Color.textFaint, marginTop: 2 },
+  })
+);

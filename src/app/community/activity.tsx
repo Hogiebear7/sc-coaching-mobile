@@ -8,13 +8,16 @@ import { CommentSheet } from "@/components/ui/CommentSheet";
 import { CommunityFeedCard } from "@/components/ui/CommunityFeedCard";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { LimitSelector, type ListLimit } from "@/components/ui/LimitSelector";
-import { Color, Spacing } from "@/constants/theme";
+import { Spacing } from "@/constants/theme";
 import { useCommunityFeed } from "@/lib/queries/community";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 // Full Activity list, opened from the hub's capped preview via "See more".
 // Same card, same like/comment behavior as the hub — just more of them,
 // with a real limit instead of always whatever the hub's own default is.
 export default function CommunityActivityScreen() {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const router = useRouter();
   const [limit, setLimit] = useState<ListLimit>(20);
   const [activeCommentId, setActiveCommentId] = useState<string | null>(null);
@@ -59,17 +62,19 @@ export default function CommunityActivityScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Color.bg0 },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-  },
-  backButton: { padding: 4 },
-  headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
-  limitWrap: { paddingHorizontal: Spacing.lg, marginBottom: Spacing.sm },
-  scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: Color.bg0 },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: Spacing.lg,
+      paddingVertical: Spacing.md,
+    },
+    backButton: { padding: 4 },
+    headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
+    limitWrap: { paddingHorizontal: Spacing.lg, marginBottom: Spacing.sm },
+    scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
+  })
+);

@@ -7,14 +7,17 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { StatCard } from "@/components/ui/StatCard";
-import { Color, Radius, Spacing } from "@/constants/theme";
+import { Radius, Spacing } from "@/constants/theme";
 import { exerciseMatchesEquipmentSlugs } from "@/lib/equipment-matching";
 import { pickHeroMedia, useExerciseLibraryDetail } from "@/lib/queries/exercise-library";
 import { useEquipmentCatalog, useGymProfiles } from "@/lib/queries/gym-profiles";
 import { useWorkouts } from "@/lib/queries/workouts";
 import { getExerciseStats } from "@/lib/workout-formatters";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 function GifSlot({ url, name }: { url: string | null; name: string }) {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const [loaded, setLoaded] = useState(false);
 
   if (!url) {
@@ -45,6 +48,8 @@ function GifSlot({ url, name }: { url: string | null; name: string }) {
 }
 
 export default function ExerciseLibraryDetailScreen() {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const router = useRouter();
   const { slug } = useLocalSearchParams<{ slug?: string }>();
   const { data, isLoading, isError, refetch } = useExerciseLibraryDetail(slug ?? "");
@@ -191,67 +196,69 @@ export default function ExerciseLibraryDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Color.bg0 },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-  },
-  backButton: { padding: 4 },
-  headerTitle: { flex: 1, textAlign: "center", fontSize: 16, fontWeight: "700", color: Color.textPrimary, marginHorizontal: Spacing.sm },
-  centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
-  errorText: { color: Color.textMuted, fontSize: 14 },
-  scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
-  gifWrap: {
-    width: "100%",
-    aspectRatio: 1,
-    borderRadius: Radius.md,
-    overflow: "hidden",
-    backgroundColor: Color.surface1,
-  },
-  gif: { width: "100%", height: "100%" },
-  gifPlaceholder: { alignItems: "center", justifyContent: "center", gap: Spacing.xs },
-  gifPlaceholderText: { fontSize: 12, color: Color.textFaint },
-  historyStatsRow: { flexDirection: "row", gap: Spacing.sm },
-  historyLink: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 4, paddingVertical: Spacing.sm },
-  historyLinkText: { fontSize: 13, fontWeight: "600", color: Color.gold },
-  chipRow: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.xs, marginTop: Spacing.md },
-  chip: {
-    borderRadius: Radius.pill,
-    borderWidth: 1,
-    borderColor: Color.goldBorder,
-    backgroundColor: Color.goldWeak,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 4,
-  },
-  chipText: { fontSize: 11, fontWeight: "600", color: Color.gold, textTransform: "capitalize" },
-  availabilityBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    alignSelf: "flex-start",
-    marginTop: Spacing.sm,
-    borderRadius: Radius.pill,
-    borderWidth: 1,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 4,
-  },
-  availabilityBadgeYes: { borderColor: Color.success, backgroundColor: `${Color.success}22` },
-  availabilityBadgeNo: { borderColor: Color.danger, backgroundColor: `${Color.danger}22` },
-  availabilityText: { fontSize: 11, fontWeight: "600" },
-  availabilityTextYes: { color: Color.success },
-  availabilityTextNo: { color: Color.danger },
-  description: { fontSize: 13, color: Color.textSecondary, lineHeight: 19, marginTop: Spacing.md },
-  sectionLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginTop: Spacing.xl, marginBottom: Spacing.sm },
-  instructionsCard: { padding: 0, overflow: "hidden" },
-  stepRow: { flexDirection: "row", gap: Spacing.sm, padding: Spacing.md },
-  stepDivider: { borderTopWidth: 1, borderTopColor: Color.borderSubtle },
-  stepNumber: { fontSize: 12, fontWeight: "700", color: Color.gold, width: 18 },
-  stepText: { flex: 1, fontSize: 13, color: Color.textSecondary, lineHeight: 19 },
-  musclesCard: { padding: Spacing.md },
-  muscleText: { fontSize: 13, color: Color.textSecondary, textTransform: "capitalize" },
-  muscleLabel: { fontWeight: "700", color: Color.textPrimary },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: Color.bg0 },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: Spacing.lg,
+      paddingVertical: Spacing.md,
+    },
+    backButton: { padding: 4 },
+    headerTitle: { flex: 1, textAlign: "center", fontSize: 16, fontWeight: "700", color: Color.textPrimary, marginHorizontal: Spacing.sm },
+    centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
+    errorText: { color: Color.textMuted, fontSize: 14 },
+    scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
+    gifWrap: {
+      width: "100%",
+      aspectRatio: 1,
+      borderRadius: Radius.md,
+      overflow: "hidden",
+      backgroundColor: Color.surface1,
+    },
+    gif: { width: "100%", height: "100%" },
+    gifPlaceholder: { alignItems: "center", justifyContent: "center", gap: Spacing.xs },
+    gifPlaceholderText: { fontSize: 12, color: Color.textFaint },
+    historyStatsRow: { flexDirection: "row", gap: Spacing.sm },
+    historyLink: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 4, paddingVertical: Spacing.sm },
+    historyLinkText: { fontSize: 13, fontWeight: "600", color: Color.gold },
+    chipRow: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.xs, marginTop: Spacing.md },
+    chip: {
+      borderRadius: Radius.pill,
+      borderWidth: 1,
+      borderColor: Color.goldBorder,
+      backgroundColor: Color.goldWeak,
+      paddingHorizontal: Spacing.sm,
+      paddingVertical: 4,
+    },
+    chipText: { fontSize: 11, fontWeight: "600", color: Color.gold, textTransform: "capitalize" },
+    availabilityBadge: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+      alignSelf: "flex-start",
+      marginTop: Spacing.sm,
+      borderRadius: Radius.pill,
+      borderWidth: 1,
+      paddingHorizontal: Spacing.sm,
+      paddingVertical: 4,
+    },
+    availabilityBadgeYes: { borderColor: Color.success, backgroundColor: `${Color.success}22` },
+    availabilityBadgeNo: { borderColor: Color.danger, backgroundColor: `${Color.danger}22` },
+    availabilityText: { fontSize: 11, fontWeight: "600" },
+    availabilityTextYes: { color: Color.success },
+    availabilityTextNo: { color: Color.danger },
+    description: { fontSize: 13, color: Color.textSecondary, lineHeight: 19, marginTop: Spacing.md },
+    sectionLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginTop: Spacing.xl, marginBottom: Spacing.sm },
+    instructionsCard: { padding: 0, overflow: "hidden" },
+    stepRow: { flexDirection: "row", gap: Spacing.sm, padding: Spacing.md },
+    stepDivider: { borderTopWidth: 1, borderTopColor: Color.borderSubtle },
+    stepNumber: { fontSize: 12, fontWeight: "700", color: Color.gold, width: 18 },
+    stepText: { flex: 1, fontSize: 13, color: Color.textSecondary, lineHeight: 19 },
+    musclesCard: { padding: Spacing.md },
+    muscleText: { fontSize: 13, color: Color.textSecondary, textTransform: "capitalize" },
+    muscleLabel: { fontWeight: "700", color: Color.textPrimary },
+  })
+);

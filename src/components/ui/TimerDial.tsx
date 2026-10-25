@@ -1,6 +1,6 @@
 import Svg, { Circle, Line, Text as SvgText } from "react-native-svg";
 
-import { Color } from "@/constants/theme";
+import { LiveColor as Color } from "@/constants/theme";
 
 /**
  * The analog clock-face look from the device's own Timer/Stopwatch apps —
@@ -44,7 +44,7 @@ export function TimerDial({
         y1={outer.y}
         x2={inner.x}
         y2={inner.y}
-        stroke={isMajor ? "rgba(255,255,255,0.32)" : "rgba(255,255,255,0.14)"}
+        stroke={isMajor ? Color.textFaint : Color.borderDefault}
         strokeWidth={isMajor ? 2 : 1}
       />
     );
@@ -56,7 +56,7 @@ export function TimerDial({
         const angle = (i / 12) * 360;
         const p = pointOn(tickInnerRMajor - 16, angle);
         return (
-          <SvgText key={i} x={p.x} y={p.y + 5} fontSize={14} fontWeight="600" fill="rgba(255,255,255,0.45)" textAnchor="middle">
+          <SvgText key={i} x={p.x} y={p.y + 5} fontSize={14} fontWeight="600" fill={Color.textFaint} textAnchor="middle">
             {value}
           </SvgText>
         );
@@ -67,7 +67,7 @@ export function TimerDial({
 
   return (
     <Svg width={size} height={size}>
-      <Circle cx={center} cy={center} r={outerR} fill="rgba(255,255,255,0.02)" stroke="rgba(255,255,255,0.08)" strokeWidth={1} />
+      <Circle cx={center} cy={center} r={outerR} fill="rgba(255,255,255,0.02)" stroke={Color.overlayStrong} strokeWidth={1} />
       {ticks}
       {labels}
       <Line x1={center} y1={center} x2={needleTip.x} y2={needleTip.y} stroke={color} strokeWidth={2.5} strokeLinecap="round" />

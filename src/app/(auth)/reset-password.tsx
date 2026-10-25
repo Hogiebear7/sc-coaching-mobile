@@ -12,8 +12,9 @@ import { KeyboardAwareScroll } from "@/components/ui/KeyboardAwareScroll";
 
 import { Button } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/TextField";
-import { Color, headline, Spacing } from "@/constants/theme";
+import { headline, Spacing } from "@/constants/theme";
 import { apiFetch, ApiError } from "@/lib/api-client";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 // Matches lib/password.ts's validatePasswordStrength on the backend exactly
 // — same rule, same hint copy as the web reset form, so this screen never
@@ -48,6 +49,8 @@ function extractToken(raw: string): string {
 }
 
 export default function ResetPasswordScreen() {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const router = useRouter();
   const { token: tokenParam } = useLocalSearchParams<{ token?: string }>();
   const [token, setToken] = useState(tokenParam ?? "");
@@ -159,59 +162,61 @@ export default function ResetPasswordScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Color.bg0 },
-  flex: { flex: 1 },
-  scroll: {
-    flexGrow: 1,
-    justifyContent: "center",
-    paddingHorizontal: Spacing.xl,
-    paddingVertical: Spacing.xxl,
-  },
-  backButton: { position: "absolute", top: Spacing.xl, left: Spacing.xl, padding: 4 },
-  eyebrow: {
-    fontSize: 11,
-    fontWeight: "700",
-    letterSpacing: 1,
-    color: Color.gold,
-    marginBottom: Spacing.sm,
-  },
-  title: {
-    ...headline(40),
-    color: Color.textPrimary,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: Color.textMuted,
-    marginTop: Spacing.sm,
-    marginBottom: Spacing.xl,
-  },
-  form: { marginTop: Spacing.sm },
-  tokenInput: { height: 64, textAlignVertical: "top", paddingTop: Spacing.sm },
-  hint: { fontSize: 12, color: Color.textFaint, marginTop: -Spacing.sm, marginBottom: Spacing.md },
-  submit: { marginTop: Spacing.sm },
-  error: {
-    color: Color.danger,
-    fontSize: 13,
-    marginBottom: Spacing.md,
-  },
-  successBox: {
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-    padding: Spacing.lg,
-    alignItems: "flex-start",
-  },
-  successText: { fontSize: 14, color: Color.textPrimary, lineHeight: 20 },
-  footer: {
-    flexDirection: "row",
-    justifyContent: "center",
-    marginTop: Spacing.xl,
-  },
-  link: {
-    color: Color.gold,
-    fontSize: 14,
-    fontWeight: "600",
-  },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: Color.bg0 },
+    flex: { flex: 1 },
+    scroll: {
+      flexGrow: 1,
+      justifyContent: "center",
+      paddingHorizontal: Spacing.xl,
+      paddingVertical: Spacing.xxl,
+    },
+    backButton: { position: "absolute", top: Spacing.xl, left: Spacing.xl, padding: 4 },
+    eyebrow: {
+      fontSize: 11,
+      fontWeight: "700",
+      letterSpacing: 1,
+      color: Color.gold,
+      marginBottom: Spacing.sm,
+    },
+    title: {
+      ...headline(40),
+      color: Color.textPrimary,
+    },
+    subtitle: {
+      fontSize: 14,
+      color: Color.textMuted,
+      marginTop: Spacing.sm,
+      marginBottom: Spacing.xl,
+    },
+    form: { marginTop: Spacing.sm },
+    tokenInput: { height: 64, textAlignVertical: "top", paddingTop: Spacing.sm },
+    hint: { fontSize: 12, color: Color.textFaint, marginTop: -Spacing.sm, marginBottom: Spacing.md },
+    submit: { marginTop: Spacing.sm },
+    error: {
+      color: Color.danger,
+      fontSize: 13,
+      marginBottom: Spacing.md,
+    },
+    successBox: {
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface1,
+      padding: Spacing.lg,
+      alignItems: "flex-start",
+    },
+    successText: { fontSize: 14, color: Color.textPrimary, lineHeight: 20 },
+    footer: {
+      flexDirection: "row",
+      justifyContent: "center",
+      marginTop: Spacing.xl,
+    },
+    link: {
+      color: Color.gold,
+      fontSize: 14,
+      fontWeight: "600",
+    },
+  })
+);

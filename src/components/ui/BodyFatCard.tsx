@@ -4,10 +4,11 @@ import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { WeightTrendChart } from "@/components/ui/WeightTrendChart";
-import { Color, Radius, Spacing } from "@/constants/theme";
+import { Radius, Spacing } from "@/constants/theme";
 import { tapFeedback } from "@/lib/haptics";
 import { useBodyFatLogs, useLogBodyFat, type BodyFatLog } from "@/lib/queries/body-fat";
 import { todayDateString } from "@/lib/workout-formatters";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 // Mirrors BodyWeightCard.tsx exactly — same range-filter/change-summary/
 // chart trio, applied to BodyFatLogRecord instead. See that file for the
@@ -50,6 +51,8 @@ function changeSummary(logs: BodyFatLog[]): string | null {
 }
 
 export function BodyFatCard({ compact = false }: { compact?: boolean }) {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const { data: fatLogs } = useBodyFatLogs();
   const logFat = useLogBodyFat();
   const [logging, setLogging] = useState(false);
@@ -142,35 +145,37 @@ export function BodyFatCard({ compact = false }: { compact?: boolean }) {
   );
 }
 
-const styles = StyleSheet.create({
-  card: { padding: Spacing.md },
-  headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  value: { fontSize: 20, fontWeight: "700", color: Color.textPrimary, fontVariant: ["tabular-nums"] },
-  sub: { fontSize: 11, color: Color.textMuted, marginTop: 2 },
-  explainer: { fontSize: 11, color: Color.textMuted, marginTop: Spacing.sm, lineHeight: 16 },
-  inputRow: { flexDirection: "row", gap: Spacing.sm, marginTop: Spacing.md },
-  input: {
-    width: 90,
-    height: 44,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-    paddingHorizontal: Spacing.sm,
-    fontSize: 14,
-    color: Color.textPrimary,
-  },
-  rangeRow: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
-  rangeChip: {
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 6,
-    borderRadius: Radius.pill,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-  },
-  rangeChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
-  rangeChipText: { fontSize: 11, fontWeight: "500", color: Color.textMuted },
-  rangeChipTextActive: { color: Color.gold },
-  summary: { fontSize: 11, color: Color.textMuted, marginTop: Spacing.sm },
-  emptyRange: { fontSize: 12, color: Color.textMuted, textAlign: "center", paddingVertical: 20 },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    card: { padding: Spacing.md },
+    headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+    value: { fontSize: 20, fontWeight: "700", color: Color.textPrimary, fontVariant: ["tabular-nums"] },
+    sub: { fontSize: 11, color: Color.textMuted, marginTop: 2 },
+    explainer: { fontSize: 11, color: Color.textMuted, marginTop: Spacing.sm, lineHeight: 16 },
+    inputRow: { flexDirection: "row", gap: Spacing.sm, marginTop: Spacing.md },
+    input: {
+      width: 90,
+      height: 44,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface1,
+      paddingHorizontal: Spacing.sm,
+      fontSize: 14,
+      color: Color.textPrimary,
+    },
+    rangeRow: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
+    rangeChip: {
+      paddingHorizontal: Spacing.sm,
+      paddingVertical: 6,
+      borderRadius: Radius.pill,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+    },
+    rangeChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
+    rangeChipText: { fontSize: 11, fontWeight: "500", color: Color.textMuted },
+    rangeChipTextActive: { color: Color.gold },
+    summary: { fontSize: 11, color: Color.textMuted, marginTop: Spacing.sm },
+    emptyRange: { fontSize: 12, color: Color.textMuted, textAlign: "center", paddingVertical: 20 },
+  })
+);

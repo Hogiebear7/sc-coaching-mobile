@@ -9,9 +9,10 @@ import {
 } from "react-native";
 import Svg, { Circle, G, Line, Polyline, Text as SvgText } from "react-native-svg";
 
-import { Color, Radius } from "@/constants/theme";
+import { Radius } from "@/constants/theme";
 import { computeTrendStats, movingAverageTrend, type TrendPoint } from "@/lib/workout-formatters";
 import { useReduceMotionPref } from "@/lib/use-reduce-motion";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 // A single dated reading — deliberately the same shape as TrendPoint, so any
 // date+value metric (body weight, body fat %) can drive this chart without a
@@ -68,6 +69,8 @@ export function WeightTrendChart({
   rawLabel?: string;
   trendLabel?: string;
 }) {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const reduceMotion = useReduceMotionPref();
   const anim = useRef(new Animated.Value(0)).current;
   const sorted = [...logs].sort((a, b) => a.date.localeCompare(b.date));
@@ -282,30 +285,32 @@ export function WeightTrendChart({
   );
 }
 
-const styles = StyleSheet.create({
-  emptyWrap: { paddingVertical: 20, alignItems: "center" },
-  emptyText: { fontSize: 12, color: Color.textMuted },
-  wrap: { width: "100%" },
-  statsRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
-  statRight: { alignItems: "flex-end" },
-  statLabel: { fontSize: 10, fontWeight: "600", color: Color.textMuted, textTransform: "uppercase", letterSpacing: 0.4 },
-  statValue: { fontSize: 16, fontWeight: "700", color: Color.textPrimary, marginTop: 2, fontVariant: ["tabular-nums"] },
-  legendRow: { flexDirection: "row", gap: 14, marginTop: 10 },
-  legendItem: { flexDirection: "row", alignItems: "center", gap: 5 },
-  legendSwatch: { width: 8, height: 8, borderRadius: 4 },
-  legendText: { fontSize: 10, color: Color.textMuted },
-  chartWrap: { width: "100%", alignItems: "center", marginTop: 6 },
-  tooltip: {
-    position: "absolute",
-    width: TOOLTIP_W,
-    alignItems: "center",
-    paddingVertical: 5,
-    paddingHorizontal: 8,
-    borderRadius: Radius.sm,
-    borderWidth: 1,
-    borderColor: Color.borderDefault,
-    backgroundColor: Color.surface2,
-  },
-  tooltipValue: { fontSize: 12, fontWeight: "700", color: Color.textPrimary, fontVariant: ["tabular-nums"] },
-  tooltipDate: { fontSize: 9, color: Color.textMuted, marginTop: 1 },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    emptyWrap: { paddingVertical: 20, alignItems: "center" },
+    emptyText: { fontSize: 12, color: Color.textMuted },
+    wrap: { width: "100%" },
+    statsRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
+    statRight: { alignItems: "flex-end" },
+    statLabel: { fontSize: 10, fontWeight: "600", color: Color.textMuted, textTransform: "uppercase", letterSpacing: 0.4 },
+    statValue: { fontSize: 16, fontWeight: "700", color: Color.textPrimary, marginTop: 2, fontVariant: ["tabular-nums"] },
+    legendRow: { flexDirection: "row", gap: 14, marginTop: 10 },
+    legendItem: { flexDirection: "row", alignItems: "center", gap: 5 },
+    legendSwatch: { width: 8, height: 8, borderRadius: 4 },
+    legendText: { fontSize: 10, color: Color.textMuted },
+    chartWrap: { width: "100%", alignItems: "center", marginTop: 6 },
+    tooltip: {
+      position: "absolute",
+      width: TOOLTIP_W,
+      alignItems: "center",
+      paddingVertical: 5,
+      paddingHorizontal: 8,
+      borderRadius: Radius.sm,
+      borderWidth: 1,
+      borderColor: Color.borderDefault,
+      backgroundColor: Color.surface2,
+    },
+    tooltipValue: { fontSize: 12, fontWeight: "700", color: Color.textPrimary, fontVariant: ["tabular-nums"] },
+    tooltipDate: { fontSize: 9, color: Color.textMuted, marginTop: 1 },
+  })
+);

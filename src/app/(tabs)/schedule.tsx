@@ -6,7 +6,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ContinueWorkoutPill } from "@/components/ui/ContinueWorkoutPill";
-import { Color, headline, Radius, Spacing } from "@/constants/theme";
+import { headline, Radius, Spacing } from "@/constants/theme";
 import { ApiError } from "@/lib/auth-context";
 import {
   useBookClass,
@@ -18,6 +18,7 @@ import {
   type ScheduleClass,
   type ScheduleUpcomingBooking,
 } from "@/lib/queries/schedule";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 type Tab = "browse" | "calendar" | "bookings";
 
@@ -45,6 +46,8 @@ function formatDateLabel(dateISO: string): string {
 }
 
 function ClassRow({ item }: { item: ScheduleClass }) {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const [error, setError] = useState<string | null>(null);
   const book = useBookClass();
   const joinWaitlist = useJoinWaitlist();
@@ -119,6 +122,7 @@ function ClassRow({ item }: { item: ScheduleClass }) {
 }
 
 function PendingOfferCard({ item }: { item: ScheduleClass }) {
+  const styles = useStyles();
   const [error, setError] = useState<string | null>(null);
   const respond = useRespondToOffer();
 
@@ -161,6 +165,7 @@ function PendingOfferCard({ item }: { item: ScheduleClass }) {
 }
 
 function MyBookingRow({ booking, cancellable }: { booking: ScheduleUpcomingBooking; cancellable: boolean }) {
+  const styles = useStyles();
   const [error, setError] = useState<string | null>(null);
   const cancel = useCancelBooking();
 
@@ -200,6 +205,8 @@ function MyBookingRow({ booking, cancellable }: { booking: ScheduleUpcomingBooki
 }
 
 function ScheduleCalendarTab({ classesByDate }: { classesByDate: Record<string, ScheduleClass[]> }) {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth());
@@ -314,6 +321,8 @@ function ScheduleCalendarTab({ classesByDate }: { classesByDate: Record<string, 
 }
 
 export default function ScheduleScreen() {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const { data, isLoading, isError, refetch, isRefetching } = useSchedule();
   const [tab, setTab] = useState<Tab>("calendar");
 
@@ -435,144 +444,146 @@ export default function ScheduleScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Color.bg0 },
-  centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
-  errorText: { color: Color.textMuted, fontSize: 14 },
-  header: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.md },
-  headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  heading: {
-    ...headline(34),
-    color: Color.textPrimary,
-  },
-  tabBar: {
-    flexDirection: "row",
-    gap: 4,
-    marginHorizontal: Spacing.lg,
-    marginTop: Spacing.md,
-    marginBottom: Spacing.sm,
-    padding: 4,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-  },
-  tabButton: { flex: 1, paddingVertical: Spacing.sm, borderRadius: Radius.sm, alignItems: "center" },
-  tabButtonActive: { backgroundColor: Color.surface2 },
-  tabButtonText: { fontSize: 12, fontWeight: "600", color: Color.textMuted },
-  tabButtonTextActive: { color: Color.textPrimary },
-  scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
-  section: { marginBottom: Spacing.xl },
-  sectionLabel: {
-    fontSize: 10,
-    fontWeight: "700",
-    letterSpacing: 0.6,
-    color: Color.textMuted,
-    marginBottom: Spacing.sm,
-  },
-  classCard: { padding: Spacing.md, marginBottom: Spacing.sm },
-  classRow: { flexDirection: "row", alignItems: "center", gap: Spacing.md },
-  timeBlock: {
-    width: 52,
-    height: 52,
-    borderRadius: Radius.md,
-    backgroundColor: Color.goldWeak,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  timeText: { fontSize: 16, fontWeight: "700", color: Color.gold },
-  timeSub: { fontSize: 10, color: Color.gold, opacity: 0.8 },
-  classTitle: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
-  classMeta: { fontSize: 11, color: Color.textMuted, marginTop: 2 },
-  blockReason: { fontSize: 11, color: Color.warning, marginTop: 4 },
-  actionRow: { marginTop: Spacing.sm },
-  bookedBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.xs,
-    borderRadius: Radius.pill,
-    borderWidth: 1,
-    borderColor: Color.success,
-    backgroundColor: Color.successWeak,
-    paddingVertical: 10,
-    paddingHorizontal: Spacing.sm,
-    justifyContent: "center",
-  },
-  bookedBadgeText: { fontSize: 11, fontWeight: "600", color: Color.success },
-  offerBadge: {
-    borderRadius: Radius.pill,
-    borderWidth: 1,
-    borderColor: Color.warning,
-    backgroundColor: Color.warningWeak,
-    paddingVertical: 10,
-    alignItems: "center",
-  },
-  offerBadgeText: { fontSize: 12, fontWeight: "600", color: Color.warning },
-  error: { fontSize: 11, color: Color.danger, marginTop: Spacing.xs },
-  emptyCard: { alignItems: "center", padding: Spacing.xl, gap: Spacing.sm },
-  emptyText: { fontSize: 12, color: Color.textMuted },
-  myBookingCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    padding: Spacing.md,
-    marginBottom: Spacing.sm,
-    gap: Spacing.md,
-  },
-  attendedBadge: {
-    borderRadius: Radius.pill,
-    borderWidth: 1,
-    paddingVertical: 6,
-    paddingHorizontal: Spacing.sm,
-  },
-  attendedBadgeYes: { borderColor: Color.success, backgroundColor: Color.successWeak },
-  attendedBadgeNo: { borderColor: Color.borderSubtle, backgroundColor: Color.surface2 },
-  attendedBadgeText: { fontSize: 11, fontWeight: "600", color: Color.textMuted },
-  attendedBadgeTextYes: { color: Color.success },
-  cutoffHint: { fontSize: 11, color: Color.textFaint, marginTop: Spacing.xs },
-  offerCard: { padding: Spacing.md, marginBottom: Spacing.sm, borderColor: Color.goldBorder },
-  offerTitle: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
-  offerMeta: { fontSize: 11, color: Color.textMuted, marginTop: 2, marginBottom: Spacing.sm },
-  offerButtonRow: { flexDirection: "row", gap: Spacing.sm },
-  calendarCard: { padding: Spacing.md },
-  calHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: Spacing.md },
-  calNavButton: {
-    width: 32,
-    height: 32,
-    borderRadius: Radius.pill,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: Color.surface2,
-  },
-  calTitle: { fontSize: 15, fontWeight: "700", color: Color.textPrimary },
-  weekRow: { flexDirection: "row", marginBottom: Spacing.xs },
-  weekLabel: { flex: 1, textAlign: "center", fontSize: 10, fontWeight: "600", color: Color.textFaint },
-  // flex:1 across each week's own row, not a `${100/7}%` width inside a
-  // flex-wrap grid — the percentage-rounding version silently dropped the
-  // 7th cell (Sunday) onto the next row on some screen widths. See
-  // MonthDatePicker.tsx, which established this fix first.
-  dayCell: {
-    flex: 1,
-    aspectRatio: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: Radius.sm,
-    gap: 2,
-  },
-  dayCellSelected: { backgroundColor: Color.goldWeak, borderWidth: 1, borderColor: Color.gold },
-  dayCellToday: { borderWidth: 1, borderColor: Color.goldBorder },
-  dayCellOutside: { opacity: 0.35 },
-  dayCellText: { fontSize: 13, color: Color.textSecondary },
-  dayCellTextToday: { color: Color.gold, fontWeight: "700" },
-  dayCellBadge: {
-    minWidth: 16,
-    height: 16,
-    borderRadius: Radius.pill,
-    backgroundColor: Color.gold,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 3,
-  },
-  dayCellBadgeText: { fontSize: 9, fontWeight: "700", color: Color.goldForeground },
-  calendarDetail: { marginTop: Spacing.lg },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: Color.bg0 },
+    centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
+    errorText: { color: Color.textMuted, fontSize: 14 },
+    header: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.md },
+    headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+    heading: {
+      ...headline(34),
+      color: Color.textPrimary,
+    },
+    tabBar: {
+      flexDirection: "row",
+      gap: 4,
+      marginHorizontal: Spacing.lg,
+      marginTop: Spacing.md,
+      marginBottom: Spacing.sm,
+      padding: 4,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface1,
+    },
+    tabButton: { flex: 1, paddingVertical: Spacing.sm, borderRadius: Radius.sm, alignItems: "center" },
+    tabButtonActive: { backgroundColor: Color.surface2 },
+    tabButtonText: { fontSize: 12, fontWeight: "600", color: Color.textMuted },
+    tabButtonTextActive: { color: Color.textPrimary },
+    scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
+    section: { marginBottom: Spacing.xl },
+    sectionLabel: {
+      fontSize: 10,
+      fontWeight: "700",
+      letterSpacing: 0.6,
+      color: Color.textMuted,
+      marginBottom: Spacing.sm,
+    },
+    classCard: { padding: Spacing.md, marginBottom: Spacing.sm },
+    classRow: { flexDirection: "row", alignItems: "center", gap: Spacing.md },
+    timeBlock: {
+      width: 52,
+      height: 52,
+      borderRadius: Radius.md,
+      backgroundColor: Color.goldWeak,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    timeText: { fontSize: 16, fontWeight: "700", color: Color.gold },
+    timeSub: { fontSize: 10, color: Color.gold, opacity: 0.8 },
+    classTitle: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
+    classMeta: { fontSize: 11, color: Color.textMuted, marginTop: 2 },
+    blockReason: { fontSize: 11, color: Color.warning, marginTop: 4 },
+    actionRow: { marginTop: Spacing.sm },
+    bookedBadge: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: Spacing.xs,
+      borderRadius: Radius.pill,
+      borderWidth: 1,
+      borderColor: Color.success,
+      backgroundColor: Color.successWeak,
+      paddingVertical: 10,
+      paddingHorizontal: Spacing.sm,
+      justifyContent: "center",
+    },
+    bookedBadgeText: { fontSize: 11, fontWeight: "600", color: Color.success },
+    offerBadge: {
+      borderRadius: Radius.pill,
+      borderWidth: 1,
+      borderColor: Color.warning,
+      backgroundColor: Color.warningWeak,
+      paddingVertical: 10,
+      alignItems: "center",
+    },
+    offerBadgeText: { fontSize: 12, fontWeight: "600", color: Color.warning },
+    error: { fontSize: 11, color: Color.danger, marginTop: Spacing.xs },
+    emptyCard: { alignItems: "center", padding: Spacing.xl, gap: Spacing.sm },
+    emptyText: { fontSize: 12, color: Color.textMuted },
+    myBookingCard: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      padding: Spacing.md,
+      marginBottom: Spacing.sm,
+      gap: Spacing.md,
+    },
+    attendedBadge: {
+      borderRadius: Radius.pill,
+      borderWidth: 1,
+      paddingVertical: 6,
+      paddingHorizontal: Spacing.sm,
+    },
+    attendedBadgeYes: { borderColor: Color.success, backgroundColor: Color.successWeak },
+    attendedBadgeNo: { borderColor: Color.borderSubtle, backgroundColor: Color.surface2 },
+    attendedBadgeText: { fontSize: 11, fontWeight: "600", color: Color.textMuted },
+    attendedBadgeTextYes: { color: Color.success },
+    cutoffHint: { fontSize: 11, color: Color.textFaint, marginTop: Spacing.xs },
+    offerCard: { padding: Spacing.md, marginBottom: Spacing.sm, borderColor: Color.goldBorder },
+    offerTitle: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
+    offerMeta: { fontSize: 11, color: Color.textMuted, marginTop: 2, marginBottom: Spacing.sm },
+    offerButtonRow: { flexDirection: "row", gap: Spacing.sm },
+    calendarCard: { padding: Spacing.md },
+    calHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: Spacing.md },
+    calNavButton: {
+      width: 32,
+      height: 32,
+      borderRadius: Radius.pill,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: Color.surface2,
+    },
+    calTitle: { fontSize: 15, fontWeight: "700", color: Color.textPrimary },
+    weekRow: { flexDirection: "row", marginBottom: Spacing.xs },
+    weekLabel: { flex: 1, textAlign: "center", fontSize: 10, fontWeight: "600", color: Color.textFaint },
+    // flex:1 across each week's own row, not a `${100/7}%` width inside a
+    // flex-wrap grid — the percentage-rounding version silently dropped the
+    // 7th cell (Sunday) onto the next row on some screen widths. See
+    // MonthDatePicker.tsx, which established this fix first.
+    dayCell: {
+      flex: 1,
+      aspectRatio: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: Radius.sm,
+      gap: 2,
+    },
+    dayCellSelected: { backgroundColor: Color.goldWeak, borderWidth: 1, borderColor: Color.gold },
+    dayCellToday: { borderWidth: 1, borderColor: Color.goldBorder },
+    dayCellOutside: { opacity: 0.35 },
+    dayCellText: { fontSize: 13, color: Color.textSecondary },
+    dayCellTextToday: { color: Color.gold, fontWeight: "700" },
+    dayCellBadge: {
+      minWidth: 16,
+      height: 16,
+      borderRadius: Radius.pill,
+      backgroundColor: Color.gold,
+      alignItems: "center",
+      justifyContent: "center",
+      paddingHorizontal: 3,
+    },
+    dayCellBadgeText: { fontSize: 9, fontWeight: "700", color: Color.goldForeground },
+    calendarDetail: { marginTop: Spacing.lg },
+  })
+);

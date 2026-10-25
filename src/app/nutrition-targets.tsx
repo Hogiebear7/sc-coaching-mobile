@@ -7,9 +7,10 @@ import Svg, { Circle } from "react-native-svg";
 
 import { Card } from "@/components/ui/Card";
 import { Collapsible } from "@/components/ui/Collapsible";
-import { Color, figure, Radius, Spacing } from "@/constants/theme";
+import { LiveColor as Color, figure, Radius, Spacing } from "@/constants/theme";
 import { useNutritionDiary, useMyNutritionTarget, useWeeklyNutritionTargets, type ResolvedNutritionTarget } from "@/lib/queries/nutrition-diary";
 import { todayDateString } from "@/lib/workout-formatters";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
@@ -30,6 +31,8 @@ const WEEKDAY_SHORT = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 // Big MacroFactor-style calorie ring: consumed vs target, fills in from
 // empty on mount like the app's existing ReadinessRing.
 function CalorieRing({ consumed, target, size = 176 }: { consumed: number; target: number | null; size?: number }) {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const stroke = 12;
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
@@ -48,7 +51,7 @@ function CalorieRing({ consumed, target, size = 176 }: { consumed: number; targe
   return (
     <View style={{ width: size, height: size }}>
       <Svg width={size} height={size} style={{ transform: [{ rotate: "-90deg" }] }}>
-        <Circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth={stroke} />
+        <Circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={Color.overlayStrong} strokeWidth={stroke} />
         {target !== null && (
           <AnimatedCircle
             cx={size / 2}
@@ -74,6 +77,7 @@ function CalorieRing({ consumed, target, size = 176 }: { consumed: number; targe
 }
 
 function MacroBar({ label, consumed, target, tone }: { label: string; consumed: number; target: number | null; tone: string }) {
+  const styles = useStyles();
   const pct = target && target > 0 ? Math.min(100, Math.round((consumed / target) * 100)) : 0;
   return (
     <View style={styles.macroRow}>
@@ -100,6 +104,8 @@ function sourceLine(target: ResolvedNutritionTarget): string {
 }
 
 export default function NutritionTargetsScreen() {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const router = useRouter();
   const today = todayDateString();
   const [view, setView] = useState<"day" | "week">("day");
@@ -251,56 +257,58 @@ function fuelDotColor(fuelDay: string): string {
   return Color.textFaint;
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Color.bg0 },
-  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md },
-  backButton: { padding: 4 },
-  headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
-  toggleRow: { flexDirection: "row", gap: Spacing.xs, paddingHorizontal: Spacing.lg, marginBottom: Spacing.md },
-  toggleChip: { flex: 1, borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingVertical: 8, alignItems: "center" },
-  toggleChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
-  toggleText: { fontSize: 13, fontWeight: "600", color: Color.textMuted },
-  toggleTextActive: { color: Color.gold },
-  scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
-  dateNavRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: Spacing.md, marginBottom: Spacing.md },
-  dateArrow: { padding: 4 },
-  dateLabel: { fontSize: 14, fontWeight: "600", color: Color.textPrimary, minWidth: 140, textAlign: "center" },
-  dayCard: { padding: Spacing.lg, alignItems: "center" },
-  fuelDayLabel: { fontSize: 11, fontWeight: "700", letterSpacing: 0.5, textTransform: "uppercase", color: Color.gold, marginBottom: Spacing.sm },
-  ringWrap: { marginVertical: Spacing.sm },
-  ringCenter: { flex: 1, alignItems: "center", justifyContent: "center" },
-  ringValue: { ...figure(38), color: Color.textPrimary },
-  ringSuffix: { fontSize: 11, color: Color.textMuted, marginTop: 2 },
-  sourceText: { fontSize: 11, color: Color.textFaint, textAlign: "center", marginTop: Spacing.xs },
-  macroBlock: { width: "100%", marginTop: Spacing.lg, gap: Spacing.md },
-  macroRow: { gap: 4 },
-  macroLabelRow: { flexDirection: "row", justifyContent: "space-between" },
-  macroLabel: { fontSize: 12, fontWeight: "600", color: Color.textSecondary },
-  macroValue: { fontSize: 12, color: Color.textMuted, fontVariant: ["tabular-nums"] },
-  macroTrack: { height: 6, borderRadius: 3, backgroundColor: Color.surface1, overflow: "hidden" },
-  macroFill: { height: "100%", borderRadius: 3 },
-  notesText: { fontSize: 12, color: Color.textMuted, marginTop: Spacing.md, textAlign: "center", fontStyle: "italic" },
-  rationaleBlock: { width: "100%", marginTop: Spacing.lg, borderTopWidth: 1, borderTopColor: Color.borderSubtle, paddingTop: Spacing.sm },
-  rationaleLine: { fontSize: 12, color: Color.textMuted, lineHeight: 17, marginTop: 4 },
-  emptyText: { fontSize: 13, color: Color.textMuted, textAlign: "center" },
-  weekAvgText: { fontSize: 12, color: Color.textMuted, textAlign: "center", marginBottom: Spacing.md },
-  weekStrip: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.sm, justifyContent: "center" },
-  dayChip: {
-    width: "13%",
-    minWidth: 44,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-    paddingVertical: Spacing.sm,
-    alignItems: "center",
-    gap: 2,
-  },
-  dayChipToday: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
-  dayChipWeekday: { fontSize: 9, fontWeight: "700", color: Color.textFaint, textTransform: "uppercase" },
-  dayChipDate: { fontSize: 13, fontWeight: "700", color: Color.textPrimary },
-  dayChipCalories: { fontSize: 12, fontWeight: "700", color: Color.textPrimary, marginTop: 2, fontVariant: ["tabular-nums"] },
-  dayChipUnit: { fontSize: 8, color: Color.textFaint },
-  dayChipTextToday: { color: Color.gold },
-  dayChipDot: { width: 5, height: 5, borderRadius: 3, marginTop: 2 },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: Color.bg0 },
+    header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md },
+    backButton: { padding: 4 },
+    headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
+    toggleRow: { flexDirection: "row", gap: Spacing.xs, paddingHorizontal: Spacing.lg, marginBottom: Spacing.md },
+    toggleChip: { flex: 1, borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingVertical: 8, alignItems: "center" },
+    toggleChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
+    toggleText: { fontSize: 13, fontWeight: "600", color: Color.textMuted },
+    toggleTextActive: { color: Color.gold },
+    scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
+    dateNavRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: Spacing.md, marginBottom: Spacing.md },
+    dateArrow: { padding: 4 },
+    dateLabel: { fontSize: 14, fontWeight: "600", color: Color.textPrimary, minWidth: 140, textAlign: "center" },
+    dayCard: { padding: Spacing.lg, alignItems: "center" },
+    fuelDayLabel: { fontSize: 11, fontWeight: "700", letterSpacing: 0.5, textTransform: "uppercase", color: Color.gold, marginBottom: Spacing.sm },
+    ringWrap: { marginVertical: Spacing.sm },
+    ringCenter: { flex: 1, alignItems: "center", justifyContent: "center" },
+    ringValue: { ...figure(38), color: Color.textPrimary },
+    ringSuffix: { fontSize: 11, color: Color.textMuted, marginTop: 2 },
+    sourceText: { fontSize: 11, color: Color.textFaint, textAlign: "center", marginTop: Spacing.xs },
+    macroBlock: { width: "100%", marginTop: Spacing.lg, gap: Spacing.md },
+    macroRow: { gap: 4 },
+    macroLabelRow: { flexDirection: "row", justifyContent: "space-between" },
+    macroLabel: { fontSize: 12, fontWeight: "600", color: Color.textSecondary },
+    macroValue: { fontSize: 12, color: Color.textMuted, fontVariant: ["tabular-nums"] },
+    macroTrack: { height: 6, borderRadius: 3, backgroundColor: Color.surface1, overflow: "hidden" },
+    macroFill: { height: "100%", borderRadius: 3 },
+    notesText: { fontSize: 12, color: Color.textMuted, marginTop: Spacing.md, textAlign: "center", fontStyle: "italic" },
+    rationaleBlock: { width: "100%", marginTop: Spacing.lg, borderTopWidth: 1, borderTopColor: Color.borderSubtle, paddingTop: Spacing.sm },
+    rationaleLine: { fontSize: 12, color: Color.textMuted, lineHeight: 17, marginTop: 4 },
+    emptyText: { fontSize: 13, color: Color.textMuted, textAlign: "center" },
+    weekAvgText: { fontSize: 12, color: Color.textMuted, textAlign: "center", marginBottom: Spacing.md },
+    weekStrip: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.sm, justifyContent: "center" },
+    dayChip: {
+      width: "13%",
+      minWidth: 44,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface1,
+      paddingVertical: Spacing.sm,
+      alignItems: "center",
+      gap: 2,
+    },
+    dayChipToday: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
+    dayChipWeekday: { fontSize: 9, fontWeight: "700", color: Color.textFaint, textTransform: "uppercase" },
+    dayChipDate: { fontSize: 13, fontWeight: "700", color: Color.textPrimary },
+    dayChipCalories: { fontSize: 12, fontWeight: "700", color: Color.textPrimary, marginTop: 2, fontVariant: ["tabular-nums"] },
+    dayChipUnit: { fontSize: 8, color: Color.textFaint },
+    dayChipTextToday: { color: Color.gold },
+    dayChipDot: { width: 5, height: 5, borderRadius: 3, marginTop: 2 },
+  })
+);

@@ -6,8 +6,9 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { StatCard } from "@/components/ui/StatCard";
-import { Color, figure, Spacing } from "@/constants/theme";
+import { LiveColor as Color, figure, Spacing } from "@/constants/theme";
 import { useWorkoutReview, type WorkoutScoreBreakdown } from "@/lib/queries/workouts";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 function bandLabel(band: WorkoutScoreBreakdown["band"]): string {
   switch (band) {
@@ -43,6 +44,8 @@ function deltaLabel(current: number | null, recentAvg: number | null, unit: stri
 }
 
 export default function WorkoutReviewScreen() {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id?: string }>();
   const { data, isLoading, isError } = useWorkoutReview(id ?? null);
@@ -211,6 +214,7 @@ function deltaRpeLabel(current: number | null, recentAvg: number | null): string
 }
 
 function DetailRow({ label, value, last }: { label: string; value: string; last?: boolean }) {
+  const styles = useStyles();
   return (
     <View style={[styles.detailRow, !last && styles.detailRowDivider]}>
       <Text style={styles.detailLabel}>{label}</Text>
@@ -219,44 +223,46 @@ function DetailRow({ label, value, last }: { label: string; value: string; last?
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Color.bg0 },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-  },
-  backButton: { padding: 4 },
-  headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
-  centerWrap: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
-  loadingText: { fontSize: 13, color: Color.textMuted, marginTop: Spacing.md },
-  errorText: { fontSize: 14, color: Color.textMuted, textAlign: "center" },
-  scroll: { padding: Spacing.lg, paddingBottom: Spacing.xxl },
-  reviewCard: { borderColor: Color.goldBorder, backgroundColor: Color.goldWeak },
-  reviewLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.gold },
-  reviewText: { fontSize: 14, color: Color.textPrimary, lineHeight: 20, marginTop: Spacing.xs },
-  sectionLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginTop: Spacing.xl, marginBottom: Spacing.sm },
-  statsGrid: { gap: Spacing.sm },
-  statsRow: { flexDirection: "row", gap: Spacing.sm },
-  noCompareText: { fontSize: 12, color: Color.textFaint, marginTop: Spacing.xs, lineHeight: 17 },
-  detailCard: { padding: 0, overflow: "hidden" },
-  detailRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: Spacing.md },
-  detailRowDivider: { borderBottomWidth: 1, borderBottomColor: Color.borderSubtle },
-  detailLabel: { fontSize: 13, color: Color.textMuted },
-  detailValue: { fontSize: 13, fontWeight: "600", color: Color.textPrimary },
-  scoreHeader: {
-    flexDirection: "row",
-    alignItems: "baseline",
-    justifyContent: "center",
-    gap: 4,
-    paddingVertical: Spacing.lg,
-    borderBottomWidth: 1,
-    borderBottomColor: Color.borderSubtle,
-  },
-  scoreTotal: { ...figure(48, "700") },
-  scoreOutOf: { fontSize: 16, color: Color.textFaint, marginRight: Spacing.sm },
-  scoreBand: { fontSize: 13, fontWeight: "700", letterSpacing: 0.4, textTransform: "uppercase" },
-  scoreDetail: { fontSize: 11, color: Color.textFaint, marginTop: 2 },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: Color.bg0 },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: Spacing.lg,
+      paddingVertical: Spacing.md,
+    },
+    backButton: { padding: 4 },
+    headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
+    centerWrap: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
+    loadingText: { fontSize: 13, color: Color.textMuted, marginTop: Spacing.md },
+    errorText: { fontSize: 14, color: Color.textMuted, textAlign: "center" },
+    scroll: { padding: Spacing.lg, paddingBottom: Spacing.xxl },
+    reviewCard: { borderColor: Color.goldBorder, backgroundColor: Color.goldWeak },
+    reviewLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.gold },
+    reviewText: { fontSize: 14, color: Color.textPrimary, lineHeight: 20, marginTop: Spacing.xs },
+    sectionLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginTop: Spacing.xl, marginBottom: Spacing.sm },
+    statsGrid: { gap: Spacing.sm },
+    statsRow: { flexDirection: "row", gap: Spacing.sm },
+    noCompareText: { fontSize: 12, color: Color.textFaint, marginTop: Spacing.xs, lineHeight: 17 },
+    detailCard: { padding: 0, overflow: "hidden" },
+    detailRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: Spacing.md },
+    detailRowDivider: { borderBottomWidth: 1, borderBottomColor: Color.borderSubtle },
+    detailLabel: { fontSize: 13, color: Color.textMuted },
+    detailValue: { fontSize: 13, fontWeight: "600", color: Color.textPrimary },
+    scoreHeader: {
+      flexDirection: "row",
+      alignItems: "baseline",
+      justifyContent: "center",
+      gap: 4,
+      paddingVertical: Spacing.lg,
+      borderBottomWidth: 1,
+      borderBottomColor: Color.borderSubtle,
+    },
+    scoreTotal: { ...figure(48, "700") },
+    scoreOutOf: { fontSize: 16, color: Color.textFaint, marginRight: Spacing.sm },
+    scoreBand: { fontSize: 13, fontWeight: "700", letterSpacing: 0.4, textTransform: "uppercase" },
+    scoreDetail: { fontSize: 11, color: Color.textFaint, marginTop: 2 },
+  })
+);

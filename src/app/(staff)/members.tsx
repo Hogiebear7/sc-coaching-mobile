@@ -14,10 +14,13 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
-import { Color, Radius, Spacing } from "@/constants/theme";
+import { Radius, Spacing } from "@/constants/theme";
 import { useStaffMembers, type StaffMemberSummary } from "@/lib/queries/staff";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 function MemberRow({ member, onPress }: { member: StaffMemberSummary; onPress: () => void }) {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   return (
     <Pressable onPress={onPress} style={styles.row}>
       <View style={{ flex: 1 }}>
@@ -39,6 +42,8 @@ function MemberRow({ member, onPress }: { member: StaffMemberSummary; onPress: (
 }
 
 export default function StaffMembersScreen() {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const router = useRouter();
   const { data, isLoading, isError, refetch, isRefetching } = useStaffMembers();
   const [query, setQuery] = useState("");
@@ -128,57 +133,59 @@ export default function StaffMembersScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Color.bg0 },
-  header: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.md, paddingBottom: Spacing.sm },
-  headerTitle: { fontSize: 20, fontWeight: "700", fontStyle: "italic", color: Color.textPrimary },
-  searchRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.sm,
-    marginHorizontal: Spacing.lg,
-    marginBottom: Spacing.md,
-    paddingHorizontal: Spacing.md,
-    height: 42,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-  },
-  searchInput: { flex: 1, color: Color.textPrimary, fontSize: 14 },
-  sortRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.xs,
-    marginHorizontal: Spacing.lg,
-    marginBottom: Spacing.md,
-  },
-  sortLabel: { fontSize: 11, color: Color.textFaint, marginRight: 2 },
-  sortChip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.sm, paddingVertical: 6 },
-  sortChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
-  sortChipText: { fontSize: 11, fontWeight: "600", color: Color.textMuted },
-  sortChipTextActive: { color: Color.gold },
-  centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
-  errorText: { color: Color.textMuted, fontSize: 14, textAlign: "center", marginTop: Spacing.md },
-  scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: Spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: Color.borderSubtle,
-  },
-  rowName: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
-  rowEmail: { fontSize: 11, color: Color.textMuted, marginTop: 2 },
-  planChip: {
-    borderRadius: Radius.pill,
-    borderWidth: 1,
-    borderColor: Color.goldBorder,
-    backgroundColor: Color.goldWeak,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 4,
-  },
-  planChipNone: { borderColor: Color.borderSubtle, backgroundColor: "transparent" },
-  planChipText: { fontSize: 10, fontWeight: "600", color: Color.gold },
-  planChipTextNone: { color: Color.textFaint },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: Color.bg0 },
+    header: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.md, paddingBottom: Spacing.sm },
+    headerTitle: { fontSize: 20, fontWeight: "700", fontStyle: "italic", color: Color.textPrimary },
+    searchRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: Spacing.sm,
+      marginHorizontal: Spacing.lg,
+      marginBottom: Spacing.md,
+      paddingHorizontal: Spacing.md,
+      height: 42,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface1,
+    },
+    searchInput: { flex: 1, color: Color.textPrimary, fontSize: 14 },
+    sortRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: Spacing.xs,
+      marginHorizontal: Spacing.lg,
+      marginBottom: Spacing.md,
+    },
+    sortLabel: { fontSize: 11, color: Color.textFaint, marginRight: 2 },
+    sortChip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.sm, paddingVertical: 6 },
+    sortChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
+    sortChipText: { fontSize: 11, fontWeight: "600", color: Color.textMuted },
+    sortChipTextActive: { color: Color.gold },
+    centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
+    errorText: { color: Color.textMuted, fontSize: 14, textAlign: "center", marginTop: Spacing.md },
+    scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
+    row: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingVertical: Spacing.sm,
+      borderBottomWidth: 1,
+      borderBottomColor: Color.borderSubtle,
+    },
+    rowName: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
+    rowEmail: { fontSize: 11, color: Color.textMuted, marginTop: 2 },
+    planChip: {
+      borderRadius: Radius.pill,
+      borderWidth: 1,
+      borderColor: Color.goldBorder,
+      backgroundColor: Color.goldWeak,
+      paddingHorizontal: Spacing.sm,
+      paddingVertical: 4,
+    },
+    planChipNone: { borderColor: Color.borderSubtle, backgroundColor: "transparent" },
+    planChipText: { fontSize: 10, fontWeight: "600", color: Color.gold },
+    planChipTextNone: { color: Color.textFaint },
+  })
+);

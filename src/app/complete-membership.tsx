@@ -8,10 +8,11 @@ import type { KeyboardAwareScrollViewRef } from "react-native-keyboard-controlle
 import { BrandMark } from "@/components/ui/BrandMark";
 import { Button } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/TextField";
-import { Color, headline, Spacing } from "@/constants/theme";
+import { headline, Spacing } from "@/constants/theme";
 import { ApiError } from "@/lib/auth-context";
 import { dismissEmergencyContactReminder } from "@/lib/emergency-contact-reminder";
 import { useProfile, useUpdateProfile } from "@/lib/queries/profile";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 // Reached from _layout.tsx's post-upgrade gate: a member who has just
 // reached Membership tier (staff grant or self-serve Stripe checkout, either
@@ -23,6 +24,8 @@ import { useProfile, useUpdateProfile } from "@/lib/queries/profile";
 // it skippable here, but booking a class hard-requires it (see log-food.tsx
 // sibling gate in gym-app's app/api/bookings/create/route.ts).
 export default function CompleteMembershipScreen() {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const router = useRouter();
   const { data: profile, isLoading } = useProfile();
   const update = useUpdateProfile();
@@ -168,37 +171,39 @@ export default function CompleteMembershipScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Color.bg0 },
-  centerFill: { flex: 1, alignItems: "center", justifyContent: "center" },
-  scroll: {
-    flexGrow: 1,
-    paddingHorizontal: Spacing.xl,
-    paddingVertical: Spacing.xxl,
-  },
-  logo: { marginBottom: Spacing.md },
-  eyebrow: {
-    fontSize: 11,
-    fontWeight: "700",
-    letterSpacing: 1,
-    color: Color.gold,
-    marginBottom: Spacing.sm,
-  },
-  title: {
-    ...headline(36),
-    color: Color.textPrimary,
-  },
-  hint: {
-    fontSize: 13,
-    color: Color.textMuted,
-    marginTop: Spacing.sm,
-    lineHeight: 19,
-  },
-  error: {
-    color: Color.danger,
-    fontSize: 12,
-    marginTop: Spacing.md,
-  },
-  saveButton: { marginTop: Spacing.xl },
-  laterButton: { marginTop: Spacing.sm },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: Color.bg0 },
+    centerFill: { flex: 1, alignItems: "center", justifyContent: "center" },
+    scroll: {
+      flexGrow: 1,
+      paddingHorizontal: Spacing.xl,
+      paddingVertical: Spacing.xxl,
+    },
+    logo: { marginBottom: Spacing.md },
+    eyebrow: {
+      fontSize: 11,
+      fontWeight: "700",
+      letterSpacing: 1,
+      color: Color.gold,
+      marginBottom: Spacing.sm,
+    },
+    title: {
+      ...headline(36),
+      color: Color.textPrimary,
+    },
+    hint: {
+      fontSize: 13,
+      color: Color.textMuted,
+      marginTop: Spacing.sm,
+      lineHeight: 19,
+    },
+    error: {
+      color: Color.danger,
+      fontSize: 12,
+      marginTop: Spacing.md,
+    },
+    saveButton: { marginTop: Spacing.xl },
+    laterButton: { marginTop: Spacing.sm },
+  })
+);

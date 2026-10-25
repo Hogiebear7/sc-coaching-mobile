@@ -4,8 +4,9 @@ import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, T
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
-import { Color, Radius, Spacing } from "@/constants/theme";
+import { Radius, Spacing } from "@/constants/theme";
 import { useStaffMessageThreads, type StaffMessageThreadSummary } from "@/lib/queries/staff";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 function formatTime(iso: string): string {
   const d = new Date(iso);
@@ -17,6 +18,8 @@ function formatTime(iso: string): string {
 }
 
 function ThreadRow({ thread, onPress }: { thread: StaffMessageThreadSummary; onPress: () => void }) {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const unread = thread.unreadFromMemberCount > 0;
   return (
     <Pressable onPress={onPress} style={styles.row}>
@@ -44,6 +47,8 @@ function ThreadRow({ thread, onPress }: { thread: StaffMessageThreadSummary; onP
 }
 
 export default function StaffMessagesScreen() {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const router = useRouter();
   const { data, isLoading, isError, refetch, isRefetching } = useStaffMessageThreads();
 
@@ -94,35 +99,37 @@ export default function StaffMessagesScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Color.bg0 },
-  header: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.md, paddingBottom: Spacing.sm },
-  headerTitle: { fontSize: 20, fontWeight: "700", fontStyle: "italic", color: Color.textPrimary },
-  centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
-  errorText: { color: Color.textMuted, fontSize: 14, textAlign: "center" },
-  scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: Spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: Color.borderSubtle,
-  },
-  rowTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  rowName: { fontSize: 14, fontWeight: "600", color: Color.textSecondary, flexShrink: 1 },
-  rowNameUnread: { color: Color.textPrimary, fontWeight: "700" },
-  rowTime: { fontSize: 10, color: Color.textFaint, marginLeft: Spacing.xs },
-  rowPreview: { fontSize: 12, color: Color.textMuted, marginTop: 2 },
-  rowPreviewUnread: { color: Color.textSecondary, fontWeight: "500" },
-  unreadBadge: {
-    minWidth: 20,
-    height: 20,
-    borderRadius: Radius.pill,
-    backgroundColor: Color.gold,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 6,
-    marginLeft: Spacing.xs,
-  },
-  unreadBadgeText: { fontSize: 11, fontWeight: "700", color: Color.goldForeground },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: Color.bg0 },
+    header: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.md, paddingBottom: Spacing.sm },
+    headerTitle: { fontSize: 20, fontWeight: "700", fontStyle: "italic", color: Color.textPrimary },
+    centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
+    errorText: { color: Color.textMuted, fontSize: 14, textAlign: "center" },
+    scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
+    row: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingVertical: Spacing.sm,
+      borderBottomWidth: 1,
+      borderBottomColor: Color.borderSubtle,
+    },
+    rowTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+    rowName: { fontSize: 14, fontWeight: "600", color: Color.textSecondary, flexShrink: 1 },
+    rowNameUnread: { color: Color.textPrimary, fontWeight: "700" },
+    rowTime: { fontSize: 10, color: Color.textFaint, marginLeft: Spacing.xs },
+    rowPreview: { fontSize: 12, color: Color.textMuted, marginTop: 2 },
+    rowPreviewUnread: { color: Color.textSecondary, fontWeight: "500" },
+    unreadBadge: {
+      minWidth: 20,
+      height: 20,
+      borderRadius: Radius.pill,
+      backgroundColor: Color.gold,
+      alignItems: "center",
+      justifyContent: "center",
+      paddingHorizontal: 6,
+      marginLeft: Spacing.xs,
+    },
+    unreadBadgeText: { fontSize: 11, fontWeight: "700", color: Color.goldForeground },
+  })
+);

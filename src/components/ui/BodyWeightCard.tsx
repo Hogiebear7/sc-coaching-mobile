@@ -5,10 +5,11 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { WeightChangeInsights } from "@/components/ui/WeightChangeInsights";
 import { WeightTrendChart } from "@/components/ui/WeightTrendChart";
-import { Color, Radius, Spacing } from "@/constants/theme";
+import { Radius, Spacing } from "@/constants/theme";
 import { tapFeedback } from "@/lib/haptics";
 import { useBodyWeightLogs, useLogBodyWeight, type BodyWeightLog } from "@/lib/queries/body-weight";
 import { todayDateString } from "@/lib/workout-formatters";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 type RangeFilter = "month" | "3months" | "6months" | "year" | "all";
 
@@ -56,6 +57,8 @@ function changeSummary(logs: BodyWeightLog[]): string | null {
 // `compact` skips the range chips/change-summary for the smaller Nutrition
 // placement, since that spot's job is quick logging, not trend review.
 export function BodyWeightCard({ compact = false }: { compact?: boolean }) {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const { data: weightLogs } = useBodyWeightLogs();
   const logWeight = useLogBodyWeight();
   const [logging, setLogging] = useState(false);
@@ -136,34 +139,36 @@ export function BodyWeightCard({ compact = false }: { compact?: boolean }) {
   );
 }
 
-const styles = StyleSheet.create({
-  card: { padding: Spacing.md },
-  headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  value: { fontSize: 20, fontWeight: "700", color: Color.textPrimary, fontVariant: ["tabular-nums"] },
-  sub: { fontSize: 11, color: Color.textMuted, marginTop: 2 },
-  inputRow: { flexDirection: "row", gap: Spacing.sm, marginTop: Spacing.md },
-  input: {
-    width: 90,
-    height: 44,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-    paddingHorizontal: Spacing.sm,
-    fontSize: 14,
-    color: Color.textPrimary,
-  },
-  rangeRow: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
-  rangeChip: {
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 6,
-    borderRadius: Radius.pill,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-  },
-  rangeChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
-  rangeChipText: { fontSize: 11, fontWeight: "500", color: Color.textMuted },
-  rangeChipTextActive: { color: Color.gold },
-  summary: { fontSize: 11, color: Color.textMuted, marginTop: Spacing.sm },
-  emptyRange: { fontSize: 12, color: Color.textMuted, textAlign: "center", paddingVertical: 20 },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    card: { padding: Spacing.md },
+    headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+    value: { fontSize: 20, fontWeight: "700", color: Color.textPrimary, fontVariant: ["tabular-nums"] },
+    sub: { fontSize: 11, color: Color.textMuted, marginTop: 2 },
+    inputRow: { flexDirection: "row", gap: Spacing.sm, marginTop: Spacing.md },
+    input: {
+      width: 90,
+      height: 44,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface1,
+      paddingHorizontal: Spacing.sm,
+      fontSize: 14,
+      color: Color.textPrimary,
+    },
+    rangeRow: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
+    rangeChip: {
+      paddingHorizontal: Spacing.sm,
+      paddingVertical: 6,
+      borderRadius: Radius.pill,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+    },
+    rangeChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
+    rangeChipText: { fontSize: 11, fontWeight: "500", color: Color.textMuted },
+    rangeChipTextActive: { color: Color.gold },
+    summary: { fontSize: 11, color: Color.textMuted, marginTop: Spacing.sm },
+    emptyRange: { fontSize: 12, color: Color.textMuted, textAlign: "center", paddingVertical: 20 },
+  })
+);

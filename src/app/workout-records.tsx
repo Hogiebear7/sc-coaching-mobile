@@ -5,9 +5,10 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Card } from "@/components/ui/Card";
-import { Color, Spacing } from "@/constants/theme";
+import { Spacing } from "@/constants/theme";
 import { useWorkouts } from "@/lib/queries/workouts";
 import { getRecentRecords, groupRecordsByWeek, todayDateString } from "@/lib/workout-formatters";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 function formatShortDate(dateISO: string): string {
   return new Date(`${dateISO}T00:00:00`).toLocaleDateString(undefined, { day: "numeric", month: "short" });
@@ -17,6 +18,8 @@ function formatShortDate(dateISO: string): string {
 // only teases the 3 most recent so this is where a long PB history actually
 // lives without turning into one endless scroll.
 export default function WorkoutRecordsScreen() {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const router = useRouter();
   const { data, isLoading } = useWorkouts();
   const today = todayDateString();
@@ -75,28 +78,30 @@ export default function WorkoutRecordsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Color.bg0 },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-  },
-  backButton: { padding: 4 },
-  headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
-  centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
-  emptyText: { fontSize: 14, color: Color.textMuted, textAlign: "center" },
-  scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
-  section: { marginBottom: Spacing.lg },
-  weekLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginBottom: Spacing.sm },
-  recordsList: { padding: 0, overflow: "hidden" },
-  recordRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", padding: Spacing.md, gap: Spacing.sm },
-  recordRowDivider: { borderTopWidth: 1, borderTopColor: Color.borderSubtle },
-  recordExercise: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
-  recordLabel: { fontSize: 12, color: Color.textMuted, marginTop: 2 },
-  recordValueWrap: { alignItems: "flex-end" },
-  recordValue: { fontSize: 14, fontWeight: "700", color: Color.gold },
-  recordDate: { fontSize: 11, color: Color.textFaint, marginTop: 2 },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: Color.bg0 },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: Spacing.lg,
+      paddingVertical: Spacing.md,
+    },
+    backButton: { padding: 4 },
+    headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
+    centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
+    emptyText: { fontSize: 14, color: Color.textMuted, textAlign: "center" },
+    scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
+    section: { marginBottom: Spacing.lg },
+    weekLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginBottom: Spacing.sm },
+    recordsList: { padding: 0, overflow: "hidden" },
+    recordRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", padding: Spacing.md, gap: Spacing.sm },
+    recordRowDivider: { borderTopWidth: 1, borderTopColor: Color.borderSubtle },
+    recordExercise: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
+    recordLabel: { fontSize: 12, color: Color.textMuted, marginTop: 2 },
+    recordValueWrap: { alignItems: "flex-end" },
+    recordValue: { fontSize: 14, fontWeight: "700", color: Color.gold },
+    recordDate: { fontSize: 11, color: Color.textFaint, marginTop: 2 },
+  })
+);

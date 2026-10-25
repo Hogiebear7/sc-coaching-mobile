@@ -10,13 +10,14 @@ import { CameraPermissionDenied } from "@/components/nutrition/CameraPermissionG
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Stepper } from "@/components/ui/Stepper";
-import { Color, Radius, Spacing } from "@/constants/theme";
+import { Radius, Spacing } from "@/constants/theme";
 import { ApiError } from "@/lib/api-client";
 import { trackEvent } from "@/lib/analytics";
 import { tapFeedback } from "@/lib/haptics";
 import { useDescribeFoodText, usePhotoFoodScan, useSaveFoodIdentificationOverride, type IdentifiedFoodItem } from "@/lib/queries/food-catalog";
 import { useCreateFoodEntry, type MealType } from "@/lib/queries/nutrition-diary";
 import { todayDateString } from "@/lib/workout-formatters";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 type Stage = "camera" | "scanning" | "reviewing";
 
@@ -50,6 +51,8 @@ function defaultMealTypeForNow(): MealType {
 }
 
 export default function LabelScanScreen() {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const router = useRouter();
   const { barcode, date, mealType } = useLocalSearchParams<{ barcode?: string; date?: string; mealType?: string }>();
   const [permission, requestPermission] = useCameraPermissions();
@@ -682,87 +685,89 @@ export default function LabelScanScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Color.bg0 },
-  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md },
-  backButton: { padding: 4 },
-  headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
-  subhead: { fontSize: 12, color: Color.textMuted, textAlign: "center", paddingHorizontal: Spacing.xl, marginBottom: Spacing.sm },
-  centerFill: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: Spacing.xl },
-  confirmIconWrap: { width: 56, height: 56, borderRadius: 28, backgroundColor: Color.gold, alignItems: "center", justifyContent: "center" },
-  confirmTitle: { fontSize: 17, fontWeight: "700", color: Color.textPrimary, marginTop: Spacing.md },
-  confirmText: { fontSize: 13, color: Color.textMuted, textAlign: "center", marginTop: 6, lineHeight: 19 },
-  scanErrorText: { textAlign: "center", fontSize: 12, color: Color.danger, marginTop: Spacing.sm, paddingHorizontal: Spacing.xl },
-  libraryLink: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: Spacing.md },
-  libraryLinkText: { fontSize: 13, fontWeight: "600", color: Color.gold },
-  manualLink: { alignItems: "center", paddingVertical: Spacing.lg },
-  manualLinkText: { fontSize: 13, color: Color.gold, fontWeight: "600" },
-  scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
-  itemCard: { padding: Spacing.md, marginBottom: Spacing.md, gap: Spacing.sm },
-  itemCardExcluded: { opacity: 0.5 },
-  itemHeaderRow: { flexDirection: "row", alignItems: "center", gap: Spacing.sm },
-  checkbox: { padding: 2 },
-  nameInput: { flex: 1, fontSize: 14, fontWeight: "700", color: Color.textPrimary, paddingVertical: 4 },
-  itemMetaRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  badgeGroup: { flexDirection: "row", gap: 6 },
-  servingText: { fontSize: 12, color: Color.textMuted },
-  sourceBadge: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.sm, paddingVertical: 2 },
-  sourceBadgeLabel: { borderColor: Color.gold },
-  sourceBadgeText: { fontSize: 10, fontWeight: "600", color: Color.textFaint },
-  sourceBadgeTextLabel: { color: Color.gold },
-  gridRow: { flexDirection: "row", gap: Spacing.sm },
-  numberField: { flex: 1 },
-  fieldLabel: { fontSize: 11, fontWeight: "500", color: Color.textSecondary, marginBottom: 4 },
-  input: {
-    height: 40,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-    paddingHorizontal: Spacing.sm,
-    fontSize: 13,
-    color: Color.textPrimary,
-  },
-  itemFooter: {
-    marginTop: 2,
-    paddingTop: Spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: Color.borderSubtle,
-    gap: 6,
-  },
-  footerLink: { alignItems: "flex-start" },
-  footerLinkText: { fontSize: 12, fontWeight: "600", color: Color.gold },
-  footerLinkQuiet: { alignItems: "flex-start" },
-  footerLinkQuietText: { fontSize: 11, fontWeight: "500", color: Color.textFaint },
-  correctionWrap: {
-    marginTop: 2,
-    padding: Spacing.sm,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-    gap: Spacing.xs,
-  },
-  correctionHeaderRow: { flexDirection: "row", alignItems: "center", gap: 4 },
-  correctionHeaderText: { fontSize: 11, fontWeight: "700", color: Color.gold },
-  correctionInput: {
-    height: 40,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface2,
-    paddingHorizontal: Spacing.sm,
-    fontSize: 13,
-    color: Color.textPrimary,
-  },
-  correctionActions: { flexDirection: "row", justifyContent: "flex-end", gap: Spacing.md, alignItems: "center" },
-  correctionCancel: { paddingVertical: 4 },
-  correctionSubmit: { paddingVertical: 4, paddingHorizontal: Spacing.sm, borderRadius: Radius.pill, backgroundColor: Color.gold },
-  correctionSubmitText: { fontSize: 12, fontWeight: "700", color: Color.goldForeground },
-  retakeLink: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: Spacing.md },
-  retakeLinkText: { fontSize: 13, fontWeight: "600", color: Color.gold },
-  manualLinkQuiet: { alignItems: "center", paddingVertical: Spacing.sm },
-  manualLinkQuietText: { fontSize: 12, fontWeight: "500", color: Color.textFaint },
-  emptyText: { fontSize: 13, color: Color.textMuted, textAlign: "center", marginTop: Spacing.xl },
-  error: { fontSize: 12, color: Color.danger, marginTop: Spacing.sm, textAlign: "center" },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: Color.bg0 },
+    header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md },
+    backButton: { padding: 4 },
+    headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
+    subhead: { fontSize: 12, color: Color.textMuted, textAlign: "center", paddingHorizontal: Spacing.xl, marginBottom: Spacing.sm },
+    centerFill: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: Spacing.xl },
+    confirmIconWrap: { width: 56, height: 56, borderRadius: 28, backgroundColor: Color.gold, alignItems: "center", justifyContent: "center" },
+    confirmTitle: { fontSize: 17, fontWeight: "700", color: Color.textPrimary, marginTop: Spacing.md },
+    confirmText: { fontSize: 13, color: Color.textMuted, textAlign: "center", marginTop: 6, lineHeight: 19 },
+    scanErrorText: { textAlign: "center", fontSize: 12, color: Color.danger, marginTop: Spacing.sm, paddingHorizontal: Spacing.xl },
+    libraryLink: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: Spacing.md },
+    libraryLinkText: { fontSize: 13, fontWeight: "600", color: Color.gold },
+    manualLink: { alignItems: "center", paddingVertical: Spacing.lg },
+    manualLinkText: { fontSize: 13, color: Color.gold, fontWeight: "600" },
+    scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
+    itemCard: { padding: Spacing.md, marginBottom: Spacing.md, gap: Spacing.sm },
+    itemCardExcluded: { opacity: 0.5 },
+    itemHeaderRow: { flexDirection: "row", alignItems: "center", gap: Spacing.sm },
+    checkbox: { padding: 2 },
+    nameInput: { flex: 1, fontSize: 14, fontWeight: "700", color: Color.textPrimary, paddingVertical: 4 },
+    itemMetaRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+    badgeGroup: { flexDirection: "row", gap: 6 },
+    servingText: { fontSize: 12, color: Color.textMuted },
+    sourceBadge: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.sm, paddingVertical: 2 },
+    sourceBadgeLabel: { borderColor: Color.gold },
+    sourceBadgeText: { fontSize: 10, fontWeight: "600", color: Color.textFaint },
+    sourceBadgeTextLabel: { color: Color.gold },
+    gridRow: { flexDirection: "row", gap: Spacing.sm },
+    numberField: { flex: 1 },
+    fieldLabel: { fontSize: 11, fontWeight: "500", color: Color.textSecondary, marginBottom: 4 },
+    input: {
+      height: 40,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface1,
+      paddingHorizontal: Spacing.sm,
+      fontSize: 13,
+      color: Color.textPrimary,
+    },
+    itemFooter: {
+      marginTop: 2,
+      paddingTop: Spacing.sm,
+      borderTopWidth: 1,
+      borderTopColor: Color.borderSubtle,
+      gap: 6,
+    },
+    footerLink: { alignItems: "flex-start" },
+    footerLinkText: { fontSize: 12, fontWeight: "600", color: Color.gold },
+    footerLinkQuiet: { alignItems: "flex-start" },
+    footerLinkQuietText: { fontSize: 11, fontWeight: "500", color: Color.textFaint },
+    correctionWrap: {
+      marginTop: 2,
+      padding: Spacing.sm,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface1,
+      gap: Spacing.xs,
+    },
+    correctionHeaderRow: { flexDirection: "row", alignItems: "center", gap: 4 },
+    correctionHeaderText: { fontSize: 11, fontWeight: "700", color: Color.gold },
+    correctionInput: {
+      height: 40,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface2,
+      paddingHorizontal: Spacing.sm,
+      fontSize: 13,
+      color: Color.textPrimary,
+    },
+    correctionActions: { flexDirection: "row", justifyContent: "flex-end", gap: Spacing.md, alignItems: "center" },
+    correctionCancel: { paddingVertical: 4 },
+    correctionSubmit: { paddingVertical: 4, paddingHorizontal: Spacing.sm, borderRadius: Radius.pill, backgroundColor: Color.gold },
+    correctionSubmitText: { fontSize: 12, fontWeight: "700", color: Color.goldForeground },
+    retakeLink: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: Spacing.md },
+    retakeLinkText: { fontSize: 13, fontWeight: "600", color: Color.gold },
+    manualLinkQuiet: { alignItems: "center", paddingVertical: Spacing.sm },
+    manualLinkQuietText: { fontSize: 12, fontWeight: "500", color: Color.textFaint },
+    emptyText: { fontSize: 13, color: Color.textMuted, textAlign: "center", marginTop: Spacing.xl },
+    error: { fontSize: 12, color: Color.danger, marginTop: Spacing.sm, textAlign: "center" },
+  })
+);

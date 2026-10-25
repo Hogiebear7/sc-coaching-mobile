@@ -1,8 +1,9 @@
 import { View } from "react-native";
 import Svg, { Circle, Path, Rect } from "react-native-svg";
 
-import { Color } from "@/constants/theme";
+import { LiveColor as Color } from "@/constants/theme";
 import type { ExerciseSection } from "@/lib/queries/workouts";
+import { useLegacyColors } from "@/lib/theme";
 
 // RN port of the web app's components/graphics/MuscleMap.tsx — same
 // geometry (viewBox 0 0 100 200, identical block coordinates) so the two
@@ -40,29 +41,28 @@ const VIEW_BY_SECTION: Record<ExerciseSection, "front" | "back"> = {
   cardio: "front",
 };
 
-const MUTED = "rgba(255,255,255,0.14)";
-const MUTED_STROKE = "rgba(255,255,255,0.22)";
 
 function fill(active: boolean): string {
-  return active ? Color.gold : MUTED;
+  return active ? Color.gold : Color.surface3;
 }
 
 function FrontBody({ zone }: { zone: Zone | null }) {
+  const Color = useLegacyColors();
   const upperOn = zone === "front-upper" || zone === "cardio";
   const coreOn = zone === "front-core";
   const legsOn = zone === "front-legs";
   return (
     <Svg viewBox="0 0 100 200" width="100%" height="100%">
-      <Circle cx={50} cy={16} r={12} fill={MUTED} stroke={MUTED_STROKE} strokeWidth={1} />
+      <Circle cx={50} cy={16} r={12} fill={Color.surface3} stroke={Color.borderDefault} strokeWidth={1} />
       <Rect x={12} y={34} width={12} height={52} rx={6} fill={fill(upperOn)} />
       <Rect x={76} y={34} width={12} height={52} rx={6} fill={fill(upperOn)} />
       <Rect x={26} y={30} width={48} height={36} rx={14} fill={fill(upperOn)} />
       <Rect x={32} y={64} width={36} height={34} rx={10} fill={fill(coreOn)} />
-      <Rect x={30} y={96} width={40} height={18} rx={9} fill={MUTED} />
+      <Rect x={30} y={96} width={40} height={18} rx={9} fill={Color.surface3} />
       <Rect x={32} y={112} width={16} height={48} rx={7} fill={fill(legsOn)} />
       <Rect x={52} y={112} width={16} height={48} rx={7} fill={fill(legsOn)} />
-      <Rect x={33} y={162} width={14} height={34} rx={6} fill={MUTED} />
-      <Rect x={53} y={162} width={14} height={34} rx={6} fill={MUTED} />
+      <Rect x={33} y={162} width={14} height={34} rx={6} fill={Color.surface3} />
+      <Rect x={53} y={162} width={14} height={34} rx={6} fill={Color.surface3} />
       {zone === "cardio" ? (
         <Path
           d="M50 40 L58 40 L62 30 L68 54 L74 40 L84 40"
@@ -82,19 +82,19 @@ function BackBody({ zone }: { zone: Zone | null }) {
   const lowerOn = zone === "back-lower";
   return (
     <Svg viewBox="0 0 100 200" width="100%" height="100%">
-      <Circle cx={50} cy={16} r={12} fill={MUTED} stroke={MUTED_STROKE} strokeWidth={1} />
+      <Circle cx={50} cy={16} r={12} fill={Color.surface3} stroke={Color.borderDefault} strokeWidth={1} />
       <Rect x={12} y={34} width={12} height={52} rx={6} fill={fill(upperOn)} />
       <Rect x={76} y={34} width={12} height={52} rx={6} fill={fill(upperOn)} />
       <Path
         d="M26 30 h48 a14 14 0 0 1 14 14 v6 a34 34 0 0 1 -76 0 v-6 a14 14 0 0 1 14 -14 z"
         fill={fill(upperOn)}
       />
-      <Rect x={34} y={66} width={32} height={30} rx={9} fill={MUTED} />
+      <Rect x={34} y={66} width={32} height={30} rx={9} fill={Color.surface3} />
       <Rect x={30} y={96} width={40} height={22} rx={11} fill={fill(lowerOn)} />
       <Rect x={32} y={118} width={16} height={42} rx={7} fill={fill(lowerOn)} />
       <Rect x={52} y={118} width={16} height={42} rx={7} fill={fill(lowerOn)} />
-      <Rect x={33} y={160} width={14} height={36} rx={6} fill={MUTED} />
-      <Rect x={53} y={160} width={14} height={36} rx={6} fill={MUTED} />
+      <Rect x={33} y={160} width={14} height={36} rx={6} fill={Color.surface3} />
+      <Rect x={53} y={160} width={14} height={36} rx={6} fill={Color.surface3} />
     </Svg>
   );
 }

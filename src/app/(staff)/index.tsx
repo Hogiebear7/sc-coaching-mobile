@@ -16,11 +16,12 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { BrandMark } from "@/components/ui/BrandMark";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { Color, Radius, Spacing } from "@/constants/theme";
+import { Radius, Spacing } from "@/constants/theme";
 import { useAuth } from "@/lib/auth-context";
 import { successFeedback, tapFeedback } from "@/lib/haptics";
 import { useProvisionMemberProfile } from "@/lib/queries/profile";
 import { useMarkAttendance, useRemoveBooking, useStaffClasses, type StaffClassSummary } from "@/lib/queries/staff";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 function formatClassDate(dateISO: string): string {
   const d = new Date(`${dateISO}T00:00:00`);
@@ -42,6 +43,8 @@ function formatTime(time: string): string {
 }
 
 function RosterRow({ classId, entry }: { classId: string; entry: StaffClassSummary["roster"][number] }) {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const mark = useMarkAttendance();
   const removeBooking = useRemoveBooking();
   const attended = !!entry.attendedAt;
@@ -98,6 +101,8 @@ function RosterRow({ classId, entry }: { classId: string; entry: StaffClassSumma
 }
 
 function ClassCard({ classItem }: { classItem: StaffClassSummary }) {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const router = useRouter();
   const [expanded, setExpanded] = useState(false);
   const full = classItem.bookedCount >= classItem.capacity;
@@ -175,6 +180,8 @@ function todayISO(): string {
 }
 
 function StaffClassesCalendar({ classesByDate }: { classesByDate: Record<string, StaffClassSummary[]> }) {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth());
@@ -296,6 +303,8 @@ function confirmLogout(logout: () => void) {
 }
 
 export default function StaffOperationsScreen() {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const router = useRouter();
   const { logout, setViewMode } = useAuth();
   const provisionMemberProfile = useProvisionMemberProfile();
@@ -424,127 +433,129 @@ export default function StaffOperationsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Color.bg0 },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-  },
-  headerLeft: { flexDirection: "row", alignItems: "center" },
-  headerLogo: { marginRight: Spacing.sm },
-  headerActions: { flexDirection: "row", alignItems: "center", gap: Spacing.md },
-  headerTitle: { fontSize: 20, fontWeight: "700", fontStyle: "italic", color: Color.textPrimary },
-  centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
-  errorText: { color: Color.textMuted, fontSize: 14, textAlign: "center" },
-  scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
-  viewToggle: {
-    flexDirection: "row",
-    gap: 4,
-    marginHorizontal: Spacing.lg,
-    marginBottom: Spacing.sm,
-    padding: 4,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-  },
-  viewToggleButton: { flex: 1, paddingVertical: Spacing.sm, borderRadius: Radius.sm, alignItems: "center" },
-  viewToggleButtonActive: { backgroundColor: Color.surface2 },
-  viewToggleText: { fontSize: 12, fontWeight: "600", color: Color.textMuted },
-  viewToggleTextActive: { color: Color.textPrimary },
-  calendarCard: { padding: Spacing.md },
-  calHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: Spacing.md },
-  calNavButton: {
-    width: 32,
-    height: 32,
-    borderRadius: Radius.pill,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: Color.surface2,
-  },
-  calTitle: { fontSize: 15, fontWeight: "700", color: Color.textPrimary },
-  weekRow: { flexDirection: "row", marginBottom: Spacing.xs },
-  weekLabel: { flex: 1, textAlign: "center", fontSize: 10, fontWeight: "600", color: Color.textFaint },
-  // flex:1 across each week's own row, not a `${100/7}%` width inside a
-  // flex-wrap grid — the percentage-rounding version silently dropped the
-  // 7th cell (Sunday) onto the next row on some screen widths. See
-  // MonthDatePicker.tsx, which established this fix first.
-  dayCell: {
-    flex: 1,
-    aspectRatio: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: Radius.sm,
-    gap: 2,
-  },
-  dayCellSelected: { backgroundColor: Color.goldWeak, borderWidth: 1, borderColor: Color.gold },
-  dayCellToday: { borderWidth: 1, borderColor: Color.goldBorder },
-  dayCellOutside: { opacity: 0.35 },
-  dayCellText: { fontSize: 13, color: Color.textSecondary },
-  dayCellTextToday: { color: Color.gold, fontWeight: "700" },
-  dayCellBadge: {
-    minWidth: 16,
-    height: 16,
-    borderRadius: Radius.pill,
-    backgroundColor: Color.gold,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 3,
-  },
-  dayCellBadgeText: { fontSize: 9, fontWeight: "700", color: Color.goldForeground },
-  calendarDetail: { marginTop: Spacing.lg },
-  emptyDetailCard: { alignItems: "center", padding: Spacing.xl },
-  dateGroup: { marginBottom: Spacing.lg },
-  dateGroupHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: Spacing.sm,
-  },
-  dateGroupRight: { flexDirection: "row", alignItems: "center", gap: Spacing.xs },
-  dateGroupCount: { fontSize: 11, color: Color.textFaint },
-  dateLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted },
-  classCard: { marginBottom: Spacing.sm, overflow: "hidden" },
-  classHeader: { flexDirection: "row", alignItems: "center", padding: Spacing.md },
-  classTitle: { fontSize: 15, fontWeight: "600", color: Color.textPrimary },
-  classMeta: { fontSize: 11, color: Color.textMuted, marginTop: 2 },
-  capacityChip: {
-    borderRadius: Radius.pill,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface2,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 4,
-  },
-  capacityChipFull: { borderColor: Color.warning, backgroundColor: Color.warningWeak },
-  capacityChipText: { fontSize: 11, fontWeight: "700", color: Color.textSecondary, fontVariant: ["tabular-nums"] },
-  capacityChipTextFull: { color: Color.warning },
-  roster: {
-    borderTopWidth: 1,
-    borderTopColor: Color.borderSubtle,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-  },
-  rosterEmpty: { fontSize: 12, color: Color.textMuted, paddingVertical: Spacing.xs },
-  rosterRow: { flexDirection: "row", alignItems: "center", paddingVertical: Spacing.xs },
-  rosterRowMain: { flex: 1, flexDirection: "row", alignItems: "center", gap: Spacing.sm },
-  rosterRemoveButton: { paddingLeft: Spacing.sm, paddingVertical: 4 },
-  rosterName: { fontSize: 13, color: Color.textPrimary },
-  rosterEmail: { fontSize: 11, color: Color.textMuted },
-  workoutButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    alignSelf: "flex-start",
-    marginTop: Spacing.sm,
-    borderRadius: Radius.pill,
-    borderWidth: 1,
-    borderColor: Color.goldBorder,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: 6,
-  },
-  workoutButtonText: { fontSize: 12, fontWeight: "600", color: Color.gold },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: Color.bg0 },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: Spacing.lg,
+      paddingVertical: Spacing.md,
+    },
+    headerLeft: { flexDirection: "row", alignItems: "center" },
+    headerLogo: { marginRight: Spacing.sm },
+    headerActions: { flexDirection: "row", alignItems: "center", gap: Spacing.md },
+    headerTitle: { fontSize: 20, fontWeight: "700", fontStyle: "italic", color: Color.textPrimary },
+    centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
+    errorText: { color: Color.textMuted, fontSize: 14, textAlign: "center" },
+    scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
+    viewToggle: {
+      flexDirection: "row",
+      gap: 4,
+      marginHorizontal: Spacing.lg,
+      marginBottom: Spacing.sm,
+      padding: 4,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface1,
+    },
+    viewToggleButton: { flex: 1, paddingVertical: Spacing.sm, borderRadius: Radius.sm, alignItems: "center" },
+    viewToggleButtonActive: { backgroundColor: Color.surface2 },
+    viewToggleText: { fontSize: 12, fontWeight: "600", color: Color.textMuted },
+    viewToggleTextActive: { color: Color.textPrimary },
+    calendarCard: { padding: Spacing.md },
+    calHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: Spacing.md },
+    calNavButton: {
+      width: 32,
+      height: 32,
+      borderRadius: Radius.pill,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: Color.surface2,
+    },
+    calTitle: { fontSize: 15, fontWeight: "700", color: Color.textPrimary },
+    weekRow: { flexDirection: "row", marginBottom: Spacing.xs },
+    weekLabel: { flex: 1, textAlign: "center", fontSize: 10, fontWeight: "600", color: Color.textFaint },
+    // flex:1 across each week's own row, not a `${100/7}%` width inside a
+    // flex-wrap grid — the percentage-rounding version silently dropped the
+    // 7th cell (Sunday) onto the next row on some screen widths. See
+    // MonthDatePicker.tsx, which established this fix first.
+    dayCell: {
+      flex: 1,
+      aspectRatio: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: Radius.sm,
+      gap: 2,
+    },
+    dayCellSelected: { backgroundColor: Color.goldWeak, borderWidth: 1, borderColor: Color.gold },
+    dayCellToday: { borderWidth: 1, borderColor: Color.goldBorder },
+    dayCellOutside: { opacity: 0.35 },
+    dayCellText: { fontSize: 13, color: Color.textSecondary },
+    dayCellTextToday: { color: Color.gold, fontWeight: "700" },
+    dayCellBadge: {
+      minWidth: 16,
+      height: 16,
+      borderRadius: Radius.pill,
+      backgroundColor: Color.gold,
+      alignItems: "center",
+      justifyContent: "center",
+      paddingHorizontal: 3,
+    },
+    dayCellBadgeText: { fontSize: 9, fontWeight: "700", color: Color.goldForeground },
+    calendarDetail: { marginTop: Spacing.lg },
+    emptyDetailCard: { alignItems: "center", padding: Spacing.xl },
+    dateGroup: { marginBottom: Spacing.lg },
+    dateGroupHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      marginBottom: Spacing.sm,
+    },
+    dateGroupRight: { flexDirection: "row", alignItems: "center", gap: Spacing.xs },
+    dateGroupCount: { fontSize: 11, color: Color.textFaint },
+    dateLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted },
+    classCard: { marginBottom: Spacing.sm, overflow: "hidden" },
+    classHeader: { flexDirection: "row", alignItems: "center", padding: Spacing.md },
+    classTitle: { fontSize: 15, fontWeight: "600", color: Color.textPrimary },
+    classMeta: { fontSize: 11, color: Color.textMuted, marginTop: 2 },
+    capacityChip: {
+      borderRadius: Radius.pill,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface2,
+      paddingHorizontal: Spacing.sm,
+      paddingVertical: 4,
+    },
+    capacityChipFull: { borderColor: Color.warning, backgroundColor: Color.warningWeak },
+    capacityChipText: { fontSize: 11, fontWeight: "700", color: Color.textSecondary, fontVariant: ["tabular-nums"] },
+    capacityChipTextFull: { color: Color.warning },
+    roster: {
+      borderTopWidth: 1,
+      borderTopColor: Color.borderSubtle,
+      paddingHorizontal: Spacing.md,
+      paddingVertical: Spacing.sm,
+    },
+    rosterEmpty: { fontSize: 12, color: Color.textMuted, paddingVertical: Spacing.xs },
+    rosterRow: { flexDirection: "row", alignItems: "center", paddingVertical: Spacing.xs },
+    rosterRowMain: { flex: 1, flexDirection: "row", alignItems: "center", gap: Spacing.sm },
+    rosterRemoveButton: { paddingLeft: Spacing.sm, paddingVertical: 4 },
+    rosterName: { fontSize: 13, color: Color.textPrimary },
+    rosterEmail: { fontSize: 11, color: Color.textMuted },
+    workoutButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+      alignSelf: "flex-start",
+      marginTop: Spacing.sm,
+      borderRadius: Radius.pill,
+      borderWidth: 1,
+      borderColor: Color.goldBorder,
+      paddingHorizontal: Spacing.md,
+      paddingVertical: 6,
+    },
+    workoutButtonText: { fontSize: 12, fontWeight: "600", color: Color.gold },
+  })
+);

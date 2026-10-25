@@ -26,7 +26,7 @@ import { KeyboardAwareScroll } from "@/components/ui/KeyboardAwareScroll";
 import { MacroLegendRow, MacroPieChart, type MacroKind } from "@/components/ui/MacroPieChart";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { UpsellCard } from "@/components/ui/Upsell";
-import { Color, figure, headline, Radius, Spacing } from "@/constants/theme";
+import { figure, headline, Radius, Spacing } from "@/constants/theme";
 import { ApiError } from "@/lib/auth-context";
 import { tapFeedback } from "@/lib/haptics";
 import { hasAccess } from "@/lib/member-access";
@@ -54,6 +54,7 @@ import {
 import { extractTargetProposal, type TargetProposal } from "@/lib/nutrition-target-proposal";
 import { classifyLoad, LOAD_BAND_LABEL } from "@/lib/nutrition-calc";
 import { todayDateString } from "@/lib/workout-formatters";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 function shiftDate(dateISO: string, days: number): string {
   const [y, m, d] = dateISO.split("-").map(Number);
@@ -110,6 +111,7 @@ const MANUAL_MAX_ML = 15_000;
 // value instead of jumping — a restrained cue that a tap actually landed —
 // and skips the transition entirely when the member has reduce-motion on.
 function HydrationBottle({ remainingPct, reduceMotion }: { remainingPct: number; reduceMotion: boolean }) {
+  const styles = useStyles();
   const fillAnim = useRef(new Animated.Value(remainingPct)).current;
 
   useEffect(() => {
@@ -149,6 +151,8 @@ const HYDRATION_INFO_BODY =
   "60–90% water, so a good chunk of today's target is already covered before you've had a sip.";
 
 function HydrationCard({ date }: { date: string }) {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const { data: hydration } = useHydration(date);
   const logWater = useLogWater();
   const reduceMotion = useReduceMotionPref();
@@ -281,6 +285,8 @@ function HydrationCard({ date }: { date: string }) {
 }
 
 function EmphasisRow({ icon, tone, title, text }: { icon: keyof typeof Ionicons.glyphMap; tone: "neutral" | "gold" | "success"; title: string; text: string }) {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const toneColor = tone === "gold" ? Color.gold : tone === "success" ? Color.success : Color.textSecondary;
   const toneBorder = tone === "gold" ? Color.goldBorder : tone === "success" ? Color.success : Color.borderSubtle;
   const toneBg = tone === "gold" ? Color.goldWeak : tone === "success" ? Color.successWeak : Color.surface2;
@@ -303,6 +309,7 @@ function EmphasisRow({ icon, tone, title, text }: { icon: keyof typeof Ionicons.
 const ASSISTANT_CLAMP_CHARS = 220;
 
 function AssistantMessageText({ text }: { text: string }) {
+  const styles = useStyles();
   const [expanded, setExpanded] = useState(false);
   const isLong = text.length > ASSISTANT_CLAMP_CHARS;
 
@@ -327,6 +334,8 @@ function CoachChat({
   configured: boolean;
   initialMessages: NutritionAiMessage[];
 }) {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const [messages, setMessages] = useState<NutritionAiMessage[]>(initialMessages);
   const [input, setInput] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -448,6 +457,8 @@ function CoachChat({
 }
 
 export default function NutritionScreen() {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const router = useRouter();
   const tier = useMemberTier();
   const today = todayDateString();
@@ -872,231 +883,233 @@ export default function NutritionScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Color.bg0 },
-  centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
-  errorText: { color: Color.textMuted, fontSize: 14 },
-  scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
-  headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: Spacing.md, marginBottom: Spacing.md },
-  heading: { ...headline(34), color: Color.textPrimary },
-  dateNavRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: Spacing.lg, marginBottom: Spacing.md },
-  dateArrow: { padding: 4 },
-  dateLabel: { fontSize: 14, fontWeight: "600", color: Color.textPrimary, minWidth: 100, textAlign: "center" },
-  targetCard: { padding: Spacing.lg, marginBottom: Spacing.lg },
-  targetHeaderRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: Spacing.xs },
-  fuelDayLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.5, textTransform: "uppercase", color: Color.gold },
-  viewWeekRow: { flexDirection: "row", alignItems: "center", gap: 2 },
-  viewWeekText: { fontSize: 11, fontWeight: "600", color: Color.textFaint },
-  calorieRow: { flexDirection: "row", alignItems: "baseline" },
-  calorieValue: { ...figure(34), color: Color.gold },
-  calorieTarget: { fontSize: 14, color: Color.textMuted },
-  calorieRemaining: { fontSize: 12, color: Color.textMuted, marginTop: 2 },
-  noTargetText: { fontSize: 12, color: Color.textMuted, marginTop: Spacing.xs },
-  macroBlock: { flexDirection: "row", alignItems: "center", gap: Spacing.lg, marginTop: Spacing.md },
-  macroLegend: { flex: 1 },
-  section: { marginBottom: Spacing.xl },
-  quickAddChip: {
-    position: "relative",
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 8,
-    width: 116,
-  },
-  quickAddChipText: { fontSize: 12, fontWeight: "600", color: Color.textPrimary },
-  quickAddChipSub: { fontSize: 10, color: Color.textMuted, marginTop: 2 },
-  quickAddChipDelete: { position: "absolute", top: 2, right: 2, padding: 2 },
-  quickAddTabRow: { flexDirection: "row", gap: Spacing.xs, marginBottom: Spacing.sm },
-  quickAddTab: {
-    borderRadius: Radius.pill,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 5,
-  },
-  quickAddTabActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
-  quickAddTabText: { fontSize: 11, fontWeight: "600", color: Color.textMuted },
-  quickAddTabTextActive: { color: Color.gold },
-  quickAddEmptyText: { fontSize: 12, color: Color.textFaint },
-  diaryCard: { padding: 0 },
-  mealBlock: { padding: Spacing.md },
-  mealBlockDivider: { borderTopWidth: 1, borderTopColor: Color.borderSubtle },
-  mealHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  mealTitle: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
-  mealHeaderRight: { flexDirection: "row", alignItems: "center", gap: 6 },
-  mealCals: { fontSize: 11, color: Color.textMuted },
-  mealAddHint: { fontSize: 11, color: Color.gold, fontWeight: "600" },
-  // Indented + a left accent line so an expanded meal's entries read as
-  // nested under their header, not just another row in the same list.
-  entryRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingTop: Spacing.sm,
-    paddingLeft: Spacing.sm,
-    marginTop: Spacing.sm,
-    marginLeft: 4,
-    borderTopWidth: 1,
-    borderTopColor: Color.borderSubtle,
-    borderLeftWidth: 2,
-    borderLeftColor: Color.borderSubtle,
-  },
-  entryName: { fontSize: 13, fontWeight: "500", color: Color.textPrimary },
-  entryMacros: { fontSize: 10, color: Color.textMuted, marginTop: 2 },
-  hydrationCard: { padding: Spacing.md },
-  hydrationLabelRow: { flexDirection: "row", alignItems: "center", gap: 5, marginBottom: 2 },
-  hydrationLabel: { fontSize: 11, fontWeight: "600", color: Color.textMuted, letterSpacing: 0.2 },
-  hydrationInfoButton: { padding: 1 },
-  hydrationMetricValue: {
-    ...figure(30),
-    color: Color.textPrimary,
-    marginBottom: 7,
-  },
-  hydrationMetricTarget: { fontSize: 15, fontWeight: "500", color: Color.textMuted },
-  hydrationEmptyText: { fontSize: 11, color: Color.textMuted, lineHeight: 16 },
-  hydrationBodyRow: { flexDirection: "row", alignItems: "center", gap: 13 },
-  hydrationSideCol: { flex: 1 },
-  hydrationSideText: { fontSize: 13, fontWeight: "500", color: Color.textSecondary, lineHeight: 18 },
-  bottleWrap: { width: 64, alignItems: "center" },
-  bottleCap: {
-    width: 24,
-    height: 8,
-    borderTopLeftRadius: 4,
-    borderTopRightRadius: 4,
-    backgroundColor: Color.textFaint,
-  },
-  bottleNeck: {
-    width: 28,
-    height: 14,
-    backgroundColor: Color.surface2,
-    borderWidth: 1,
-    borderBottomWidth: 0,
-    borderColor: Color.borderSubtle,
-  },
-  bottleBody: {
-    width: 64,
-    height: 136,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface2,
-    overflow: "hidden",
-    justifyContent: "flex-end",
-  },
-  bottleFill: { width: "100%", backgroundColor: Color.accentData },
-  // Decorative glass-sheen highlight — purely visual, not tied to hydration
-  // data, so it's fine as a static overlay rather than anything animated.
-  bottleSheen: { position: "absolute", top: 0, left: 0, bottom: 0, width: "45%" },
-  hydrationQuickAddRow: { flexDirection: "row", gap: Spacing.xs, marginTop: 14 },
-  hydrationChip: {
-    flex: 1,
-    alignItems: "center",
-    borderRadius: Radius.pill,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-    paddingVertical: 10,
-  },
-  // The recommended +500ml action — gold-accented like the rest of the
-  // app's primary/interactive elements, so the accent stays on something
-  // actionable rather than spent on a passive metric.
-  hydrationChipPrimary: { borderColor: Color.goldBorder, backgroundColor: Color.goldWeak },
-  hydrationChipText: { fontSize: 12, fontWeight: "600", color: Color.textSecondary },
-  hydrationChipTextPrimary: { color: Color.gold, fontWeight: "700" },
-  pressed: { opacity: 0.85 },
-  hydrationManualDivider: { height: 1, backgroundColor: Color.borderSubtle, marginTop: Spacing.md },
-  hydrationManualLabel: { fontSize: 11, color: Color.textFaint, marginTop: Spacing.sm, marginBottom: 4 },
-  hydrationManualRow: { flexDirection: "row", gap: Spacing.xs },
-  hydrationManualInput: {
-    flex: 1,
-    height: 38,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-    paddingHorizontal: Spacing.sm,
-    fontSize: 12,
-    color: Color.textPrimary,
-  },
-  hydrationManualButton: {
-    justifyContent: "center",
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.goldBorder,
-    backgroundColor: Color.goldWeak,
-    paddingHorizontal: Spacing.md,
-  },
-  hydrationManualButtonDisabled: { opacity: 0.5 },
-  hydrationManualButtonText: { fontSize: 12, fontWeight: "700", color: Color.gold },
-  hydrationManualError: { fontSize: 11, color: Color.danger, marginTop: 6 },
-  moreRow: { flexDirection: "row", alignItems: "center", gap: Spacing.sm, padding: Spacing.md },
-  moreRowDivider: { borderTopWidth: 1, borderTopColor: Color.borderSubtle },
-  drinkCardIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.goldBorder,
-    backgroundColor: Color.goldWeak,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  drinkCardTitle: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
-  drinkCardSub: { fontSize: 11, color: Color.textMuted, marginTop: 2 },
-  chatCard: { padding: Spacing.md },
-  chatTitle: { fontSize: 15, fontWeight: "600", color: Color.textPrimary, marginBottom: Spacing.sm },
-  chatUnavailable: { fontSize: 12, color: Color.textMuted },
-  chatMessages: { minHeight: 60, marginBottom: Spacing.sm },
-  chatEmpty: { fontSize: 12, color: Color.textMuted, lineHeight: 17 },
-  bubble: { borderRadius: Radius.md, padding: Spacing.sm, marginBottom: Spacing.xs, maxWidth: "85%" },
-  bubbleUser: { alignSelf: "flex-end", backgroundColor: Color.goldWeak },
-  bubbleAssistant: { alignSelf: "flex-start", backgroundColor: Color.surface2 },
-  bubbleUserText: { fontSize: 13, color: Color.gold },
-  bubbleAssistantText: { fontSize: 13, color: Color.textSecondary, lineHeight: 18 },
-  showMoreText: { fontSize: 11, fontWeight: "700", color: Color.gold },
-  proposalBlock: { marginTop: Spacing.sm, paddingTop: Spacing.sm, borderTopWidth: 1, borderTopColor: Color.borderSubtle },
-  proposalSummary: { fontSize: 11, color: Color.textMuted },
-  applyButton: {
-    marginTop: Spacing.xs,
-    alignSelf: "flex-start",
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.goldBorder,
-    backgroundColor: Color.goldWeak,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 6,
-  },
-  applyButtonDisabled: { opacity: 0.7 },
-  applyButtonText: { fontSize: 12, fontWeight: "600", color: Color.gold },
-  error: { fontSize: 11, color: Color.danger, marginBottom: Spacing.xs },
-  chatInputRow: { flexDirection: "row", gap: Spacing.sm, alignItems: "flex-end" },
-  chatInput: {
-    flex: 1,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-    color: Color.textPrimary,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 10,
-    fontSize: 13,
-    maxHeight: 100,
-  },
-  sendButton: { backgroundColor: Color.gold, borderRadius: Radius.md, paddingHorizontal: Spacing.md, paddingVertical: 12 },
-  sendButtonText: { fontSize: 12, fontWeight: "700", color: Color.goldForeground },
-  emphasisCard: { padding: 0 },
-  emphasisRow: { flexDirection: "row", gap: Spacing.sm, padding: Spacing.md },
-  emphasisDivider: { height: 1, backgroundColor: Color.borderSubtle, marginHorizontal: Spacing.md },
-  emphasisIconWrap: {
-    width: 32,
-    height: 32,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  emphasisTitle: { fontSize: 14, fontWeight: "700", color: Color.textPrimary },
-  emphasisText: { fontSize: 12, color: Color.textMuted, marginTop: 4, lineHeight: 17 },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: Color.bg0 },
+    centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
+    errorText: { color: Color.textMuted, fontSize: 14 },
+    scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
+    headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: Spacing.md, marginBottom: Spacing.md },
+    heading: { ...headline(34), color: Color.textPrimary },
+    dateNavRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: Spacing.lg, marginBottom: Spacing.md },
+    dateArrow: { padding: 4 },
+    dateLabel: { fontSize: 14, fontWeight: "600", color: Color.textPrimary, minWidth: 100, textAlign: "center" },
+    targetCard: { padding: Spacing.lg, marginBottom: Spacing.lg },
+    targetHeaderRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: Spacing.xs },
+    fuelDayLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.5, textTransform: "uppercase", color: Color.gold },
+    viewWeekRow: { flexDirection: "row", alignItems: "center", gap: 2 },
+    viewWeekText: { fontSize: 11, fontWeight: "600", color: Color.textFaint },
+    calorieRow: { flexDirection: "row", alignItems: "baseline" },
+    calorieValue: { ...figure(34), color: Color.gold },
+    calorieTarget: { fontSize: 14, color: Color.textMuted },
+    calorieRemaining: { fontSize: 12, color: Color.textMuted, marginTop: 2 },
+    noTargetText: { fontSize: 12, color: Color.textMuted, marginTop: Spacing.xs },
+    macroBlock: { flexDirection: "row", alignItems: "center", gap: Spacing.lg, marginTop: Spacing.md },
+    macroLegend: { flex: 1 },
+    section: { marginBottom: Spacing.xl },
+    quickAddChip: {
+      position: "relative",
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface1,
+      paddingHorizontal: Spacing.sm,
+      paddingVertical: 8,
+      width: 116,
+    },
+    quickAddChipText: { fontSize: 12, fontWeight: "600", color: Color.textPrimary },
+    quickAddChipSub: { fontSize: 10, color: Color.textMuted, marginTop: 2 },
+    quickAddChipDelete: { position: "absolute", top: 2, right: 2, padding: 2 },
+    quickAddTabRow: { flexDirection: "row", gap: Spacing.xs, marginBottom: Spacing.sm },
+    quickAddTab: {
+      borderRadius: Radius.pill,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      paddingHorizontal: Spacing.sm,
+      paddingVertical: 5,
+    },
+    quickAddTabActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
+    quickAddTabText: { fontSize: 11, fontWeight: "600", color: Color.textMuted },
+    quickAddTabTextActive: { color: Color.gold },
+    quickAddEmptyText: { fontSize: 12, color: Color.textFaint },
+    diaryCard: { padding: 0 },
+    mealBlock: { padding: Spacing.md },
+    mealBlockDivider: { borderTopWidth: 1, borderTopColor: Color.borderSubtle },
+    mealHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+    mealTitle: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
+    mealHeaderRight: { flexDirection: "row", alignItems: "center", gap: 6 },
+    mealCals: { fontSize: 11, color: Color.textMuted },
+    mealAddHint: { fontSize: 11, color: Color.gold, fontWeight: "600" },
+    // Indented + a left accent line so an expanded meal's entries read as
+    // nested under their header, not just another row in the same list.
+    entryRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingTop: Spacing.sm,
+      paddingLeft: Spacing.sm,
+      marginTop: Spacing.sm,
+      marginLeft: 4,
+      borderTopWidth: 1,
+      borderTopColor: Color.borderSubtle,
+      borderLeftWidth: 2,
+      borderLeftColor: Color.borderSubtle,
+    },
+    entryName: { fontSize: 13, fontWeight: "500", color: Color.textPrimary },
+    entryMacros: { fontSize: 10, color: Color.textMuted, marginTop: 2 },
+    hydrationCard: { padding: Spacing.md },
+    hydrationLabelRow: { flexDirection: "row", alignItems: "center", gap: 5, marginBottom: 2 },
+    hydrationLabel: { fontSize: 11, fontWeight: "600", color: Color.textMuted, letterSpacing: 0.2 },
+    hydrationInfoButton: { padding: 1 },
+    hydrationMetricValue: {
+      ...figure(30),
+      color: Color.textPrimary,
+      marginBottom: 7,
+    },
+    hydrationMetricTarget: { fontSize: 15, fontWeight: "500", color: Color.textMuted },
+    hydrationEmptyText: { fontSize: 11, color: Color.textMuted, lineHeight: 16 },
+    hydrationBodyRow: { flexDirection: "row", alignItems: "center", gap: 13 },
+    hydrationSideCol: { flex: 1 },
+    hydrationSideText: { fontSize: 13, fontWeight: "500", color: Color.textSecondary, lineHeight: 18 },
+    bottleWrap: { width: 64, alignItems: "center" },
+    bottleCap: {
+      width: 24,
+      height: 8,
+      borderTopLeftRadius: 4,
+      borderTopRightRadius: 4,
+      backgroundColor: Color.textFaint,
+    },
+    bottleNeck: {
+      width: 28,
+      height: 14,
+      backgroundColor: Color.surface2,
+      borderWidth: 1,
+      borderBottomWidth: 0,
+      borderColor: Color.borderSubtle,
+    },
+    bottleBody: {
+      width: 64,
+      height: 136,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface2,
+      overflow: "hidden",
+      justifyContent: "flex-end",
+    },
+    bottleFill: { width: "100%", backgroundColor: Color.accentData },
+    // Decorative glass-sheen highlight — purely visual, not tied to hydration
+    // data, so it's fine as a static overlay rather than anything animated.
+    bottleSheen: { position: "absolute", top: 0, left: 0, bottom: 0, width: "45%" },
+    hydrationQuickAddRow: { flexDirection: "row", gap: Spacing.xs, marginTop: 14 },
+    hydrationChip: {
+      flex: 1,
+      alignItems: "center",
+      borderRadius: Radius.pill,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface1,
+      paddingVertical: 10,
+    },
+    // The recommended +500ml action — gold-accented like the rest of the
+    // app's primary/interactive elements, so the accent stays on something
+    // actionable rather than spent on a passive metric.
+    hydrationChipPrimary: { borderColor: Color.goldBorder, backgroundColor: Color.goldWeak },
+    hydrationChipText: { fontSize: 12, fontWeight: "600", color: Color.textSecondary },
+    hydrationChipTextPrimary: { color: Color.gold, fontWeight: "700" },
+    pressed: { opacity: 0.85 },
+    hydrationManualDivider: { height: 1, backgroundColor: Color.borderSubtle, marginTop: Spacing.md },
+    hydrationManualLabel: { fontSize: 11, color: Color.textFaint, marginTop: Spacing.sm, marginBottom: 4 },
+    hydrationManualRow: { flexDirection: "row", gap: Spacing.xs },
+    hydrationManualInput: {
+      flex: 1,
+      height: 38,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface1,
+      paddingHorizontal: Spacing.sm,
+      fontSize: 12,
+      color: Color.textPrimary,
+    },
+    hydrationManualButton: {
+      justifyContent: "center",
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.goldBorder,
+      backgroundColor: Color.goldWeak,
+      paddingHorizontal: Spacing.md,
+    },
+    hydrationManualButtonDisabled: { opacity: 0.5 },
+    hydrationManualButtonText: { fontSize: 12, fontWeight: "700", color: Color.gold },
+    hydrationManualError: { fontSize: 11, color: Color.danger, marginTop: 6 },
+    moreRow: { flexDirection: "row", alignItems: "center", gap: Spacing.sm, padding: Spacing.md },
+    moreRowDivider: { borderTopWidth: 1, borderTopColor: Color.borderSubtle },
+    drinkCardIcon: {
+      width: 36,
+      height: 36,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.goldBorder,
+      backgroundColor: Color.goldWeak,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    drinkCardTitle: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
+    drinkCardSub: { fontSize: 11, color: Color.textMuted, marginTop: 2 },
+    chatCard: { padding: Spacing.md },
+    chatTitle: { fontSize: 15, fontWeight: "600", color: Color.textPrimary, marginBottom: Spacing.sm },
+    chatUnavailable: { fontSize: 12, color: Color.textMuted },
+    chatMessages: { minHeight: 60, marginBottom: Spacing.sm },
+    chatEmpty: { fontSize: 12, color: Color.textMuted, lineHeight: 17 },
+    bubble: { borderRadius: Radius.md, padding: Spacing.sm, marginBottom: Spacing.xs, maxWidth: "85%" },
+    bubbleUser: { alignSelf: "flex-end", backgroundColor: Color.goldWeak },
+    bubbleAssistant: { alignSelf: "flex-start", backgroundColor: Color.surface2 },
+    bubbleUserText: { fontSize: 13, color: Color.gold },
+    bubbleAssistantText: { fontSize: 13, color: Color.textSecondary, lineHeight: 18 },
+    showMoreText: { fontSize: 11, fontWeight: "700", color: Color.gold },
+    proposalBlock: { marginTop: Spacing.sm, paddingTop: Spacing.sm, borderTopWidth: 1, borderTopColor: Color.borderSubtle },
+    proposalSummary: { fontSize: 11, color: Color.textMuted },
+    applyButton: {
+      marginTop: Spacing.xs,
+      alignSelf: "flex-start",
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.goldBorder,
+      backgroundColor: Color.goldWeak,
+      paddingHorizontal: Spacing.sm,
+      paddingVertical: 6,
+    },
+    applyButtonDisabled: { opacity: 0.7 },
+    applyButtonText: { fontSize: 12, fontWeight: "600", color: Color.gold },
+    error: { fontSize: 11, color: Color.danger, marginBottom: Spacing.xs },
+    chatInputRow: { flexDirection: "row", gap: Spacing.sm, alignItems: "flex-end" },
+    chatInput: {
+      flex: 1,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface1,
+      color: Color.textPrimary,
+      paddingHorizontal: Spacing.sm,
+      paddingVertical: 10,
+      fontSize: 13,
+      maxHeight: 100,
+    },
+    sendButton: { backgroundColor: Color.gold, borderRadius: Radius.md, paddingHorizontal: Spacing.md, paddingVertical: 12 },
+    sendButtonText: { fontSize: 12, fontWeight: "700", color: Color.goldForeground },
+    emphasisCard: { padding: 0 },
+    emphasisRow: { flexDirection: "row", gap: Spacing.sm, padding: Spacing.md },
+    emphasisDivider: { height: 1, backgroundColor: Color.borderSubtle, marginHorizontal: Spacing.md },
+    emphasisIconWrap: {
+      width: 32,
+      height: 32,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    emphasisTitle: { fontSize: 14, fontWeight: "700", color: Color.textPrimary },
+    emphasisText: { fontSize: 12, color: Color.textMuted, marginTop: 4, lineHeight: 17 },
+  })
+);

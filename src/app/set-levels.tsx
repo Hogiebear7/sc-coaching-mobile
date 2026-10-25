@@ -7,11 +7,12 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Card } from "@/components/ui/Card";
 import { SECTION_LABELS } from "@/components/ui/ExerciseAutocomplete";
 import { MuscleSetLevelDiagram } from "@/components/ui/MuscleSetLevels";
-import { Color, Radius, Spacing } from "@/constants/theme";
+import { LiveColor as Color, Radius, Spacing } from "@/constants/theme";
 import { useProfile } from "@/lib/queries/profile";
 import { useWorkouts } from "@/lib/queries/workouts";
 import { todayDateString } from "@/lib/workout-formatters";
 import { computeMuscleSetLevels, SET_LEVEL_SECTIONS, type SetLevelTier } from "@/lib/workout-set-levels";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 const WINDOW_OPTIONS: { days: number; label: string }[] = [
   { days: 7, label: "1 week" },
@@ -22,6 +23,8 @@ const TIER_LABEL: Record<SetLevelTier, string> = { none: "None", low: "Low", mod
 const TIER_DOT_OPACITY: Record<Exclude<SetLevelTier, "none">, number> = { low: 0.38, moderate: 0.68, high: 1 };
 
 export default function SetLevelsScreen() {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const router = useRouter();
   const { data, isLoading } = useWorkouts();
   const { data: profileData } = useProfile();
@@ -136,9 +139,9 @@ function tierBadgeStyle(tier: SetLevelTier) {
     case "moderate":
       return { backgroundColor: "rgba(85,196,254,0.12)" };
     case "low":
-      return { backgroundColor: "rgba(255,255,255,0.06)" };
+      return { backgroundColor: Color.overlayFaint };
     default:
-      return { backgroundColor: "rgba(255,255,255,0.03)" };
+      return { backgroundColor: Color.overlayFaint };
   }
 }
 
@@ -148,74 +151,76 @@ function tierTextStyle(tier: SetLevelTier) {
   return { color: Color.textFaint };
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Color.bg0 },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-  },
-  backButton: { padding: 4 },
-  headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
-  centerFill: { flex: 1, alignItems: "center", justifyContent: "center" },
-  scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
-  intro: { fontSize: 12, color: Color.textMuted, lineHeight: 17 },
-  windowRow: {
-    flexDirection: "row",
-    alignSelf: "flex-start",
-    marginTop: Spacing.md,
-    borderRadius: Radius.pill,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    padding: 2,
-  },
-  windowChip: { borderRadius: Radius.pill, paddingHorizontal: Spacing.sm, paddingVertical: 6 },
-  windowChipActive: { backgroundColor: "rgba(85,196,254,0.15)" },
-  windowChipText: { fontSize: 11, fontWeight: "500", color: Color.textMuted },
-  windowChipTextActive: { color: Color.accentData },
-  emptyCard: {
-    marginTop: Spacing.lg,
-    borderRadius: Radius.lg,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-    padding: Spacing.lg,
-    alignItems: "center",
-  },
-  emptyTitle: { fontSize: 14, fontWeight: "600", color: Color.textPrimary, textAlign: "center" },
-  emptyBody: { fontSize: 12, color: Color.textMuted, textAlign: "center", marginTop: Spacing.xs, lineHeight: 17 },
-  diagramCard: {
-    marginTop: Spacing.lg,
-    borderRadius: Radius.lg,
-    padding: Spacing.lg,
-    alignItems: "center",
-  },
-  legendRow: { flexDirection: "row", gap: Spacing.lg, marginTop: Spacing.md },
-  legendItem: { flexDirection: "row", alignItems: "center", gap: 6 },
-  legendDot: { width: 10, height: 10, borderRadius: Radius.pill, backgroundColor: Color.accentData },
-  legendText: { fontSize: 10, color: Color.textMuted },
-  sectionList: {
-    marginTop: Spacing.lg,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-    overflow: "hidden",
-  },
-  sectionRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.md,
-  },
-  sectionRowDivider: { borderTopWidth: 1, borderTopColor: Color.borderSubtle },
-  sectionLabel: { fontSize: 13, fontWeight: "500", color: Color.textPrimary },
-  sectionMeta: { flexDirection: "row", alignItems: "center", gap: Spacing.sm },
-  sectionSets: { fontSize: 11, color: Color.textMuted, fontVariant: ["tabular-nums"] },
-  tierBadge: { borderRadius: Radius.pill, paddingHorizontal: Spacing.xs, paddingVertical: 2 },
-  tierBadgeText: { fontSize: 10, fontWeight: "700" },
-  unresolvedNote: { fontSize: 11, color: Color.textFaint, lineHeight: 16, marginTop: Spacing.md },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: Color.bg0 },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: Spacing.lg,
+      paddingVertical: Spacing.md,
+    },
+    backButton: { padding: 4 },
+    headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
+    centerFill: { flex: 1, alignItems: "center", justifyContent: "center" },
+    scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
+    intro: { fontSize: 12, color: Color.textMuted, lineHeight: 17 },
+    windowRow: {
+      flexDirection: "row",
+      alignSelf: "flex-start",
+      marginTop: Spacing.md,
+      borderRadius: Radius.pill,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      padding: 2,
+    },
+    windowChip: { borderRadius: Radius.pill, paddingHorizontal: Spacing.sm, paddingVertical: 6 },
+    windowChipActive: { backgroundColor: "rgba(85,196,254,0.15)" },
+    windowChipText: { fontSize: 11, fontWeight: "500", color: Color.textMuted },
+    windowChipTextActive: { color: Color.accentData },
+    emptyCard: {
+      marginTop: Spacing.lg,
+      borderRadius: Radius.lg,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface1,
+      padding: Spacing.lg,
+      alignItems: "center",
+    },
+    emptyTitle: { fontSize: 14, fontWeight: "600", color: Color.textPrimary, textAlign: "center" },
+    emptyBody: { fontSize: 12, color: Color.textMuted, textAlign: "center", marginTop: Spacing.xs, lineHeight: 17 },
+    diagramCard: {
+      marginTop: Spacing.lg,
+      borderRadius: Radius.lg,
+      padding: Spacing.lg,
+      alignItems: "center",
+    },
+    legendRow: { flexDirection: "row", gap: Spacing.lg, marginTop: Spacing.md },
+    legendItem: { flexDirection: "row", alignItems: "center", gap: 6 },
+    legendDot: { width: 10, height: 10, borderRadius: Radius.pill, backgroundColor: Color.accentData },
+    legendText: { fontSize: 10, color: Color.textMuted },
+    sectionList: {
+      marginTop: Spacing.lg,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface1,
+      overflow: "hidden",
+    },
+    sectionRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: Spacing.md,
+      paddingVertical: Spacing.md,
+    },
+    sectionRowDivider: { borderTopWidth: 1, borderTopColor: Color.borderSubtle },
+    sectionLabel: { fontSize: 13, fontWeight: "500", color: Color.textPrimary },
+    sectionMeta: { flexDirection: "row", alignItems: "center", gap: Spacing.sm },
+    sectionSets: { fontSize: 11, color: Color.textMuted, fontVariant: ["tabular-nums"] },
+    tierBadge: { borderRadius: Radius.pill, paddingHorizontal: Spacing.xs, paddingVertical: 2 },
+    tierBadgeText: { fontSize: 10, fontWeight: "700" },
+    unresolvedNote: { fontSize: 11, color: Color.textFaint, lineHeight: 16, marginTop: Spacing.md },
+  })
+);

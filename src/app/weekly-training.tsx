@@ -14,7 +14,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { KeyboardAwareScroll } from "@/components/ui/KeyboardAwareScroll";
-import { Color, Radius, Spacing } from "@/constants/theme";
+import { Radius, Spacing } from "@/constants/theme";
 import { ApiError } from "@/lib/auth-context";
 import { tapFeedback } from "@/lib/haptics";
 import {
@@ -26,6 +26,7 @@ import {
   type TrainingTimeOfDay,
   type WeeklyTrainingSession,
 } from "@/lib/queries/weekly-training";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 let keySeq = 0;
 function nextId(): string {
@@ -94,6 +95,7 @@ const DURATION_OPTIONS: { value: number | null; label: string }[] = [
 ];
 
 function Chip({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
+  const styles = useStyles();
   return (
     <Pressable onPress={onPress} style={[styles.chip, active && styles.chipActive]}>
       <Text style={[styles.chipText, active && styles.chipTextActive]}>{label}</Text>
@@ -107,6 +109,8 @@ function Chip({ label, active, onPress }: { label: string; active: boolean; onPr
 // the member's typical week. Full-replace save: the whole session list is
 // sent on every "Save", matching the backend's upsert-by-userId semantics.
 export default function WeeklyTrainingScreen() {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const router = useRouter();
   const { data, isLoading } = useWeeklyTraining();
   const updateSchedule = useUpdateWeeklyTraining();
@@ -328,92 +332,94 @@ export default function WeeklyTrainingScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Color.bg0 },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-  },
-  backButton: { padding: 4 },
-  headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
-  centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
-  introBlock: { paddingHorizontal: Spacing.lg, marginBottom: Spacing.md },
-  introText: { fontSize: 12, color: Color.textMuted, lineHeight: 17 },
-  viewToggle: {
-    flexDirection: "row",
-    marginHorizontal: Spacing.lg,
-    marginBottom: Spacing.md,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    padding: 3,
-  },
-  viewToggleBtn: { flex: 1, alignItems: "center", paddingVertical: 8, borderRadius: Radius.sm },
-  viewToggleBtnActive: { backgroundColor: Color.goldWeak },
-  viewToggleText: { fontSize: 13, fontWeight: "600", color: Color.textMuted },
-  viewToggleTextActive: { color: Color.gold },
-  weekGrid: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginHorizontal: Spacing.lg,
-    marginBottom: Spacing.lg,
-    gap: 6,
-  },
-  weekCell: {
-    flex: 1,
-    alignItems: "center",
-    paddingVertical: Spacing.sm,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    gap: 6,
-  },
-  weekCellSelected: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
-  weekCellDay: { fontSize: 11, fontWeight: "700", color: Color.textMuted },
-  weekCellDaySelected: { color: Color.gold },
-  weekCellBadge: {
-    minWidth: 16,
-    height: 16,
-    borderRadius: Radius.pill,
-    backgroundColor: Color.gold,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 3,
-  },
-  weekCellBadgeText: { fontSize: 9, fontWeight: "700", color: Color.goldForeground },
-  weekCellBadgeEmpty: { width: 16, height: 16 },
-  scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
-  daySection: { marginBottom: Spacing.lg },
-  dayHeaderRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: Spacing.sm },
-  dayLabel: { fontSize: 13, fontWeight: "700", color: Color.textPrimary },
-  addChip: { flexDirection: "row", alignItems: "center", gap: 2 },
-  addChipText: { fontSize: 12, fontWeight: "600", color: Color.gold },
-  dayEmptyText: { fontSize: 12, color: Color.textFaint, fontStyle: "italic" },
-  sessionCard: { padding: Spacing.md, marginBottom: Spacing.sm, gap: Spacing.sm },
-  sessionTopRow: { flexDirection: "row", alignItems: "center", gap: Spacing.sm },
-  labelInput: {
-    flex: 1,
-    height: 40,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-    paddingHorizontal: Spacing.sm,
-    fontSize: 13,
-    color: Color.textPrimary,
-  },
-  removeButton: { padding: 4 },
-  chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
-  chip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.sm, paddingVertical: 5 },
-  chipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
-  chipText: { fontSize: 11, fontWeight: "500", color: Color.textMuted },
-  chipTextActive: { color: Color.gold },
-  recurringRow: { borderTopWidth: 1, borderTopColor: Color.borderSubtle, paddingTop: Spacing.sm, marginTop: 2 },
-  oneOffHint: { fontSize: 11, color: Color.textFaint, marginTop: 6, fontStyle: "italic" },
-  syncedBadge: { fontSize: 11, color: Color.gold, marginBottom: 4 },
-  errorText: { fontSize: 12, color: Color.warning, textAlign: "center", marginTop: Spacing.sm },
-  footer: { padding: Spacing.lg, borderTopWidth: 1, borderTopColor: Color.borderSubtle },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: Color.bg0 },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: Spacing.lg,
+      paddingVertical: Spacing.md,
+    },
+    backButton: { padding: 4 },
+    headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
+    centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
+    introBlock: { paddingHorizontal: Spacing.lg, marginBottom: Spacing.md },
+    introText: { fontSize: 12, color: Color.textMuted, lineHeight: 17 },
+    viewToggle: {
+      flexDirection: "row",
+      marginHorizontal: Spacing.lg,
+      marginBottom: Spacing.md,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      padding: 3,
+    },
+    viewToggleBtn: { flex: 1, alignItems: "center", paddingVertical: 8, borderRadius: Radius.sm },
+    viewToggleBtnActive: { backgroundColor: Color.goldWeak },
+    viewToggleText: { fontSize: 13, fontWeight: "600", color: Color.textMuted },
+    viewToggleTextActive: { color: Color.gold },
+    weekGrid: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      marginHorizontal: Spacing.lg,
+      marginBottom: Spacing.lg,
+      gap: 6,
+    },
+    weekCell: {
+      flex: 1,
+      alignItems: "center",
+      paddingVertical: Spacing.sm,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      gap: 6,
+    },
+    weekCellSelected: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
+    weekCellDay: { fontSize: 11, fontWeight: "700", color: Color.textMuted },
+    weekCellDaySelected: { color: Color.gold },
+    weekCellBadge: {
+      minWidth: 16,
+      height: 16,
+      borderRadius: Radius.pill,
+      backgroundColor: Color.gold,
+      alignItems: "center",
+      justifyContent: "center",
+      paddingHorizontal: 3,
+    },
+    weekCellBadgeText: { fontSize: 9, fontWeight: "700", color: Color.goldForeground },
+    weekCellBadgeEmpty: { width: 16, height: 16 },
+    scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
+    daySection: { marginBottom: Spacing.lg },
+    dayHeaderRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: Spacing.sm },
+    dayLabel: { fontSize: 13, fontWeight: "700", color: Color.textPrimary },
+    addChip: { flexDirection: "row", alignItems: "center", gap: 2 },
+    addChipText: { fontSize: 12, fontWeight: "600", color: Color.gold },
+    dayEmptyText: { fontSize: 12, color: Color.textFaint, fontStyle: "italic" },
+    sessionCard: { padding: Spacing.md, marginBottom: Spacing.sm, gap: Spacing.sm },
+    sessionTopRow: { flexDirection: "row", alignItems: "center", gap: Spacing.sm },
+    labelInput: {
+      flex: 1,
+      height: 40,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface1,
+      paddingHorizontal: Spacing.sm,
+      fontSize: 13,
+      color: Color.textPrimary,
+    },
+    removeButton: { padding: 4 },
+    chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
+    chip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.sm, paddingVertical: 5 },
+    chipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
+    chipText: { fontSize: 11, fontWeight: "500", color: Color.textMuted },
+    chipTextActive: { color: Color.gold },
+    recurringRow: { borderTopWidth: 1, borderTopColor: Color.borderSubtle, paddingTop: Spacing.sm, marginTop: 2 },
+    oneOffHint: { fontSize: 11, color: Color.textFaint, marginTop: 6, fontStyle: "italic" },
+    syncedBadge: { fontSize: 11, color: Color.gold, marginBottom: 4 },
+    errorText: { fontSize: 12, color: Color.warning, textAlign: "center", marginTop: Spacing.sm },
+    footer: { padding: Spacing.lg, borderTopWidth: 1, borderTopColor: Color.borderSubtle },
+  })
+);

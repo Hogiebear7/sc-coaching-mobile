@@ -5,9 +5,10 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { BrandMark } from "@/components/ui/BrandMark";
-import { AppColor, AppRadius, AppSpace, appTitle } from "@/constants/theme";
+import { AppRadius, AppSpace, appTitle } from "@/constants/theme";
 import { useAuth } from "@/lib/auth-context";
 import { useProfile } from "@/lib/queries/profile";
+import { makeStyles, useAppTheme } from "@/lib/theme";
 
 type Row = { label: string; icon: keyof typeof Ionicons.glyphMap; href: string };
 
@@ -42,6 +43,8 @@ const GROUPS: { title: string; rows: Row[] }[] = [
 // More (App v2 prototype): the profile and everything that isn't a tab, as
 // grouped lists with an icon, label and chevron.
 export default function MoreScreen() {
+  const { colors } = useAppTheme();
+  const styles = useStyles();
   const router = useRouter();
   const { user } = useAuth();
   const { data: profile } = useProfile();
@@ -57,7 +60,7 @@ export default function MoreScreen() {
     <SafeAreaView style={styles.safe} edges={["top"]}>
       <ScrollView contentContainerStyle={styles.scroll}>
         <View style={styles.titleRow}>
-          <Text style={appTitle()}>More</Text>
+          <Text style={appTitle(34, colors.text)}>More</Text>
           <BrandMark height={20} />
         </View>
 
@@ -73,7 +76,7 @@ export default function MoreScreen() {
             <Text style={styles.name} numberOfLines={1}>{name}</Text>
             {user?.email ? <Text style={styles.email} numberOfLines={1}>{user.email}</Text> : null}
           </View>
-          <Ionicons name="chevron-forward" size={18} color={AppColor.textMuted} />
+          <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
         </Pressable>
 
         {GROUPS.map((g) => (
@@ -87,9 +90,9 @@ export default function MoreScreen() {
                   accessibilityRole="button"
                   style={({ pressed }) => [styles.row, i > 0 && styles.rowDivider, pressed && { opacity: 0.8 }]}
                 >
-                  <Ionicons name={r.icon} size={22} color={AppColor.text} />
+                  <Ionicons name={r.icon} size={22} color={colors.text} />
                   <Text style={styles.rowLabel}>{r.label}</Text>
-                  <Ionicons name="chevron-forward" size={18} color={AppColor.textMuted} />
+                  <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
                 </Pressable>
               ))}
             </View>
@@ -100,19 +103,21 @@ export default function MoreScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: AppColor.bg },
-  scroll: { paddingHorizontal: AppSpace.gutter, paddingBottom: 40 },
-  titleRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingTop: 16, paddingBottom: 20 },
-  profile: { flexDirection: "row", alignItems: "center", gap: 16, paddingVertical: 8, marginBottom: AppSpace.section },
-  avatar: { width: 60, height: 60, borderRadius: 30, backgroundColor: AppColor.primary, alignItems: "center", justifyContent: "center" },
-  initials: { fontSize: 22, fontWeight: "700", color: AppColor.onPrimary },
-  name: { fontSize: 20, fontWeight: "600", color: AppColor.text },
-  email: { marginTop: 2, fontSize: 15, color: AppColor.textMuted },
-  group: { marginBottom: AppSpace.section },
-  groupTitle: { fontSize: 21, fontWeight: "600", color: AppColor.text, marginBottom: 12 },
-  list: { backgroundColor: AppColor.surface, borderRadius: AppRadius.card, overflow: "hidden" },
-  row: { flexDirection: "row", alignItems: "center", gap: 16, minHeight: 58, paddingHorizontal: 16 },
-  rowDivider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: AppColor.hairline },
-  rowLabel: { flex: 1, fontSize: 17, color: AppColor.text },
-});
+const useStyles = makeStyles((colors, dc, Color) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: colors.bg },
+    scroll: { paddingHorizontal: AppSpace.gutter, paddingBottom: 40 },
+    titleRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingTop: 16, paddingBottom: 20 },
+    profile: { flexDirection: "row", alignItems: "center", gap: 16, paddingVertical: 8, marginBottom: AppSpace.section },
+    avatar: { width: 60, height: 60, borderRadius: 30, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center" },
+    initials: { fontSize: 22, fontWeight: "700", color: colors.onPrimary },
+    name: { fontSize: 20, fontWeight: "600", color: colors.text },
+    email: { marginTop: 2, fontSize: 15, color: colors.textMuted },
+    group: { marginBottom: AppSpace.section },
+    groupTitle: { fontSize: 21, fontWeight: "600", color: colors.text, marginBottom: 12 },
+    list: { backgroundColor: colors.surface, borderRadius: AppRadius.card, overflow: "hidden" },
+    row: { flexDirection: "row", alignItems: "center", gap: 16, minHeight: 58, paddingHorizontal: 16 },
+    rowDivider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.hairline },
+    rowLabel: { flex: 1, fontSize: 17, color: colors.text },
+  })
+);

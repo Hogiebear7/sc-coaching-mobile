@@ -6,11 +6,12 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { Color, Radius, Spacing } from "@/constants/theme";
+import { Radius, Spacing } from "@/constants/theme";
 import { tapFeedback } from "@/lib/haptics";
 import { useUpdatePinnedProgressionExercises } from "@/lib/queries/progression-pins";
 import { useExerciseLibrary } from "@/lib/queries/exercise-library";
 import { useWorkouts } from "@/lib/queries/workouts";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 const MAX_PINNED = 3;
 
@@ -22,6 +23,8 @@ const MAX_PINNED = 3;
 // surface first so the common case (pin something you've been training) is
 // still a short scroll.
 export default function ProgressionExercisesEditScreen() {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const router = useRouter();
   const { data: workouts, isLoading: workoutsLoading } = useWorkouts();
   const { data: library, isLoading: libraryLoading } = useExerciseLibrary();
@@ -147,56 +150,58 @@ export default function ProgressionExercisesEditScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Color.bg0 },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-  },
-  backButton: { padding: 4 },
-  headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
-  centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
-  emptyText: { fontSize: 13, color: Color.textMuted, textAlign: "center" },
-  introBlock: { paddingHorizontal: Spacing.lg, marginBottom: Spacing.md },
-  introText: { fontSize: 13, color: Color.textSecondary },
-  countText: { fontSize: 11, fontWeight: "600", color: Color.gold, marginTop: 4 },
-  searchWrap: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginHorizontal: Spacing.lg,
-    marginBottom: Spacing.md,
-    height: 44,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-    paddingHorizontal: Spacing.md,
-  },
-  searchIcon: { marginRight: Spacing.sm },
-  searchInput: { flex: 1, fontSize: 14, color: Color.textPrimary },
-  scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl, flexGrow: 1 },
-  list: { padding: 0, overflow: "hidden" },
-  row: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", padding: Spacing.md, gap: Spacing.sm },
-  rowDivider: { borderTopWidth: 1, borderTopColor: Color.borderSubtle },
-  rowDisabled: { opacity: 0.4 },
-  rowName: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
-  rowSub: { fontSize: 11, color: Color.textMuted, marginTop: 2 },
-  checkbox: {
-    width: 22,
-    height: 22,
-    borderRadius: Radius.sm,
-    borderWidth: 1.5,
-    borderColor: Color.borderSubtle,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  checkboxChecked: { borderColor: Color.gold, backgroundColor: Color.gold },
-  footer: {
-    padding: Spacing.lg,
-    borderTopWidth: 1,
-    borderTopColor: Color.borderSubtle,
-  },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: Color.bg0 },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: Spacing.lg,
+      paddingVertical: Spacing.md,
+    },
+    backButton: { padding: 4 },
+    headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
+    centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
+    emptyText: { fontSize: 13, color: Color.textMuted, textAlign: "center" },
+    introBlock: { paddingHorizontal: Spacing.lg, marginBottom: Spacing.md },
+    introText: { fontSize: 13, color: Color.textSecondary },
+    countText: { fontSize: 11, fontWeight: "600", color: Color.gold, marginTop: 4 },
+    searchWrap: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginHorizontal: Spacing.lg,
+      marginBottom: Spacing.md,
+      height: 44,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface1,
+      paddingHorizontal: Spacing.md,
+    },
+    searchIcon: { marginRight: Spacing.sm },
+    searchInput: { flex: 1, fontSize: 14, color: Color.textPrimary },
+    scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl, flexGrow: 1 },
+    list: { padding: 0, overflow: "hidden" },
+    row: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", padding: Spacing.md, gap: Spacing.sm },
+    rowDivider: { borderTopWidth: 1, borderTopColor: Color.borderSubtle },
+    rowDisabled: { opacity: 0.4 },
+    rowName: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
+    rowSub: { fontSize: 11, color: Color.textMuted, marginTop: 2 },
+    checkbox: {
+      width: 22,
+      height: 22,
+      borderRadius: Radius.sm,
+      borderWidth: 1.5,
+      borderColor: Color.borderSubtle,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    checkboxChecked: { borderColor: Color.gold, backgroundColor: Color.gold },
+    footer: {
+      padding: Spacing.lg,
+      borderTopWidth: 1,
+      borderTopColor: Color.borderSubtle,
+    },
+  })
+);

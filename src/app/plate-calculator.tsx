@@ -5,7 +5,7 @@ import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Card } from "@/components/ui/Card";
-import { Color, figure, Radius, Spacing } from "@/constants/theme";
+import { figure, Radius, Spacing } from "@/constants/theme";
 import { tapFeedback } from "@/lib/haptics";
 import {
   BAR_PRESETS_KG,
@@ -14,6 +14,7 @@ import {
   KG_PLATES,
   LB_PLATES,
 } from "@/lib/plate-calculator";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 // Standard gym-floor plate color convention — genuinely helps at-a-glance
 // recognition, not decorative. Falls back to a neutral grey for odd sizes.
@@ -35,6 +36,8 @@ function formatPlate(n: number): string {
 }
 
 export default function PlateCalculatorScreen() {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const router = useRouter();
   const [unit, setUnit] = useState<"kg" | "lb">("kg");
   const [target, setTarget] = useState("100");
@@ -181,64 +184,66 @@ export default function PlateCalculatorScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Color.bg0 },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-  },
-  backButton: { padding: 4 },
-  headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
-  scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
-  unitRow: { flexDirection: "row", gap: Spacing.xs, marginBottom: Spacing.lg },
-  unitChip: { flex: 1, alignItems: "center", paddingVertical: 10, borderRadius: Radius.md, borderWidth: 1, borderColor: Color.borderSubtle, backgroundColor: Color.surface1 },
-  unitChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
-  unitChipText: { fontSize: 13, fontWeight: "600", color: Color.textMuted },
-  unitChipTextActive: { color: Color.gold },
-  fieldLabel: { fontSize: 12, fontWeight: "500", color: Color.textSecondary, marginBottom: Spacing.xs },
-  bigInput: {
-    height: 64,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-    paddingHorizontal: Spacing.md,
-    fontSize: 32,
-    fontWeight: "700",
-    color: Color.gold,
-  },
-  smallInput: {
-    height: 40,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-    paddingHorizontal: Spacing.md,
-    fontSize: 13,
-    color: Color.textPrimary,
-  },
-  barRow: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.xs },
-  barChip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.md, paddingVertical: 8 },
-  barChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
-  barChipText: { fontSize: 12, fontWeight: "500", color: Color.textMuted },
-  barChipTextActive: { color: Color.gold },
-  resultCard: { padding: Spacing.lg, marginTop: Spacing.xl },
-  resultLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginBottom: Spacing.md },
-  noPlatesText: { fontSize: 13, color: Color.textMuted },
-  stackWrap: { width: "100%", alignItems: "center", gap: 3, marginBottom: Spacing.md },
-  stackRow: { flexDirection: "row-reverse", flexWrap: "wrap", alignItems: "center", justifyContent: "center", gap: 3 },
-  plateBar: { height: 16, borderRadius: 3 },
-  plateListWrap: { gap: 6 },
-  plateListRow: { flexDirection: "row", alignItems: "center", gap: Spacing.sm },
-  swatch: { width: 12, height: 12, borderRadius: 3 },
-  plateListText: { fontSize: 13, color: Color.textPrimary, fontVariant: ["tabular-nums"] },
-  totalDivider: { height: 1, backgroundColor: Color.borderSubtle, marginVertical: Spacing.md },
-  totalRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "baseline" },
-  totalLabel: { fontSize: 13, color: Color.textMuted },
-  totalValue: { ...figure(30), color: Color.textPrimary },
-  shortfallText: { fontSize: 11, color: Color.warning, marginTop: Spacing.sm },
-  emptyText: { fontSize: 13, color: Color.textMuted, marginTop: Spacing.xl, textAlign: "center" },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: Color.bg0 },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: Spacing.lg,
+      paddingVertical: Spacing.md,
+    },
+    backButton: { padding: 4 },
+    headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
+    scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
+    unitRow: { flexDirection: "row", gap: Spacing.xs, marginBottom: Spacing.lg },
+    unitChip: { flex: 1, alignItems: "center", paddingVertical: 10, borderRadius: Radius.md, borderWidth: 1, borderColor: Color.borderSubtle, backgroundColor: Color.surface1 },
+    unitChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
+    unitChipText: { fontSize: 13, fontWeight: "600", color: Color.textMuted },
+    unitChipTextActive: { color: Color.gold },
+    fieldLabel: { fontSize: 12, fontWeight: "500", color: Color.textSecondary, marginBottom: Spacing.xs },
+    bigInput: {
+      height: 64,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface1,
+      paddingHorizontal: Spacing.md,
+      fontSize: 32,
+      fontWeight: "700",
+      color: Color.gold,
+    },
+    smallInput: {
+      height: 40,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface1,
+      paddingHorizontal: Spacing.md,
+      fontSize: 13,
+      color: Color.textPrimary,
+    },
+    barRow: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.xs },
+    barChip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.md, paddingVertical: 8 },
+    barChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
+    barChipText: { fontSize: 12, fontWeight: "500", color: Color.textMuted },
+    barChipTextActive: { color: Color.gold },
+    resultCard: { padding: Spacing.lg, marginTop: Spacing.xl },
+    resultLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginBottom: Spacing.md },
+    noPlatesText: { fontSize: 13, color: Color.textMuted },
+    stackWrap: { width: "100%", alignItems: "center", gap: 3, marginBottom: Spacing.md },
+    stackRow: { flexDirection: "row-reverse", flexWrap: "wrap", alignItems: "center", justifyContent: "center", gap: 3 },
+    plateBar: { height: 16, borderRadius: 3 },
+    plateListWrap: { gap: 6 },
+    plateListRow: { flexDirection: "row", alignItems: "center", gap: Spacing.sm },
+    swatch: { width: 12, height: 12, borderRadius: 3 },
+    plateListText: { fontSize: 13, color: Color.textPrimary, fontVariant: ["tabular-nums"] },
+    totalDivider: { height: 1, backgroundColor: Color.borderSubtle, marginVertical: Spacing.md },
+    totalRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "baseline" },
+    totalLabel: { fontSize: 13, color: Color.textMuted },
+    totalValue: { ...figure(30), color: Color.textPrimary },
+    shortfallText: { fontSize: 11, color: Color.warning, marginTop: Spacing.sm },
+    emptyText: { fontSize: 13, color: Color.textMuted, marginTop: Spacing.xl, textAlign: "center" },
+  })
+);

@@ -2,8 +2,9 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { Color, Radius, Spacing, FontSize } from "@/constants/theme";
+import { Radius, Spacing, FontSize } from "@/constants/theme";
 import { Card } from "./Card";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 // Shared "you don't have this yet" treatment for Free-tier gating (see
 // src/lib/member-access.ts) — used wherever a feature is shown but disabled
@@ -34,6 +35,8 @@ export function UpsellRow({
   title: string;
   copyVariant?: "appSubscription" | "membership";
 }) {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const router = useRouter();
 
   return (
@@ -66,6 +69,8 @@ export function UpsellCard({
   body?: string;
   copyVariant?: "appSubscription" | "membership";
 }) {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const router = useRouter();
 
   return (
@@ -97,6 +102,8 @@ export function UpsellTile({
   title: string;
   style?: object;
 }) {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const router = useRouter();
 
   return (
@@ -109,85 +116,87 @@ export function UpsellTile({
   );
 }
 
-const styles = StyleSheet.create({
-  tileInner: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: Spacing.xs,
-    paddingVertical: Spacing.sm,
-    opacity: 0.55,
-  },
-  tileText: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: Color.textFaint,
-  },
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing.md,
-    gap: Spacing.md,
-    opacity: 0.6,
-  },
-  rowIcon: {
-    width: 28,
-    height: 28,
-    borderRadius: Radius.pill,
-    backgroundColor: "rgba(255,255,255,0.05)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  rowTitle: {
-    fontSize: FontSize.sm,
-    fontWeight: "600",
-    color: Color.textSecondary,
-  },
-  rowSub: {
-    fontSize: FontSize.xs,
-    color: Color.textFaint,
-    marginTop: 2,
-  },
-  card: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: Spacing.md,
-    gap: Spacing.md,
-    opacity: 0.7,
-  },
-  cardIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: Radius.pill,
-    backgroundColor: "rgba(255,255,255,0.05)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  cardTitle: {
-    fontSize: FontSize.sm,
-    fontWeight: "600",
-    color: Color.textSecondary,
-  },
-  cardBody: {
-    fontSize: FontSize.xs,
-    color: Color.textFaint,
-    marginTop: 2,
-  },
-  badge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 4,
-    borderRadius: Radius.pill,
-    backgroundColor: Color.goldWeak,
-    borderWidth: 1,
-    borderColor: Color.goldBorder,
-  },
-  badgeText: {
-    fontSize: FontSize.xs,
-    fontWeight: "700",
-    color: Color.gold,
-  },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    tileInner: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: Spacing.xs,
+      paddingVertical: Spacing.sm,
+      opacity: 0.55,
+    },
+    tileText: {
+      fontSize: 12,
+      fontWeight: "600",
+      color: Color.textFaint,
+    },
+    row: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingVertical: Spacing.md,
+      paddingHorizontal: Spacing.md,
+      gap: Spacing.md,
+      opacity: 0.6,
+    },
+    rowIcon: {
+      width: 28,
+      height: 28,
+      borderRadius: Radius.pill,
+      backgroundColor: Color.overlayFaint,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    rowTitle: {
+      fontSize: FontSize.sm,
+      fontWeight: "600",
+      color: Color.textSecondary,
+    },
+    rowSub: {
+      fontSize: FontSize.xs,
+      color: Color.textFaint,
+      marginTop: 2,
+    },
+    card: {
+      flexDirection: "row",
+      alignItems: "center",
+      padding: Spacing.md,
+      gap: Spacing.md,
+      opacity: 0.7,
+    },
+    cardIcon: {
+      width: 32,
+      height: 32,
+      borderRadius: Radius.pill,
+      backgroundColor: Color.overlayFaint,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    cardTitle: {
+      fontSize: FontSize.sm,
+      fontWeight: "600",
+      color: Color.textSecondary,
+    },
+    cardBody: {
+      fontSize: FontSize.xs,
+      color: Color.textFaint,
+      marginTop: 2,
+    },
+    badge: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 4,
+      paddingHorizontal: Spacing.sm,
+      paddingVertical: 4,
+      borderRadius: Radius.pill,
+      backgroundColor: Color.goldWeak,
+      borderWidth: 1,
+      borderColor: Color.goldBorder,
+    },
+    badgeText: {
+      fontSize: FontSize.xs,
+      fontWeight: "700",
+      color: Color.gold,
+    },
+  })
+);

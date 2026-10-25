@@ -1,7 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { StyleSheet, Text, View } from "react-native";
 
-import { Color, Radius, Spacing } from "@/constants/theme";
+import { Radius, Spacing } from "@/constants/theme";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 // One "N-day change" row: a small magnitude bar, a direction arrow, and the
 // delta value — the building block of the Insights & Data section under a
@@ -19,6 +20,8 @@ export function ChangeInsightRow({
   unit: string;
   maxAbsDelta: number;
 }) {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   if (delta === null) {
     return (
       <View style={styles.row}>
@@ -51,12 +54,14 @@ export function ChangeInsightRow({
   );
 }
 
-const styles = StyleSheet.create({
-  row: { flexDirection: "row", alignItems: "center", gap: Spacing.sm, paddingVertical: 8 },
-  label: { width: 48, fontSize: 12, fontWeight: "600", color: Color.textSecondary },
-  noData: { flex: 1, fontSize: 11, color: Color.textFaint, textAlign: "right" },
-  barTrack: { flex: 1, height: 5, borderRadius: Radius.pill, backgroundColor: Color.surface2, overflow: "hidden" },
-  barFill: { height: "100%", borderRadius: Radius.pill, backgroundColor: Color.gold },
-  deltaWrap: { flexDirection: "row", alignItems: "center", minWidth: 68, justifyContent: "flex-end" },
-  deltaText: { fontSize: 12, fontWeight: "700", color: Color.textPrimary, fontVariant: ["tabular-nums"] },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    row: { flexDirection: "row", alignItems: "center", gap: Spacing.sm, paddingVertical: 8 },
+    label: { width: 48, fontSize: 12, fontWeight: "600", color: Color.textSecondary },
+    noData: { flex: 1, fontSize: 11, color: Color.textFaint, textAlign: "right" },
+    barTrack: { flex: 1, height: 5, borderRadius: Radius.pill, backgroundColor: Color.surface2, overflow: "hidden" },
+    barFill: { height: "100%", borderRadius: Radius.pill, backgroundColor: Color.gold },
+    deltaWrap: { flexDirection: "row", alignItems: "center", minWidth: 68, justifyContent: "flex-end" },
+    deltaText: { fontSize: 12, fontWeight: "700", color: Color.textPrimary, fontVariant: ["tabular-nums"] },
+  })
+);

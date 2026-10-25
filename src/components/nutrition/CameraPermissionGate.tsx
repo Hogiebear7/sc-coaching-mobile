@@ -2,7 +2,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { Linking, StyleSheet, Text, View } from "react-native";
 
 import { Button } from "@/components/ui/Button";
-import { Color, Spacing } from "@/constants/theme";
+import { Spacing } from "@/constants/theme";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 // Shared across barcode-scan / label-scan / submit-food — the three camera
 // entry points in the food-logging flow. Distinguishes "not asked yet /
@@ -21,6 +22,8 @@ export function CameraPermissionDenied({
   requestPermission: () => void;
   message: string;
 }) {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   return (
     <View style={styles.wrap}>
       <Ionicons name="camera-outline" size={40} color={Color.textFaint} />
@@ -42,6 +45,8 @@ export function CameraPermissionDenied({
 // permission problem, and worth a clearly different message so the member
 // isn't told to check a Settings toggle that's already correct.
 export function CameraUnavailable({ onFallback }: { onFallback: () => void }) {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   return (
     <View style={styles.overlay}>
       <Ionicons name="alert-circle-outline" size={32} color={Color.danger} />
@@ -51,16 +56,18 @@ export function CameraUnavailable({ onFallback }: { onFallback: () => void }) {
   );
 }
 
-const styles = StyleSheet.create({
-  wrap: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: Spacing.xl },
-  text: { fontSize: 13, color: Color.textMuted, textAlign: "center", marginTop: Spacing.md, lineHeight: 19 },
-  subtext: { fontSize: 12, color: Color.textFaint, textAlign: "center", marginTop: Spacing.sm, lineHeight: 17 },
-  overlay: {
-    ...StyleSheet.absoluteFill,
-    backgroundColor: "rgba(10,21,38,0.9)",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: Spacing.xl,
-  },
-  overlayText: { fontSize: 13, color: Color.textSecondary, textAlign: "center", marginTop: Spacing.sm, lineHeight: 19 },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    wrap: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: Spacing.xl },
+    text: { fontSize: 13, color: Color.textMuted, textAlign: "center", marginTop: Spacing.md, lineHeight: 19 },
+    subtext: { fontSize: 12, color: Color.textFaint, textAlign: "center", marginTop: Spacing.sm, lineHeight: 17 },
+    overlay: {
+      ...StyleSheet.absoluteFill,
+      backgroundColor: "rgba(10,21,38,0.9)",
+      alignItems: "center",
+      justifyContent: "center",
+      paddingHorizontal: Spacing.xl,
+    },
+    overlayText: { fontSize: 13, color: Color.textSecondary, textAlign: "center", marginTop: Spacing.sm, lineHeight: 19 },
+  })
+);

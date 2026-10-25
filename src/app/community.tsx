@@ -14,7 +14,7 @@ import { DateField } from "@/components/ui/DateField";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { MemberSearchSheet } from "@/components/ui/MemberSearchSheet";
 import { SectionHeader } from "@/components/ui/SectionHeader";
-import { Color, Radius, Spacing } from "@/constants/theme";
+import { Radius, Spacing } from "@/constants/theme";
 import { useAuth } from "@/lib/auth-context";
 import { buildLeaderboardRows, formatLeaderboardContextLabel } from "@/lib/community-formatters";
 import { tapFeedback } from "@/lib/haptics";
@@ -28,6 +28,7 @@ import {
   type LeaderboardRange,
 } from "@/lib/queries/community";
 import { todayDateString } from "@/lib/workout-formatters";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 // Emphasis order, top to bottom: wins/milestones, leaderboards, supporting
 // feed activity — comments/likes/mentions stay a tap away (the per-item
@@ -72,6 +73,7 @@ function SuggestedMemberRow({
   onFollow: () => void;
   pending: boolean;
 }) {
+  const styles = useStyles();
   return (
     <View style={[styles.suggestedRow, !isLast && styles.suggestedRowDivider]}>
       <Text style={styles.suggestedName} numberOfLines={1}>
@@ -98,6 +100,7 @@ function DiscoverabilityNotice({
   onDismiss: () => void;
   onManageSettings: () => void;
 }) {
+  const styles = useStyles();
   return (
     <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={onDismiss}>
       <View style={styles.noticeBackdrop}>
@@ -118,6 +121,8 @@ function DiscoverabilityNotice({
 }
 
 export default function CommunityScreen() {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const router = useRouter();
   const { user } = useAuth();
   const params = useLocalSearchParams<{ tab?: string }>();
@@ -396,134 +401,136 @@ export default function CommunityScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Color.bg0 },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-  },
-  backButton: { padding: 4 },
-  headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
-  followButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    borderRadius: Radius.pill,
-    borderWidth: 1,
-    borderColor: Color.goldBorder,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 5,
-  },
-  followButtonText: { fontSize: 12, fontWeight: "600", color: Color.gold },
-  subhead: {
-    fontSize: 12,
-    color: Color.textMuted,
-    paddingHorizontal: Spacing.lg,
-    marginTop: -Spacing.xs,
-    marginBottom: Spacing.md,
-  },
-  suggestedCard: { padding: 0, overflow: "hidden", marginTop: Spacing.sm },
-  suggestedLabel: {
-    fontSize: 10,
-    fontWeight: "700",
-    letterSpacing: 0.6,
-    color: Color.textFaint,
-    paddingHorizontal: Spacing.md,
-    paddingTop: Spacing.md,
-  },
-  suggestedRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: Spacing.sm,
-    padding: Spacing.md,
-  },
-  suggestedRowDivider: { borderBottomWidth: 1, borderBottomColor: Color.borderSubtle },
-  suggestedName: { fontSize: 14, fontWeight: "600", color: Color.textPrimary, flex: 1 },
-  suggestedFollowButton: { paddingHorizontal: Spacing.md },
-  suggestedEmptyText: {
-    fontSize: 13,
-    color: Color.textMuted,
-    textAlign: "center",
-    marginTop: Spacing.sm,
-  },
-  noticeBackdrop: {
-    flex: 1,
-    backgroundColor: "rgba(4,10,20,0.72)",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: Spacing.xl,
-  },
-  noticeCard: {
-    width: "100%",
-    maxWidth: 360,
-    borderRadius: Radius.lg,
-    borderWidth: 1,
-    borderColor: Color.borderDefault,
-    backgroundColor: Color.surface1,
-    padding: Spacing.lg,
-  },
-  noticeTitle: { fontSize: 15, fontWeight: "700", color: Color.textPrimary },
-  noticeBody: { fontSize: 13, color: Color.textSecondary, lineHeight: 19, marginTop: Spacing.sm },
-  noticeSecondary: { marginTop: Spacing.md, alignSelf: "center" },
-  noticeSecondaryText: { fontSize: 12, fontWeight: "500", color: Color.textFaint, textDecorationLine: "underline" },
-  scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
-  section: { marginBottom: Spacing.xl },
-  winsCard: { padding: 0, overflow: "hidden" },
-  metricRow: {
-    flexDirection: "row",
-    gap: 2,
-    marginBottom: Spacing.sm,
-    padding: 3,
-    borderRadius: Radius.pill,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: "rgba(255,255,255,0.03)",
-  },
-  metricChip: {
-    flex: 1,
-    alignItems: "center",
-    borderRadius: Radius.pill,
-    paddingVertical: 7,
-  },
-  metricChipActive: { backgroundColor: Color.gold },
-  metricChipText: { fontSize: 11, fontWeight: "600", color: Color.textFaint },
-  metricChipTextActive: { color: Color.goldForeground, fontWeight: "700" },
-  rangeRow: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: Spacing.sm },
-  rangeChip: {
-    borderRadius: Radius.pill,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 5,
-  },
-  rangeChipActive: { borderColor: Color.goldBorder, backgroundColor: Color.goldWeak },
-  rangeChipText: { fontSize: 11, fontWeight: "600", color: Color.textFaint },
-  rangeChipTextActive: { color: Color.gold },
-  customRangeRow: { flexDirection: "row", gap: Spacing.sm, marginBottom: Spacing.sm },
-  emptyLeaderboardText: { fontSize: 12, color: Color.textMuted, textAlign: "center", paddingVertical: Spacing.sm },
-  leaderboardContextLabel: {
-    fontSize: 11,
-    fontWeight: "700",
-    color: Color.textFaint,
-    marginBottom: Spacing.xs,
-  },
-  leaderboardCard: { padding: 0, overflow: "hidden" },
-  leaderboardRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.sm,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-  },
-  leaderboardRowDivider: { borderTopWidth: 1, borderTopColor: Color.borderSubtle },
-  leaderboardRank: { fontSize: 13, fontWeight: "700", color: Color.textFaint, width: 20 },
-  leaderboardName: { fontSize: 14, fontWeight: "600", color: Color.textPrimary, flex: 1 },
-  leaderboardValueWrap: { alignItems: "flex-end" },
-  leaderboardValue: { fontSize: 13, fontWeight: "700", color: Color.textPrimary, fontVariant: ["tabular-nums"] },
-  leaderboardPct: { fontSize: 10, color: Color.textFaint, marginTop: 1 },
-  leaderboardTextMe: { color: Color.gold },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: Color.bg0 },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: Spacing.lg,
+      paddingVertical: Spacing.md,
+    },
+    backButton: { padding: 4 },
+    headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
+    followButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 4,
+      borderRadius: Radius.pill,
+      borderWidth: 1,
+      borderColor: Color.goldBorder,
+      paddingHorizontal: Spacing.sm,
+      paddingVertical: 5,
+    },
+    followButtonText: { fontSize: 12, fontWeight: "600", color: Color.gold },
+    subhead: {
+      fontSize: 12,
+      color: Color.textMuted,
+      paddingHorizontal: Spacing.lg,
+      marginTop: -Spacing.xs,
+      marginBottom: Spacing.md,
+    },
+    suggestedCard: { padding: 0, overflow: "hidden", marginTop: Spacing.sm },
+    suggestedLabel: {
+      fontSize: 10,
+      fontWeight: "700",
+      letterSpacing: 0.6,
+      color: Color.textFaint,
+      paddingHorizontal: Spacing.md,
+      paddingTop: Spacing.md,
+    },
+    suggestedRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: Spacing.sm,
+      padding: Spacing.md,
+    },
+    suggestedRowDivider: { borderBottomWidth: 1, borderBottomColor: Color.borderSubtle },
+    suggestedName: { fontSize: 14, fontWeight: "600", color: Color.textPrimary, flex: 1 },
+    suggestedFollowButton: { paddingHorizontal: Spacing.md },
+    suggestedEmptyText: {
+      fontSize: 13,
+      color: Color.textMuted,
+      textAlign: "center",
+      marginTop: Spacing.sm,
+    },
+    noticeBackdrop: {
+      flex: 1,
+      backgroundColor: "rgba(4,10,20,0.72)",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: Spacing.xl,
+    },
+    noticeCard: {
+      width: "100%",
+      maxWidth: 360,
+      borderRadius: Radius.lg,
+      borderWidth: 1,
+      borderColor: Color.borderDefault,
+      backgroundColor: Color.surface1,
+      padding: Spacing.lg,
+    },
+    noticeTitle: { fontSize: 15, fontWeight: "700", color: Color.textPrimary },
+    noticeBody: { fontSize: 13, color: Color.textSecondary, lineHeight: 19, marginTop: Spacing.sm },
+    noticeSecondary: { marginTop: Spacing.md, alignSelf: "center" },
+    noticeSecondaryText: { fontSize: 12, fontWeight: "500", color: Color.textFaint, textDecorationLine: "underline" },
+    scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
+    section: { marginBottom: Spacing.xl },
+    winsCard: { padding: 0, overflow: "hidden" },
+    metricRow: {
+      flexDirection: "row",
+      gap: 2,
+      marginBottom: Spacing.sm,
+      padding: 3,
+      borderRadius: Radius.pill,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.overlayFaint,
+    },
+    metricChip: {
+      flex: 1,
+      alignItems: "center",
+      borderRadius: Radius.pill,
+      paddingVertical: 7,
+    },
+    metricChipActive: { backgroundColor: Color.gold },
+    metricChipText: { fontSize: 11, fontWeight: "600", color: Color.textFaint },
+    metricChipTextActive: { color: Color.goldForeground, fontWeight: "700" },
+    rangeRow: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: Spacing.sm },
+    rangeChip: {
+      borderRadius: Radius.pill,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      paddingHorizontal: Spacing.sm,
+      paddingVertical: 5,
+    },
+    rangeChipActive: { borderColor: Color.goldBorder, backgroundColor: Color.goldWeak },
+    rangeChipText: { fontSize: 11, fontWeight: "600", color: Color.textFaint },
+    rangeChipTextActive: { color: Color.gold },
+    customRangeRow: { flexDirection: "row", gap: Spacing.sm, marginBottom: Spacing.sm },
+    emptyLeaderboardText: { fontSize: 12, color: Color.textMuted, textAlign: "center", paddingVertical: Spacing.sm },
+    leaderboardContextLabel: {
+      fontSize: 11,
+      fontWeight: "700",
+      color: Color.textFaint,
+      marginBottom: Spacing.xs,
+    },
+    leaderboardCard: { padding: 0, overflow: "hidden" },
+    leaderboardRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: Spacing.sm,
+      paddingHorizontal: Spacing.md,
+      paddingVertical: Spacing.sm,
+    },
+    leaderboardRowDivider: { borderTopWidth: 1, borderTopColor: Color.borderSubtle },
+    leaderboardRank: { fontSize: 13, fontWeight: "700", color: Color.textFaint, width: 20 },
+    leaderboardName: { fontSize: 14, fontWeight: "600", color: Color.textPrimary, flex: 1 },
+    leaderboardValueWrap: { alignItems: "flex-end" },
+    leaderboardValue: { fontSize: 13, fontWeight: "700", color: Color.textPrimary, fontVariant: ["tabular-nums"] },
+    leaderboardPct: { fontSize: 10, color: Color.textFaint, marginTop: 1 },
+    leaderboardTextMe: { color: Color.gold },
+  })
+);

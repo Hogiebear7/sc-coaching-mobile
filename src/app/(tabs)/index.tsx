@@ -8,7 +8,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { MetricTile, PillButton, RoundIconButton, SectionTitle, TileGrid, WeekStrip } from "@/components/app/primitives";
 import { Button } from "@/components/ui/Button";
 import { ContinueWorkoutPill } from "@/components/ui/ContinueWorkoutPill";
-import { AppColor, AppRadius, AppSpace, appTitle, Color, DataColor, figure, Radius, readinessColor, Spacing } from "@/constants/theme";
+import { AppRadius, AppSpace, appTitle, figure, Radius, readinessColor, Spacing } from "@/constants/theme";
 import { useAuth } from "@/lib/auth-context";
 import { hasAccess } from "@/lib/member-access";
 import { POST_SIGNUP_SETUP_KEY_PREFIX } from "@/lib/post-signup-setup";
@@ -18,6 +18,7 @@ import { useDashboard } from "@/lib/queries/dashboard";
 import { useNotifications } from "@/lib/queries/notifications";
 import { useProfile } from "@/lib/queries/profile";
 import { useTour } from "@/lib/tour-context";
+import { makeStyles, useAppTheme, useLegacyColors } from "@/lib/theme";
 
 // Shown once, right after a member's very first signup — offers the two
 // setup steps that meaningfully improve day-one use of Workouts (an
@@ -25,6 +26,8 @@ import { useTour } from "@/lib/tour-context";
 // forcing either during the signup form itself. Gated behind the tour
 // prompt/card so the two one-time modals never stack on a fresh account.
 function PostSignupSetupModal() {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const router = useRouter();
   const { user } = useAuth();
   const { data: profile } = useProfile();
@@ -147,6 +150,8 @@ function lastSevenDays(todayISO: string, trend: (number | null)[]) {
 // tiles grouped by topic, then the club as list rows. Colour lives on data
 // only; the one primary action is white.
 export default function DashboardScreen() {
+  const { colors, data: dc } = useAppTheme();
+  const styles = useStyles();
   const router = useRouter();
   const { data, isLoading, isError, refetch, isRefetching } = useDashboard();
   const { data: communityHighlight } = useCommunityHighlight();
@@ -164,7 +169,7 @@ export default function DashboardScreen() {
     return (
       <SafeAreaView style={styles.safe}>
         <View style={styles.centerFill}>
-          <ActivityIndicator color={AppColor.text} size="large" />
+          <ActivityIndicator color={colors.text} size="large" />
         </View>
       </SafeAreaView>
     );
@@ -195,14 +200,14 @@ export default function DashboardScreen() {
     <SafeAreaView style={styles.safe} edges={["top"]}>
       <ScrollView
         contentContainerStyle={styles.scroll}
-        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={onRefresh} tintColor={AppColor.text} />}
+        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={onRefresh} tintColor={colors.text} />}
       >
         {/* Top band: title, inbox buttons, the week, today's one action */}
         <View style={styles.band}>
           <View style={styles.titleRow}>
             <View style={{ flex: 1 }}>
               <Text style={styles.dateLine}>{formatTodayLabel()}</Text>
-              <Text style={appTitle(38)} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
+              <Text style={appTitle(38, colors.text)} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
                 {greetingPrefix()} {data.firstName}
               </Text>
             </View>
@@ -269,7 +274,7 @@ export default function DashboardScreen() {
                       : ""}
                   </Text>
                 </View>
-                <Ionicons name="chevron-forward" size={18} color={AppColor.textMuted} />
+                <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
               </Pressable>
             ) : (
               <View style={styles.nextCard}>
@@ -290,7 +295,7 @@ export default function DashboardScreen() {
                     : "Log and review sessions"}
                 </Text>
               </View>
-              <Ionicons name="chevron-forward" size={18} color={AppColor.textMuted} />
+              <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
             </Pressable>
           ) : (
             <View style={styles.nextCard}>
@@ -322,7 +327,7 @@ export default function DashboardScreen() {
               window="Last check-in"
               value={data.kpis.sleepHours !== null ? String(data.kpis.sleepHours) : null}
               unit="h"
-              color={DataColor.sleep}
+              color={dc.sleep}
               note={data.kpis.sleepQuality !== null ? `Quality ${data.kpis.sleepQuality}/10` : "Logged with your check-in"}
               onPress={() => router.push("/(tabs)/recovery")}
             />
@@ -330,7 +335,7 @@ export default function DashboardScreen() {
               title="Training load"
               window="Last 7 days"
               value={data.kpis.sevenDaySum > 0 ? data.kpis.sevenDaySum.toLocaleString() : null}
-              color={DataColor.load}
+              color={dc.load}
               note={data.kpis.daysWithLoad > 0 ? data.kpis.loadBandLabel : "Log time and effort"}
               onPress={() => router.push("/(tabs)/recovery")}
             />
@@ -339,7 +344,7 @@ export default function DashboardScreen() {
               window="Last 7 days"
               value={String(data.kpis.sessionsLast7)}
               unit={data.kpis.sessionsLast7 === 1 ? "workout" : "workouts"}
-              color={DataColor.sessions}
+              color={dc.sessions}
               note="Log a workout from +"
               onPress={() => router.push("/(tabs)/workouts")}
             />
@@ -355,7 +360,7 @@ export default function DashboardScreen() {
               window={recentWeights.length > 1 ? `Last ${recentWeights.length} entries` : "Latest"}
               value={latestWeight !== null ? latestWeight.toFixed(1) : null}
               unit="kg"
-              color={DataColor.weight}
+              color={dc.weight}
               bars={recentWeights.length > 1 ? recentWeights.map((w) => w.weightKg) : undefined}
               scale="range"
               note="Add a weigh-in"
@@ -365,7 +370,7 @@ export default function DashboardScreen() {
               title="Nutrition"
               window="Today"
               value={null}
-              color={DataColor.protein}
+              color={dc.protein}
               note={
                 data.nutrition.dietaryPreference && data.nutrition.dietaryPreference !== "standard"
                   ? `${data.nutrition.dietaryPreference} · log meals and water`
@@ -418,91 +423,96 @@ function ListRow({
   divider?: boolean;
   attention?: boolean;
 }) {
+  const { colors } = useAppTheme();
+  const styles = useStyles();
+  const Color = useLegacyColors();
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
       style={({ pressed }) => [styles.row, divider && styles.rowDivider, pressed && { opacity: 0.8 }]}
     >
-      <Ionicons name={icon} size={22} color={attention ? Color.warning : AppColor.text} />
+      <Ionicons name={icon} size={22} color={attention ? Color.warning : colors.text} />
       <View style={{ flex: 1 }}>
         <Text style={styles.rowTitle} numberOfLines={1}>{title}</Text>
         <Text style={[styles.rowDetail, attention && { color: Color.warning }]} numberOfLines={1}>{detail}</Text>
       </View>
-      <Ionicons name="chevron-forward" size={18} color={AppColor.textMuted} />
+      <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
     </Pressable>
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: AppColor.bg },
-  centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: 24 },
-  errorText: { fontSize: 16, color: AppColor.textSecondary },
-  scroll: { paddingBottom: 40 },
+const useStyles = makeStyles((colors, dc, Color) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: colors.bg },
+    centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: 24 },
+    errorText: { fontSize: 16, color: colors.textSecondary },
+    scroll: { paddingBottom: 40 },
 
-  band: { backgroundColor: AppColor.surface, paddingHorizontal: AppSpace.gutter, paddingTop: 12, paddingBottom: 20, borderBottomLeftRadius: 24, borderBottomRightRadius: 24, gap: 16 },
-  titleRow: { flexDirection: "row", alignItems: "center", gap: 12 },
-  dateLine: { fontSize: 14, color: AppColor.textMuted, marginBottom: 2 },
-  titleActions: { flexDirection: "row", gap: 8 },
-  continueRow: { alignItems: "flex-end", marginTop: -8 },
-  todayRow: { flexDirection: "row" },
-  todayLabel: { fontSize: 14, color: AppColor.textMuted },
-  todayStatus: { marginTop: 2, fontSize: 22, fontWeight: "600", color: AppColor.text },
-  todayGuidance: { marginTop: 4, fontSize: 15, lineHeight: 21, color: AppColor.textSecondary },
+    band: { backgroundColor: colors.surface, paddingHorizontal: AppSpace.gutter, paddingTop: 12, paddingBottom: 20, borderBottomLeftRadius: 24, borderBottomRightRadius: 24, gap: 16 },
+    titleRow: { flexDirection: "row", alignItems: "center", gap: 12 },
+    dateLine: { fontSize: 14, color: colors.textMuted, marginBottom: 2 },
+    titleActions: { flexDirection: "row", gap: 8 },
+    continueRow: { alignItems: "flex-end", marginTop: -8 },
+    todayRow: { flexDirection: "row" },
+    todayLabel: { fontSize: 14, color: colors.textMuted },
+    todayStatus: { marginTop: 2, fontSize: 22, fontWeight: "600", color: colors.text },
+    todayGuidance: { marginTop: 4, fontSize: 15, lineHeight: 21, color: colors.textSecondary },
 
-  section: { paddingHorizontal: AppSpace.gutter, marginTop: AppSpace.section },
+    section: { paddingHorizontal: AppSpace.gutter, marginTop: AppSpace.section },
 
-  nextCard: { flexDirection: "row", alignItems: "center", gap: 14, backgroundColor: AppColor.surface, borderRadius: AppRadius.card, padding: 16, minHeight: 76 },
-  nextTime: { width: 72, borderRadius: AppRadius.inner, backgroundColor: AppColor.control, paddingVertical: 8, alignItems: "center" },
-  nextDay: { fontSize: 12, color: AppColor.textSecondary },
-  nextClock: { ...figure(26), color: AppColor.text },
-  nextTitle: { fontSize: 17, fontWeight: "600", color: AppColor.text },
-  nextMeta: { marginTop: 2, fontSize: 14, color: AppColor.textMuted },
+    nextCard: { flexDirection: "row", alignItems: "center", gap: 14, backgroundColor: colors.surface, borderRadius: AppRadius.card, padding: 16, minHeight: 76 },
+    nextTime: { width: 72, borderRadius: AppRadius.inner, backgroundColor: colors.control, paddingVertical: 8, alignItems: "center" },
+    nextDay: { fontSize: 12, color: colors.textSecondary },
+    nextClock: { ...figure(26), color: colors.text },
+    nextTitle: { fontSize: 17, fontWeight: "600", color: colors.text },
+    nextMeta: { marginTop: 2, fontSize: 14, color: colors.textMuted },
 
-  list: { backgroundColor: AppColor.surface, borderRadius: AppRadius.card, overflow: "hidden" },
-  row: { flexDirection: "row", alignItems: "center", gap: 16, minHeight: 64, paddingHorizontal: 16 },
-  rowDivider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: AppColor.hairline },
-  rowTitle: { fontSize: 16, fontWeight: "500", color: AppColor.text },
-  rowDetail: { marginTop: 2, fontSize: 14, color: AppColor.textMuted },
+    list: { backgroundColor: colors.surface, borderRadius: AppRadius.card, overflow: "hidden" },
+    row: { flexDirection: "row", alignItems: "center", gap: 16, minHeight: 64, paddingHorizontal: 16 },
+    rowDivider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.hairline },
+    rowTitle: { fontSize: 16, fontWeight: "500", color: colors.text },
+    rowDetail: { marginTop: 2, fontSize: 14, color: colors.textMuted },
 
-  // First-signup setup modal (unchanged from the previous Home)
-  setupBackdrop: {
-    flex: 1,
-    backgroundColor: "rgba(4,10,20,0.72)",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: Spacing.xl,
-  },
-  setupCard: {
-    width: "100%",
-    maxWidth: 380,
-    borderRadius: Radius.lg,
-    borderWidth: 1,
-    borderColor: Color.borderDefault,
-    backgroundColor: Color.surface1,
-    padding: Spacing.xl,
-    alignItems: "center",
-  },
-  setupIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: Radius.pill,
-    borderWidth: 1,
-    borderColor: Color.goldBorder,
-    backgroundColor: Color.goldWeak,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: Spacing.md,
-  },
-  setupTitle: { fontSize: 18, fontWeight: "700", color: Color.textPrimary, textAlign: "center" },
-  setupBody: {
-    fontSize: 13,
-    color: Color.textMuted,
-    textAlign: "center",
-    marginTop: Spacing.sm,
-    lineHeight: 19,
-  },
-  setupButton: { width: "100%", marginTop: Spacing.lg },
-  setupLaterButton: { marginTop: Spacing.md, padding: Spacing.xs },
-  setupLaterText: { fontSize: 13, fontWeight: "600", color: Color.textMuted },
-});
+    // First-signup setup modal (unchanged from the previous Home)
+    setupBackdrop: {
+      flex: 1,
+      backgroundColor: "rgba(4,10,20,0.72)",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: Spacing.xl,
+    },
+    setupCard: {
+      width: "100%",
+      maxWidth: 380,
+      borderRadius: Radius.lg,
+      borderWidth: 1,
+      borderColor: Color.borderDefault,
+      backgroundColor: Color.surface1,
+      padding: Spacing.xl,
+      alignItems: "center",
+    },
+    setupIcon: {
+      width: 44,
+      height: 44,
+      borderRadius: Radius.pill,
+      borderWidth: 1,
+      borderColor: Color.goldBorder,
+      backgroundColor: Color.goldWeak,
+      alignItems: "center",
+      justifyContent: "center",
+      marginBottom: Spacing.md,
+    },
+    setupTitle: { fontSize: 18, fontWeight: "700", color: Color.textPrimary, textAlign: "center" },
+    setupBody: {
+      fontSize: 13,
+      color: Color.textMuted,
+      textAlign: "center",
+      marginTop: Spacing.sm,
+      lineHeight: 19,
+    },
+    setupButton: { width: "100%", marginTop: Spacing.lg },
+    setupLaterButton: { marginTop: Spacing.md, padding: Spacing.xs },
+    setupLaterText: { fontSize: 13, fontWeight: "600", color: Color.textMuted },
+  })
+);

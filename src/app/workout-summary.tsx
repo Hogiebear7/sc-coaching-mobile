@@ -8,10 +8,11 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { StatCard } from "@/components/ui/StatCard";
 import { UpsellCard } from "@/components/ui/Upsell";
-import { Color, headline, Radius, Spacing } from "@/constants/theme";
+import { headline, Radius, Spacing } from "@/constants/theme";
 import { hasAccess } from "@/lib/member-access";
 import { useMemberTier } from "@/lib/queries/profile";
 import { takePendingWorkoutSummary } from "@/lib/workout-summary-handoff";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 // Built entirely from the payload the logging screen just submitted, plus
 // the personalBests it already had in memory — no server round-trip, no
@@ -30,6 +31,8 @@ export interface WorkoutSummaryData {
 }
 
 export default function WorkoutSummaryScreen() {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const router = useRouter();
   const tier = useMemberTier();
   // Lazy initializer so this read-once handoff is only taken on the first
@@ -130,46 +133,48 @@ export default function WorkoutSummaryScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Color.bg0 },
-  scroll: { padding: Spacing.lg, paddingBottom: Spacing.xxl },
-  emptyWrap: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
-  emptyText: { fontSize: 15, color: Color.textSecondary },
-  heroWrap: { alignItems: "center", paddingVertical: Spacing.xl },
-  heroBadge: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: Color.success,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: Spacing.md,
-  },
-  heroTitle: { ...headline(28), color: Color.textPrimary },
-  heroSubtitle: { fontSize: 13, color: Color.textMuted, marginTop: 4 },
-  pbPill: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    borderRadius: Radius.pill,
-    borderWidth: 1,
-    borderColor: Color.goldBorder,
-    backgroundColor: Color.goldWeak,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: 6,
-    marginTop: Spacing.md,
-  },
-  pbPillText: { fontSize: 12, fontWeight: "700", color: Color.gold },
-  statsGrid: { gap: Spacing.sm, marginTop: Spacing.md },
-  statsRow: { flexDirection: "row", gap: Spacing.sm },
-  sectionLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginTop: Spacing.xl, marginBottom: Spacing.sm },
-  exerciseList: { padding: 0, overflow: "hidden" },
-  exerciseRow: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", padding: Spacing.md, gap: Spacing.sm },
-  exerciseRowDivider: { borderTopWidth: 1, borderTopColor: Color.borderSubtle },
-  exerciseNameRow: { flexDirection: "row", alignItems: "center", gap: Spacing.xs },
-  exerciseName: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
-  exerciseSummary: { fontSize: 12, color: Color.textMuted, marginTop: 2 },
-  exerciseSets: { fontSize: 11, color: Color.textFaint, marginTop: 2 },
-  pbBadge: { borderRadius: Radius.sm, backgroundColor: Color.goldWeak, paddingHorizontal: 6, paddingVertical: 1 },
-  pbBadgeText: { fontSize: 9, fontWeight: "700", color: Color.gold },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: Color.bg0 },
+    scroll: { padding: Spacing.lg, paddingBottom: Spacing.xxl },
+    emptyWrap: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
+    emptyText: { fontSize: 15, color: Color.textSecondary },
+    heroWrap: { alignItems: "center", paddingVertical: Spacing.xl },
+    heroBadge: {
+      width: 64,
+      height: 64,
+      borderRadius: 32,
+      backgroundColor: Color.success,
+      alignItems: "center",
+      justifyContent: "center",
+      marginBottom: Spacing.md,
+    },
+    heroTitle: { ...headline(28), color: Color.textPrimary },
+    heroSubtitle: { fontSize: 13, color: Color.textMuted, marginTop: 4 },
+    pbPill: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+      borderRadius: Radius.pill,
+      borderWidth: 1,
+      borderColor: Color.goldBorder,
+      backgroundColor: Color.goldWeak,
+      paddingHorizontal: Spacing.md,
+      paddingVertical: 6,
+      marginTop: Spacing.md,
+    },
+    pbPillText: { fontSize: 12, fontWeight: "700", color: Color.gold },
+    statsGrid: { gap: Spacing.sm, marginTop: Spacing.md },
+    statsRow: { flexDirection: "row", gap: Spacing.sm },
+    sectionLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginTop: Spacing.xl, marginBottom: Spacing.sm },
+    exerciseList: { padding: 0, overflow: "hidden" },
+    exerciseRow: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", padding: Spacing.md, gap: Spacing.sm },
+    exerciseRowDivider: { borderTopWidth: 1, borderTopColor: Color.borderSubtle },
+    exerciseNameRow: { flexDirection: "row", alignItems: "center", gap: Spacing.xs },
+    exerciseName: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
+    exerciseSummary: { fontSize: 12, color: Color.textMuted, marginTop: 2 },
+    exerciseSets: { fontSize: 11, color: Color.textFaint, marginTop: 2 },
+    pbBadge: { borderRadius: Radius.sm, backgroundColor: Color.goldWeak, paddingHorizontal: 6, paddingVertical: 1 },
+    pbBadgeText: { fontSize: 9, fontWeight: "700", color: Color.gold },
+  })
+);

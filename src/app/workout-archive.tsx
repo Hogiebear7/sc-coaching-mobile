@@ -5,12 +5,15 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { Color, Radius, Spacing } from "@/constants/theme";
+import { Radius, Spacing } from "@/constants/theme";
 import { tapFeedback } from "@/lib/haptics";
 import { useMyArchivedPrograms } from "@/lib/queries/programs";
 import { useDeleteWorkoutTemplate, useUpdateWorkoutTemplate, useWorkoutTemplates } from "@/lib/queries/workout-templates";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 export default function WorkoutArchiveScreen() {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const router = useRouter();
   const { data: programs, isLoading: programsLoading } = useMyArchivedPrograms();
   const { data: templates, isLoading: templatesLoading } = useWorkoutTemplates();
@@ -88,19 +91,21 @@ export default function WorkoutArchiveScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Color.bg0 },
-  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md },
-  backButton: { padding: 4 },
-  headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
-  centerFill: { flex: 1, alignItems: "center", justifyContent: "center" },
-  scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
-  sectionLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginBottom: Spacing.sm },
-  emptyText: { fontSize: 12, color: Color.textMuted, marginBottom: Spacing.md },
-  card: { padding: Spacing.md, marginBottom: Spacing.sm },
-  name: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
-  sub: { fontSize: 11, color: Color.textMuted, marginTop: 2 },
-  actionsRow: { flexDirection: "row", alignItems: "center", gap: Spacing.sm, marginTop: Spacing.sm },
-  deleteButton: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, borderRadius: Radius.md, borderWidth: 1, borderColor: Color.dangerWeak },
-  deleteText: { fontSize: 12, fontWeight: "600", color: Color.danger },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: Color.bg0 },
+    header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md },
+    backButton: { padding: 4 },
+    headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
+    centerFill: { flex: 1, alignItems: "center", justifyContent: "center" },
+    scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
+    sectionLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginBottom: Spacing.sm },
+    emptyText: { fontSize: 12, color: Color.textMuted, marginBottom: Spacing.md },
+    card: { padding: Spacing.md, marginBottom: Spacing.sm },
+    name: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
+    sub: { fontSize: 11, color: Color.textMuted, marginTop: 2 },
+    actionsRow: { flexDirection: "row", alignItems: "center", gap: Spacing.sm, marginTop: Spacing.sm },
+    deleteButton: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, borderRadius: Radius.md, borderWidth: 1, borderColor: Color.dangerWeak },
+    deleteText: { fontSize: 12, fontWeight: "600", color: Color.danger },
+  })
+);

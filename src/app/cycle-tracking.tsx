@@ -17,7 +17,7 @@ import { Card } from "@/components/ui/Card";
 import { CyclePhaseChart } from "@/components/ui/CyclePhaseChart";
 import { DateField } from "@/components/ui/DateField";
 import { TextField } from "@/components/ui/TextField";
-import { Color, Radius, Spacing } from "@/constants/theme";
+import { Radius, Spacing } from "@/constants/theme";
 import { ApiError } from "@/lib/api-client";
 import { useProfile } from "@/lib/queries/profile";
 import { COACH_SHARE_UNLOCK_WEEKS, usePregnancyData, useSavePregnancyStatus } from "@/lib/queries/pregnancy";
@@ -29,6 +29,7 @@ import {
   useSetMenopauseSupport,
   type CycleRegularity,
 } from "@/lib/queries/cycle";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 const REGULARITY_OPTIONS: CycleRegularity[] = ["Regular", "Irregular", "Unsure"];
 
@@ -43,6 +44,8 @@ function CheckboxRow({
   checked: boolean;
   onToggle: () => void;
 }) {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   return (
     <Pressable onPress={onToggle} style={styles.checkboxRow}>
       <Ionicons
@@ -60,6 +63,7 @@ function CheckboxRow({
 }
 
 function GuidanceRow({ label, value }: { label: string; value: string }) {
+  const styles = useStyles();
   return (
     <View style={styles.guidanceRow}>
       <Text style={styles.guidanceLabel}>{label}</Text>
@@ -69,6 +73,7 @@ function GuidanceRow({ label, value }: { label: string; value: string }) {
 }
 
 function BulletList({ label, items }: { label: string; items: string[] }) {
+  const styles = useStyles();
   if (items.length === 0) return null;
   return (
     <View style={{ marginTop: Spacing.sm }}>
@@ -84,6 +89,7 @@ function BulletList({ label, items }: { label: string; items: string[] }) {
 }
 
 function MenopauseSection({ title, body }: { title: string; body: string }) {
+  const styles = useStyles();
   return (
     <View style={{ marginBottom: Spacing.md }}>
       <Text style={styles.menopauseTitle}>{title}</Text>
@@ -93,6 +99,8 @@ function MenopauseSection({ title, body }: { title: string; body: string }) {
 }
 
 export default function CycleTrackingScreen() {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const router = useRouter();
   const { data: profile } = useProfile();
   const eligible = profile?.cycleTrackingEligible ?? false;
@@ -571,94 +579,96 @@ export default function CycleTrackingScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Color.bg0 },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-  },
-  backButton: { padding: 4 },
-  headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
-  centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
-  emptyText: { fontSize: 14, color: Color.textMuted, textAlign: "center" },
-  scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
-  intro: { fontSize: 13, color: Color.textMuted, lineHeight: 19 },
-  wellBox: {
-    marginTop: Spacing.md,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-    padding: Spacing.md,
-  },
-  wellText: { fontSize: 12, color: Color.textMuted, lineHeight: 17 },
-  beginDayCard: { padding: Spacing.md, marginTop: Spacing.md, borderColor: Color.goldBorder, backgroundColor: Color.goldWeak },
-  beginDayRow: { flexDirection: "row", alignItems: "center", gap: Spacing.md },
-  beginDayTitle: { fontSize: 13, fontWeight: "700", color: Color.textPrimary },
-  beginDaySub: { fontSize: 11, color: Color.textMuted, marginTop: 2, lineHeight: 15 },
-  beginDayButton: { flexShrink: 0 },
-  phaseCard: { padding: Spacing.lg, marginTop: Spacing.lg },
-  phaseHeaderRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap", gap: 4 },
-  phaseTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
-  phaseDayText: { fontSize: 12, color: Color.textMuted },
-  phaseExplanation: { fontSize: 13, color: Color.textSecondary, marginTop: Spacing.sm, lineHeight: 19 },
-  warningBox: {
-    marginTop: Spacing.sm,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.warningWeak,
-    backgroundColor: Color.warningWeak,
-    padding: Spacing.sm,
-  },
-  warningText: { fontSize: 11, color: Color.warning, lineHeight: 15 },
-  guidanceWrap: { marginTop: Spacing.md, borderTopWidth: 1, borderTopColor: Color.borderSubtle, paddingTop: Spacing.md, gap: Spacing.sm },
-  guidanceRow: { flexDirection: "row", gap: Spacing.sm },
-  guidanceLabel: { width: 70, fontSize: 10, fontWeight: "700", letterSpacing: 0.4, color: Color.textMuted },
-  guidanceValue: { flex: 1, fontSize: 13, color: Color.textPrimary, lineHeight: 18 },
-  disclaimer: { fontSize: 10, color: Color.textFaint, marginTop: Spacing.md, lineHeight: 14 },
-  menopauseCard: { padding: Spacing.lg, marginTop: Spacing.lg },
-  menopauseHeaderRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap", gap: 4, marginBottom: Spacing.sm },
-  menopauseBadge: { fontSize: 10, color: Color.textFaint },
-  menopauseTitle: { fontSize: 13, fontWeight: "700", color: Color.textPrimary },
-  menopauseBody: { fontSize: 12, color: Color.textMuted, marginTop: 2, lineHeight: 17 },
-  sectionTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
-  sectionLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginTop: Spacing.xl, marginBottom: Spacing.sm },
-  formCard: { padding: Spacing.lg },
-  formHint: { fontSize: 12, color: Color.textMuted, marginBottom: Spacing.md, lineHeight: 17 },
-  label: { fontSize: 13, fontWeight: "500", color: Color.textSecondary, marginBottom: 6 },
-  chipRow: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.xs, marginBottom: Spacing.md },
-  chip: {
-    paddingHorizontal: Spacing.md,
-    paddingVertical: 8,
-    borderRadius: Radius.pill,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-  },
-  chipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
-  chipText: { fontSize: 12, fontWeight: "500", color: Color.textMuted },
-  chipTextActive: { color: Color.gold },
-  multiline: { height: 90, paddingTop: 12, textAlignVertical: "top" },
-  checkboxWrap: { gap: Spacing.md },
-  checkboxRow: { flexDirection: "row", alignItems: "flex-start", gap: Spacing.sm },
-  checkboxLabel: { fontSize: 13, fontWeight: "500", color: Color.textPrimary },
-  checkboxDescription: { fontSize: 11, color: Color.textMuted, marginTop: 2, lineHeight: 15 },
-  error: { color: Color.danger, fontSize: 13, marginTop: Spacing.sm },
-  saved: { color: Color.success, fontSize: 13, marginTop: Spacing.sm },
-  settingsCard: { padding: 0 },
-  settingRow: { flexDirection: "row", alignItems: "center", padding: Spacing.md, gap: Spacing.sm },
-  settingTitle: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
-  settingSub: { fontSize: 11, color: Color.textMuted, marginTop: 2, lineHeight: 15 },
-  pregnancyGuidanceBox: {
-    marginTop: Spacing.lg,
-    borderTopWidth: 1,
-    borderTopColor: Color.borderSubtle,
-    paddingTop: Spacing.md,
-  },
-  bulletLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.5, color: Color.textMuted },
-  bulletRow: { flexDirection: "row", alignItems: "flex-start", gap: 6, marginTop: 4 },
-  bulletDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: Color.gold, marginTop: 7 },
-  bulletText: { flex: 1, fontSize: 12, color: Color.textSecondary, lineHeight: 17 },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: Color.bg0 },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: Spacing.lg,
+      paddingVertical: Spacing.md,
+    },
+    backButton: { padding: 4 },
+    headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
+    centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
+    emptyText: { fontSize: 14, color: Color.textMuted, textAlign: "center" },
+    scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
+    intro: { fontSize: 13, color: Color.textMuted, lineHeight: 19 },
+    wellBox: {
+      marginTop: Spacing.md,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface1,
+      padding: Spacing.md,
+    },
+    wellText: { fontSize: 12, color: Color.textMuted, lineHeight: 17 },
+    beginDayCard: { padding: Spacing.md, marginTop: Spacing.md, borderColor: Color.goldBorder, backgroundColor: Color.goldWeak },
+    beginDayRow: { flexDirection: "row", alignItems: "center", gap: Spacing.md },
+    beginDayTitle: { fontSize: 13, fontWeight: "700", color: Color.textPrimary },
+    beginDaySub: { fontSize: 11, color: Color.textMuted, marginTop: 2, lineHeight: 15 },
+    beginDayButton: { flexShrink: 0 },
+    phaseCard: { padding: Spacing.lg, marginTop: Spacing.lg },
+    phaseHeaderRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap", gap: 4 },
+    phaseTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
+    phaseDayText: { fontSize: 12, color: Color.textMuted },
+    phaseExplanation: { fontSize: 13, color: Color.textSecondary, marginTop: Spacing.sm, lineHeight: 19 },
+    warningBox: {
+      marginTop: Spacing.sm,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.warningWeak,
+      backgroundColor: Color.warningWeak,
+      padding: Spacing.sm,
+    },
+    warningText: { fontSize: 11, color: Color.warning, lineHeight: 15 },
+    guidanceWrap: { marginTop: Spacing.md, borderTopWidth: 1, borderTopColor: Color.borderSubtle, paddingTop: Spacing.md, gap: Spacing.sm },
+    guidanceRow: { flexDirection: "row", gap: Spacing.sm },
+    guidanceLabel: { width: 70, fontSize: 10, fontWeight: "700", letterSpacing: 0.4, color: Color.textMuted },
+    guidanceValue: { flex: 1, fontSize: 13, color: Color.textPrimary, lineHeight: 18 },
+    disclaimer: { fontSize: 10, color: Color.textFaint, marginTop: Spacing.md, lineHeight: 14 },
+    menopauseCard: { padding: Spacing.lg, marginTop: Spacing.lg },
+    menopauseHeaderRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap", gap: 4, marginBottom: Spacing.sm },
+    menopauseBadge: { fontSize: 10, color: Color.textFaint },
+    menopauseTitle: { fontSize: 13, fontWeight: "700", color: Color.textPrimary },
+    menopauseBody: { fontSize: 12, color: Color.textMuted, marginTop: 2, lineHeight: 17 },
+    sectionTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
+    sectionLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginTop: Spacing.xl, marginBottom: Spacing.sm },
+    formCard: { padding: Spacing.lg },
+    formHint: { fontSize: 12, color: Color.textMuted, marginBottom: Spacing.md, lineHeight: 17 },
+    label: { fontSize: 13, fontWeight: "500", color: Color.textSecondary, marginBottom: 6 },
+    chipRow: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.xs, marginBottom: Spacing.md },
+    chip: {
+      paddingHorizontal: Spacing.md,
+      paddingVertical: 8,
+      borderRadius: Radius.pill,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+    },
+    chipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
+    chipText: { fontSize: 12, fontWeight: "500", color: Color.textMuted },
+    chipTextActive: { color: Color.gold },
+    multiline: { height: 90, paddingTop: 12, textAlignVertical: "top" },
+    checkboxWrap: { gap: Spacing.md },
+    checkboxRow: { flexDirection: "row", alignItems: "flex-start", gap: Spacing.sm },
+    checkboxLabel: { fontSize: 13, fontWeight: "500", color: Color.textPrimary },
+    checkboxDescription: { fontSize: 11, color: Color.textMuted, marginTop: 2, lineHeight: 15 },
+    error: { color: Color.danger, fontSize: 13, marginTop: Spacing.sm },
+    saved: { color: Color.success, fontSize: 13, marginTop: Spacing.sm },
+    settingsCard: { padding: 0 },
+    settingRow: { flexDirection: "row", alignItems: "center", padding: Spacing.md, gap: Spacing.sm },
+    settingTitle: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
+    settingSub: { fontSize: 11, color: Color.textMuted, marginTop: 2, lineHeight: 15 },
+    pregnancyGuidanceBox: {
+      marginTop: Spacing.lg,
+      borderTopWidth: 1,
+      borderTopColor: Color.borderSubtle,
+      paddingTop: Spacing.md,
+    },
+    bulletLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.5, color: Color.textMuted },
+    bulletRow: { flexDirection: "row", alignItems: "flex-start", gap: 6, marginTop: 4 },
+    bulletDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: Color.gold, marginTop: 7 },
+    bulletText: { flex: 1, fontSize: 12, color: Color.textSecondary, lineHeight: 17 },
+  })
+);

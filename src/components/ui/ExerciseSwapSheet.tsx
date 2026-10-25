@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
 import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
-import { Color, Radius, Spacing } from "@/constants/theme";
+import { Radius, Spacing } from "@/constants/theme";
 import { tapFeedback } from "@/lib/haptics";
 import {
   useExerciseAlternatives,
@@ -13,6 +13,7 @@ import {
 
 import { Button } from "./Button";
 import { TextField } from "./TextField";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 // "I can't do / don't like this exercise" — AI-suggested swap, one exercise
 // at a time. A single shared instance lives in the Workouts tab and is
@@ -33,6 +34,7 @@ export function ExerciseSwapSheet({
   dayId: string;
   exercise: PrescribedExercise | null;
 }) {
+  const styles = useStyles();
   return (
     <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={onClose}>
       <Pressable style={styles.backdrop} onPress={onClose}>
@@ -64,6 +66,8 @@ function SwapSheetContent({
   exercise: PrescribedExercise;
   onClose: () => void;
 }) {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const [reason, setReason] = useState("");
   const [alternatives, setAlternatives] = useState<ExerciseAlternative[] | null>(null);
   const fetchAlternatives = useExerciseAlternatives();
@@ -143,38 +147,40 @@ function SwapSheetContent({
   );
 }
 
-const styles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    backgroundColor: "rgba(4,10,20,0.72)",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: Spacing.xl,
-  },
-  card: {
-    width: "100%",
-    maxWidth: 360,
-    maxHeight: "80%",
-    borderRadius: Radius.lg,
-    borderWidth: 1,
-    borderColor: Color.borderDefault,
-    backgroundColor: Color.surface1,
-    padding: Spacing.lg,
-    paddingTop: Spacing.xl,
-  },
-  title: { fontSize: 15, fontWeight: "700", color: Color.textPrimary },
-  hint: { fontSize: 12, color: Color.textSecondary, lineHeight: 17, marginTop: Spacing.sm, marginBottom: Spacing.sm },
-  error: { fontSize: 12, color: Color.danger, marginTop: Spacing.sm },
-  closeButton: { position: "absolute", top: Spacing.md, right: Spacing.md, padding: 4 },
-  altScroll: { marginTop: Spacing.xs },
-  altCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.sm,
-    paddingVertical: Spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: Color.borderSubtle,
-  },
-  altName: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
-  altRationale: { fontSize: 12, color: Color.textMuted, marginTop: 2, lineHeight: 16 },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    backdrop: {
+      flex: 1,
+      backgroundColor: "rgba(4,10,20,0.72)",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: Spacing.xl,
+    },
+    card: {
+      width: "100%",
+      maxWidth: 360,
+      maxHeight: "80%",
+      borderRadius: Radius.lg,
+      borderWidth: 1,
+      borderColor: Color.borderDefault,
+      backgroundColor: Color.surface1,
+      padding: Spacing.lg,
+      paddingTop: Spacing.xl,
+    },
+    title: { fontSize: 15, fontWeight: "700", color: Color.textPrimary },
+    hint: { fontSize: 12, color: Color.textSecondary, lineHeight: 17, marginTop: Spacing.sm, marginBottom: Spacing.sm },
+    error: { fontSize: 12, color: Color.danger, marginTop: Spacing.sm },
+    closeButton: { position: "absolute", top: Spacing.md, right: Spacing.md, padding: 4 },
+    altScroll: { marginTop: Spacing.xs },
+    altCard: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: Spacing.sm,
+      paddingVertical: Spacing.sm,
+      borderTopWidth: 1,
+      borderTopColor: Color.borderSubtle,
+    },
+    altName: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
+    altRationale: { fontSize: 12, color: Color.textMuted, marginTop: 2, lineHeight: 16 },
+  })
+);

@@ -3,7 +3,8 @@ import { useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { Card } from "./Card";
-import { Color, Radius, Spacing } from "@/constants/theme";
+import { Radius, Spacing } from "@/constants/theme";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 // Generic month-grid calendar — extracted from schedule.tsx's
 // ScheduleCalendarTab (same visual language: month nav, Mon-first week
@@ -24,6 +25,8 @@ export function MonthCalendar({
   selectedDate: string | null;
   onSelectDate: (iso: string) => void;
 }) {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth());
@@ -122,45 +125,47 @@ export function MonthCalendar({
   );
 }
 
-const styles = StyleSheet.create({
-  calendarCard: { padding: Spacing.md },
-  calHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: Spacing.md },
-  calNavButton: {
-    width: 32,
-    height: 32,
-    borderRadius: Radius.pill,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: Color.surface2,
-  },
-  calTitle: { fontSize: 15, fontWeight: "700", color: Color.textPrimary },
-  weekRow: { flexDirection: "row", marginBottom: Spacing.xs },
-  weekLabel: { flex: 1, textAlign: "center", fontSize: 10, fontWeight: "600", color: Color.textFaint },
-  // flex:1 across each week's own row, not a `${100/7}%` width inside a
-  // flex-wrap grid — the percentage-rounding version silently dropped the
-  // 7th cell (Sunday) onto the next row on some screen widths. See
-  // MonthDatePicker.tsx, which established this fix first.
-  dayCell: {
-    flex: 1,
-    aspectRatio: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: Radius.sm,
-    gap: 2,
-  },
-  dayCellSelected: { backgroundColor: Color.goldWeak, borderWidth: 1, borderColor: Color.gold },
-  dayCellToday: { borderWidth: 1, borderColor: Color.goldBorder },
-  dayCellOutside: { opacity: 0.35 },
-  dayCellText: { fontSize: 13, color: Color.textSecondary },
-  dayCellTextToday: { color: Color.gold, fontWeight: "700" },
-  dayCellBadge: {
-    minWidth: 16,
-    height: 16,
-    borderRadius: Radius.pill,
-    backgroundColor: Color.gold,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 3,
-  },
-  dayCellBadgeText: { fontSize: 9, fontWeight: "700", color: Color.goldForeground },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    calendarCard: { padding: Spacing.md },
+    calHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: Spacing.md },
+    calNavButton: {
+      width: 32,
+      height: 32,
+      borderRadius: Radius.pill,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: Color.surface2,
+    },
+    calTitle: { fontSize: 15, fontWeight: "700", color: Color.textPrimary },
+    weekRow: { flexDirection: "row", marginBottom: Spacing.xs },
+    weekLabel: { flex: 1, textAlign: "center", fontSize: 10, fontWeight: "600", color: Color.textFaint },
+    // flex:1 across each week's own row, not a `${100/7}%` width inside a
+    // flex-wrap grid — the percentage-rounding version silently dropped the
+    // 7th cell (Sunday) onto the next row on some screen widths. See
+    // MonthDatePicker.tsx, which established this fix first.
+    dayCell: {
+      flex: 1,
+      aspectRatio: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: Radius.sm,
+      gap: 2,
+    },
+    dayCellSelected: { backgroundColor: Color.goldWeak, borderWidth: 1, borderColor: Color.gold },
+    dayCellToday: { borderWidth: 1, borderColor: Color.goldBorder },
+    dayCellOutside: { opacity: 0.35 },
+    dayCellText: { fontSize: 13, color: Color.textSecondary },
+    dayCellTextToday: { color: Color.gold, fontWeight: "700" },
+    dayCellBadge: {
+      minWidth: 16,
+      height: 16,
+      borderRadius: Radius.pill,
+      backgroundColor: Color.gold,
+      alignItems: "center",
+      justifyContent: "center",
+      paddingHorizontal: 3,
+    },
+    dayCellBadgeText: { fontSize: 9, fontWeight: "700", color: Color.goldForeground },
+  })
+);

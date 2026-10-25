@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { Color, Radius, Spacing } from "@/constants/theme";
+import { Radius, Spacing } from "@/constants/theme";
+import { makeLegacyStyles } from "@/lib/theme";
 
 // Numeric +/- stepper for the recovery check-in's 1-10/1-5 scale fields —
 // simplest reliable cross-platform control for a bounded numeric range
@@ -24,6 +25,7 @@ export function Stepper({
   step?: number;
   suffix?: string;
 }) {
+  const styles = useStyles();
   const current = value ?? min;
 
   return (
@@ -54,31 +56,33 @@ export function Stepper({
   );
 }
 
-const styles = StyleSheet.create({
-  wrap: { marginBottom: Spacing.md },
-  label: { fontSize: 13, fontWeight: "500", color: Color.textSecondary, marginBottom: 2 },
-  caption: { fontSize: 11, color: Color.textFaint, marginBottom: 6 },
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-    paddingHorizontal: Spacing.sm,
-    height: 48,
-  },
-  button: {
-    width: 36,
-    height: 36,
-    borderRadius: Radius.sm,
-    backgroundColor: Color.goldWeak,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  buttonText: { fontSize: 18, fontWeight: "700", color: Color.gold },
-  valueWrap: { flexDirection: "row", alignItems: "baseline", gap: 2 },
-  value: { fontSize: 17, fontWeight: "700", color: Color.textPrimary, fontVariant: ["tabular-nums"] },
-  suffix: { fontSize: 12, color: Color.textMuted },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    wrap: { marginBottom: Spacing.md },
+    label: { fontSize: 13, fontWeight: "500", color: Color.textSecondary, marginBottom: 2 },
+    caption: { fontSize: 11, color: Color.textFaint, marginBottom: 6 },
+    row: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface1,
+      paddingHorizontal: Spacing.sm,
+      height: 48,
+    },
+    button: {
+      width: 36,
+      height: 36,
+      borderRadius: Radius.sm,
+      backgroundColor: Color.goldWeak,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    buttonText: { fontSize: 18, fontWeight: "700", color: Color.gold },
+    valueWrap: { flexDirection: "row", alignItems: "baseline", gap: 2 },
+    value: { fontSize: 17, fontWeight: "700", color: Color.textPrimary, fontVariant: ["tabular-nums"] },
+    suffix: { fontSize: 12, color: Color.textMuted },
+  })
+);

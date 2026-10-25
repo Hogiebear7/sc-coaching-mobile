@@ -9,14 +9,17 @@ import { CommentSheet } from "@/components/ui/CommentSheet";
 import { CommunityWinRow } from "@/components/ui/CommunityWinRow";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { LimitSelector, type ListLimit } from "@/components/ui/LimitSelector";
-import { Color, Spacing } from "@/constants/theme";
+import { Spacing } from "@/constants/theme";
 import { useCommunityWins } from "@/lib/queries/community";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 // Full "Community Wins" list, opened from the hub's capped preview via
 // "See more" — scans full history server-side (see gym-app's wins route),
 // so a win from further back than the hub's own preview window still shows
 // up when you ask for more.
 export default function CommunityWinsScreen() {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const router = useRouter();
   const [limit, setLimit] = useState<ListLimit>(20);
   const [activeCommentId, setActiveCommentId] = useState<string | null>(null);
@@ -68,18 +71,20 @@ export default function CommunityWinsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Color.bg0 },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-  },
-  backButton: { padding: 4 },
-  headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
-  limitWrap: { paddingHorizontal: Spacing.lg, marginBottom: Spacing.sm },
-  scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
-  card: { padding: 0, overflow: "hidden" },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: Color.bg0 },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: Spacing.lg,
+      paddingVertical: Spacing.md,
+    },
+    backButton: { padding: 4 },
+    headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
+    limitWrap: { paddingHorizontal: Spacing.lg, marginBottom: Spacing.sm },
+    scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
+    card: { padding: 0, overflow: "hidden" },
+  })
+);

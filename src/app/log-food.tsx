@@ -10,7 +10,7 @@ import { Card } from "@/components/ui/Card";
 import { KeyboardAwareScroll } from "@/components/ui/KeyboardAwareScroll";
 import { Stepper } from "@/components/ui/Stepper";
 import { TextField } from "@/components/ui/TextField";
-import { Color, Radius, Spacing } from "@/constants/theme";
+import { Radius, Spacing } from "@/constants/theme";
 import { ApiError } from "@/lib/api-client";
 import { trackEvent } from "@/lib/analytics";
 import { useAuth } from "@/lib/auth-context";
@@ -29,6 +29,7 @@ import { useAddFoodFavorite, useFoodFavorites, useRemoveFoodFavorite, type FoodF
 import { MEAL_TYPE_OPTIONS, useCreateFoodEntry, useRecentFoods, type MealType } from "@/lib/queries/nutrition-diary";
 import { useMemberTier } from "@/lib/queries/profile";
 import { todayDateString } from "@/lib/workout-formatters";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 function defaultMealTypeForNow(): MealType {
   const hour = new Date().getHours();
@@ -50,6 +51,7 @@ const SEARCH_GROUPS: { key: keyof import("@/lib/queries/food-catalog").FoodSearc
 // food OFF has no photo for, falls back to a keyword-matched emoji tile —
 // still colour and food-specific, just not a literal photo of the item.
 function FoodResultThumb({ food }: { food: FoodRecord }) {
+  const styles = useStyles();
   if (food.imageUrl) {
     return <Image source={{ uri: food.imageUrl }} style={styles.resultThumb} resizeMode="cover" />;
   }
@@ -61,6 +63,8 @@ function FoodResultThumb({ food }: { food: FoodRecord }) {
 }
 
 function FoodResultRow({ food, onPress }: { food: FoodRecord; onPress: () => void }) {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   return (
     <Pressable onPress={onPress} style={styles.resultRow}>
       <FoodResultThumb food={food} />
@@ -85,6 +89,7 @@ const PHOTO_CALLOUT_KEY_PREFIX = "log-food-photo-callout-seen-v1-";
 // without a secondary action since there's no related settings screen to
 // send someone to here.
 function PhotoCallout({ visible, onDismiss }: { visible: boolean; onDismiss: () => void }) {
+  const styles = useStyles();
   return (
     <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={onDismiss}>
       <View style={styles.calloutBackdrop}>
@@ -98,6 +103,8 @@ function PhotoCallout({ visible, onDismiss }: { visible: boolean; onDismiss: () 
 }
 
 export default function LogFoodScreen() {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const router = useRouter();
   const { user } = useAuth();
   const tier = useMemberTier();
@@ -771,150 +778,152 @@ export default function LogFoodScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Color.bg0 },
-  calloutBackdrop: {
-    flex: 1,
-    backgroundColor: "rgba(4,10,20,0.72)",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: Spacing.xl,
-  },
-  calloutCard: {
-    width: "100%",
-    maxWidth: 360,
-    borderRadius: Radius.lg,
-    borderWidth: 1,
-    borderColor: Color.borderDefault,
-    backgroundColor: Color.surface1,
-    padding: Spacing.lg,
-  },
-  calloutBody: { fontSize: 14, color: Color.textPrimary, lineHeight: 20 },
-  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md },
-  backButton: { padding: 4 },
-  headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
-  scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
-  fieldLabel: { fontSize: 12, fontWeight: "500", color: Color.textSecondary, marginBottom: 6 },
-  mealRow: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
-  mealChip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.md, paddingVertical: 8 },
-  mealChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
-  mealChipText: { fontSize: 12, fontWeight: "600", color: Color.textMuted },
-  mealChipTextActive: { color: Color.gold },
-  searchRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.sm,
-    paddingHorizontal: Spacing.md,
-    height: 44,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-  },
-  searchInput: { flex: 1, color: Color.textPrimary, fontSize: 14 },
-  methodsRow: { flexDirection: "row", gap: Spacing.xs, marginTop: Spacing.sm },
-  methodChip: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    height: 44,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.goldBorder,
-    backgroundColor: Color.goldWeak,
-  },
-  methodChipText: { fontSize: 13, fontWeight: "700", color: Color.gold },
-  // Photo's primary treatment — same solid-fill language as the main CTA,
-  // border kept (Button's own primary variant keeps its border over the
-  // fill too) so it doesn't look like a different component, just the
-  // primary state of this one.
-  methodChipPrimary: { backgroundColor: Color.gold },
-  methodChipTextPrimary: { color: Color.goldForeground },
-  sectionLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginTop: Spacing.lg, marginBottom: Spacing.sm },
-  fallbackSection: { marginTop: Spacing.sm },
-  fallbackLink: { paddingVertical: 6 },
-  fallbackLinkText: { fontSize: 13, fontWeight: "600", color: Color.textMuted },
-  favoriteToggle: { flexDirection: "row", alignItems: "center", gap: 6, paddingVertical: 6, alignSelf: "flex-start" },
-  favoriteToggleText: { fontSize: 13, fontWeight: "600", color: Color.gold },
-  favoritesPanel: {
-    marginTop: Spacing.xs,
-    padding: Spacing.sm,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-  },
-  customFoodRow: { flexDirection: "row", gap: Spacing.lg, marginTop: Spacing.md },
-  quickLink: { flexDirection: "row", alignItems: "center", gap: 4 },
-  quickLinkText: { fontSize: 11, fontWeight: "600", color: Color.textFaint },
-  resultsCard: { marginTop: Spacing.sm, padding: Spacing.md },
-  noResultsText: { fontSize: 12, color: Color.textMuted },
-  reportMissingLink: { marginTop: Spacing.sm },
-  reportMissingLinkText: { fontSize: 12, fontWeight: "600", color: Color.gold },
-  resultGroup: { marginBottom: Spacing.sm },
-  resultGroupLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginBottom: 4 },
-  resultRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.sm,
-    paddingVertical: 8,
-    borderTopWidth: 1,
-    borderTopColor: Color.borderSubtle,
-  },
-  resultName: { fontSize: 13, fontWeight: "600", color: Color.textPrimary },
-  resultSub: { fontSize: 11, color: Color.textMuted, marginTop: 2 },
-  resultThumb: { width: 36, height: 36, borderRadius: Radius.pill, backgroundColor: Color.surface2 },
-  resultIconTile: {
-    width: 36,
-    height: 36,
-    borderRadius: Radius.pill,
-    backgroundColor: Color.surface2,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  resultIconText: { fontSize: 18 },
-  closeSearchRow: { alignItems: "center", marginTop: Spacing.xs, paddingVertical: 6 },
-  closeSearchText: { fontSize: 12, color: Color.textFaint },
-  servingCard: { padding: Spacing.md, marginTop: Spacing.md, backgroundColor: Color.surface2 },
-  foundBanner: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: Spacing.sm },
-  foundBannerText: { fontSize: 12, fontWeight: "600", color: Color.success },
-  servingHeaderRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: Spacing.sm },
-  servingFoodName: { fontSize: 14, fontWeight: "700", color: Color.textPrimary, flex: 1 },
-  clearSelectionButton: { flexDirection: "row", alignItems: "center", gap: 2, paddingVertical: 2, paddingLeft: Spacing.sm },
-  clearSelectionText: { fontSize: 12, fontWeight: "600", color: Color.textFaint },
-  gramsOverrideInput: { height: 40, fontSize: 14 },
-  gramsTotal: { fontSize: 12, color: Color.textMuted, textAlign: "right", marginTop: -Spacing.sm },
-  recentChip: {
-    position: "relative",
-    width: 112,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.sm,
-  },
-  recentChipIcon: { fontSize: 16, marginBottom: 4 },
-  recentChipText: { fontSize: 12, fontWeight: "600", color: Color.textPrimary },
-  recentChipSub: { fontSize: 10, color: Color.textMuted, marginTop: 2 },
-  recentChipDelete: { position: "absolute", top: 2, right: 2, padding: 2 },
-  input: {
-    height: 44,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-    paddingHorizontal: Spacing.sm,
-    fontSize: 14,
-    color: Color.textPrimary,
-    marginBottom: Spacing.md,
-  },
-  gridRow: { flexDirection: "row", gap: Spacing.sm },
-  numberField: { flex: 1 },
-  error: { fontSize: 12, color: Color.danger, marginTop: Spacing.sm },
-  confirmFill: { flex: 1, alignItems: "center", justifyContent: "center" },
-  confirmIconWrap: { width: 56, height: 56, borderRadius: 28, backgroundColor: Color.gold, alignItems: "center", justifyContent: "center" },
-  confirmTitle: { fontSize: 17, fontWeight: "700", color: Color.textPrimary, marginTop: Spacing.md },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: Color.bg0 },
+    calloutBackdrop: {
+      flex: 1,
+      backgroundColor: "rgba(4,10,20,0.72)",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: Spacing.xl,
+    },
+    calloutCard: {
+      width: "100%",
+      maxWidth: 360,
+      borderRadius: Radius.lg,
+      borderWidth: 1,
+      borderColor: Color.borderDefault,
+      backgroundColor: Color.surface1,
+      padding: Spacing.lg,
+    },
+    calloutBody: { fontSize: 14, color: Color.textPrimary, lineHeight: 20 },
+    header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md },
+    backButton: { padding: 4 },
+    headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
+    scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
+    fieldLabel: { fontSize: 12, fontWeight: "500", color: Color.textSecondary, marginBottom: 6 },
+    mealRow: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
+    mealChip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.md, paddingVertical: 8 },
+    mealChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
+    mealChipText: { fontSize: 12, fontWeight: "600", color: Color.textMuted },
+    mealChipTextActive: { color: Color.gold },
+    searchRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: Spacing.sm,
+      paddingHorizontal: Spacing.md,
+      height: 44,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface1,
+    },
+    searchInput: { flex: 1, color: Color.textPrimary, fontSize: 14 },
+    methodsRow: { flexDirection: "row", gap: Spacing.xs, marginTop: Spacing.sm },
+    methodChip: {
+      flex: 1,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 6,
+      height: 44,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.goldBorder,
+      backgroundColor: Color.goldWeak,
+    },
+    methodChipText: { fontSize: 13, fontWeight: "700", color: Color.gold },
+    // Photo's primary treatment — same solid-fill language as the main CTA,
+    // border kept (Button's own primary variant keeps its border over the
+    // fill too) so it doesn't look like a different component, just the
+    // primary state of this one.
+    methodChipPrimary: { backgroundColor: Color.gold },
+    methodChipTextPrimary: { color: Color.goldForeground },
+    sectionLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginTop: Spacing.lg, marginBottom: Spacing.sm },
+    fallbackSection: { marginTop: Spacing.sm },
+    fallbackLink: { paddingVertical: 6 },
+    fallbackLinkText: { fontSize: 13, fontWeight: "600", color: Color.textMuted },
+    favoriteToggle: { flexDirection: "row", alignItems: "center", gap: 6, paddingVertical: 6, alignSelf: "flex-start" },
+    favoriteToggleText: { fontSize: 13, fontWeight: "600", color: Color.gold },
+    favoritesPanel: {
+      marginTop: Spacing.xs,
+      padding: Spacing.sm,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface1,
+    },
+    customFoodRow: { flexDirection: "row", gap: Spacing.lg, marginTop: Spacing.md },
+    quickLink: { flexDirection: "row", alignItems: "center", gap: 4 },
+    quickLinkText: { fontSize: 11, fontWeight: "600", color: Color.textFaint },
+    resultsCard: { marginTop: Spacing.sm, padding: Spacing.md },
+    noResultsText: { fontSize: 12, color: Color.textMuted },
+    reportMissingLink: { marginTop: Spacing.sm },
+    reportMissingLinkText: { fontSize: 12, fontWeight: "600", color: Color.gold },
+    resultGroup: { marginBottom: Spacing.sm },
+    resultGroupLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginBottom: 4 },
+    resultRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: Spacing.sm,
+      paddingVertical: 8,
+      borderTopWidth: 1,
+      borderTopColor: Color.borderSubtle,
+    },
+    resultName: { fontSize: 13, fontWeight: "600", color: Color.textPrimary },
+    resultSub: { fontSize: 11, color: Color.textMuted, marginTop: 2 },
+    resultThumb: { width: 36, height: 36, borderRadius: Radius.pill, backgroundColor: Color.surface2 },
+    resultIconTile: {
+      width: 36,
+      height: 36,
+      borderRadius: Radius.pill,
+      backgroundColor: Color.surface2,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    resultIconText: { fontSize: 18 },
+    closeSearchRow: { alignItems: "center", marginTop: Spacing.xs, paddingVertical: 6 },
+    closeSearchText: { fontSize: 12, color: Color.textFaint },
+    servingCard: { padding: Spacing.md, marginTop: Spacing.md, backgroundColor: Color.surface2 },
+    foundBanner: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: Spacing.sm },
+    foundBannerText: { fontSize: 12, fontWeight: "600", color: Color.success },
+    servingHeaderRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: Spacing.sm },
+    servingFoodName: { fontSize: 14, fontWeight: "700", color: Color.textPrimary, flex: 1 },
+    clearSelectionButton: { flexDirection: "row", alignItems: "center", gap: 2, paddingVertical: 2, paddingLeft: Spacing.sm },
+    clearSelectionText: { fontSize: 12, fontWeight: "600", color: Color.textFaint },
+    gramsOverrideInput: { height: 40, fontSize: 14 },
+    gramsTotal: { fontSize: 12, color: Color.textMuted, textAlign: "right", marginTop: -Spacing.sm },
+    recentChip: {
+      position: "relative",
+      width: 112,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface1,
+      paddingHorizontal: Spacing.sm,
+      paddingVertical: Spacing.sm,
+    },
+    recentChipIcon: { fontSize: 16, marginBottom: 4 },
+    recentChipText: { fontSize: 12, fontWeight: "600", color: Color.textPrimary },
+    recentChipSub: { fontSize: 10, color: Color.textMuted, marginTop: 2 },
+    recentChipDelete: { position: "absolute", top: 2, right: 2, padding: 2 },
+    input: {
+      height: 44,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface1,
+      paddingHorizontal: Spacing.sm,
+      fontSize: 14,
+      color: Color.textPrimary,
+      marginBottom: Spacing.md,
+    },
+    gridRow: { flexDirection: "row", gap: Spacing.sm },
+    numberField: { flex: 1 },
+    error: { fontSize: 12, color: Color.danger, marginTop: Spacing.sm },
+    confirmFill: { flex: 1, alignItems: "center", justifyContent: "center" },
+    confirmIconWrap: { width: 56, height: 56, borderRadius: 28, backgroundColor: Color.gold, alignItems: "center", justifyContent: "center" },
+    confirmTitle: { fontSize: 17, fontWeight: "700", color: Color.textPrimary, marginTop: Spacing.md },
+  })
+);

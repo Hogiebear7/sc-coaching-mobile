@@ -3,14 +3,17 @@ import { useMemo, useState } from "react";
 import { FlatList, Modal, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { Color, Radius, Spacing } from "@/constants/theme";
+import { Radius, Spacing } from "@/constants/theme";
 import { COUNTRIES, type CountryOption } from "@/lib/country-options";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 // A tap-to-open, searchable, scrollable picker — the ~200-country list
 // doesn't fit as a flat chip row the way the app's other short option lists
 // do (see DietaryRequirementsFields), so this gets its own modal rather than
 // reusing the chip pattern.
 export function CountryPicker({ value, onChange }: { value: string; onChange: (value: string) => void }) {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
 
@@ -81,52 +84,54 @@ export function CountryPicker({ value, onChange }: { value: string; onChange: (v
   );
 }
 
-const styles = StyleSheet.create({
-  field: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    height: 44,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-    paddingHorizontal: Spacing.md,
-  },
-  fieldValue: { fontSize: 14, color: Color.textPrimary },
-  fieldPlaceholder: { fontSize: 14, color: Color.textFaint },
-  modalSafe: { flex: 1, backgroundColor: Color.bg0 },
-  modalHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-  },
-  modalTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
-  searchRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.xs,
-    marginHorizontal: Spacing.lg,
-    marginBottom: Spacing.sm,
-    paddingHorizontal: Spacing.md,
-    height: 44,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-  },
-  searchInput: { flex: 1, fontSize: 14, color: Color.textPrimary },
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: Color.borderSubtle,
-  },
-  rowText: { fontSize: 14, color: Color.textPrimary },
-  emptyText: { fontSize: 13, color: Color.textMuted, textAlign: "center", marginTop: Spacing.xl },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    field: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      height: 44,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface1,
+      paddingHorizontal: Spacing.md,
+    },
+    fieldValue: { fontSize: 14, color: Color.textPrimary },
+    fieldPlaceholder: { fontSize: 14, color: Color.textFaint },
+    modalSafe: { flex: 1, backgroundColor: Color.bg0 },
+    modalHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: Spacing.lg,
+      paddingVertical: Spacing.md,
+    },
+    modalTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
+    searchRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: Spacing.xs,
+      marginHorizontal: Spacing.lg,
+      marginBottom: Spacing.sm,
+      paddingHorizontal: Spacing.md,
+      height: 44,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface1,
+    },
+    searchInput: { flex: 1, fontSize: 14, color: Color.textPrimary },
+    row: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: Spacing.lg,
+      paddingVertical: Spacing.md,
+      borderBottomWidth: 1,
+      borderBottomColor: Color.borderSubtle,
+    },
+    rowText: { fontSize: 14, color: Color.textPrimary },
+    emptyText: { fontSize: 13, color: Color.textMuted, textAlign: "center", marginTop: Spacing.xl },
+  })
+);

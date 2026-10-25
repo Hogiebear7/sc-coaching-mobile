@@ -18,7 +18,7 @@ import { ExerciseAutocomplete } from "@/components/ui/ExerciseAutocomplete";
 import { KeyboardAwareScroll } from "@/components/ui/KeyboardAwareScroll";
 import { SupersetChips } from "@/components/ui/SupersetChips";
 import { TextField } from "@/components/ui/TextField";
-import { Color, Radius, Spacing } from "@/constants/theme";
+import { Radius, Spacing } from "@/constants/theme";
 import { ApiError } from "@/lib/api-client";
 import { useExerciseLibraryNameIndex } from "@/lib/queries/exercise-library";
 import { tapFeedback } from "@/lib/haptics";
@@ -32,6 +32,7 @@ import {
   type TrainingProgram,
 } from "@/lib/queries/programs";
 import { SET_TYPE_OPTIONS, useWorkouts, type WorkoutSetType } from "@/lib/queries/workouts";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 let keySeq = 0;
 function nextKey(): string {
@@ -137,6 +138,7 @@ function rowsToDays(rows: DayRow[]): ProgramDay[] {
 }
 
 function DayTypeToggle({ value, onChange }: { value: ProgramDayType; onChange: (v: ProgramDayType) => void }) {
+  const styles = useStyles();
   return (
     <View style={styles.dayTypeRow}>
       {(["workout", "rest"] as ProgramDayType[]).map((t) => (
@@ -155,6 +157,7 @@ function DayTypeToggle({ value, onChange }: { value: ProgramDayType; onChange: (
 }
 
 function SetTypeChips({ value, onChange }: { value: WorkoutSetType; onChange: (v: WorkoutSetType) => void }) {
+  const styles = useStyles();
   return (
     <View style={styles.setTypeRow}>
       {SET_TYPE_OPTIONS.map((opt) => (
@@ -173,6 +176,8 @@ function SetTypeChips({ value, onChange }: { value: WorkoutSetType; onChange: (v
 }
 
 export default function StaffProgramBuilderScreen() {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const router = useRouter();
   const { userId, programId } = useLocalSearchParams<{ userId: string; programId?: string }>();
   const { data: programs, isLoading } = useStaffPrograms(userId);
@@ -427,63 +432,65 @@ export default function StaffProgramBuilderScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Color.bg0 },
-  centerFill: { flex: 1, alignItems: "center", justifyContent: "center" },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-  },
-  backButton: { padding: 4 },
-  headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
-  scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
-  sectionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: Spacing.sm, marginBottom: Spacing.sm },
-  sectionLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted },
-  addChip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.sm, paddingVertical: 6 },
-  addChipText: { fontSize: 11, fontWeight: "600", color: Color.textSecondary },
-  addExerciseChip: {
-    borderRadius: Radius.pill,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 6,
-    alignSelf: "flex-start",
-    marginTop: Spacing.xs,
-  },
-  dayCard: { padding: Spacing.md, marginBottom: Spacing.md },
-  dayLabelInput: { flex: 1, fontSize: 15, fontWeight: "700", color: Color.textPrimary, paddingVertical: 2 },
-  entryHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: Spacing.sm },
-  entryLabel: { fontSize: 12, fontWeight: "600", color: Color.textMuted },
-  removeText: { fontSize: 12, color: Color.danger },
-  dayTypeRow: { flexDirection: "row", gap: Spacing.xs },
-  dayTypeChip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.md, paddingVertical: 6 },
-  dayTypeChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
-  dayTypeChipText: { fontSize: 12, fontWeight: "600", color: Color.textMuted },
-  dayTypeChipTextActive: { color: Color.gold },
-  exerciseCard: { padding: Spacing.md, marginBottom: Spacing.sm, backgroundColor: Color.surface2 },
-  fieldLabel: { fontSize: 12, fontWeight: "500", color: Color.textSecondary, marginBottom: 4 },
-  gridRow: { flexDirection: "row", gap: Spacing.sm, marginTop: Spacing.sm },
-  numberField: { flex: 1 },
-  smallInput: {
-    height: 40,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-    paddingHorizontal: Spacing.sm,
-    fontSize: 13,
-    color: Color.textPrimary,
-  },
-  setTypeRow: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
-  setTypeChip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.sm, paddingVertical: 6 },
-  setTypeChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
-  setTypeChipText: { fontSize: 11, fontWeight: "500", color: Color.textMuted },
-  setTypeChipTextActive: { color: Color.gold },
-  restHint: { fontSize: 12, color: Color.textMuted, fontStyle: "italic" },
-  error: { fontSize: 12, color: Color.danger, marginTop: Spacing.md },
-  deleteRow: { alignItems: "center", marginTop: Spacing.lg, paddingVertical: Spacing.sm },
-  deleteText: { fontSize: 13, color: Color.danger, fontWeight: "600" },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: Color.bg0 },
+    centerFill: { flex: 1, alignItems: "center", justifyContent: "center" },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: Spacing.lg,
+      paddingVertical: Spacing.md,
+    },
+    backButton: { padding: 4 },
+    headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
+    scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
+    sectionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: Spacing.sm, marginBottom: Spacing.sm },
+    sectionLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted },
+    addChip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.sm, paddingVertical: 6 },
+    addChipText: { fontSize: 11, fontWeight: "600", color: Color.textSecondary },
+    addExerciseChip: {
+      borderRadius: Radius.pill,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      paddingHorizontal: Spacing.sm,
+      paddingVertical: 6,
+      alignSelf: "flex-start",
+      marginTop: Spacing.xs,
+    },
+    dayCard: { padding: Spacing.md, marginBottom: Spacing.md },
+    dayLabelInput: { flex: 1, fontSize: 15, fontWeight: "700", color: Color.textPrimary, paddingVertical: 2 },
+    entryHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: Spacing.sm },
+    entryLabel: { fontSize: 12, fontWeight: "600", color: Color.textMuted },
+    removeText: { fontSize: 12, color: Color.danger },
+    dayTypeRow: { flexDirection: "row", gap: Spacing.xs },
+    dayTypeChip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.md, paddingVertical: 6 },
+    dayTypeChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
+    dayTypeChipText: { fontSize: 12, fontWeight: "600", color: Color.textMuted },
+    dayTypeChipTextActive: { color: Color.gold },
+    exerciseCard: { padding: Spacing.md, marginBottom: Spacing.sm, backgroundColor: Color.surface2 },
+    fieldLabel: { fontSize: 12, fontWeight: "500", color: Color.textSecondary, marginBottom: 4 },
+    gridRow: { flexDirection: "row", gap: Spacing.sm, marginTop: Spacing.sm },
+    numberField: { flex: 1 },
+    smallInput: {
+      height: 40,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface1,
+      paddingHorizontal: Spacing.sm,
+      fontSize: 13,
+      color: Color.textPrimary,
+    },
+    setTypeRow: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
+    setTypeChip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.sm, paddingVertical: 6 },
+    setTypeChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
+    setTypeChipText: { fontSize: 11, fontWeight: "500", color: Color.textMuted },
+    setTypeChipTextActive: { color: Color.gold },
+    restHint: { fontSize: 12, color: Color.textMuted, fontStyle: "italic" },
+    error: { fontSize: 12, color: Color.danger, marginTop: Spacing.md },
+    deleteRow: { alignItems: "center", marginTop: Spacing.lg, paddingVertical: Spacing.sm },
+    deleteText: { fontSize: 13, color: Color.danger, fontWeight: "600" },
+  })
+);

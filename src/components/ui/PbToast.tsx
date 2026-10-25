@@ -3,8 +3,9 @@ import { useEffect, useRef } from "react";
 import { Animated, Pressable, StyleSheet, Text } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { Color, Radius, Spacing } from "@/constants/theme";
+import { Radius, Spacing } from "@/constants/theme";
 import { celebrateFeedback } from "@/lib/haptics";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 const VISIBLE_MS = 5000;
 const FADE_MS = 400;
@@ -21,6 +22,8 @@ const BOTTOM_CLEARANCE = 70;
  * tap.
  */
 export function PbToast({ message, onDismiss }: { message: string | null; onDismiss: () => void }) {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const insets = useSafeAreaInsets();
   const opacity = useRef(new Animated.Value(0)).current;
   // Read via ref rather than depending on `onDismiss` directly — this
@@ -65,26 +68,28 @@ export function PbToast({ message, onDismiss }: { message: string | null; onDism
   );
 }
 
-const styles = StyleSheet.create({
-  wrap: {
-    position: "absolute",
-    left: Spacing.md,
-    right: Spacing.md,
-    zIndex: 20,
-  },
-  toast: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.sm,
-    backgroundColor: Color.gold,
-    borderRadius: Radius.md,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    elevation: 6,
-    shadowColor: "#000",
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-  },
-  text: { flex: 1, fontSize: 13, fontWeight: "700", color: Color.bg0 },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    wrap: {
+      position: "absolute",
+      left: Spacing.md,
+      right: Spacing.md,
+      zIndex: 20,
+    },
+    toast: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: Spacing.sm,
+      backgroundColor: Color.gold,
+      borderRadius: Radius.md,
+      paddingHorizontal: Spacing.md,
+      paddingVertical: Spacing.sm,
+      elevation: 6,
+      shadowColor: "#000",
+      shadowOpacity: 0.2,
+      shadowRadius: 8,
+      shadowOffset: { width: 0, height: 2 },
+    },
+    text: { flex: 1, fontSize: 13, fontWeight: "700", color: Color.bg0 },
+  })
+);

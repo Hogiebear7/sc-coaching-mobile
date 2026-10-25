@@ -6,10 +6,11 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { API_BASE_URL } from "@/constants/config";
-import { Color, figure, Radius, Spacing } from "@/constants/theme";
+import { figure, Radius, Spacing } from "@/constants/theme";
 import { apiFetch } from "@/lib/api-client";
 import { tapFeedback } from "@/lib/haptics";
 import { useMembership } from "@/lib/queries/membership";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 const MEMBERSHIP_PATH = "/dashboard/membership";
 
@@ -54,6 +55,8 @@ function formatDate(iso: string | null): string {
 }
 
 export default function MembershipScreen() {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const router = useRouter();
   const { data, isLoading, isError, refetch } = useMembership();
 
@@ -145,49 +148,51 @@ export default function MembershipScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Color.bg0 },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-  },
-  backButton: { padding: 4 },
-  headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
-  centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
-  errorText: { color: Color.textMuted, fontSize: 14 },
-  scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
-  statusCard: { padding: Spacing.lg, marginBottom: Spacing.md },
-  statusCardAttention: { borderColor: Color.danger },
-  planLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted },
-  planName: { fontSize: 20, fontWeight: "700", color: Color.textPrimary, marginTop: 4 },
-  statusChip: {
-    alignSelf: "flex-start",
-    borderRadius: Radius.pill,
-    borderWidth: 1,
-    borderColor: Color.goldBorder,
-    backgroundColor: Color.goldWeak,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 4,
-    marginTop: Spacing.sm,
-  },
-  statusChipText: { fontSize: 11, fontWeight: "600", color: Color.gold },
-  planMeta: { fontSize: 12, color: Color.textMuted, marginTop: Spacing.sm },
-  statsRow: { flexDirection: "row", gap: Spacing.sm, marginBottom: Spacing.md },
-  statCard: { flex: 1, padding: Spacing.md, alignItems: "center" },
-  statValue: { ...figure(30), color: Color.gold },
-  statLabel: { fontSize: 11, color: Color.textMuted, marginTop: 4 },
-  warningCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.sm,
-    padding: Spacing.md,
-    marginBottom: Spacing.md,
-    borderColor: Color.warning,
-    backgroundColor: Color.warningWeak,
-  },
-  warningText: { fontSize: 12, color: Color.warning, flex: 1 },
-  noteText: { fontSize: 12, color: Color.textMuted, lineHeight: 17, marginTop: Spacing.sm, textAlign: "center" },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: Color.bg0 },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: Spacing.lg,
+      paddingVertical: Spacing.md,
+    },
+    backButton: { padding: 4 },
+    headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
+    centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
+    errorText: { color: Color.textMuted, fontSize: 14 },
+    scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
+    statusCard: { padding: Spacing.lg, marginBottom: Spacing.md },
+    statusCardAttention: { borderColor: Color.danger },
+    planLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted },
+    planName: { fontSize: 20, fontWeight: "700", color: Color.textPrimary, marginTop: 4 },
+    statusChip: {
+      alignSelf: "flex-start",
+      borderRadius: Radius.pill,
+      borderWidth: 1,
+      borderColor: Color.goldBorder,
+      backgroundColor: Color.goldWeak,
+      paddingHorizontal: Spacing.sm,
+      paddingVertical: 4,
+      marginTop: Spacing.sm,
+    },
+    statusChipText: { fontSize: 11, fontWeight: "600", color: Color.gold },
+    planMeta: { fontSize: 12, color: Color.textMuted, marginTop: Spacing.sm },
+    statsRow: { flexDirection: "row", gap: Spacing.sm, marginBottom: Spacing.md },
+    statCard: { flex: 1, padding: Spacing.md, alignItems: "center" },
+    statValue: { ...figure(30), color: Color.gold },
+    statLabel: { fontSize: 11, color: Color.textMuted, marginTop: 4 },
+    warningCard: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: Spacing.sm,
+      padding: Spacing.md,
+      marginBottom: Spacing.md,
+      borderColor: Color.warning,
+      backgroundColor: Color.warningWeak,
+    },
+    warningText: { fontSize: 12, color: Color.warning, flex: 1 },
+    noteText: { fontSize: 12, color: Color.textMuted, lineHeight: 17, marginTop: Spacing.sm, textAlign: "center" },
+  })
+);

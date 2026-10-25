@@ -18,12 +18,13 @@ import { Card } from "@/components/ui/Card";
 import { DateField, formatDateDisplay } from "@/components/ui/DateField";
 import { TextField } from "@/components/ui/TextField";
 import { API_BASE_URL } from "@/constants/config";
-import { Color, headline, Radius, Spacing } from "@/constants/theme";
+import { headline, Radius, Spacing } from "@/constants/theme";
 import { ApiError, useAuth, type AuthUser } from "@/lib/auth-context";
 import { apiFetch } from "@/lib/api-client";
 import { ALLERGENS, DIETARY_PREFERENCES, INTOLERANCES, optionLabel } from "@/lib/dietary-options";
 import { POST_SIGNUP_SETUP_KEY_PREFIX } from "@/lib/post-signup-setup";
 import { setToken as persistToken } from "@/lib/token-store";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 // Mirrors the web signup wizard (app/(auth)/signup/page.tsx in the main
 // repo) field-for-field, including dietary requirements and cycle tracking
@@ -130,6 +131,7 @@ function getPasswordStrengthError(password: string): string | null {
 }
 
 function Chip({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
+  const styles = useStyles();
   return (
     <Pressable onPress={onPress} style={[styles.chip, active && styles.chipActive]}>
       <Text style={[styles.chipText, active && styles.chipTextActive]}>{label}</Text>
@@ -148,6 +150,8 @@ function CheckboxRow({
   checked: boolean;
   onToggle: () => void;
 }) {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   return (
     <Pressable onPress={onToggle} style={styles.checkboxRow}>
       <Ionicons
@@ -165,6 +169,7 @@ function CheckboxRow({
 }
 
 function ReviewRow({ label, value }: { label: string; value: string }) {
+  const styles = useStyles();
   return (
     <View style={styles.reviewRow}>
       <Text style={styles.reviewLabel}>{label}</Text>
@@ -174,6 +179,7 @@ function ReviewRow({ label, value }: { label: string; value: string }) {
 }
 
 export default function SignupScreen() {
+  const styles = useStyles();
   const { setSession } = useAuth();
   const [values, setValues] = useState<FormValues>(INITIAL_VALUES);
   const [errors, setErrors] = useState<FormErrors>({});
@@ -768,174 +774,176 @@ export default function SignupScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Color.bg0 },
-  flex: { flex: 1 },
-  scroll: {
-    flexGrow: 1,
-    paddingHorizontal: Spacing.xl,
-    paddingVertical: Spacing.xxl,
-  },
-  logo: {
-    marginBottom: Spacing.md,
-  },
-  eyebrow: {
-    fontSize: 11,
-    fontWeight: "700",
-    letterSpacing: 1,
-    color: Color.gold,
-    marginBottom: Spacing.sm,
-  },
-  title: {
-    ...headline(36),
-    color: Color.textPrimary,
-  },
-  stepIndicator: {
-    fontSize: 12,
-    color: Color.textMuted,
-    marginTop: Spacing.sm,
-  },
-  progressTrack: {
-    height: 4,
-    borderRadius: Radius.pill,
-    backgroundColor: Color.surface2,
-    marginTop: Spacing.sm,
-    marginBottom: Spacing.xl,
-    overflow: "hidden",
-  },
-  progressFill: {
-    height: "100%",
-    borderRadius: Radius.pill,
-    backgroundColor: Color.gold,
-  },
-  form: {},
-  label: {
-    fontSize: 13,
-    fontWeight: "500",
-    color: Color.textSecondary,
-    marginBottom: 6,
-  },
-  labelSpaced: {
-    marginTop: Spacing.md,
-  },
-  chipHint: {
-    fontSize: 11,
-    color: Color.textFaint,
-    marginBottom: Spacing.xs,
-  },
-  chipRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: Spacing.xs,
-    marginBottom: Spacing.md,
-  },
-  chip: {
-    paddingHorizontal: Spacing.md,
-    paddingVertical: 8,
-    borderRadius: Radius.pill,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-  },
-  chipActive: {
-    borderColor: Color.gold,
-    backgroundColor: Color.goldWeak,
-  },
-  chipText: {
-    fontSize: 12,
-    fontWeight: "500",
-    color: Color.textMuted,
-  },
-  chipTextActive: {
-    color: Color.gold,
-  },
-  multiline: { height: 90, paddingTop: 12, textAlignVertical: "top" },
-  hint: {
-    fontSize: 11,
-    color: Color.textFaint,
-    marginTop: -Spacing.sm,
-    marginBottom: Spacing.md,
-    lineHeight: 15,
-  },
-  introText: {
-    fontSize: 13,
-    color: Color.textMuted,
-    lineHeight: 19,
-    marginBottom: Spacing.md,
-  },
-  dietaryCard: {
-    padding: Spacing.md,
-    marginTop: Spacing.md,
-    marginBottom: Spacing.md,
-  },
-  dietaryTitle: { fontSize: 14, fontWeight: "700", color: Color.textPrimary },
-  dietaryHint: { fontSize: 11, color: Color.textMuted, marginTop: 2, marginBottom: Spacing.md, lineHeight: 15 },
-  checkboxRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: Spacing.sm,
-    marginBottom: Spacing.md,
-  },
-  checkboxLabel: { fontSize: 13, fontWeight: "500", color: Color.textPrimary },
-  checkboxDescription: { fontSize: 11, color: Color.textMuted, marginTop: 2, lineHeight: 15 },
-  shareWrap: { marginTop: Spacing.xs },
-  legalLink: {
-    fontSize: 12,
-    color: Color.gold,
-    fontWeight: "600",
-    marginTop: -Spacing.sm,
-    marginBottom: Spacing.md,
-    marginLeft: 28,
-  },
-  reviewCard: { padding: Spacing.md, marginBottom: Spacing.md },
-  reviewCardTitle: {
-    fontSize: 10,
-    fontWeight: "700",
-    letterSpacing: 0.6,
-    color: Color.textMuted,
-    marginBottom: Spacing.sm,
-  },
-  reviewRow: {
-    paddingVertical: 6,
-    borderTopWidth: 1,
-    borderTopColor: Color.borderSubtle,
-  },
-  reviewLabel: { fontSize: 11, color: Color.textMuted },
-  reviewValue: { fontSize: 13, color: Color.textPrimary, fontWeight: "500", marginTop: 2 },
-  warnBox: {
-    marginTop: -Spacing.sm,
-    marginBottom: Spacing.md,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.warningWeak,
-    backgroundColor: Color.warningWeak,
-    padding: Spacing.sm,
-  },
-  warnText: { fontSize: 12, color: Color.warning },
-  warnLink: { fontSize: 12, color: Color.warning, fontWeight: "700", marginTop: 4 },
-  footerRow: {
-    flexDirection: "row",
-    gap: Spacing.sm,
-    marginTop: Spacing.lg,
-  },
-  footerButton: { flex: 1 },
-  error: {
-    color: Color.danger,
-    fontSize: 12,
-    marginTop: -Spacing.sm,
-    marginBottom: Spacing.md,
-  },
-  footer: {
-    flexDirection: "row",
-    justifyContent: "center",
-    marginTop: Spacing.xl,
-  },
-  footerText: {
-    color: Color.textMuted,
-    fontSize: 14,
-  },
-  link: {
-    color: Color.gold,
-    fontSize: 14,
-    fontWeight: "600",
-  },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: Color.bg0 },
+    flex: { flex: 1 },
+    scroll: {
+      flexGrow: 1,
+      paddingHorizontal: Spacing.xl,
+      paddingVertical: Spacing.xxl,
+    },
+    logo: {
+      marginBottom: Spacing.md,
+    },
+    eyebrow: {
+      fontSize: 11,
+      fontWeight: "700",
+      letterSpacing: 1,
+      color: Color.gold,
+      marginBottom: Spacing.sm,
+    },
+    title: {
+      ...headline(36),
+      color: Color.textPrimary,
+    },
+    stepIndicator: {
+      fontSize: 12,
+      color: Color.textMuted,
+      marginTop: Spacing.sm,
+    },
+    progressTrack: {
+      height: 4,
+      borderRadius: Radius.pill,
+      backgroundColor: Color.surface2,
+      marginTop: Spacing.sm,
+      marginBottom: Spacing.xl,
+      overflow: "hidden",
+    },
+    progressFill: {
+      height: "100%",
+      borderRadius: Radius.pill,
+      backgroundColor: Color.gold,
+    },
+    form: {},
+    label: {
+      fontSize: 13,
+      fontWeight: "500",
+      color: Color.textSecondary,
+      marginBottom: 6,
+    },
+    labelSpaced: {
+      marginTop: Spacing.md,
+    },
+    chipHint: {
+      fontSize: 11,
+      color: Color.textFaint,
+      marginBottom: Spacing.xs,
+    },
+    chipRow: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: Spacing.xs,
+      marginBottom: Spacing.md,
+    },
+    chip: {
+      paddingHorizontal: Spacing.md,
+      paddingVertical: 8,
+      borderRadius: Radius.pill,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+    },
+    chipActive: {
+      borderColor: Color.gold,
+      backgroundColor: Color.goldWeak,
+    },
+    chipText: {
+      fontSize: 12,
+      fontWeight: "500",
+      color: Color.textMuted,
+    },
+    chipTextActive: {
+      color: Color.gold,
+    },
+    multiline: { height: 90, paddingTop: 12, textAlignVertical: "top" },
+    hint: {
+      fontSize: 11,
+      color: Color.textFaint,
+      marginTop: -Spacing.sm,
+      marginBottom: Spacing.md,
+      lineHeight: 15,
+    },
+    introText: {
+      fontSize: 13,
+      color: Color.textMuted,
+      lineHeight: 19,
+      marginBottom: Spacing.md,
+    },
+    dietaryCard: {
+      padding: Spacing.md,
+      marginTop: Spacing.md,
+      marginBottom: Spacing.md,
+    },
+    dietaryTitle: { fontSize: 14, fontWeight: "700", color: Color.textPrimary },
+    dietaryHint: { fontSize: 11, color: Color.textMuted, marginTop: 2, marginBottom: Spacing.md, lineHeight: 15 },
+    checkboxRow: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      gap: Spacing.sm,
+      marginBottom: Spacing.md,
+    },
+    checkboxLabel: { fontSize: 13, fontWeight: "500", color: Color.textPrimary },
+    checkboxDescription: { fontSize: 11, color: Color.textMuted, marginTop: 2, lineHeight: 15 },
+    shareWrap: { marginTop: Spacing.xs },
+    legalLink: {
+      fontSize: 12,
+      color: Color.gold,
+      fontWeight: "600",
+      marginTop: -Spacing.sm,
+      marginBottom: Spacing.md,
+      marginLeft: 28,
+    },
+    reviewCard: { padding: Spacing.md, marginBottom: Spacing.md },
+    reviewCardTitle: {
+      fontSize: 10,
+      fontWeight: "700",
+      letterSpacing: 0.6,
+      color: Color.textMuted,
+      marginBottom: Spacing.sm,
+    },
+    reviewRow: {
+      paddingVertical: 6,
+      borderTopWidth: 1,
+      borderTopColor: Color.borderSubtle,
+    },
+    reviewLabel: { fontSize: 11, color: Color.textMuted },
+    reviewValue: { fontSize: 13, color: Color.textPrimary, fontWeight: "500", marginTop: 2 },
+    warnBox: {
+      marginTop: -Spacing.sm,
+      marginBottom: Spacing.md,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.warningWeak,
+      backgroundColor: Color.warningWeak,
+      padding: Spacing.sm,
+    },
+    warnText: { fontSize: 12, color: Color.warning },
+    warnLink: { fontSize: 12, color: Color.warning, fontWeight: "700", marginTop: 4 },
+    footerRow: {
+      flexDirection: "row",
+      gap: Spacing.sm,
+      marginTop: Spacing.lg,
+    },
+    footerButton: { flex: 1 },
+    error: {
+      color: Color.danger,
+      fontSize: 12,
+      marginTop: -Spacing.sm,
+      marginBottom: Spacing.md,
+    },
+    footer: {
+      flexDirection: "row",
+      justifyContent: "center",
+      marginTop: Spacing.xl,
+    },
+    footerText: {
+      color: Color.textMuted,
+      fontSize: 14,
+    },
+    link: {
+      color: Color.gold,
+      fontSize: 14,
+      fontWeight: "600",
+    },
+  })
+);

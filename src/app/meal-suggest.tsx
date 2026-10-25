@@ -18,7 +18,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { CameraPermissionDenied, CameraUnavailable } from "@/components/nutrition/CameraPermissionGate";
-import { Color, Radius, Spacing } from "@/constants/theme";
+import { Radius, Spacing } from "@/constants/theme";
 import { trackEvent } from "@/lib/analytics";
 import { tapFeedback } from "@/lib/haptics";
 import { parseIngredientText } from "@/lib/ingredient-text";
@@ -28,6 +28,7 @@ import { useMealSuggest, type MealSuggestion } from "@/lib/queries/meal-suggest"
 import { useCreateRecipe } from "@/lib/queries/recipes";
 import { useReceiptScan } from "@/lib/queries/receipt-scan";
 import { todayDateString } from "@/lib/workout-formatters";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 type Mode = "photo" | "receipt" | "text";
 type Stage = "input" | "confirm" | "results";
@@ -58,6 +59,8 @@ function defaultMealType(): MealType {
 }
 
 function SuggestionCard({ suggestion }: { suggestion: MealSuggestion }) {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const [mealType, setMealType] = useState<MealType>(defaultMealType());
   const createEntry = useCreateFoodEntry();
   const createRecipe = useCreateRecipe();
@@ -190,6 +193,8 @@ function SuggestionCard({ suggestion }: { suggestion: MealSuggestion }) {
 // AI-estimated, not looked up — "Log this" writes the estimate straight to
 // the diary the same way a free-hand entry would.
 export default function MealSuggestScreen() {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const router = useRouter();
   const [mode, setMode] = useState<Mode>("photo");
   const [stage, setStage] = useState<Stage>("input");
@@ -539,6 +544,7 @@ function CameraCaptureLayer({
   onCapture: (ref: CameraView | null) => void;
   capturing: boolean;
 }) {
+  const styles = useStyles();
   const [ref, setRef] = useState<CameraView | null>(null);
   return (
     <>
@@ -555,159 +561,161 @@ function CameraCaptureLayer({
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Color.bg0 },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-  },
-  backButton: { padding: 4 },
-  headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
-  centerFill: { flex: 1, alignItems: "center", justifyContent: "center" },
-  scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
-  subhead: { fontSize: 12, color: Color.textMuted, marginBottom: Spacing.md },
-  modeToggle: { flexDirection: "row", gap: Spacing.sm, paddingHorizontal: Spacing.lg, marginBottom: Spacing.md },
-  modeChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    borderRadius: Radius.pill,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: 8,
-  },
-  modeChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
-  modeChipText: { fontSize: 12, fontWeight: "600", color: Color.textMuted },
-  modeChipTextActive: { color: Color.gold },
-  cameraWrap: {
-    flex: 1,
-    marginHorizontal: Spacing.lg,
-    marginBottom: Spacing.md,
-    borderRadius: Radius.lg,
-    overflow: "hidden",
-    backgroundColor: Color.surface1,
-  },
-  frame: {
-    position: "absolute",
-    top: "12%",
-    left: "8%",
-    right: "8%",
-    bottom: "24%",
-    borderWidth: 2,
-    borderColor: Color.gold,
-    borderRadius: Radius.md,
-  },
-  captureButton: {
-    position: "absolute",
-    bottom: Spacing.lg,
-    alignSelf: "center",
-    width: 68,
-    height: 68,
-    borderRadius: 34,
-    borderWidth: 3,
-    borderColor: Color.gold,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  captureButtonInner: { width: 54, height: 54, borderRadius: 27, backgroundColor: Color.gold },
-  previewWrap: { flex: 1, marginHorizontal: Spacing.lg, marginBottom: Spacing.md, borderRadius: Radius.lg, overflow: "hidden" },
-  previewImage: { flex: 1, width: "100%" },
-  retakeButton: {
-    position: "absolute",
-    top: Spacing.sm,
-    right: Spacing.sm,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    backgroundColor: "rgba(0,0,0,0.55)",
-    borderRadius: Radius.pill,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 6,
-  },
-  retakeText: { fontSize: 11, fontWeight: "600", color: Color.textPrimary },
-  textInputWrap: { paddingHorizontal: Spacing.lg, marginBottom: Spacing.md },
-  textInput: {
-    minHeight: 100,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-    padding: Spacing.md,
-    fontSize: 14,
-    color: Color.textPrimary,
-    textAlignVertical: "top",
-  },
-  textInputSingle: {
-    height: 44,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-    paddingHorizontal: Spacing.md,
-    fontSize: 13,
-    color: Color.textPrimary,
-  },
-  errorText: { fontSize: 12, color: Color.warning, textAlign: "center", marginBottom: Spacing.sm },
-  receiptHint: { fontSize: 12, color: Color.textMuted, textAlign: "center", paddingHorizontal: Spacing.lg, marginBottom: Spacing.sm },
-  confirmRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.sm,
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: Color.borderSubtle,
-  },
-  confirmInput: { flex: 1, fontSize: 14, color: Color.textPrimary, paddingVertical: 4 },
-  uncertainBadge: { borderRadius: Radius.pill, backgroundColor: Color.warningWeak, paddingHorizontal: 6, paddingVertical: 2 },
-  uncertainBadgeText: { fontSize: 9, fontWeight: "700", color: Color.warning, textTransform: "uppercase" },
-  confirmAddRow: { flexDirection: "row", alignItems: "center", gap: Spacing.sm, marginTop: Spacing.md },
-  confirmAddInput: {
-    flex: 1,
-    height: 40,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-    paddingHorizontal: Spacing.sm,
-    fontSize: 13,
-    color: Color.textPrimary,
-  },
-  confirmAddButton: {
-    width: 40,
-    height: 40,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.goldBorder,
-    backgroundColor: Color.goldWeak,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  footer: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.lg },
-  suggestionCard: { padding: Spacing.md, marginBottom: Spacing.md },
-  suggestionTitle: { fontSize: 15, fontWeight: "700", color: Color.textPrimary },
-  suggestionDesc: { fontSize: 12, color: Color.textMuted, marginTop: 4, lineHeight: 17 },
-  ingredientRow: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: Spacing.sm },
-  ingredientChip: { borderRadius: Radius.pill, backgroundColor: Color.surface2, paddingHorizontal: Spacing.sm, paddingVertical: 3 },
-  ingredientChipText: { fontSize: 10, color: Color.textSecondary },
-  macroRow: { flexDirection: "row", gap: Spacing.lg, marginTop: Spacing.md },
-  macroStat: {},
-  macroValue: { fontSize: 15, fontWeight: "700", color: Color.gold, fontVariant: ["tabular-nums"] },
-  macroLabel: { fontSize: 10, color: Color.textMuted, marginTop: 1 },
-  crossRow: { flexDirection: "row", alignItems: "flex-start", gap: 6, marginTop: Spacing.sm },
-  crossText: { flex: 1, fontSize: 11, color: Color.textMuted, lineHeight: 16 },
-  mealTypeRow: { flexDirection: "row", gap: 6, marginTop: Spacing.md },
-  mealTypeChip: { flex: 1, alignItems: "center", borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingVertical: 6 },
-  mealTypeChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
-  mealTypeChipText: { fontSize: 10, fontWeight: "600", color: Color.textMuted },
-  mealTypeChipTextActive: { color: Color.gold },
-  loggedRow: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: Spacing.md },
-  loggedText: { fontSize: 12, fontWeight: "600", color: Color.success },
-  saveRecipeRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, marginTop: Spacing.sm, paddingVertical: 6 },
-  saveRecipeText: { fontSize: 12, fontWeight: "600", color: Color.gold },
-  savedRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, marginTop: Spacing.sm },
-  savedText: { fontSize: 12, fontWeight: "600", color: Color.gold },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: Color.bg0 },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: Spacing.lg,
+      paddingVertical: Spacing.md,
+    },
+    backButton: { padding: 4 },
+    headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
+    centerFill: { flex: 1, alignItems: "center", justifyContent: "center" },
+    scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
+    subhead: { fontSize: 12, color: Color.textMuted, marginBottom: Spacing.md },
+    modeToggle: { flexDirection: "row", gap: Spacing.sm, paddingHorizontal: Spacing.lg, marginBottom: Spacing.md },
+    modeChip: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+      borderRadius: Radius.pill,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      paddingHorizontal: Spacing.md,
+      paddingVertical: 8,
+    },
+    modeChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
+    modeChipText: { fontSize: 12, fontWeight: "600", color: Color.textMuted },
+    modeChipTextActive: { color: Color.gold },
+    cameraWrap: {
+      flex: 1,
+      marginHorizontal: Spacing.lg,
+      marginBottom: Spacing.md,
+      borderRadius: Radius.lg,
+      overflow: "hidden",
+      backgroundColor: Color.surface1,
+    },
+    frame: {
+      position: "absolute",
+      top: "12%",
+      left: "8%",
+      right: "8%",
+      bottom: "24%",
+      borderWidth: 2,
+      borderColor: Color.gold,
+      borderRadius: Radius.md,
+    },
+    captureButton: {
+      position: "absolute",
+      bottom: Spacing.lg,
+      alignSelf: "center",
+      width: 68,
+      height: 68,
+      borderRadius: 34,
+      borderWidth: 3,
+      borderColor: Color.gold,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    captureButtonInner: { width: 54, height: 54, borderRadius: 27, backgroundColor: Color.gold },
+    previewWrap: { flex: 1, marginHorizontal: Spacing.lg, marginBottom: Spacing.md, borderRadius: Radius.lg, overflow: "hidden" },
+    previewImage: { flex: 1, width: "100%" },
+    retakeButton: {
+      position: "absolute",
+      top: Spacing.sm,
+      right: Spacing.sm,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 4,
+      backgroundColor: "rgba(0,0,0,0.55)",
+      borderRadius: Radius.pill,
+      paddingHorizontal: Spacing.sm,
+      paddingVertical: 6,
+    },
+    retakeText: { fontSize: 11, fontWeight: "600", color: Color.textPrimary },
+    textInputWrap: { paddingHorizontal: Spacing.lg, marginBottom: Spacing.md },
+    textInput: {
+      minHeight: 100,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface1,
+      padding: Spacing.md,
+      fontSize: 14,
+      color: Color.textPrimary,
+      textAlignVertical: "top",
+    },
+    textInputSingle: {
+      height: 44,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface1,
+      paddingHorizontal: Spacing.md,
+      fontSize: 13,
+      color: Color.textPrimary,
+    },
+    errorText: { fontSize: 12, color: Color.warning, textAlign: "center", marginBottom: Spacing.sm },
+    receiptHint: { fontSize: 12, color: Color.textMuted, textAlign: "center", paddingHorizontal: Spacing.lg, marginBottom: Spacing.sm },
+    confirmRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: Spacing.sm,
+      paddingVertical: 8,
+      borderBottomWidth: 1,
+      borderBottomColor: Color.borderSubtle,
+    },
+    confirmInput: { flex: 1, fontSize: 14, color: Color.textPrimary, paddingVertical: 4 },
+    uncertainBadge: { borderRadius: Radius.pill, backgroundColor: Color.warningWeak, paddingHorizontal: 6, paddingVertical: 2 },
+    uncertainBadgeText: { fontSize: 9, fontWeight: "700", color: Color.warning, textTransform: "uppercase" },
+    confirmAddRow: { flexDirection: "row", alignItems: "center", gap: Spacing.sm, marginTop: Spacing.md },
+    confirmAddInput: {
+      flex: 1,
+      height: 40,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface1,
+      paddingHorizontal: Spacing.sm,
+      fontSize: 13,
+      color: Color.textPrimary,
+    },
+    confirmAddButton: {
+      width: 40,
+      height: 40,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.goldBorder,
+      backgroundColor: Color.goldWeak,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    footer: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.lg },
+    suggestionCard: { padding: Spacing.md, marginBottom: Spacing.md },
+    suggestionTitle: { fontSize: 15, fontWeight: "700", color: Color.textPrimary },
+    suggestionDesc: { fontSize: 12, color: Color.textMuted, marginTop: 4, lineHeight: 17 },
+    ingredientRow: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: Spacing.sm },
+    ingredientChip: { borderRadius: Radius.pill, backgroundColor: Color.surface2, paddingHorizontal: Spacing.sm, paddingVertical: 3 },
+    ingredientChipText: { fontSize: 10, color: Color.textSecondary },
+    macroRow: { flexDirection: "row", gap: Spacing.lg, marginTop: Spacing.md },
+    macroStat: {},
+    macroValue: { fontSize: 15, fontWeight: "700", color: Color.gold, fontVariant: ["tabular-nums"] },
+    macroLabel: { fontSize: 10, color: Color.textMuted, marginTop: 1 },
+    crossRow: { flexDirection: "row", alignItems: "flex-start", gap: 6, marginTop: Spacing.sm },
+    crossText: { flex: 1, fontSize: 11, color: Color.textMuted, lineHeight: 16 },
+    mealTypeRow: { flexDirection: "row", gap: 6, marginTop: Spacing.md },
+    mealTypeChip: { flex: 1, alignItems: "center", borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingVertical: 6 },
+    mealTypeChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
+    mealTypeChipText: { fontSize: 10, fontWeight: "600", color: Color.textMuted },
+    mealTypeChipTextActive: { color: Color.gold },
+    loggedRow: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: Spacing.md },
+    loggedText: { fontSize: 12, fontWeight: "600", color: Color.success },
+    saveRecipeRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, marginTop: Spacing.sm, paddingVertical: 6 },
+    saveRecipeText: { fontSize: 12, fontWeight: "600", color: Color.gold },
+    savedRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, marginTop: Spacing.sm },
+    savedText: { fontSize: 12, fontWeight: "600", color: Color.gold },
+  })
+);

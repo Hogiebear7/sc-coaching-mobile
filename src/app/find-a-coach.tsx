@@ -9,7 +9,7 @@ import { BrandMark } from "@/components/ui/BrandMark";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { TextField } from "@/components/ui/TextField";
-import { Color, headline, Radius, Spacing } from "@/constants/theme";
+import { headline, Radius, Spacing } from "@/constants/theme";
 import { ApiError } from "@/lib/api-client";
 import {
   ALLOWED_RADIUS_KM,
@@ -21,6 +21,7 @@ import {
   type NearbyGym,
   type RadiusKm,
 } from "@/lib/queries/gyms";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 type Status = "idle" | "requesting" | "denied" | "ready" | "error";
 
@@ -43,6 +44,7 @@ function widerRadius(radiusKm: RadiusKm): RadiusKm | null {
 }
 
 function RadiusChips({ radiusKm, onChange }: { radiusKm: RadiusKm; onChange: (value: RadiusKm) => void }) {
+  const styles = useStyles();
   return (
     <View style={styles.radiusRow}>
       {ALLOWED_RADIUS_KM.map((value) => (
@@ -59,6 +61,8 @@ function RadiusChips({ radiusKm, onChange }: { radiusKm: RadiusKm; onChange: (va
 }
 
 function GymRow({ gym }: { gym: NearbyGym }) {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   return (
     <Card style={styles.gymCard} tier={gym.recommended ? "standard" : "quiet"} accent={gym.recommended}>
       {gym.recommended ? (
@@ -88,6 +92,8 @@ function GymRow({ gym }: { gym: NearbyGym }) {
 }
 
 export default function FindACoachScreen() {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const router = useRouter();
   const [status, setStatus] = useState<Status>("idle");
   // Device GPS and manual-search results are kept in separate slots — see
@@ -308,114 +314,116 @@ export default function FindACoachScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Color.bg0 },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-  },
-  backButton: { padding: Spacing.xs },
-  headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
-  scroll: { paddingHorizontal: Spacing.xl, paddingBottom: Spacing.xxl },
-  logo: { marginBottom: Spacing.md },
-  title: {
-    ...headline(34),
-    color: Color.textPrimary,
-  },
-  hint: {
-    fontSize: 13,
-    color: Color.textMuted,
-    marginTop: Spacing.sm,
-    marginBottom: Spacing.xl,
-    lineHeight: 19,
-  },
-  centerFill: { alignItems: "center", justifyContent: "center", paddingVertical: Spacing.xxl },
-  // ~25% less vertical padding than centerFill — used for the denied/error
-  // fallback specifically, since the search form now sits directly below it
-  // and the original gap read as too loose once that form became the clear
-  // primary path rather than an afterthought.
-  centerFillTight: { alignItems: "center", justifyContent: "center", paddingVertical: Spacing.xl },
-  errorHeading: {
-    color: Color.textPrimary,
-    fontSize: 17,
-    fontWeight: "700",
-    textAlign: "center",
-    marginBottom: Spacing.xs,
-  },
-  errorText: { color: Color.textMuted, fontSize: 14, textAlign: "center" },
-  searchRow: {
-    flexDirection: "row",
-    alignItems: "flex-end",
-    gap: Spacing.sm,
-    // ~25% less than the original Spacing.lg — matches centerFillTight's
-    // reduction so the whole fallback state feels like one tightened block.
-    marginTop: Spacing.md,
-  },
-  searchButton: { height: 48 },
-  searchError: { marginTop: Spacing.sm, textAlign: "left" },
-  searchedLabel: {
-    fontSize: 12,
-    color: Color.textFaint,
-    marginBottom: Spacing.md,
-  },
-  radiusRow: { flexDirection: "row", gap: Spacing.xs, marginBottom: Spacing.md },
-  radiusChip: {
-    borderRadius: Radius.pill,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: 6,
-  },
-  radiusChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
-  radiusChipText: { fontSize: 12, fontWeight: "600", color: Color.textMuted },
-  radiusChipTextActive: { color: Color.gold },
-  candidatesHeading: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: Color.textSecondary,
-    marginTop: Spacing.md,
-    marginBottom: Spacing.sm,
-  },
-  candidatesList: { gap: Spacing.xs },
-  candidateRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.sm,
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.md,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-  },
-  candidateLabel: { flex: 1, fontSize: 13, color: Color.textPrimary, lineHeight: 18 },
-  candidatesBack: { marginTop: Spacing.sm, alignSelf: "center", padding: Spacing.xs },
-  candidatesBackText: { fontSize: 13, fontWeight: "600", color: Color.textMuted },
-  noResultsSecondary: { marginTop: Spacing.sm },
-  noResultsSecondaryText: { fontSize: 13, fontWeight: "600", color: Color.gold },
-  gymList: { gap: Spacing.md },
-  gymCard: { padding: Spacing.lg },
-  recommendedBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    alignSelf: "flex-start",
-    gap: 4,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 4,
-    borderRadius: Radius.pill,
-    backgroundColor: Color.goldWeak,
-    borderWidth: 1,
-    borderColor: Color.goldBorder,
-    marginBottom: Spacing.sm,
-  },
-  recommendedText: { fontSize: 11, fontWeight: "700", color: Color.gold },
-  gymName: { fontSize: 17, fontWeight: "700", color: Color.textPrimary },
-  gymTagline: { fontSize: 13, color: Color.textMuted, marginTop: 4, lineHeight: 18 },
-  gymDistance: { fontSize: 13, fontWeight: "600", color: Color.gold, marginTop: Spacing.sm },
-  gymAddress: { fontSize: 12, color: Color.textFaint, marginTop: 2 },
-  gymActions: { flexDirection: "row", gap: Spacing.md, marginTop: Spacing.md },
-  gymActionButton: { flexDirection: "row", alignItems: "center", gap: 4 },
-  gymActionText: { fontSize: 13, fontWeight: "600", color: Color.gold },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: Color.bg0 },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: Spacing.lg,
+      paddingVertical: Spacing.md,
+    },
+    backButton: { padding: Spacing.xs },
+    headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
+    scroll: { paddingHorizontal: Spacing.xl, paddingBottom: Spacing.xxl },
+    logo: { marginBottom: Spacing.md },
+    title: {
+      ...headline(34),
+      color: Color.textPrimary,
+    },
+    hint: {
+      fontSize: 13,
+      color: Color.textMuted,
+      marginTop: Spacing.sm,
+      marginBottom: Spacing.xl,
+      lineHeight: 19,
+    },
+    centerFill: { alignItems: "center", justifyContent: "center", paddingVertical: Spacing.xxl },
+    // ~25% less vertical padding than centerFill — used for the denied/error
+    // fallback specifically, since the search form now sits directly below it
+    // and the original gap read as too loose once that form became the clear
+    // primary path rather than an afterthought.
+    centerFillTight: { alignItems: "center", justifyContent: "center", paddingVertical: Spacing.xl },
+    errorHeading: {
+      color: Color.textPrimary,
+      fontSize: 17,
+      fontWeight: "700",
+      textAlign: "center",
+      marginBottom: Spacing.xs,
+    },
+    errorText: { color: Color.textMuted, fontSize: 14, textAlign: "center" },
+    searchRow: {
+      flexDirection: "row",
+      alignItems: "flex-end",
+      gap: Spacing.sm,
+      // ~25% less than the original Spacing.lg — matches centerFillTight's
+      // reduction so the whole fallback state feels like one tightened block.
+      marginTop: Spacing.md,
+    },
+    searchButton: { height: 48 },
+    searchError: { marginTop: Spacing.sm, textAlign: "left" },
+    searchedLabel: {
+      fontSize: 12,
+      color: Color.textFaint,
+      marginBottom: Spacing.md,
+    },
+    radiusRow: { flexDirection: "row", gap: Spacing.xs, marginBottom: Spacing.md },
+    radiusChip: {
+      borderRadius: Radius.pill,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      paddingHorizontal: Spacing.md,
+      paddingVertical: 6,
+    },
+    radiusChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
+    radiusChipText: { fontSize: 12, fontWeight: "600", color: Color.textMuted },
+    radiusChipTextActive: { color: Color.gold },
+    candidatesHeading: {
+      fontSize: 13,
+      fontWeight: "600",
+      color: Color.textSecondary,
+      marginTop: Spacing.md,
+      marginBottom: Spacing.sm,
+    },
+    candidatesList: { gap: Spacing.xs },
+    candidateRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: Spacing.sm,
+      paddingVertical: Spacing.sm,
+      paddingHorizontal: Spacing.md,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+    },
+    candidateLabel: { flex: 1, fontSize: 13, color: Color.textPrimary, lineHeight: 18 },
+    candidatesBack: { marginTop: Spacing.sm, alignSelf: "center", padding: Spacing.xs },
+    candidatesBackText: { fontSize: 13, fontWeight: "600", color: Color.textMuted },
+    noResultsSecondary: { marginTop: Spacing.sm },
+    noResultsSecondaryText: { fontSize: 13, fontWeight: "600", color: Color.gold },
+    gymList: { gap: Spacing.md },
+    gymCard: { padding: Spacing.lg },
+    recommendedBadge: {
+      flexDirection: "row",
+      alignItems: "center",
+      alignSelf: "flex-start",
+      gap: 4,
+      paddingHorizontal: Spacing.sm,
+      paddingVertical: 4,
+      borderRadius: Radius.pill,
+      backgroundColor: Color.goldWeak,
+      borderWidth: 1,
+      borderColor: Color.goldBorder,
+      marginBottom: Spacing.sm,
+    },
+    recommendedText: { fontSize: 11, fontWeight: "700", color: Color.gold },
+    gymName: { fontSize: 17, fontWeight: "700", color: Color.textPrimary },
+    gymTagline: { fontSize: 13, color: Color.textMuted, marginTop: 4, lineHeight: 18 },
+    gymDistance: { fontSize: 13, fontWeight: "600", color: Color.gold, marginTop: Spacing.sm },
+    gymAddress: { fontSize: 12, color: Color.textFaint, marginTop: 2 },
+    gymActions: { flexDirection: "row", gap: Spacing.md, marginTop: Spacing.md },
+    gymActionButton: { flexDirection: "row", alignItems: "center", gap: 4 },
+    gymActionText: { fontSize: 13, fontWeight: "600", color: Color.gold },
+  })
+);

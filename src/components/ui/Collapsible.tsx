@@ -12,7 +12,8 @@ import {
   type ViewStyle,
 } from "react-native";
 
-import { Color, Spacing } from "@/constants/theme";
+import { Spacing } from "@/constants/theme";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 // Generalizes the collapsed-by-default / expand-to-review pattern already
 // proven in workout-generator.tsx's SelectedMusclesSection, for use
@@ -35,6 +36,8 @@ export function Collapsible({
   children: ReactNode;
   style?: StyleProp<ViewStyle>;
 }) {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const [expanded, setExpanded] = useState(defaultExpanded);
 
   function toggle() {
@@ -71,29 +74,31 @@ export function Collapsible({
   );
 }
 
-const styles = StyleSheet.create({
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: Spacing.sm,
-  },
-  headerText: {
-    flex: 1,
-    marginRight: Spacing.sm,
-  },
-  title: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: Color.textSecondary,
-  },
-  summary: {
-    fontSize: 12,
-    color: Color.textMuted,
-    marginTop: 2,
-  },
-  content: {
-    paddingTop: Spacing.xs,
-    paddingBottom: Spacing.sm,
-  },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingVertical: Spacing.sm,
+    },
+    headerText: {
+      flex: 1,
+      marginRight: Spacing.sm,
+    },
+    title: {
+      fontSize: 13,
+      fontWeight: "600",
+      color: Color.textSecondary,
+    },
+    summary: {
+      fontSize: 12,
+      color: Color.textMuted,
+      marginTop: 2,
+    },
+    content: {
+      paddingTop: Spacing.xs,
+      paddingBottom: Spacing.sm,
+    },
+  })
+);

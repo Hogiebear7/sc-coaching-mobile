@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Collapsible } from "@/components/ui/Collapsible";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { Color, Radius, Spacing } from "@/constants/theme";
+import { Radius, Spacing } from "@/constants/theme";
 import { trackEvent } from "@/lib/analytics";
 import { tapFeedback } from "@/lib/haptics";
 import { parseIngredientText } from "@/lib/ingredient-text";
@@ -20,6 +20,7 @@ import {
   type ShoppingListItem,
 } from "@/lib/queries/shopping-list";
 import { useDeleteRecipe, useRecipes, type Recipe } from "@/lib/queries/recipes";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 type ViewMode = "list" | "recipes";
 
@@ -29,6 +30,8 @@ function formatQuantity(item: ShoppingListItem): string | null {
 }
 
 function ShoppingListRow({ item }: { item: ShoppingListItem }) {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const toggle = useToggleShoppingListItem();
   const del = useDeleteShoppingListItem();
   const qty = formatQuantity(item);
@@ -62,6 +65,8 @@ function ShoppingListRow({ item }: { item: ShoppingListItem }) {
 }
 
 function ShoppingListView() {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const { data: items, isLoading } = useShoppingList();
   const addItems = useAddShoppingListItems();
   const [newItemText, setNewItemText] = useState("");
@@ -144,6 +149,8 @@ function ShoppingListView() {
 }
 
 function RecipeCard({ recipe }: { recipe: Recipe }) {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const addItems = useAddShoppingListItems();
   const deleteRecipe = useDeleteRecipe();
   const [added, setAdded] = useState(false);
@@ -189,6 +196,8 @@ function RecipeCard({ recipe }: { recipe: Recipe }) {
 }
 
 function RecipesView() {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const router = useRouter();
   const { data: recipes, isLoading } = useRecipes();
 
@@ -225,6 +234,8 @@ function RecipesView() {
 }
 
 export default function ShoppingListScreen() {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const router = useRouter();
   const [view, setView] = useState<ViewMode>("list");
 
@@ -254,71 +265,73 @@ export default function ShoppingListScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Color.bg0 },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-  },
-  backButton: { padding: 4 },
-  headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
-  centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
-  viewToggle: { flexDirection: "row", gap: Spacing.sm, paddingHorizontal: Spacing.lg, marginBottom: Spacing.md },
-  viewChip: {
-    flex: 1,
-    alignItems: "center",
-    borderRadius: Radius.pill,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    paddingVertical: 8,
-  },
-  viewChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
-  viewChipText: { fontSize: 13, fontWeight: "600", color: Color.textMuted },
-  viewChipTextActive: { color: Color.gold },
-  scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
-  addRow: { flexDirection: "row", alignItems: "center", gap: Spacing.sm, marginBottom: Spacing.md },
-  addInput: {
-    flex: 1,
-    height: 44,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-    paddingHorizontal: Spacing.sm,
-    fontSize: 13,
-    color: Color.textPrimary,
-  },
-  addButton: {
-    width: 44,
-    height: 44,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.goldBorder,
-    backgroundColor: Color.goldWeak,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  itemList: { padding: 0, overflow: "hidden", marginBottom: Spacing.md },
-  itemDivider: { borderTopWidth: 1, borderTopColor: Color.borderSubtle },
-  itemRow: { flexDirection: "row", alignItems: "center", gap: Spacing.sm, padding: Spacing.md },
-  itemText: { fontSize: 14, fontWeight: "500", color: Color.textPrimary },
-  itemTextChecked: { color: Color.textFaint, textDecorationLine: "line-through" },
-  itemQty: { fontSize: 11, color: Color.textMuted, marginTop: 2 },
-  sectionLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginBottom: Spacing.sm },
-  recipeCard: { padding: Spacing.md, marginBottom: Spacing.md },
-  recipeIngredient: { fontSize: 13, color: Color.textSecondary, marginTop: 4 },
-  recipeNotes: { fontSize: 12, color: Color.textMuted, marginTop: Spacing.sm, fontStyle: "italic" },
-  recipeActionsRow: { flexDirection: "row", alignItems: "center", gap: Spacing.sm, marginTop: Spacing.md },
-  recipeDeleteButton: {
-    width: 44,
-    height: 44,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: Color.bg0 },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: Spacing.lg,
+      paddingVertical: Spacing.md,
+    },
+    backButton: { padding: 4 },
+    headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
+    centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
+    viewToggle: { flexDirection: "row", gap: Spacing.sm, paddingHorizontal: Spacing.lg, marginBottom: Spacing.md },
+    viewChip: {
+      flex: 1,
+      alignItems: "center",
+      borderRadius: Radius.pill,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      paddingVertical: 8,
+    },
+    viewChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
+    viewChipText: { fontSize: 13, fontWeight: "600", color: Color.textMuted },
+    viewChipTextActive: { color: Color.gold },
+    scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
+    addRow: { flexDirection: "row", alignItems: "center", gap: Spacing.sm, marginBottom: Spacing.md },
+    addInput: {
+      flex: 1,
+      height: 44,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface1,
+      paddingHorizontal: Spacing.sm,
+      fontSize: 13,
+      color: Color.textPrimary,
+    },
+    addButton: {
+      width: 44,
+      height: 44,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.goldBorder,
+      backgroundColor: Color.goldWeak,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    itemList: { padding: 0, overflow: "hidden", marginBottom: Spacing.md },
+    itemDivider: { borderTopWidth: 1, borderTopColor: Color.borderSubtle },
+    itemRow: { flexDirection: "row", alignItems: "center", gap: Spacing.sm, padding: Spacing.md },
+    itemText: { fontSize: 14, fontWeight: "500", color: Color.textPrimary },
+    itemTextChecked: { color: Color.textFaint, textDecorationLine: "line-through" },
+    itemQty: { fontSize: 11, color: Color.textMuted, marginTop: 2 },
+    sectionLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginBottom: Spacing.sm },
+    recipeCard: { padding: Spacing.md, marginBottom: Spacing.md },
+    recipeIngredient: { fontSize: 13, color: Color.textSecondary, marginTop: 4 },
+    recipeNotes: { fontSize: 12, color: Color.textMuted, marginTop: Spacing.sm, fontStyle: "italic" },
+    recipeActionsRow: { flexDirection: "row", alignItems: "center", gap: Spacing.sm, marginTop: Spacing.md },
+    recipeDeleteButton: {
+      width: 44,
+      height: 44,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+  })
+);

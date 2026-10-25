@@ -2,7 +2,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View, type ViewStyle } from "react-native";
 
-import { Color, Radius, Spacing } from "@/constants/theme";
+import { Radius, Spacing } from "@/constants/theme";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 const WEEKDAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const MONTH_LABELS = [
@@ -73,6 +74,8 @@ export function DateField({
   minDate?: string;
   style?: ViewStyle;
 }) {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<"days" | "years">("days");
   const now = new Date();
@@ -299,81 +302,83 @@ export function DateField({
   );
 }
 
-const styles = StyleSheet.create({
-  wrap: { marginBottom: Spacing.md },
-  label: { fontSize: 13, fontWeight: "500", color: Color.textSecondary, marginBottom: 6 },
-  input: {
-    height: 48,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-    paddingHorizontal: Spacing.md,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  inputError: { borderColor: Color.danger },
-  valueText: { fontSize: 15, color: Color.textPrimary },
-  placeholderText: { fontSize: 15, color: Color.textFaint },
-  error: { fontSize: 12, color: Color.danger, marginTop: 4 },
-  backdrop: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.55)",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: Spacing.xl,
-  },
-  card: {
-    width: "100%",
-    maxWidth: 340,
-    borderRadius: Radius.lg,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-    padding: Spacing.lg,
-  },
-  calHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: Spacing.md },
-  calNavButton: {
-    width: 32,
-    height: 32,
-    borderRadius: Radius.pill,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: Color.surface2,
-  },
-  calTitleButton: { flexDirection: "row", alignItems: "center", gap: 4 },
-  calTitle: { fontSize: 15, fontWeight: "700", color: Color.textPrimary },
-  yearScroll: { maxHeight: 260 },
-  yearGrid: { flexDirection: "row", flexWrap: "wrap", paddingVertical: Spacing.xs },
-  yearCell: {
-    width: "33.33%",
-    paddingVertical: 12,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: Radius.pill,
-  },
-  yearCellText: { fontSize: 14, color: Color.textSecondary },
-  weekRow: { flexDirection: "row", marginBottom: Spacing.xs },
-  weekLabel: { flex: 1, textAlign: "center", fontSize: 11, fontWeight: "600", color: Color.textFaint },
-  // Each week is its own row of exactly 7 flex:1 cells, matching the header
-  // row's sizing exactly — a `${100/7}%` width inside a flex-wrap grid was
-  // the source of a rounding bug where accumulated pixel rounding pushed
-  // the 7th cell (Sunday) onto the next line on some screen widths, see
-  // MonthDatePicker.tsx for the same fix applied first.
-  dayRow: { flexDirection: "row" },
-  cell: {
-    flex: 1,
-    aspectRatio: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: Radius.pill,
-  },
-  cellSelected: { backgroundColor: Color.gold },
-  cellToday: { borderWidth: 1, borderColor: Color.goldBorder },
-  cellText: { fontSize: 13, color: Color.textSecondary },
-  cellTextDisabled: { color: Color.textFaint },
-  cellTextSelected: { color: Color.goldForeground, fontWeight: "700" },
-  closeButton: { marginTop: Spacing.md, alignItems: "center", paddingVertical: Spacing.sm },
-  closeButtonText: { fontSize: 13, fontWeight: "600", color: Color.textMuted },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    wrap: { marginBottom: Spacing.md },
+    label: { fontSize: 13, fontWeight: "500", color: Color.textSecondary, marginBottom: 6 },
+    input: {
+      height: 48,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface1,
+      paddingHorizontal: Spacing.md,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+    },
+    inputError: { borderColor: Color.danger },
+    valueText: { fontSize: 15, color: Color.textPrimary },
+    placeholderText: { fontSize: 15, color: Color.textFaint },
+    error: { fontSize: 12, color: Color.danger, marginTop: 4 },
+    backdrop: {
+      flex: 1,
+      backgroundColor: "rgba(0,0,0,0.55)",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: Spacing.xl,
+    },
+    card: {
+      width: "100%",
+      maxWidth: 340,
+      borderRadius: Radius.lg,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface1,
+      padding: Spacing.lg,
+    },
+    calHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: Spacing.md },
+    calNavButton: {
+      width: 32,
+      height: 32,
+      borderRadius: Radius.pill,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: Color.surface2,
+    },
+    calTitleButton: { flexDirection: "row", alignItems: "center", gap: 4 },
+    calTitle: { fontSize: 15, fontWeight: "700", color: Color.textPrimary },
+    yearScroll: { maxHeight: 260 },
+    yearGrid: { flexDirection: "row", flexWrap: "wrap", paddingVertical: Spacing.xs },
+    yearCell: {
+      width: "33.33%",
+      paddingVertical: 12,
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: Radius.pill,
+    },
+    yearCellText: { fontSize: 14, color: Color.textSecondary },
+    weekRow: { flexDirection: "row", marginBottom: Spacing.xs },
+    weekLabel: { flex: 1, textAlign: "center", fontSize: 11, fontWeight: "600", color: Color.textFaint },
+    // Each week is its own row of exactly 7 flex:1 cells, matching the header
+    // row's sizing exactly — a `${100/7}%` width inside a flex-wrap grid was
+    // the source of a rounding bug where accumulated pixel rounding pushed
+    // the 7th cell (Sunday) onto the next line on some screen widths, see
+    // MonthDatePicker.tsx for the same fix applied first.
+    dayRow: { flexDirection: "row" },
+    cell: {
+      flex: 1,
+      aspectRatio: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: Radius.pill,
+    },
+    cellSelected: { backgroundColor: Color.gold },
+    cellToday: { borderWidth: 1, borderColor: Color.goldBorder },
+    cellText: { fontSize: 13, color: Color.textSecondary },
+    cellTextDisabled: { color: Color.textFaint },
+    cellTextSelected: { color: Color.goldForeground, fontWeight: "700" },
+    closeButton: { marginTop: Spacing.md, alignItems: "center", paddingVertical: Spacing.sm },
+    closeButtonText: { fontSize: 13, fontWeight: "600", color: Color.textMuted },
+  })
+);

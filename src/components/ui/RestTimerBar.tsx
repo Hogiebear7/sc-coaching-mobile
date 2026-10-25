@@ -2,10 +2,11 @@ import { Ionicons } from "@expo/vector-icons";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { Color, figure, Radius, Spacing } from "@/constants/theme";
+import { figure, Radius, Spacing } from "@/constants/theme";
 import { tapFeedback } from "@/lib/haptics";
 import { useRestTimer } from "@/lib/rest-timer";
 import { useTickingValue } from "@/lib/use-ticker";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 function formatClock(secs: number): string {
   const m = Math.floor(secs / 60);
@@ -22,6 +23,8 @@ function formatClock(secs: number): string {
  * reachable via `onExpand`, for anyone who wants more than -15/+15/skip.
  */
 export function RestTimerBar({ onExpand }: { onExpand: () => void }) {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const timer = useRestTimer();
   const insets = useSafeAreaInsets();
   const remaining = useTickingValue(() => timer.remainingNow(), timer.isRunning, 250);
@@ -94,39 +97,41 @@ export function RestTimerBar({ onExpand }: { onExpand: () => void }) {
   );
 }
 
-const styles = StyleSheet.create({
-  bar: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.sm,
-    paddingHorizontal: Spacing.md,
-    paddingTop: Spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: Color.goldBorder,
-    backgroundColor: Color.surface1,
-  },
-  barGetReady: { justifyContent: "center", gap: Spacing.sm },
-  getReadyText: { fontSize: 12, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted },
-  getReadyClock: { ...figure(26, "700"), color: Color.gold },
-  adjustButton: {
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 6,
-    borderRadius: Radius.pill,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-  },
-  adjustText: { fontSize: 12, fontWeight: "600", color: Color.textSecondary },
-  clockWrap: { flex: 1, alignItems: "center" },
-  label: { fontSize: 10, fontWeight: "700", letterSpacing: 0.4, color: Color.textMuted, textTransform: "uppercase" },
-  clock: { ...figure(26, "700"), color: Color.gold },
-  clockDone: { color: Color.success },
-  iconButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: Color.gold,
-  },
-  skipText: { fontSize: 13, fontWeight: "700", color: Color.textMuted },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    bar: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: Spacing.sm,
+      paddingHorizontal: Spacing.md,
+      paddingTop: Spacing.sm,
+      borderTopWidth: 1,
+      borderTopColor: Color.goldBorder,
+      backgroundColor: Color.surface1,
+    },
+    barGetReady: { justifyContent: "center", gap: Spacing.sm },
+    getReadyText: { fontSize: 12, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted },
+    getReadyClock: { ...figure(26, "700"), color: Color.gold },
+    adjustButton: {
+      paddingHorizontal: Spacing.sm,
+      paddingVertical: 6,
+      borderRadius: Radius.pill,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+    },
+    adjustText: { fontSize: 12, fontWeight: "600", color: Color.textSecondary },
+    clockWrap: { flex: 1, alignItems: "center" },
+    label: { fontSize: 10, fontWeight: "700", letterSpacing: 0.4, color: Color.textMuted, textTransform: "uppercase" },
+    clock: { ...figure(26, "700"), color: Color.gold },
+    clockDone: { color: Color.success },
+    iconButton: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: Color.gold,
+    },
+    skipText: { fontSize: 13, fontWeight: "700", color: Color.textMuted },
+  })
+);

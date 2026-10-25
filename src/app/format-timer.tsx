@@ -6,7 +6,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
 import { KeyboardAwareScroll } from "@/components/ui/KeyboardAwareScroll";
-import { Color, figure, headline, Radius, Spacing } from "@/constants/theme";
+import { figure, headline, Radius, Spacing } from "@/constants/theme";
 import { successFeedback, tapFeedback } from "@/lib/haptics";
 import { formatDuration, parseDuration } from "@/lib/workout-formatters";
 import {
@@ -19,6 +19,7 @@ import {
   type FormatSessionState,
   type TabataConfig,
 } from "@/lib/workout-draft";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 type Phase = { label: string; kind: "work" | "rest"; durationSecs: number; meta: string };
 
@@ -226,6 +227,7 @@ function CircularClock({
   durationSecs: number;
   kind: "work" | "rest";
 }) {
+  const styles = useStyles();
   const pct = durationSecs > 0 ? Math.max(0, Math.min(1, remaining / durationSecs)) : 0;
   return (
     <View style={styles.ringWrap}>
@@ -239,6 +241,7 @@ function CircularClock({
 }
 
 function FiveSecondCountdown({ onDone }: { onDone: () => void }) {
+  const styles = useStyles();
   const [count, setCount] = useState(5);
   useEffect(() => {
     if (count <= 0) {
@@ -268,6 +271,7 @@ function PhaseWorkoutCard({
   onStart: () => void;
   needsCountdown?: boolean;
 }) {
+  const styles = useStyles();
   const [counting, setCounting] = useState(false);
 
   if (counting) {
@@ -306,6 +310,7 @@ function PhaseWorkoutCard({
 // plus a round count, not 15 rows. The live view still runs the fully
 // exploded phase list underneath; this is purely the review card.
 function CircuitWorkoutCard({ config, onStart }: { config: CircuitConfig; onStart: () => void }) {
+  const styles = useStyles();
   const [counting, setCounting] = useState(false);
   if (counting) return <FiveSecondCountdown onDone={onStart} />;
 
@@ -350,6 +355,7 @@ function CircuitWorkoutCard({ config, onStart }: { config: CircuitConfig; onStar
 }
 
 function EmomWorkoutCard({ config, onStart }: { config: EmomConfig; onStart: () => void }) {
+  const styles = useStyles();
   const interval = Math.max(5, parseInt(config.intervalSecs, 10) || 60);
   const totalSecs = Math.max(interval, (parseInt(config.totalMins, 10) || 10) * 60);
   const roundCount = Math.max(1, Math.round(totalSecs / interval));
@@ -380,6 +386,8 @@ function EmomWorkoutCard({ config, onStart }: { config: EmomConfig; onStart: () 
 }
 
 function PhaseLiveView({ phases, timeCapSecs }: { phases: Phase[]; timeCapSecs?: number }) {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const clock = usePhaseClock(phases, timeCapSecs);
   const { phase, nextPhase, remaining, elapsedInPhase, totalElapsed, running, manual } = clock;
 
@@ -432,6 +440,7 @@ function PhaseLiveView({ phases, timeCapSecs }: { phases: Phase[]; timeCapSecs?:
 }
 
 function AmrapWorkoutCard({ config, onStart }: { config: AmrapConfig; onStart: () => void }) {
+  const styles = useStyles();
   return (
     <KeyboardAwareScroll contentContainerStyle={styles.cardBody}>
       <Text style={styles.cardHint}>
@@ -500,6 +509,8 @@ function useSimpleTotalClock() {
 }
 
 function AmrapLiveView({ config }: { config: AmrapConfig }) {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const { update, running, totalElapsed, setSession, togglePause, restartClock } = useSimpleTotalClock();
   const capSecs = Math.max(30, (parseInt(config.timeCapMins, 10) || 12) * 60);
   const finishedRef = useRef(false);
@@ -601,6 +612,7 @@ function AmrapLiveView({ config }: { config: AmrapConfig }) {
 }
 
 function ChipperWorkoutCard({ config, onStart }: { config: ChipperConfig; onStart: () => void }) {
+  const styles = useStyles();
   return (
     <KeyboardAwareScroll contentContainerStyle={styles.cardBody}>
       <Text style={styles.cardHint}>
@@ -635,6 +647,8 @@ function ChipperWorkoutCard({ config, onStart }: { config: ChipperConfig; onStar
 // timestamped ChipperLogEntry so pacing within the chipper isn't lost, only
 // the running total.
 function ChipperMovementLive({ movement, onChange }: { movement: ChipperMovement; onChange: (patch: Partial<ChipperMovement>) => void }) {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const [addValue, setAddValue] = useState("");
   const [prepCountdown, setPrepCountdown] = useState<number | null>(null);
   const [, forceLiveTick] = useState(0);
@@ -749,6 +763,8 @@ function ChipperMovementLive({ movement, onChange }: { movement: ChipperMovement
 }
 
 function ChipperLiveView({ config }: { config: ChipperConfig }) {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const { update, running, totalElapsed, setSession, togglePause, restartClock } = useSimpleTotalClock();
   const finishedRef = useRef(false);
 
@@ -812,6 +828,8 @@ function ChipperLiveView({ config }: { config: ChipperConfig }) {
 }
 
 export default function FormatTimerScreen() {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const router = useRouter();
   const { draft, update } = useWorkoutDraft();
 
@@ -910,141 +928,143 @@ export default function FormatTimerScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Color.bg0 },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-  },
-  backButton: { padding: 4 },
-  headerTitleWrap: { flex: 1, alignItems: "center", paddingHorizontal: Spacing.sm },
-  headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary, textAlign: "center" },
-  headerSubtitle: { fontSize: 11, fontWeight: "600", color: Color.textFaint, marginTop: 1, letterSpacing: 0.4, textTransform: "uppercase" },
-  body: { flexGrow: 1, alignItems: "center", paddingTop: Spacing.xl, paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
-  doneText: { fontSize: 14, color: Color.textMuted, textAlign: "center", marginTop: Spacing.xl },
-  getReadyText: { fontSize: 16, fontWeight: "600", color: Color.textMuted, marginTop: Spacing.xxl },
-  countdownNumber: { ...figure(110, "700"), color: Color.gold, marginTop: Spacing.lg, },
-  cardBody: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
-  cardHint: { fontSize: 13, color: Color.textMuted, marginTop: Spacing.sm, lineHeight: 18 },
-  cardList: {
-    marginTop: Spacing.md,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-    overflow: "hidden",
-  },
-  cardRow: { flexDirection: "row", alignItems: "center", gap: Spacing.sm, padding: Spacing.md },
-  cardRowDivider: { borderTopWidth: 1, borderTopColor: Color.borderSubtle },
-  cardRowIndex: { fontSize: 12, fontWeight: "700", color: Color.gold, width: 18 },
-  cardRowLabel: { fontSize: 14, fontWeight: "600", color: Color.textPrimary, flex: 1 },
-  cardRowMeta: { fontSize: 11, color: Color.textFaint, marginTop: 2 },
-  cardRowDuration: { fontSize: 12, color: Color.textMuted, fontVariant: ["tabular-nums"] },
-  phaseKind: { fontSize: 12, fontWeight: "700", letterSpacing: 1, color: Color.gold },
-  phaseLabel: { ...headline(30), color: Color.textPrimary, textAlign: "center", marginTop: Spacing.xs },
-  phaseMeta: { fontSize: 12, color: Color.textMuted, marginTop: 4 },
-  clock: { ...figure(64, "700"), color: Color.gold, marginTop: Spacing.lg },
-  ringWrap: {
-    width: 240,
-    height: 240,
-    borderRadius: 120,
-    overflow: "hidden",
-    justifyContent: "flex-end",
-    borderWidth: 2,
-    borderColor: Color.borderDefault,
-    marginTop: Spacing.lg,
-  },
-  ringTrack: { ...StyleSheet.absoluteFill, backgroundColor: Color.surface1 },
-  ringFill: { position: "absolute", left: 0, right: 0, bottom: 0, backgroundColor: Color.goldWeak },
-  ringFillRest: { backgroundColor: Color.surface3 },
-  ringCenter: { ...StyleSheet.absoluteFill, alignItems: "center", justifyContent: "center" },
-  totalElapsed: { fontSize: 12, color: Color.textFaint, marginTop: Spacing.md },
-  nextPreview: { alignItems: "center", marginTop: Spacing.lg, opacity: 0.8 },
-  nextPreviewLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textFaint },
-  nextPreviewText: { fontSize: 14, fontWeight: "600", color: Color.textSecondary, marginTop: 2 },
-  controlsRow: { flexDirection: "row", alignItems: "center", gap: Spacing.xl, marginTop: Spacing.xl },
-  secondaryControl: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-  },
-  primaryControl: { width: 72, height: 72, borderRadius: 36, alignItems: "center", justifyContent: "center", backgroundColor: Color.gold },
-  amrapMovements: {
-    width: "100%",
-    marginTop: Spacing.lg,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-    padding: Spacing.md,
-    gap: Spacing.sm,
-  },
-  amrapMovementRow: { flexDirection: "row", alignItems: "center", gap: Spacing.sm },
-  amrapMovementText: { fontSize: 13, fontWeight: "600", color: Color.textSecondary },
-  amrapMovementSub: { fontSize: 10, color: Color.textFaint, marginTop: 1 },
-  amrapRepsValue: { fontSize: 16, fontWeight: "700", color: Color.gold, fontVariant: ["tabular-nums"], minWidth: 28, textAlign: "center" },
-  stepperButtonSmall: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-  },
-  roundStepper: { flexDirection: "row", alignItems: "center", gap: Spacing.xl, marginTop: Spacing.xl },
-  stepperButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-  },
-  roundsValue: { ...figure(38), color: Color.textPrimary },
-  roundsLabel: { fontSize: 11, color: Color.textMuted },
-  chipperMovements: { width: "100%", marginTop: Spacing.lg, gap: Spacing.sm },
-  chipperMovement: {
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-    padding: Spacing.sm,
-  },
-  chipperMovementComplete: { borderColor: Color.gold },
-  chipperMovementName: { fontSize: 14, fontWeight: "700", color: Color.textPrimary },
-  chipperProgressRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: Spacing.sm },
-  chipperProgressText: { fontSize: 13, color: Color.textSecondary },
-  chipperRemainingText: { fontSize: 12, fontWeight: "600", color: Color.textMuted },
-  chipperRemainingDone: { color: Color.gold },
-  chipperInputRow: { flexDirection: "row", gap: Spacing.xs, marginTop: Spacing.sm, alignItems: "center" },
-  chipperInput: {
-    fontSize: 13,
-    color: Color.textPrimary,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    borderRadius: Radius.sm,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 8,
-    backgroundColor: Color.surface2,
-  },
-  chipperAddButton: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.gold, paddingHorizontal: Spacing.sm, paddingVertical: 9 },
-  chipperAddButtonText: { fontSize: 12, fontWeight: "700", color: Color.gold },
-  chipperPlayButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: Color.gold,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  chipperPrepText: { fontSize: 12, fontWeight: "700", color: Color.gold, marginTop: Spacing.xs },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: Color.bg0 },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: Spacing.lg,
+      paddingVertical: Spacing.md,
+    },
+    backButton: { padding: 4 },
+    headerTitleWrap: { flex: 1, alignItems: "center", paddingHorizontal: Spacing.sm },
+    headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary, textAlign: "center" },
+    headerSubtitle: { fontSize: 11, fontWeight: "600", color: Color.textFaint, marginTop: 1, letterSpacing: 0.4, textTransform: "uppercase" },
+    body: { flexGrow: 1, alignItems: "center", paddingTop: Spacing.xl, paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
+    doneText: { fontSize: 14, color: Color.textMuted, textAlign: "center", marginTop: Spacing.xl },
+    getReadyText: { fontSize: 16, fontWeight: "600", color: Color.textMuted, marginTop: Spacing.xxl },
+    countdownNumber: { ...figure(110, "700"), color: Color.gold, marginTop: Spacing.lg, },
+    cardBody: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
+    cardHint: { fontSize: 13, color: Color.textMuted, marginTop: Spacing.sm, lineHeight: 18 },
+    cardList: {
+      marginTop: Spacing.md,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface1,
+      overflow: "hidden",
+    },
+    cardRow: { flexDirection: "row", alignItems: "center", gap: Spacing.sm, padding: Spacing.md },
+    cardRowDivider: { borderTopWidth: 1, borderTopColor: Color.borderSubtle },
+    cardRowIndex: { fontSize: 12, fontWeight: "700", color: Color.gold, width: 18 },
+    cardRowLabel: { fontSize: 14, fontWeight: "600", color: Color.textPrimary, flex: 1 },
+    cardRowMeta: { fontSize: 11, color: Color.textFaint, marginTop: 2 },
+    cardRowDuration: { fontSize: 12, color: Color.textMuted, fontVariant: ["tabular-nums"] },
+    phaseKind: { fontSize: 12, fontWeight: "700", letterSpacing: 1, color: Color.gold },
+    phaseLabel: { ...headline(30), color: Color.textPrimary, textAlign: "center", marginTop: Spacing.xs },
+    phaseMeta: { fontSize: 12, color: Color.textMuted, marginTop: 4 },
+    clock: { ...figure(64, "700"), color: Color.gold, marginTop: Spacing.lg },
+    ringWrap: {
+      width: 240,
+      height: 240,
+      borderRadius: 120,
+      overflow: "hidden",
+      justifyContent: "flex-end",
+      borderWidth: 2,
+      borderColor: Color.borderDefault,
+      marginTop: Spacing.lg,
+    },
+    ringTrack: { ...StyleSheet.absoluteFill, backgroundColor: Color.surface1 },
+    ringFill: { position: "absolute", left: 0, right: 0, bottom: 0, backgroundColor: Color.goldWeak },
+    ringFillRest: { backgroundColor: Color.surface3 },
+    ringCenter: { ...StyleSheet.absoluteFill, alignItems: "center", justifyContent: "center" },
+    totalElapsed: { fontSize: 12, color: Color.textFaint, marginTop: Spacing.md },
+    nextPreview: { alignItems: "center", marginTop: Spacing.lg, opacity: 0.8 },
+    nextPreviewLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textFaint },
+    nextPreviewText: { fontSize: 14, fontWeight: "600", color: Color.textSecondary, marginTop: 2 },
+    controlsRow: { flexDirection: "row", alignItems: "center", gap: Spacing.xl, marginTop: Spacing.xl },
+    secondaryControl: {
+      width: 48,
+      height: 48,
+      borderRadius: 24,
+      alignItems: "center",
+      justifyContent: "center",
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+    },
+    primaryControl: { width: 72, height: 72, borderRadius: 36, alignItems: "center", justifyContent: "center", backgroundColor: Color.gold },
+    amrapMovements: {
+      width: "100%",
+      marginTop: Spacing.lg,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface1,
+      padding: Spacing.md,
+      gap: Spacing.sm,
+    },
+    amrapMovementRow: { flexDirection: "row", alignItems: "center", gap: Spacing.sm },
+    amrapMovementText: { fontSize: 13, fontWeight: "600", color: Color.textSecondary },
+    amrapMovementSub: { fontSize: 10, color: Color.textFaint, marginTop: 1 },
+    amrapRepsValue: { fontSize: 16, fontWeight: "700", color: Color.gold, fontVariant: ["tabular-nums"], minWidth: 28, textAlign: "center" },
+    stepperButtonSmall: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      alignItems: "center",
+      justifyContent: "center",
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+    },
+    roundStepper: { flexDirection: "row", alignItems: "center", gap: Spacing.xl, marginTop: Spacing.xl },
+    stepperButton: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      alignItems: "center",
+      justifyContent: "center",
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+    },
+    roundsValue: { ...figure(38), color: Color.textPrimary },
+    roundsLabel: { fontSize: 11, color: Color.textMuted },
+    chipperMovements: { width: "100%", marginTop: Spacing.lg, gap: Spacing.sm },
+    chipperMovement: {
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface1,
+      padding: Spacing.sm,
+    },
+    chipperMovementComplete: { borderColor: Color.gold },
+    chipperMovementName: { fontSize: 14, fontWeight: "700", color: Color.textPrimary },
+    chipperProgressRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: Spacing.sm },
+    chipperProgressText: { fontSize: 13, color: Color.textSecondary },
+    chipperRemainingText: { fontSize: 12, fontWeight: "600", color: Color.textMuted },
+    chipperRemainingDone: { color: Color.gold },
+    chipperInputRow: { flexDirection: "row", gap: Spacing.xs, marginTop: Spacing.sm, alignItems: "center" },
+    chipperInput: {
+      fontSize: 13,
+      color: Color.textPrimary,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      borderRadius: Radius.sm,
+      paddingHorizontal: Spacing.sm,
+      paddingVertical: 8,
+      backgroundColor: Color.surface2,
+    },
+    chipperAddButton: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.gold, paddingHorizontal: Spacing.sm, paddingVertical: 9 },
+    chipperAddButtonText: { fontSize: 12, fontWeight: "700", color: Color.gold },
+    chipperPlayButton: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: Color.gold,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    chipperPrepText: { fontSize: 12, fontWeight: "700", color: Color.gold, marginTop: Spacing.xs },
+  })
+);

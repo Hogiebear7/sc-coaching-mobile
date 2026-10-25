@@ -7,7 +7,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ProgramDayCard } from "@/components/ui/ProgramDayCard";
-import { Color, Spacing } from "@/constants/theme";
+import { Spacing } from "@/constants/theme";
 import {
   useGenerateProgramme,
   useSaveProgramme,
@@ -16,6 +16,7 @@ import {
   type TrainingProgram,
 } from "@/lib/queries/programs";
 import type { TrainingDayOfWeek, TrainingTimeOfDay } from "@/lib/queries/weekly-training";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 // Monday-first, same order/labels as weekly-training.tsx's own picker.
 const DAY_ORDER: TrainingDayOfWeek[] = [1, 2, 3, 4, 5, 6, 0];
@@ -40,6 +41,8 @@ const TIME_OF_DAY_OPTIONS: { value: TrainingTimeOfDay | null; label: string }[] 
 // already used elsewhere in the app (tracker import) rather than
 // committing to a multi-week plan on a single "Generate" tap.
 export default function ProgrammePreviewScreen() {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const router = useRouter();
   const params = useLocalSearchParams<{ preview: string }>();
   const [preview, setPreview] = useState<ProgrammePreview>(() => JSON.parse(params.preview));
@@ -231,44 +234,46 @@ export default function ProgrammePreviewScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Color.bg0 },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-  },
-  backButton: { padding: 4 },
-  headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
-  scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
-  summaryCard: { padding: Spacing.md, marginTop: Spacing.md },
-  programName: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
-  summaryLine: { fontSize: 12, color: Color.textMuted, marginTop: 4 },
-  rationaleText: { fontSize: 13, color: Color.textSecondary, marginTop: Spacing.sm, lineHeight: 19 },
-  summaryHint: { fontSize: 12, color: Color.textFaint, marginTop: Spacing.sm, lineHeight: 17 },
-  dayCard: { padding: Spacing.md, marginTop: Spacing.sm },
-  dayLabel: { fontSize: 15, fontWeight: "700", color: Color.textPrimary },
-  error: { fontSize: 12, color: Color.danger, marginTop: Spacing.md },
-  sectionLabel: {
-    fontSize: 11,
-    fontWeight: "700",
-    color: Color.textFaint,
-    letterSpacing: 0.6,
-    marginTop: Spacing.lg,
-    marginBottom: 2,
-  },
-  weekdayRow: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.xs, marginTop: Spacing.sm },
-  chip: {
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 6,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-  },
-  chipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
-  chipText: { fontSize: 12, fontWeight: "600", color: Color.textMuted },
-  chipTextActive: { color: Color.gold },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: Color.bg0 },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: Spacing.lg,
+      paddingVertical: Spacing.md,
+    },
+    backButton: { padding: 4 },
+    headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
+    scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
+    summaryCard: { padding: Spacing.md, marginTop: Spacing.md },
+    programName: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
+    summaryLine: { fontSize: 12, color: Color.textMuted, marginTop: 4 },
+    rationaleText: { fontSize: 13, color: Color.textSecondary, marginTop: Spacing.sm, lineHeight: 19 },
+    summaryHint: { fontSize: 12, color: Color.textFaint, marginTop: Spacing.sm, lineHeight: 17 },
+    dayCard: { padding: Spacing.md, marginTop: Spacing.sm },
+    dayLabel: { fontSize: 15, fontWeight: "700", color: Color.textPrimary },
+    error: { fontSize: 12, color: Color.danger, marginTop: Spacing.md },
+    sectionLabel: {
+      fontSize: 11,
+      fontWeight: "700",
+      color: Color.textFaint,
+      letterSpacing: 0.6,
+      marginTop: Spacing.lg,
+      marginBottom: 2,
+    },
+    weekdayRow: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.xs, marginTop: Spacing.sm },
+    chip: {
+      paddingHorizontal: Spacing.sm,
+      paddingVertical: 6,
+      borderRadius: 999,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface1,
+    },
+    chipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
+    chipText: { fontSize: 12, fontWeight: "600", color: Color.textMuted },
+    chipTextActive: { color: Color.gold },
+  })
+);

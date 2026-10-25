@@ -5,9 +5,10 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { Color, Radius, Spacing } from "@/constants/theme";
+import { Radius, Spacing } from "@/constants/theme";
 import { tapFeedback } from "@/lib/haptics";
 import { useGymProfiles, useSetActiveGymProfile, type GymProfile } from "@/lib/queries/gym-profiles";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 function ProfileCard({
   profile,
@@ -22,6 +23,8 @@ function ProfileCard({
   onSetActive: () => void;
   settingActive: boolean;
 }) {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   return (
     <Card style={styles.profileCard}>
       <Pressable onPress={onPress} style={styles.profileCardMain}>
@@ -51,6 +54,8 @@ function ProfileCard({
 }
 
 export default function GymProfilesScreen() {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const router = useRouter();
   const { data, isLoading, isError, refetch, isRefetching } = useGymProfiles();
   const setActive = useSetActiveGymProfile();
@@ -123,33 +128,35 @@ export default function GymProfilesScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Color.bg0 },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-  },
-  backButton: { padding: 4 },
-  headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
-  addButton: { padding: 4 },
-  centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl, gap: Spacing.xs },
-  errorText: { color: Color.textMuted, fontSize: 14, textAlign: "center" },
-  scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
-  introText: { fontSize: 12, color: Color.textMuted, marginBottom: Spacing.md, lineHeight: 17 },
-  emptyCard: { alignItems: "center", padding: Spacing.xl, gap: 4 },
-  emptyText: { fontSize: 13, fontWeight: "600", color: Color.textSecondary, marginTop: Spacing.xs },
-  emptySub: { fontSize: 12, color: Color.textMuted, textAlign: "center" },
-  profileCard: { padding: Spacing.md, marginBottom: Spacing.sm },
-  profileCardMain: { flexDirection: "row", alignItems: "center", gap: Spacing.sm },
-  profileIcon: { fontSize: 26 },
-  profileNameRow: { flexDirection: "row", alignItems: "center", gap: 6 },
-  profileName: { fontSize: 15, fontWeight: "600", color: Color.textPrimary },
-  activeBadge: { borderRadius: Radius.pill, backgroundColor: Color.goldWeak, borderWidth: 1, borderColor: Color.goldBorder, paddingHorizontal: 8, paddingVertical: 2 },
-  activeBadgeText: { fontSize: 10, fontWeight: "700", color: Color.gold },
-  profileMeta: { fontSize: 12, color: Color.textMuted, marginTop: 2 },
-  setActiveButton: { marginTop: Spacing.sm, alignSelf: "flex-start", borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.md, paddingVertical: 6 },
-  setActiveButtonText: { fontSize: 11, fontWeight: "600", color: Color.textSecondary },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: Color.bg0 },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: Spacing.lg,
+      paddingVertical: Spacing.md,
+    },
+    backButton: { padding: 4 },
+    headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
+    addButton: { padding: 4 },
+    centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl, gap: Spacing.xs },
+    errorText: { color: Color.textMuted, fontSize: 14, textAlign: "center" },
+    scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
+    introText: { fontSize: 12, color: Color.textMuted, marginBottom: Spacing.md, lineHeight: 17 },
+    emptyCard: { alignItems: "center", padding: Spacing.xl, gap: 4 },
+    emptyText: { fontSize: 13, fontWeight: "600", color: Color.textSecondary, marginTop: Spacing.xs },
+    emptySub: { fontSize: 12, color: Color.textMuted, textAlign: "center" },
+    profileCard: { padding: Spacing.md, marginBottom: Spacing.sm },
+    profileCardMain: { flexDirection: "row", alignItems: "center", gap: Spacing.sm },
+    profileIcon: { fontSize: 26 },
+    profileNameRow: { flexDirection: "row", alignItems: "center", gap: 6 },
+    profileName: { fontSize: 15, fontWeight: "600", color: Color.textPrimary },
+    activeBadge: { borderRadius: Radius.pill, backgroundColor: Color.goldWeak, borderWidth: 1, borderColor: Color.goldBorder, paddingHorizontal: 8, paddingVertical: 2 },
+    activeBadgeText: { fontSize: 10, fontWeight: "700", color: Color.gold },
+    profileMeta: { fontSize: 12, color: Color.textMuted, marginTop: 2 },
+    setActiveButton: { marginTop: Spacing.sm, alignSelf: "flex-start", borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.md, paddingVertical: 6 },
+    setActiveButtonText: { fontSize: 11, fontWeight: "600", color: Color.textSecondary },
+  })
+);

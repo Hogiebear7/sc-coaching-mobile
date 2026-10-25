@@ -8,8 +8,9 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { MonthCalendar } from "@/components/ui/MonthCalendar";
 import { SessionCard } from "@/components/ui/SessionCard";
-import { Color, Radius, Spacing } from "@/constants/theme";
+import { Radius, Spacing } from "@/constants/theme";
 import { useWorkouts, type WorkoutSessionSummary } from "@/lib/queries/workouts";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 function monthLabel(dateISO: string): string {
   const [y, m] = dateISO.split("-").map(Number);
@@ -23,6 +24,8 @@ function formatDateLabel(dateISO: string): string {
 type ViewMode = "list" | "calendar";
 
 export default function WorkoutHistoryScreen() {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const router = useRouter();
   const { data, isLoading, isError, refetch } = useWorkouts();
   const [query, setQuery] = useState("");
@@ -158,44 +161,46 @@ export default function WorkoutHistoryScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Color.bg0 },
-  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md },
-  backButton: { padding: 4 },
-  headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
-  viewToggle: {
-    flexDirection: "row",
-    marginHorizontal: Spacing.lg,
-    marginBottom: Spacing.md,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    padding: 3,
-  },
-  viewToggleBtn: { flex: 1, alignItems: "center", paddingVertical: 8, borderRadius: Radius.sm },
-  viewToggleBtnActive: { backgroundColor: Color.goldWeak },
-  viewToggleText: { fontSize: 13, fontWeight: "600", color: Color.textMuted },
-  viewToggleTextActive: { color: Color.gold },
-  calendarDetail: { marginTop: Spacing.lg },
-  searchRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.sm,
-    marginHorizontal: Spacing.lg,
-    marginBottom: Spacing.md,
-    paddingHorizontal: Spacing.md,
-    height: 42,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-  },
-  searchInput: { flex: 1, color: Color.textPrimary, fontSize: 14 },
-  centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
-  errorText: { color: Color.textMuted, fontSize: 14 },
-  scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
-  monthGroup: { marginBottom: Spacing.lg },
-  monthLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginBottom: Spacing.sm },
-  emptyCard: { alignItems: "center", padding: Spacing.xl, gap: Spacing.sm },
-  emptyText: { fontSize: 12, color: Color.textMuted, textAlign: "center" },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: Color.bg0 },
+    header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md },
+    backButton: { padding: 4 },
+    headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
+    viewToggle: {
+      flexDirection: "row",
+      marginHorizontal: Spacing.lg,
+      marginBottom: Spacing.md,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      padding: 3,
+    },
+    viewToggleBtn: { flex: 1, alignItems: "center", paddingVertical: 8, borderRadius: Radius.sm },
+    viewToggleBtnActive: { backgroundColor: Color.goldWeak },
+    viewToggleText: { fontSize: 13, fontWeight: "600", color: Color.textMuted },
+    viewToggleTextActive: { color: Color.gold },
+    calendarDetail: { marginTop: Spacing.lg },
+    searchRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: Spacing.sm,
+      marginHorizontal: Spacing.lg,
+      marginBottom: Spacing.md,
+      paddingHorizontal: Spacing.md,
+      height: 42,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface1,
+    },
+    searchInput: { flex: 1, color: Color.textPrimary, fontSize: 14 },
+    centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
+    errorText: { color: Color.textMuted, fontSize: 14 },
+    scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
+    monthGroup: { marginBottom: Spacing.lg },
+    monthLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginBottom: Spacing.sm },
+    emptyCard: { alignItems: "center", padding: Spacing.xl, gap: Spacing.sm },
+    emptyText: { fontSize: 12, color: Color.textMuted, textAlign: "center" },
+  })
+);

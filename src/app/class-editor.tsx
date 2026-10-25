@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { KeyboardAwareScroll } from "@/components/ui/KeyboardAwareScroll";
 import { MonthDatePicker } from "@/components/ui/MonthDatePicker";
 import { Stepper } from "@/components/ui/Stepper";
-import { Color, Radius, Spacing } from "@/constants/theme";
+import { Radius, Spacing } from "@/constants/theme";
 import { ApiError } from "@/lib/api-client";
 import { tapFeedback } from "@/lib/haptics";
 import {
@@ -18,6 +18,7 @@ import {
   useStaffClasses,
   useStopClassSeries,
 } from "@/lib/queries/staff";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 const WEEKDAYS = [
   { value: 1, label: "Mon" },
@@ -67,6 +68,8 @@ function displayToIso(display: string): string | null {
 }
 
 export default function ClassEditorScreen() {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const router = useRouter();
   const { classId } = useLocalSearchParams<{ classId?: string }>();
   const isEditing = !!classId;
@@ -410,34 +413,36 @@ export default function ClassEditorScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Color.bg0 },
-  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md },
-  backButton: { padding: 4 },
-  headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
-  centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
-  errorText: { color: Color.textMuted, fontSize: 14, textAlign: "center" },
-  scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
-  fieldLabel: { fontSize: 12, fontWeight: "500", color: Color.textSecondary, marginBottom: 6 },
-  input: {
-    height: 44,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-    paddingHorizontal: Spacing.sm,
-    fontSize: 14,
-    color: Color.textPrimary,
-    marginBottom: Spacing.md,
-  },
-  chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: Spacing.sm },
-  chip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.md, paddingVertical: 8 },
-  chipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
-  chipText: { fontSize: 12, fontWeight: "600", color: Color.textMuted },
-  chipTextActive: { color: Color.gold },
-  error: { fontSize: 12, color: Color.danger, marginTop: Spacing.sm, textAlign: "center" },
-  dangerLink: { alignItems: "center", paddingVertical: Spacing.md },
-  dangerLinkText: { fontSize: 13, fontWeight: "600", color: Color.danger },
-  labelRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 6 },
-  clearLinkText: { fontSize: 11, fontWeight: "600", color: Color.gold },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: Color.bg0 },
+    header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md },
+    backButton: { padding: 4 },
+    headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
+    centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
+    errorText: { color: Color.textMuted, fontSize: 14, textAlign: "center" },
+    scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
+    fieldLabel: { fontSize: 12, fontWeight: "500", color: Color.textSecondary, marginBottom: 6 },
+    input: {
+      height: 44,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface1,
+      paddingHorizontal: Spacing.sm,
+      fontSize: 14,
+      color: Color.textPrimary,
+      marginBottom: Spacing.md,
+    },
+    chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: Spacing.sm },
+    chip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.md, paddingVertical: 8 },
+    chipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
+    chipText: { fontSize: 12, fontWeight: "600", color: Color.textMuted },
+    chipTextActive: { color: Color.gold },
+    error: { fontSize: 12, color: Color.danger, marginTop: Spacing.sm, textAlign: "center" },
+    dangerLink: { alignItems: "center", paddingVertical: Spacing.md },
+    dangerLinkText: { fontSize: 13, fontWeight: "600", color: Color.danger },
+    labelRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 6 },
+    clearLinkText: { fontSize: 11, fontWeight: "600", color: Color.gold },
+  })
+);

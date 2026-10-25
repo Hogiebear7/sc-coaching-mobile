@@ -2,8 +2,9 @@ import { useState } from "react";
 import { Pressable, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import Body, { type ExtendedBodyPart, type Slug } from "react-native-body-highlighter";
 
-import { Color, Radius, Spacing } from "@/constants/theme";
+import { LiveColor as Color, Radius, Spacing } from "@/constants/theme";
 import type { SetLevelTier, StrengthSection } from "@/lib/workout-set-levels";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 // Real anatomical silhouette (react-native-body-highlighter) — the same
 // package and figure BodyDiagram.tsx uses for the workout generator's
@@ -43,7 +44,6 @@ const TIER_ALPHA_HEX: Record<Exclude<SetLevelTier, "none">, string> = {
   high: "", // full opacity — no suffix needed
 };
 
-const MUTED_FILL = Color.surface2;
 
 // Same width-driven scale as BodyDiagram.tsx, capped a little lower since
 // this figure sits inside a card with a legend and section list below it
@@ -58,6 +58,8 @@ export function MuscleSetLevelDiagram({
   levels: Record<StrengthSection, { tier: SetLevelTier }>;
   sex?: "male" | "female";
 }) {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const [view, setView] = useState<"front" | "back">("front");
   const { width } = useWindowDimensions();
   const scale = Math.min(Math.max((width - HORIZONTAL_INSET) / NATIVE_W, 1.2), 1.9);
@@ -65,7 +67,7 @@ export function MuscleSetLevelDiagram({
   const data: ExtendedBodyPart[] = (Object.keys(SECTION_FOR_SLUG) as Slug[]).map((slug) => {
     const section = SECTION_FOR_SLUG[slug]!;
     const tier = levels[section].tier;
-    const color = tier === "none" ? MUTED_FILL : `${Color.accentData}${TIER_ALPHA_HEX[tier]}`;
+    const color = tier === "none" ? Color.surface2 : `${Color.accentData}${TIER_ALPHA_HEX[tier]}`;
     return { slug, color };
   });
 
@@ -98,24 +100,26 @@ export function MuscleSetLevelDiagram({
         accessibilityRole="image"
         accessibilityLabel={`Muscle set-level diagram, ${view} view.`}
       >
-        <Body data={data} gender={sex} side={view} scale={scale} border={Color.borderSubtle} defaultFill={MUTED_FILL} />
+        <Body data={data} gender={sex} side={view} scale={scale} border={Color.borderSubtle} defaultFill={Color.surface2} />
       </View>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  segmentGroup: {
-    flexDirection: "row",
-    gap: 4,
-    padding: 4,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.bg0,
-  },
-  segment: { minWidth: 64, alignItems: "center", paddingHorizontal: Spacing.md, paddingVertical: 8, borderRadius: Radius.sm },
-  segmentActive: { backgroundColor: Color.surface2 },
-  segmentText: { fontSize: 12, fontWeight: "600", color: Color.textMuted },
-  segmentTextActive: { color: Color.textPrimary },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    segmentGroup: {
+      flexDirection: "row",
+      gap: 4,
+      padding: 4,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.bg0,
+    },
+    segment: { minWidth: 64, alignItems: "center", paddingHorizontal: Spacing.md, paddingVertical: 8, borderRadius: Radius.sm },
+    segmentActive: { backgroundColor: Color.surface2 },
+    segmentText: { fontSize: 12, fontWeight: "600", color: Color.textMuted },
+    segmentTextActive: { color: Color.textPrimary },
+  })
+);

@@ -2,7 +2,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { Color, Radius, Spacing } from "@/constants/theme";
+import { Radius, Spacing } from "@/constants/theme";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 function pad(n: number): string {
   return String(n).padStart(2, "0");
@@ -27,6 +28,8 @@ export function MonthDatePicker({
   onChange: (iso: string) => void;
   minDate?: string;
 }) {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const [cursor, setCursor] = useState(() => {
     const [y, m] = value.split("-").map(Number);
     return { year: y, month: m - 1 };
@@ -114,32 +117,34 @@ export function MonthDatePicker({
   );
 }
 
-const styles = StyleSheet.create({
-  wrap: {
-    marginTop: Spacing.xs,
-    marginBottom: Spacing.md,
-    padding: Spacing.sm,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-  },
-  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: Spacing.sm },
-  navButton: {
-    width: 28,
-    height: 28,
-    borderRadius: Radius.pill,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: Color.surface2,
-  },
-  title: { fontSize: 13, fontWeight: "700", color: Color.textPrimary },
-  weekRow: { flexDirection: "row" },
-  weekLabel: { flex: 1, textAlign: "center", fontSize: 10, fontWeight: "600", color: Color.textFaint, paddingVertical: 4 },
-  dayCell: { flex: 1, aspectRatio: 1, alignItems: "center", justifyContent: "center", borderRadius: Radius.sm },
-  dayCellSelected: { backgroundColor: Color.gold },
-  dayCellText: { fontSize: 13, color: Color.textSecondary },
-  dayCellTextOutside: { color: Color.textFaint, opacity: 0.5 },
-  dayCellTextDisabled: { color: Color.textFaint, opacity: 0.3 },
-  dayCellTextSelected: { color: Color.goldForeground, fontWeight: "700" },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    wrap: {
+      marginTop: Spacing.xs,
+      marginBottom: Spacing.md,
+      padding: Spacing.sm,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface1,
+    },
+    header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: Spacing.sm },
+    navButton: {
+      width: 28,
+      height: 28,
+      borderRadius: Radius.pill,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: Color.surface2,
+    },
+    title: { fontSize: 13, fontWeight: "700", color: Color.textPrimary },
+    weekRow: { flexDirection: "row" },
+    weekLabel: { flex: 1, textAlign: "center", fontSize: 10, fontWeight: "600", color: Color.textFaint, paddingVertical: 4 },
+    dayCell: { flex: 1, aspectRatio: 1, alignItems: "center", justifyContent: "center", borderRadius: Radius.sm },
+    dayCellSelected: { backgroundColor: Color.gold },
+    dayCellText: { fontSize: 13, color: Color.textSecondary },
+    dayCellTextOutside: { color: Color.textFaint, opacity: 0.5 },
+    dayCellTextDisabled: { color: Color.textFaint, opacity: 0.3 },
+    dayCellTextSelected: { color: Color.goldForeground, fontWeight: "700" },
+  })
+);

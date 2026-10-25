@@ -7,12 +7,15 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { CameraPermissionDenied, CameraUnavailable } from "@/components/nutrition/CameraPermissionGate";
 import { Button } from "@/components/ui/Button";
-import { Color, Radius, Spacing } from "@/constants/theme";
+import { Radius, Spacing } from "@/constants/theme";
 import { trackEvent } from "@/lib/analytics";
 import { tapFeedback } from "@/lib/haptics";
 import { lookupBarcode } from "@/lib/queries/food-catalog";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 export default function BarcodeScanScreen() {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const router = useRouter();
   const { date, mealType } = useLocalSearchParams<{ date?: string; mealType?: string }>();
   const [permission, requestPermission] = useCameraPermissions();
@@ -150,32 +153,34 @@ export default function BarcodeScanScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Color.bg0 },
-  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md },
-  backButton: { padding: 4 },
-  headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
-  centerFill: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: Spacing.xl },
-  cameraWrap: { flex: 1, marginHorizontal: Spacing.lg, borderRadius: Radius.lg, overflow: "hidden", backgroundColor: Color.surface1 },
-  frame: {
-    position: "absolute",
-    top: "35%",
-    left: "10%",
-    right: "10%",
-    height: "18%",
-    borderWidth: 2,
-    borderColor: Color.gold,
-    borderRadius: Radius.md,
-  },
-  overlay: {
-    ...StyleSheet.absoluteFill,
-    backgroundColor: "rgba(10,21,38,0.85)",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: Spacing.xl,
-  },
-  overlayText: { fontSize: 13, color: Color.textSecondary, textAlign: "center", marginTop: Spacing.sm, lineHeight: 19 },
-  hint: { textAlign: "center", fontSize: 12, color: Color.textMuted, marginTop: Spacing.md },
-  manualLink: { alignItems: "center", paddingVertical: Spacing.lg },
-  manualLinkText: { fontSize: 13, color: Color.gold, fontWeight: "600" },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: Color.bg0 },
+    header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md },
+    backButton: { padding: 4 },
+    headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
+    centerFill: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: Spacing.xl },
+    cameraWrap: { flex: 1, marginHorizontal: Spacing.lg, borderRadius: Radius.lg, overflow: "hidden", backgroundColor: Color.surface1 },
+    frame: {
+      position: "absolute",
+      top: "35%",
+      left: "10%",
+      right: "10%",
+      height: "18%",
+      borderWidth: 2,
+      borderColor: Color.gold,
+      borderRadius: Radius.md,
+    },
+    overlay: {
+      ...StyleSheet.absoluteFill,
+      backgroundColor: "rgba(10,21,38,0.85)",
+      alignItems: "center",
+      justifyContent: "center",
+      paddingHorizontal: Spacing.xl,
+    },
+    overlayText: { fontSize: 13, color: Color.textSecondary, textAlign: "center", marginTop: Spacing.sm, lineHeight: 19 },
+    hint: { textAlign: "center", fontSize: 12, color: Color.textMuted, marginTop: Spacing.md },
+    manualLink: { alignItems: "center", paddingVertical: Spacing.lg },
+    manualLinkText: { fontSize: 13, color: Color.gold, fontWeight: "600" },
+  })
+);

@@ -9,7 +9,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
 import { TourHost } from "@/components/ui/TourOverlay";
-import { Color, Radius, Spacing } from "@/constants/theme";
+import { Radius, Spacing } from "@/constants/theme";
 import { AuthProvider, useAuth } from "@/lib/auth-context";
 import { clearLastCrash, getLastCrash, installGlobalCrashHandler, type CrashRecord } from "@/lib/crash-log";
 import { isEmergencyContactReminderDismissed } from "@/lib/emergency-contact-reminder";
@@ -20,6 +20,7 @@ import { RestTimerProvider } from "@/lib/rest-timer";
 import { ThemeProvider, useAppTheme } from "@/lib/theme";
 import { TourProvider } from "@/lib/tour-context";
 import { WorkoutDraftProvider } from "@/lib/workout-draft";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 SplashScreen.preventAutoHideAsync();
 // Some OEM Android skins (Huawei/EMUI confirmed) apply their own, often
@@ -60,6 +61,7 @@ const SPLASH_LOGO_ASPECT_RATIO = 975 / 378; // matches assets/images/splash-logo
 const SPLASH_MIN_HOLD_MS = 2000;
 
 function CustomSplashScreen() {
+  const styles = useStyles();
   // Percentage width + aspectRatio in style can fail to resolve on the very
   // first render before Yoga has settled the parent's size — confirmed
   // on-device: the logo rendered at its raw source-pixel width instead of
@@ -85,6 +87,7 @@ function CustomSplashScreen() {
 // server-side session check in the dashboard layout, just done client-side
 // here since there's no server-rendering equivalent on native.
 function AuthGate() {
+  const Color = useLegacyColors();
   const { status, user, viewMode } = useAuth();
   const router = useRouter();
   const segments = useSegments();
@@ -206,6 +209,7 @@ function AuthGate() {
 // back rather than lost the moment the app terminates. Blocks the rest of
 // the app behind "Dismiss" so it's impossible to miss after a crash.
 function CrashViewer({ crash, onDismiss }: { crash: CrashRecord; onDismiss: () => void }) {
+  const styles = useStyles();
   return (
     <View style={styles.crashRoot}>
       <ScrollView contentContainerStyle={styles.crashScroll}>
@@ -232,6 +236,8 @@ function CrashViewer({ crash, onDismiss }: { crash: CrashRecord; onDismiss: () =
 }
 
 export default function RootLayout() {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const [lastCrash, setLastCrash] = useState<CrashRecord | null | undefined>(undefined);
 
   useEffect(() => {
@@ -304,30 +310,32 @@ function ThemedStatusBar() {
   return <StatusBar barStyle={scheme === "light" ? "dark-content" : "light-content"} backgroundColor={colors.bg} />;
 }
 
-const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: Color.bg0,
-  },
-  splashRoot: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: Color.bg0,
-  },
-  crashRoot: { flex: 1, backgroundColor: Color.bg0 },
-  crashScroll: { padding: Spacing.lg, paddingTop: Spacing.xxl },
-  crashTitle: { fontSize: 18, fontWeight: "700", color: Color.textPrimary },
-  crashSubtitle: { fontSize: 12, color: Color.textMuted, marginTop: Spacing.xs, lineHeight: 17 },
-  crashBox: {
-    marginTop: Spacing.lg,
-    padding: Spacing.md,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-  },
-  crashLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted },
-  crashText: { fontSize: 12, color: Color.textSecondary, marginTop: Spacing.xs, fontFamily: "monospace" },
-  crashFooter: { padding: Spacing.lg },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    root: {
+      flex: 1,
+      backgroundColor: Color.bg0,
+    },
+    splashRoot: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: Color.bg0,
+    },
+    crashRoot: { flex: 1, backgroundColor: Color.bg0 },
+    crashScroll: { padding: Spacing.lg, paddingTop: Spacing.xxl },
+    crashTitle: { fontSize: 18, fontWeight: "700", color: Color.textPrimary },
+    crashSubtitle: { fontSize: 12, color: Color.textMuted, marginTop: Spacing.xs, lineHeight: 17 },
+    crashBox: {
+      marginTop: Spacing.lg,
+      padding: Spacing.md,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface1,
+    },
+    crashLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted },
+    crashText: { fontSize: 12, color: Color.textSecondary, marginTop: Spacing.xs, fontFamily: "monospace" },
+    crashFooter: { padding: Spacing.lg },
+  })
+);

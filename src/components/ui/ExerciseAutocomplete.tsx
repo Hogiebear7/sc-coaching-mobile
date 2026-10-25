@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 
-import { Color, Radius, Spacing } from "@/constants/theme";
+import { Radius, Spacing } from "@/constants/theme";
 import type { ExerciseLibraryEntry } from "@/lib/queries/workouts";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 export const SECTION_LABELS: Record<string, string> = {
   upper_push: "Upper — Push",
@@ -58,6 +59,8 @@ export function ExerciseAutocomplete({
   value: string;
   onChange: (name: string, exerciseId: string | null) => void;
 }) {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const [open, setOpen] = useState(false);
 
   const query = value.trim().toLowerCase();
@@ -119,34 +122,36 @@ export function ExerciseAutocomplete({
   );
 }
 
-const styles = StyleSheet.create({
-  input: {
-    height: 44,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-    paddingHorizontal: Spacing.md,
-    fontSize: 14,
-    color: Color.textPrimary,
-  },
-  suggestions: {
-    marginTop: 4,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface2,
-    overflow: "hidden",
-  },
-  suggestionRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "baseline",
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: Color.borderSubtle,
-  },
-  suggestionName: { fontSize: 13, fontWeight: "500", color: Color.textPrimary },
-  suggestionSection: { fontSize: 10, color: Color.textMuted },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    input: {
+      height: 44,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface1,
+      paddingHorizontal: Spacing.md,
+      fontSize: 14,
+      color: Color.textPrimary,
+    },
+    suggestions: {
+      marginTop: 4,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface2,
+      overflow: "hidden",
+    },
+    suggestionRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "baseline",
+      paddingHorizontal: Spacing.md,
+      paddingVertical: Spacing.sm,
+      borderBottomWidth: 1,
+      borderBottomColor: Color.borderSubtle,
+    },
+    suggestionName: { fontSize: 13, fontWeight: "500", color: Color.textPrimary },
+    suggestionSection: { fontSize: 10, color: Color.textMuted },
+  })
+);

@@ -4,9 +4,10 @@ import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { DateField, formatDateDisplay } from "@/components/ui/DateField";
-import { Color, Radius, Spacing } from "@/constants/theme";
+import { LiveColor as Color, Radius, Spacing } from "@/constants/theme";
 import { useGoalTimeline, useSaveGoal, type GoalTimelineResult } from "@/lib/queries/goal-timeline";
 import { todayDateString } from "@/lib/workout-formatters";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 function shiftDate(iso: string, days: number): string {
   const d = new Date(`${iso}T00:00:00`);
@@ -26,14 +27,15 @@ function maxGoalDate(): string {
   return d.toISOString().slice(0, 10);
 }
 
-const DIFFICULTY_COPY: Record<NonNullable<GoalTimelineResult["difficulty"]>, { label: string; color: string }> = {
+const difficultyCopy = (): Record<NonNullable<GoalTimelineResult["difficulty"]>, { label: string; color: string }> => ({
   comfortable: { label: "Comfortable", color: Color.success },
   challenging: { label: "Challenging", color: Color.warning },
   aggressive: { label: "Aggressive", color: Color.danger },
-};
+});
 
 function TimelineSummary({ label, unit, timeline }: { label: string; unit: string; timeline: GoalTimelineResult }) {
-  const difficulty = timeline.difficulty ? DIFFICULTY_COPY[timeline.difficulty] : null;
+  const styles = useStyles();
+  const difficulty = timeline.difficulty ? difficultyCopy()[timeline.difficulty] : null;
   return (
     <View style={styles.summaryBox}>
       <View style={styles.summaryHeaderRow}>
@@ -75,6 +77,8 @@ const TRAINING_DAYS_OPTIONS = [1, 2, 3, 4, 5, 6, 7];
 // projection display, against the same /api/profile/goal + /goal-timeline
 // routes.
 export function GoalTimelineCard() {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const { data, isLoading, refetch } = useGoalTimeline();
   const saveGoal = useSaveGoal();
   const [goalWeightKg, setGoalWeightKg] = useState("");
@@ -271,57 +275,59 @@ export function GoalTimelineCard() {
   );
 }
 
-const styles = StyleSheet.create({
-  card: { padding: Spacing.md },
-  title: { fontSize: 15, fontWeight: "700", color: Color.textPrimary },
-  explainer: { fontSize: 12, color: Color.textMuted, marginTop: 4, lineHeight: 17 },
-  inputRow: { flexDirection: "row", gap: Spacing.sm, marginTop: Spacing.md },
-  inputCol: { flex: 1 },
-  label: { fontSize: 13, fontWeight: "500", color: Color.textSecondary, marginBottom: 6 },
-  input: {
-    height: 48,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-    paddingHorizontal: Spacing.md,
-    fontSize: 15,
-    color: Color.textPrimary,
-  },
-  adjustRow: { flexDirection: "row", alignItems: "center", gap: Spacing.xs, marginTop: Spacing.sm },
-  adjustLabel: { fontSize: 12, color: Color.textMuted },
-  adjustChip: {
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 6,
-    borderRadius: Radius.pill,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-  },
-  adjustChipText: { fontSize: 12, color: Color.textMuted },
-  error: { fontSize: 12, color: Color.danger, marginTop: Spacing.sm },
-  chipRow: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.xs },
-  dayChip: {
-    width: 36,
-    height: 36,
-    borderRadius: Radius.pill,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  dayChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
-  dayChipText: { fontSize: 13, fontWeight: "600", color: Color.textMuted },
-  dayChipTextActive: { color: Color.gold },
-  summaryBox: {
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-    padding: Spacing.sm,
-  },
-  summaryHeaderRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: Spacing.sm },
-  summaryLabel: { fontSize: 13, fontWeight: "600", color: Color.textPrimary },
-  difficultyText: { fontSize: 12, fontWeight: "700" },
-  summaryText: { fontSize: 12, color: Color.textMuted, marginTop: 4, lineHeight: 17 },
-  warningText: { color: Color.warning },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    card: { padding: Spacing.md },
+    title: { fontSize: 15, fontWeight: "700", color: Color.textPrimary },
+    explainer: { fontSize: 12, color: Color.textMuted, marginTop: 4, lineHeight: 17 },
+    inputRow: { flexDirection: "row", gap: Spacing.sm, marginTop: Spacing.md },
+    inputCol: { flex: 1 },
+    label: { fontSize: 13, fontWeight: "500", color: Color.textSecondary, marginBottom: 6 },
+    input: {
+      height: 48,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface1,
+      paddingHorizontal: Spacing.md,
+      fontSize: 15,
+      color: Color.textPrimary,
+    },
+    adjustRow: { flexDirection: "row", alignItems: "center", gap: Spacing.xs, marginTop: Spacing.sm },
+    adjustLabel: { fontSize: 12, color: Color.textMuted },
+    adjustChip: {
+      paddingHorizontal: Spacing.sm,
+      paddingVertical: 6,
+      borderRadius: Radius.pill,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+    },
+    adjustChipText: { fontSize: 12, color: Color.textMuted },
+    error: { fontSize: 12, color: Color.danger, marginTop: Spacing.sm },
+    chipRow: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.xs },
+    dayChip: {
+      width: 36,
+      height: 36,
+      borderRadius: Radius.pill,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    dayChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
+    dayChipText: { fontSize: 13, fontWeight: "600", color: Color.textMuted },
+    dayChipTextActive: { color: Color.gold },
+    summaryBox: {
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface1,
+      padding: Spacing.sm,
+    },
+    summaryHeaderRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: Spacing.sm },
+    summaryLabel: { fontSize: 13, fontWeight: "600", color: Color.textPrimary },
+    difficultyText: { fontSize: 12, fontWeight: "700" },
+    summaryText: { fontSize: 12, color: Color.textMuted, marginTop: 4, lineHeight: 17 },
+    warningText: { color: Color.warning },
+  })
+);

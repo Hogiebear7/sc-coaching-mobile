@@ -30,7 +30,7 @@ import { RestTimerBar } from "@/components/ui/RestTimerBar";
 import { SupersetChips } from "@/components/ui/SupersetChips";
 import { TextField } from "@/components/ui/TextField";
 import { TimeWheelPicker } from "@/components/ui/TimeWheelPicker";
-import { Color, figure, Radius, Spacing } from "@/constants/theme";
+import { figure, Radius, Spacing } from "@/constants/theme";
 import { successFeedback, tapFeedback } from "@/lib/haptics";
 import { ApiError } from "@/lib/api-client";
 import { useAdvanceProgram, useMyProgram, type PrescribedExercise } from "@/lib/queries/programs";
@@ -79,6 +79,7 @@ import {
 import type { WorkoutSummaryData } from "@/app/workout-summary";
 import { setPendingWorkoutSummary } from "@/lib/workout-summary-handoff";
 import { setPendingWorkoutTemplateSeed } from "@/lib/workout-template-seed";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 const FORMAT_OPTIONS: { value: WorkoutFormat; label: string }[] = [
   { value: "standard", label: "Standard" },
@@ -225,6 +226,7 @@ function newRunRow(): RunRow {
 // while a name has no library match or its media hasn't loaded, so the row
 // layout doesn't jump once it resolves.
 function ExerciseThumbnail({ slug }: { slug: string | undefined }) {
+  const styles = useStyles();
   const { data } = useExerciseLibraryDetail(slug ?? "");
   if (!slug) return null;
   const media = data ? pickHeroMedia(data.media) : null;
@@ -234,6 +236,8 @@ function ExerciseThumbnail({ slug }: { slug: string | undefined }) {
 
 
 function NumberField({ label, value, onChangeText, placeholder }: { label: string; value: string; onChangeText: (v: string) => void; placeholder?: string }) {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   return (
     <View style={styles.numberField}>
       <Text style={styles.fieldLabel}>{label}</Text>
@@ -278,6 +282,8 @@ function newChipperMovement(): ChipperMovement {
 // Free-text movement list shared by AMRAP/EMOM/Tabata config — a movement is
 // just a short label like "10 Burpees", not a full weight/reps/sets row.
 function MovementsEditor({ movements, onChange }: { movements: string[]; onChange: (m: string[]) => void }) {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const [draftText, setDraftText] = useState("");
   function add() {
     const v = draftText.trim();
@@ -332,6 +338,8 @@ function ChipperMovementRow({
   onChange: (patch: Partial<ChipperMovement>) => void;
   onRemove: () => void;
 }) {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   return (
     <View style={styles.stationRow}>
       <TextInput
@@ -377,6 +385,7 @@ function ChipperMovementRow({
 }
 
 function ChipperEditor({ movements, onChange }: { movements: ChipperMovement[]; onChange: (m: ChipperMovement[]) => void }) {
+  const styles = useStyles();
   function update(key: string, patch: Partial<ChipperMovement>) {
     onChange(movements.map((m) => (m.key === key ? { ...m, ...patch } : m)));
   }
@@ -398,6 +407,8 @@ function ChipperEditor({ movements, onChange }: { movements: ChipperMovement[]; 
 }
 
 function StationsEditor({ stations, onChange }: { stations: CircuitStation[]; onChange: (s: CircuitStation[]) => void }) {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   function updateStation(key: string, patch: Partial<CircuitStation>) {
     onChange(stations.map((s) => (s.key === key ? { ...s, ...patch } : s)));
   }
@@ -448,6 +459,8 @@ function StationsEditor({ stations, onChange }: { stations: CircuitStation[]; on
 }
 
 function EmomMovementsEditor({ movements, onChange }: { movements: EmomMovement[]; onChange: (m: EmomMovement[]) => void }) {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   function update(key: string, patch: Partial<EmomMovement>) {
     onChange(movements.map((m) => (m.key === key ? { ...m, ...patch } : m)));
   }
@@ -491,6 +504,8 @@ function AmrapMovementsEditor({
   subMode: "reps" | "rounds";
   onChange: (m: AmrapMovement[]) => void;
 }) {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   function update(key: string, patch: Partial<AmrapMovement>) {
     onChange(movements.map((m) => (m.key === key ? { ...m, ...patch } : m)));
   }
@@ -554,6 +569,9 @@ function HowDidYouFeelModal({
   onSubmit: () => void;
   submitting: boolean;
 }) {
+  const styles = useStyles();
+  const feelStyles = useFeelStyles();
+  const Color = useLegacyColors();
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onSkip}>
       <KeyboardAvoidingView
@@ -599,6 +617,9 @@ function HowDidYouFeelModal({
 }
 
 export default function LogWorkoutScreen() {
+  const styles = useStyles();
+  const feelStyles = useFeelStyles();
+  const Color = useLegacyColors();
   const router = useRouter();
   const {
     programId,
@@ -2001,347 +2022,351 @@ export default function LogWorkoutScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Color.bg0 },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-  },
-  backButton: { padding: 4 },
-  headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
-  discardText: { fontSize: 12, fontWeight: "500", color: Color.textMuted },
-  saveTemplateRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, marginTop: Spacing.md, paddingVertical: 6 },
-  saveTemplateText: { fontSize: 12, fontWeight: "600", color: Color.gold },
-  scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
-  multiline: { height: 80, paddingTop: 12, textAlignVertical: "top" },
-  sectionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: Spacing.md, marginBottom: Spacing.sm },
-  sectionLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted },
-  addChip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.sm, paddingVertical: 6 },
-  addChipText: { fontSize: 11, fontWeight: "600", color: Color.textSecondary },
-  addButtonsRow: { flexDirection: "row", gap: Spacing.sm, marginTop: Spacing.sm, marginBottom: Spacing.md },
-  emptyHint: { fontSize: 12, color: Color.textMuted, borderWidth: 1, borderColor: Color.borderSubtle, borderStyle: "dashed", borderRadius: Radius.md, padding: Spacing.md },
-  entryCard: { padding: Spacing.md, marginBottom: Spacing.md },
-  // A superset group wraps its member cards in one bordered block with a
-  // shared "ST1" label — members render edge-to-edge inside it (no
-  // individual margin/radius/border of their own) so it reads as one
-  // station, not a stack of separate cards.
-  supersetGroupWrap: {
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.goldBorder,
-    backgroundColor: Color.goldWeak,
-    marginBottom: Spacing.md,
-    overflow: "hidden",
-  },
-  supersetGroupHeader: {
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: Color.goldBorder,
-  },
-  supersetGroupHeaderText: { fontSize: 12, fontWeight: "700", color: Color.gold, letterSpacing: 0.4 },
-  entryCardGrouped: {
-    padding: Spacing.md,
-    marginBottom: 0,
-    borderRadius: 0,
-    borderWidth: 0,
-    backgroundColor: "transparent",
-  },
-  entryCardGroupedDivider: { borderTopWidth: 1, borderTopColor: Color.goldBorder },
-  entryHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: Spacing.sm },
-  entryHeaderTitle: { flexDirection: "row", alignItems: "center", gap: Spacing.xs },
-  entryHeaderActions: { flexDirection: "row", alignItems: "center", gap: Spacing.md },
-  entryLabel: { fontSize: 12, fontWeight: "600", color: Color.textMuted },
-  exerciseDoneBadge: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    backgroundColor: Color.success,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  removeText: { fontSize: 12, color: Color.danger },
-  lastTimeText: { fontSize: 11, color: Color.textMuted, marginTop: 4 },
-  lastTimeValue: { color: Color.textSecondary, fontWeight: "600" },
-  demoLink: { flexDirection: "row", alignItems: "center", gap: 4, alignSelf: "flex-start" },
-  demoLinkText: { fontSize: 12, fontWeight: "600", color: Color.gold },
-  exerciseInfoRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: Spacing.sm,
-    marginTop: Spacing.sm,
-    padding: Spacing.sm,
-    borderRadius: Radius.md,
-    backgroundColor: "rgba(255,255,255,0.03)",
-  },
-  exerciseThumb: { width: 40, height: 40, borderRadius: Radius.md, backgroundColor: Color.surface2 },
-  exerciseInfoText: { flex: 1, gap: 4 },
-  timerCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    borderRadius: Radius.lg,
-    borderWidth: 1,
-    borderColor: Color.goldBorder,
-    backgroundColor: Color.goldWeak,
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-    marginTop: Spacing.md,
-    marginBottom: Spacing.lg,
-  },
-  timerLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted },
-  timerClock: { ...figure(30, "700"), color: Color.gold, marginTop: 2 },
-  timerToggle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: Color.gold,
-  },
-  timerReset: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-  },
-  fieldLabel: { fontSize: 12, fontWeight: "500", color: Color.textSecondary, marginBottom: 4 },
-  gridRow: { flexDirection: "row", gap: Spacing.sm, marginTop: Spacing.sm },
-  numberField: { flex: 1 },
-  smallInput: {
-    height: 40,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-    paddingHorizontal: Spacing.sm,
-    fontSize: 13,
-    color: Color.textPrimary,
-  },
-  unitToggleRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 4 },
-  unitChip: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
-  unitChipActive: { backgroundColor: Color.goldWeak },
-  unitChipText: { fontSize: 10, fontWeight: "700", color: Color.textMuted },
-  unitChipTextActive: { color: Color.gold },
-  startTimerButton: {
-    height: 40,
-    borderRadius: Radius.md,
-    backgroundColor: Color.gold,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 4,
-  },
-  startTimerButtonText: { fontSize: 12, fontWeight: "700", color: Color.goldForeground },
-  linkText: { fontSize: 12, fontWeight: "600", color: Color.gold, marginTop: Spacing.sm },
-  linkTextMuted: { fontSize: 12, color: Color.textMuted, marginTop: 4 },
-  setColumnHeader: { flexDirection: "row", alignItems: "center", gap: Spacing.xs, marginTop: Spacing.md, paddingHorizontal: 2 },
-  setColumnLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.4, color: Color.textFaint, textTransform: "uppercase" },
-  setRow2: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.xs,
-    marginTop: Spacing.xs,
-    padding: 4,
-    borderRadius: Radius.md,
-  },
-  setRow2Completed: { backgroundColor: Color.successWeak },
-  setNumber: { fontSize: 13, fontWeight: "700", color: Color.textPrimary, textAlign: "center" },
-  setTypeTag: { fontSize: 7, fontWeight: "700", color: Color.gold, textAlign: "center", textTransform: "uppercase" },
-  setInput: {
-    height: 40,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-    paddingHorizontal: Spacing.sm,
-    fontSize: 14,
-    color: Color.textPrimary,
-  },
-  setInputCompleted: { borderColor: Color.successWeak, color: Color.textSecondary },
-  timePickerValue: { fontSize: 14, color: Color.textPrimary },
-  timePickerPlaceholder: { fontSize: 14, color: Color.textFaint },
-  timePickerCard: {
-    width: "100%",
-    maxWidth: 360,
-    borderRadius: Radius.lg,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-    padding: Spacing.lg,
-    alignItems: "center",
-  },
-  timePickerTitle: { fontSize: 15, fontWeight: "700", color: Color.textPrimary, marginBottom: Spacing.md },
-  setCheckWrap: { width: 32, alignItems: "center", justifyContent: "center" },
-  setCheck: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    borderWidth: 1.5,
-    borderColor: Color.borderDefault,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  setCheckDone: { backgroundColor: Color.success, borderColor: Color.success },
-  setRowActions: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: Spacing.sm },
-  moreOptions: { marginTop: Spacing.md, paddingTop: Spacing.sm, borderTopWidth: 1, borderTopColor: Color.borderSubtle },
-  supersetRow: { flexDirection: "row", alignItems: "center", gap: Spacing.xs, marginBottom: Spacing.sm },
-  supersetText: { fontSize: 12, color: Color.textMuted },
-  supersetTextActive: { color: Color.gold, fontWeight: "600" },
-  unitSwitch: { width: 48, alignItems: "center", justifyContent: "center", borderRadius: Radius.md, borderWidth: 1, borderColor: Color.borderSubtle, backgroundColor: Color.surface2 },
-  unitSwitchText: { fontSize: 12, fontWeight: "600", color: Color.textSecondary },
-  paceText: { fontSize: 11, color: Color.textMuted, marginTop: Spacing.xs },
-  splitsText: { fontSize: 11, color: Color.textSecondary, marginTop: Spacing.xs },
-  error: { fontSize: 12, color: Color.danger, marginTop: Spacing.md },
-  formatRow: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.xs },
-  formatChip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.sm, paddingVertical: 8 },
-  formatChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
-  formatChipText: { fontSize: 12, fontWeight: "600", color: Color.textMuted },
-  formatChipTextActive: { color: Color.gold },
-  formatHint: { fontSize: 12, color: Color.textMuted, marginTop: Spacing.sm, lineHeight: 17 },
-  formatDescription: { fontSize: 12, color: Color.textFaint, marginTop: Spacing.sm, lineHeight: 17, fontStyle: "italic" },
-  formatFieldsRow: { flexDirection: "row", gap: Spacing.sm, marginTop: Spacing.sm },
-  formatResultText: {
-    fontSize: 12,
-    color: Color.gold,
-    fontWeight: "600",
-    marginTop: Spacing.md,
-    padding: Spacing.sm,
-    borderRadius: Radius.md,
-    backgroundColor: Color.goldWeak,
-  },
-  capModeRow: { flexDirection: "row", gap: Spacing.xs, marginTop: Spacing.sm, marginBottom: Spacing.xs },
-  stationRow: { flexDirection: "row", alignItems: "center", gap: Spacing.xs, marginBottom: Spacing.xs },
-  stationNameInput: {
-    flex: 1,
-    height: 38,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-    paddingHorizontal: Spacing.sm,
-    fontSize: 13,
-    color: Color.textPrimary,
-  },
-  stationModeChip: { paddingHorizontal: Spacing.sm, paddingVertical: 8, borderRadius: Radius.md, borderWidth: 1, borderColor: Color.borderSubtle },
-  stationModeText: { fontSize: 10, fontWeight: "700", color: Color.textMuted },
-  stationValueInput: {
-    width: 56,
-    height: 38,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-    paddingHorizontal: Spacing.xs,
-    fontSize: 13,
-    color: Color.textPrimary,
-    textAlign: "center",
-  },
-  // Same as stationValueInput but wider — for fields whose placeholder/value
-  // is longer than a couple of digits (EMOM's "reps/time" text, Chipper's
-  // rep/duration targets, AMRAP's "reps per round"), which clipped badly at
-  // the narrower 56px width sized for plain numeric fields.
-  stationValueInputWide: {
-    width: 88,
-    height: 38,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-    paddingHorizontal: Spacing.xs,
-    fontSize: 13,
-    color: Color.textPrimary,
-    textAlign: "center",
-  },
-  movementsInputRow: { flexDirection: "row", gap: Spacing.xs },
-  movementsInput: {
-    flex: 1,
-    height: 40,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-    paddingHorizontal: Spacing.sm,
-    fontSize: 13,
-    color: Color.textPrimary,
-  },
-  movementsAddButton: {
-    width: 40,
-    height: 40,
-    borderRadius: Radius.md,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: Color.gold,
-  },
-  movementsList: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: Spacing.sm },
-  movementChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    borderRadius: Radius.pill,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 6,
-  },
-  movementChipText: { fontSize: 11, color: Color.textSecondary, fontWeight: "500" },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: Color.bg0 },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: Spacing.lg,
+      paddingVertical: Spacing.md,
+    },
+    backButton: { padding: 4 },
+    headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
+    discardText: { fontSize: 12, fontWeight: "500", color: Color.textMuted },
+    saveTemplateRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, marginTop: Spacing.md, paddingVertical: 6 },
+    saveTemplateText: { fontSize: 12, fontWeight: "600", color: Color.gold },
+    scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
+    multiline: { height: 80, paddingTop: 12, textAlignVertical: "top" },
+    sectionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: Spacing.md, marginBottom: Spacing.sm },
+    sectionLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted },
+    addChip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.sm, paddingVertical: 6 },
+    addChipText: { fontSize: 11, fontWeight: "600", color: Color.textSecondary },
+    addButtonsRow: { flexDirection: "row", gap: Spacing.sm, marginTop: Spacing.sm, marginBottom: Spacing.md },
+    emptyHint: { fontSize: 12, color: Color.textMuted, borderWidth: 1, borderColor: Color.borderSubtle, borderStyle: "dashed", borderRadius: Radius.md, padding: Spacing.md },
+    entryCard: { padding: Spacing.md, marginBottom: Spacing.md },
+    // A superset group wraps its member cards in one bordered block with a
+    // shared "ST1" label — members render edge-to-edge inside it (no
+    // individual margin/radius/border of their own) so it reads as one
+    // station, not a stack of separate cards.
+    supersetGroupWrap: {
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.goldBorder,
+      backgroundColor: Color.goldWeak,
+      marginBottom: Spacing.md,
+      overflow: "hidden",
+    },
+    supersetGroupHeader: {
+      paddingHorizontal: Spacing.md,
+      paddingVertical: Spacing.sm,
+      borderBottomWidth: 1,
+      borderBottomColor: Color.goldBorder,
+    },
+    supersetGroupHeaderText: { fontSize: 12, fontWeight: "700", color: Color.gold, letterSpacing: 0.4 },
+    entryCardGrouped: {
+      padding: Spacing.md,
+      marginBottom: 0,
+      borderRadius: 0,
+      borderWidth: 0,
+      backgroundColor: "transparent",
+    },
+    entryCardGroupedDivider: { borderTopWidth: 1, borderTopColor: Color.goldBorder },
+    entryHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: Spacing.sm },
+    entryHeaderTitle: { flexDirection: "row", alignItems: "center", gap: Spacing.xs },
+    entryHeaderActions: { flexDirection: "row", alignItems: "center", gap: Spacing.md },
+    entryLabel: { fontSize: 12, fontWeight: "600", color: Color.textMuted },
+    exerciseDoneBadge: {
+      width: 16,
+      height: 16,
+      borderRadius: 8,
+      backgroundColor: Color.success,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    removeText: { fontSize: 12, color: Color.danger },
+    lastTimeText: { fontSize: 11, color: Color.textMuted, marginTop: 4 },
+    lastTimeValue: { color: Color.textSecondary, fontWeight: "600" },
+    demoLink: { flexDirection: "row", alignItems: "center", gap: 4, alignSelf: "flex-start" },
+    demoLinkText: { fontSize: 12, fontWeight: "600", color: Color.gold },
+    exerciseInfoRow: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      gap: Spacing.sm,
+      marginTop: Spacing.sm,
+      padding: Spacing.sm,
+      borderRadius: Radius.md,
+      backgroundColor: Color.overlayFaint,
+    },
+    exerciseThumb: { width: 40, height: 40, borderRadius: Radius.md, backgroundColor: Color.surface2 },
+    exerciseInfoText: { flex: 1, gap: 4 },
+    timerCard: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      borderRadius: Radius.lg,
+      borderWidth: 1,
+      borderColor: Color.goldBorder,
+      backgroundColor: Color.goldWeak,
+      paddingHorizontal: Spacing.lg,
+      paddingVertical: Spacing.md,
+      marginTop: Spacing.md,
+      marginBottom: Spacing.lg,
+    },
+    timerLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted },
+    timerClock: { ...figure(30, "700"), color: Color.gold, marginTop: 2 },
+    timerToggle: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: Color.gold,
+    },
+    timerReset: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      alignItems: "center",
+      justifyContent: "center",
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+    },
+    fieldLabel: { fontSize: 12, fontWeight: "500", color: Color.textSecondary, marginBottom: 4 },
+    gridRow: { flexDirection: "row", gap: Spacing.sm, marginTop: Spacing.sm },
+    numberField: { flex: 1 },
+    smallInput: {
+      height: 40,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface1,
+      paddingHorizontal: Spacing.sm,
+      fontSize: 13,
+      color: Color.textPrimary,
+    },
+    unitToggleRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 4 },
+    unitChip: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
+    unitChipActive: { backgroundColor: Color.goldWeak },
+    unitChipText: { fontSize: 10, fontWeight: "700", color: Color.textMuted },
+    unitChipTextActive: { color: Color.gold },
+    startTimerButton: {
+      height: 40,
+      borderRadius: Radius.md,
+      backgroundColor: Color.gold,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 4,
+    },
+    startTimerButtonText: { fontSize: 12, fontWeight: "700", color: Color.goldForeground },
+    linkText: { fontSize: 12, fontWeight: "600", color: Color.gold, marginTop: Spacing.sm },
+    linkTextMuted: { fontSize: 12, color: Color.textMuted, marginTop: 4 },
+    setColumnHeader: { flexDirection: "row", alignItems: "center", gap: Spacing.xs, marginTop: Spacing.md, paddingHorizontal: 2 },
+    setColumnLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.4, color: Color.textFaint, textTransform: "uppercase" },
+    setRow2: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: Spacing.xs,
+      marginTop: Spacing.xs,
+      padding: 4,
+      borderRadius: Radius.md,
+    },
+    setRow2Completed: { backgroundColor: Color.successWeak },
+    setNumber: { fontSize: 13, fontWeight: "700", color: Color.textPrimary, textAlign: "center" },
+    setTypeTag: { fontSize: 7, fontWeight: "700", color: Color.gold, textAlign: "center", textTransform: "uppercase" },
+    setInput: {
+      height: 40,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface1,
+      paddingHorizontal: Spacing.sm,
+      fontSize: 14,
+      color: Color.textPrimary,
+    },
+    setInputCompleted: { borderColor: Color.successWeak, color: Color.textSecondary },
+    timePickerValue: { fontSize: 14, color: Color.textPrimary },
+    timePickerPlaceholder: { fontSize: 14, color: Color.textFaint },
+    timePickerCard: {
+      width: "100%",
+      maxWidth: 360,
+      borderRadius: Radius.lg,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface1,
+      padding: Spacing.lg,
+      alignItems: "center",
+    },
+    timePickerTitle: { fontSize: 15, fontWeight: "700", color: Color.textPrimary, marginBottom: Spacing.md },
+    setCheckWrap: { width: 32, alignItems: "center", justifyContent: "center" },
+    setCheck: {
+      width: 26,
+      height: 26,
+      borderRadius: 13,
+      borderWidth: 1.5,
+      borderColor: Color.borderDefault,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    setCheckDone: { backgroundColor: Color.success, borderColor: Color.success },
+    setRowActions: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: Spacing.sm },
+    moreOptions: { marginTop: Spacing.md, paddingTop: Spacing.sm, borderTopWidth: 1, borderTopColor: Color.borderSubtle },
+    supersetRow: { flexDirection: "row", alignItems: "center", gap: Spacing.xs, marginBottom: Spacing.sm },
+    supersetText: { fontSize: 12, color: Color.textMuted },
+    supersetTextActive: { color: Color.gold, fontWeight: "600" },
+    unitSwitch: { width: 48, alignItems: "center", justifyContent: "center", borderRadius: Radius.md, borderWidth: 1, borderColor: Color.borderSubtle, backgroundColor: Color.surface2 },
+    unitSwitchText: { fontSize: 12, fontWeight: "600", color: Color.textSecondary },
+    paceText: { fontSize: 11, color: Color.textMuted, marginTop: Spacing.xs },
+    splitsText: { fontSize: 11, color: Color.textSecondary, marginTop: Spacing.xs },
+    error: { fontSize: 12, color: Color.danger, marginTop: Spacing.md },
+    formatRow: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.xs },
+    formatChip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.sm, paddingVertical: 8 },
+    formatChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
+    formatChipText: { fontSize: 12, fontWeight: "600", color: Color.textMuted },
+    formatChipTextActive: { color: Color.gold },
+    formatHint: { fontSize: 12, color: Color.textMuted, marginTop: Spacing.sm, lineHeight: 17 },
+    formatDescription: { fontSize: 12, color: Color.textFaint, marginTop: Spacing.sm, lineHeight: 17, fontStyle: "italic" },
+    formatFieldsRow: { flexDirection: "row", gap: Spacing.sm, marginTop: Spacing.sm },
+    formatResultText: {
+      fontSize: 12,
+      color: Color.gold,
+      fontWeight: "600",
+      marginTop: Spacing.md,
+      padding: Spacing.sm,
+      borderRadius: Radius.md,
+      backgroundColor: Color.goldWeak,
+    },
+    capModeRow: { flexDirection: "row", gap: Spacing.xs, marginTop: Spacing.sm, marginBottom: Spacing.xs },
+    stationRow: { flexDirection: "row", alignItems: "center", gap: Spacing.xs, marginBottom: Spacing.xs },
+    stationNameInput: {
+      flex: 1,
+      height: 38,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface1,
+      paddingHorizontal: Spacing.sm,
+      fontSize: 13,
+      color: Color.textPrimary,
+    },
+    stationModeChip: { paddingHorizontal: Spacing.sm, paddingVertical: 8, borderRadius: Radius.md, borderWidth: 1, borderColor: Color.borderSubtle },
+    stationModeText: { fontSize: 10, fontWeight: "700", color: Color.textMuted },
+    stationValueInput: {
+      width: 56,
+      height: 38,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface1,
+      paddingHorizontal: Spacing.xs,
+      fontSize: 13,
+      color: Color.textPrimary,
+      textAlign: "center",
+    },
+    // Same as stationValueInput but wider — for fields whose placeholder/value
+    // is longer than a couple of digits (EMOM's "reps/time" text, Chipper's
+    // rep/duration targets, AMRAP's "reps per round"), which clipped badly at
+    // the narrower 56px width sized for plain numeric fields.
+    stationValueInputWide: {
+      width: 88,
+      height: 38,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface1,
+      paddingHorizontal: Spacing.xs,
+      fontSize: 13,
+      color: Color.textPrimary,
+      textAlign: "center",
+    },
+    movementsInputRow: { flexDirection: "row", gap: Spacing.xs },
+    movementsInput: {
+      flex: 1,
+      height: 40,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface1,
+      paddingHorizontal: Spacing.sm,
+      fontSize: 13,
+      color: Color.textPrimary,
+    },
+    movementsAddButton: {
+      width: 40,
+      height: 40,
+      borderRadius: Radius.md,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: Color.gold,
+    },
+    movementsList: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: Spacing.sm },
+    movementChip: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+      borderRadius: Radius.pill,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface1,
+      paddingHorizontal: Spacing.sm,
+      paddingVertical: 6,
+    },
+    movementChipText: { fontSize: 11, color: Color.textSecondary, fontWeight: "500" },
+  })
+);
 
-const feelStyles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.55)",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: Spacing.xl,
-  },
-  card: {
-    width: "100%",
-    maxWidth: 360,
-    borderRadius: Radius.lg,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-    padding: Spacing.lg,
-  },
-  title: { fontSize: 17, fontWeight: "700", color: Color.textPrimary },
-  rpeDescription: { fontSize: 12, color: Color.textMuted, marginTop: Spacing.xs, lineHeight: 17 },
-  rpeRow: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: Spacing.md },
-  rpeChip: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface2,
-  },
-  rpeChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
-  rpeChipText: { fontSize: 13, fontWeight: "600", color: Color.textSecondary },
-  rpeChipTextActive: { color: Color.gold },
-  // Unlike log-workout's other Notes fields (styles.smallInput or the
-  // TextField component), this one is a bare TextInput with no wrapper
-  // supplying background/border/text color — RN falls back to platform
-  // defaults for all three, which on this screen meant black text on the
-  // card's dark background: readable cursor, invisible characters.
-  notesInput: {
-    marginTop: Spacing.xs,
-    minHeight: 64,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface2,
-    paddingHorizontal: Spacing.sm,
-    fontSize: 13,
-    color: Color.textPrimary,
-  },
-  actions: { flexDirection: "row", gap: Spacing.sm, marginTop: Spacing.lg },
-});
+const useFeelStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    backdrop: {
+      flex: 1,
+      backgroundColor: "rgba(0,0,0,0.55)",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: Spacing.xl,
+    },
+    card: {
+      width: "100%",
+      maxWidth: 360,
+      borderRadius: Radius.lg,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface1,
+      padding: Spacing.lg,
+    },
+    title: { fontSize: 17, fontWeight: "700", color: Color.textPrimary },
+    rpeDescription: { fontSize: 12, color: Color.textMuted, marginTop: Spacing.xs, lineHeight: 17 },
+    rpeRow: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: Spacing.md },
+    rpeChip: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      alignItems: "center",
+      justifyContent: "center",
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface2,
+    },
+    rpeChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
+    rpeChipText: { fontSize: 13, fontWeight: "600", color: Color.textSecondary },
+    rpeChipTextActive: { color: Color.gold },
+    // Unlike log-workout's other Notes fields (styles.smallInput or the
+    // TextField component), this one is a bare TextInput with no wrapper
+    // supplying background/border/text color — RN falls back to platform
+    // defaults for all three, which on this screen meant black text on the
+    // card's dark background: readable cursor, invisible characters.
+    notesInput: {
+      marginTop: Spacing.xs,
+      minHeight: 64,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface2,
+      paddingHorizontal: Spacing.sm,
+      fontSize: 13,
+      color: Color.textPrimary,
+    },
+    actions: { flexDirection: "row", gap: Spacing.sm, marginTop: Spacing.lg },
+  })
+);

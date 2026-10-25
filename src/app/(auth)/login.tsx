@@ -11,10 +11,12 @@ import { BrandMark } from "@/components/ui/BrandMark";
 import { KeyboardAwareScroll } from "@/components/ui/KeyboardAwareScroll";
 import { Button } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/TextField";
-import { Color, headline, Spacing } from "@/constants/theme";
+import { headline, Spacing } from "@/constants/theme";
 import { ApiError, useAuth } from "@/lib/auth-context";
+import { makeLegacyStyles } from "@/lib/theme";
 
 export default function LoginScreen() {
+  const styles = useStyles();
   const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -86,65 +88,67 @@ export default function LoginScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Color.bg0 },
-  flex: { flex: 1 },
-  scroll: {
-    flexGrow: 1,
-    justifyContent: "center",
-    paddingHorizontal: Spacing.xl,
-    paddingVertical: Spacing.xxl,
-  },
-  logo: {
-    marginBottom: Spacing.lg,
-  },
-  eyebrow: {
-    fontSize: 11,
-    fontWeight: "700",
-    letterSpacing: 1,
-    color: Color.gold,
-    marginBottom: Spacing.sm,
-  },
-  title: {
-    ...headline(40),
-    color: Color.textPrimary,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: Color.textMuted,
-    marginTop: Spacing.sm,
-    marginBottom: Spacing.xl,
-  },
-  form: {
-    marginTop: Spacing.sm,
-  },
-  submit: {
-    marginTop: Spacing.sm,
-  },
-  forgotLink: {
-    color: Color.textMuted,
-    fontSize: 13,
-    fontWeight: "600",
-    textAlign: "center",
-    marginTop: Spacing.lg,
-  },
-  error: {
-    color: Color.danger,
-    fontSize: 13,
-    marginBottom: Spacing.md,
-  },
-  footer: {
-    flexDirection: "row",
-    justifyContent: "center",
-    marginTop: Spacing.xl,
-  },
-  footerText: {
-    color: Color.textMuted,
-    fontSize: 14,
-  },
-  link: {
-    color: Color.gold,
-    fontSize: 14,
-    fontWeight: "600",
-  },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: Color.bg0 },
+    flex: { flex: 1 },
+    scroll: {
+      flexGrow: 1,
+      justifyContent: "center",
+      paddingHorizontal: Spacing.xl,
+      paddingVertical: Spacing.xxl,
+    },
+    logo: {
+      marginBottom: Spacing.lg,
+    },
+    eyebrow: {
+      fontSize: 11,
+      fontWeight: "700",
+      letterSpacing: 1,
+      color: Color.gold,
+      marginBottom: Spacing.sm,
+    },
+    title: {
+      ...headline(40),
+      color: Color.textPrimary,
+    },
+    subtitle: {
+      fontSize: 14,
+      color: Color.textMuted,
+      marginTop: Spacing.sm,
+      marginBottom: Spacing.xl,
+    },
+    form: {
+      marginTop: Spacing.sm,
+    },
+    submit: {
+      marginTop: Spacing.sm,
+    },
+    forgotLink: {
+      color: Color.textMuted,
+      fontSize: 13,
+      fontWeight: "600",
+      textAlign: "center",
+      marginTop: Spacing.lg,
+    },
+    error: {
+      color: Color.danger,
+      fontSize: 13,
+      marginBottom: Spacing.md,
+    },
+    footer: {
+      flexDirection: "row",
+      justifyContent: "center",
+      marginTop: Spacing.xl,
+    },
+    footerText: {
+      color: Color.textMuted,
+      fontSize: 14,
+    },
+    link: {
+      color: Color.gold,
+      fontSize: 14,
+      fontWeight: "600",
+    },
+  })
+);

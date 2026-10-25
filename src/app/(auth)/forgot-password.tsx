@@ -12,8 +12,9 @@ import { KeyboardAwareScroll } from "@/components/ui/KeyboardAwareScroll";
 
 import { Button } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/TextField";
-import { Color, headline, Spacing } from "@/constants/theme";
+import { headline, Spacing } from "@/constants/theme";
 import { apiFetch, ApiError } from "@/lib/api-client";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 // Mirrors the web app's /forgot-password page exactly — same route
 // (POST /api/auth/forgot-password), same always-generic response copy so
@@ -22,6 +23,8 @@ import { apiFetch, ApiError } from "@/lib/api-client";
 const GENERIC_MESSAGE = "If an account exists for that email, a password reset link has been sent.";
 
 export default function ForgotPasswordScreen() {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
@@ -106,59 +109,61 @@ export default function ForgotPasswordScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Color.bg0 },
-  flex: { flex: 1 },
-  scroll: {
-    flexGrow: 1,
-    justifyContent: "center",
-    paddingHorizontal: Spacing.xl,
-    paddingVertical: Spacing.xxl,
-  },
-  backButton: { position: "absolute", top: Spacing.xl, left: Spacing.xl, padding: 4 },
-  eyebrow: {
-    fontSize: 11,
-    fontWeight: "700",
-    letterSpacing: 1,
-    color: Color.gold,
-    marginBottom: Spacing.sm,
-  },
-  title: {
-    ...headline(40),
-    color: Color.textPrimary,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: Color.textMuted,
-    marginTop: Spacing.sm,
-    marginBottom: Spacing.xl,
-  },
-  form: { marginTop: Spacing.sm },
-  submit: { marginTop: Spacing.sm },
-  error: {
-    color: Color.danger,
-    fontSize: 13,
-    marginBottom: Spacing.md,
-  },
-  successBox: {
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-    padding: Spacing.lg,
-    alignItems: "flex-start",
-  },
-  successText: { fontSize: 14, color: Color.textPrimary, lineHeight: 20 },
-  successHint: { fontSize: 13, color: Color.textMuted, marginTop: Spacing.sm, lineHeight: 18 },
-  pasteLink: { fontSize: 13, fontWeight: "600", color: Color.gold, marginTop: Spacing.md },
-  footer: {
-    flexDirection: "row",
-    justifyContent: "center",
-    marginTop: Spacing.xl,
-  },
-  link: {
-    color: Color.gold,
-    fontSize: 14,
-    fontWeight: "600",
-  },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: Color.bg0 },
+    flex: { flex: 1 },
+    scroll: {
+      flexGrow: 1,
+      justifyContent: "center",
+      paddingHorizontal: Spacing.xl,
+      paddingVertical: Spacing.xxl,
+    },
+    backButton: { position: "absolute", top: Spacing.xl, left: Spacing.xl, padding: 4 },
+    eyebrow: {
+      fontSize: 11,
+      fontWeight: "700",
+      letterSpacing: 1,
+      color: Color.gold,
+      marginBottom: Spacing.sm,
+    },
+    title: {
+      ...headline(40),
+      color: Color.textPrimary,
+    },
+    subtitle: {
+      fontSize: 14,
+      color: Color.textMuted,
+      marginTop: Spacing.sm,
+      marginBottom: Spacing.xl,
+    },
+    form: { marginTop: Spacing.sm },
+    submit: { marginTop: Spacing.sm },
+    error: {
+      color: Color.danger,
+      fontSize: 13,
+      marginBottom: Spacing.md,
+    },
+    successBox: {
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface1,
+      padding: Spacing.lg,
+      alignItems: "flex-start",
+    },
+    successText: { fontSize: 14, color: Color.textPrimary, lineHeight: 20 },
+    successHint: { fontSize: 13, color: Color.textMuted, marginTop: Spacing.sm, lineHeight: 18 },
+    pasteLink: { fontSize: 13, fontWeight: "600", color: Color.gold, marginTop: Spacing.md },
+    footer: {
+      flexDirection: "row",
+      justifyContent: "center",
+      marginTop: Spacing.xl,
+    },
+    link: {
+      color: Color.gold,
+      fontSize: 14,
+      fontWeight: "600",
+    },
+  })
+);

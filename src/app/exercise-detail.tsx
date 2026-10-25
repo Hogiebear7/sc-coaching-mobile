@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { StatCard } from "@/components/ui/StatCard";
 import { TrendChart } from "@/components/ui/TrendChart";
-import { Color, Radius, Spacing } from "@/constants/theme";
+import { Radius, Spacing } from "@/constants/theme";
 import { useWorkouts } from "@/lib/queries/workouts";
 import {
   EXERCISE_METRICS,
@@ -20,12 +20,15 @@ import {
   todayDateString,
   type ExerciseMetricKey,
 } from "@/lib/workout-formatters";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 function formatShortDate(dateISO: string): string {
   return new Date(`${dateISO}T00:00:00`).toLocaleDateString(undefined, { day: "numeric", month: "short" });
 }
 
 export default function ExerciseDetailScreen() {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const router = useRouter();
   const { name } = useLocalSearchParams<{ name?: string }>();
   const { data, isLoading } = useWorkouts();
@@ -156,42 +159,44 @@ export default function ExerciseDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Color.bg0 },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-  },
-  backButton: { padding: 4 },
-  headerTitle: { flex: 1, textAlign: "center", fontSize: 16, fontWeight: "700", color: Color.textPrimary, marginHorizontal: Spacing.sm },
-  centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
-  emptyText: { fontSize: 14, color: Color.textMuted, textAlign: "center" },
-  scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
-  statsGrid: { gap: Spacing.sm, marginTop: Spacing.sm },
-  statsRow: { flexDirection: "row", gap: Spacing.sm },
-  secondaryRow: { flexDirection: "row", alignItems: "center", padding: Spacing.md, marginTop: Spacing.sm },
-  secondaryStat: { flex: 1, alignItems: "center" },
-  secondaryDivider: { width: 1, height: 28, backgroundColor: Color.borderSubtle },
-  secondaryValue: { fontSize: 16, fontWeight: "700", color: Color.textPrimary, fontVariant: ["tabular-nums"] },
-  secondaryLabel: { fontSize: 10, color: Color.textMuted, marginTop: 2 },
-  sectionLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginTop: Spacing.xl, marginBottom: Spacing.sm },
-  metricPicker: { marginBottom: Spacing.sm },
-  metricChip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.sm, paddingVertical: 6 },
-  metricChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
-  metricChipText: { fontSize: 11, fontWeight: "500", color: Color.textMuted },
-  metricChipTextActive: { color: Color.gold },
-  rangeRow: { flexDirection: "row", gap: 6, marginBottom: Spacing.sm },
-  rangeChip: { flex: 1, alignItems: "center", borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingVertical: 5 },
-  rangeChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
-  rangeChipText: { fontSize: 10, fontWeight: "600", color: Color.textMuted },
-  rangeChipTextActive: { color: Color.gold },
-  trendCard: { padding: Spacing.md, alignItems: "center" },
-  list: { padding: 0, overflow: "hidden" },
-  row: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", padding: Spacing.md, gap: Spacing.sm },
-  rowDivider: { borderTopWidth: 1, borderTopColor: Color.borderSubtle },
-  rowDate: { fontSize: 13, fontWeight: "600", color: Color.textPrimary },
-  rowSummary: { fontSize: 12, color: Color.textMuted, marginTop: 2 },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: Color.bg0 },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: Spacing.lg,
+      paddingVertical: Spacing.md,
+    },
+    backButton: { padding: 4 },
+    headerTitle: { flex: 1, textAlign: "center", fontSize: 16, fontWeight: "700", color: Color.textPrimary, marginHorizontal: Spacing.sm },
+    centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
+    emptyText: { fontSize: 14, color: Color.textMuted, textAlign: "center" },
+    scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
+    statsGrid: { gap: Spacing.sm, marginTop: Spacing.sm },
+    statsRow: { flexDirection: "row", gap: Spacing.sm },
+    secondaryRow: { flexDirection: "row", alignItems: "center", padding: Spacing.md, marginTop: Spacing.sm },
+    secondaryStat: { flex: 1, alignItems: "center" },
+    secondaryDivider: { width: 1, height: 28, backgroundColor: Color.borderSubtle },
+    secondaryValue: { fontSize: 16, fontWeight: "700", color: Color.textPrimary, fontVariant: ["tabular-nums"] },
+    secondaryLabel: { fontSize: 10, color: Color.textMuted, marginTop: 2 },
+    sectionLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginTop: Spacing.xl, marginBottom: Spacing.sm },
+    metricPicker: { marginBottom: Spacing.sm },
+    metricChip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.sm, paddingVertical: 6 },
+    metricChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
+    metricChipText: { fontSize: 11, fontWeight: "500", color: Color.textMuted },
+    metricChipTextActive: { color: Color.gold },
+    rangeRow: { flexDirection: "row", gap: 6, marginBottom: Spacing.sm },
+    rangeChip: { flex: 1, alignItems: "center", borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingVertical: 5 },
+    rangeChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
+    rangeChipText: { fontSize: 10, fontWeight: "600", color: Color.textMuted },
+    rangeChipTextActive: { color: Color.gold },
+    trendCard: { padding: Spacing.md, alignItems: "center" },
+    list: { padding: 0, overflow: "hidden" },
+    row: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", padding: Spacing.md, gap: Spacing.sm },
+    rowDivider: { borderTopWidth: 1, borderTopColor: Color.borderSubtle },
+    rowDate: { fontSize: 13, fontWeight: "600", color: Color.textPrimary },
+    rowSummary: { fontSize: 12, color: Color.textMuted, marginTop: 2 },
+  })
+);

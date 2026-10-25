@@ -15,9 +15,10 @@ import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
-import { Color, Radius, Spacing } from "@/constants/theme";
+import { Radius, Spacing } from "@/constants/theme";
 import { ApiError } from "@/lib/api-client";
 import { useDraftAiReply, useSendStaffMessage, useStaffMessageThread } from "@/lib/queries/staff";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 function formatTime(iso: string): string {
   const d = new Date(iso);
@@ -26,6 +27,8 @@ function formatTime(iso: string): string {
 }
 
 export default function StaffMessageThreadScreen() {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const router = useRouter();
   const { memberId, memberName } = useLocalSearchParams<{ memberId: string; memberName?: string }>();
   const { data, isLoading, isError, refetch } = useStaffMessageThread(memberId);
@@ -158,71 +161,73 @@ export default function StaffMessageThreadScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Color.bg0 },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-  },
-  backButton: { padding: 4 },
-  headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary, flex: 1, textAlign: "center" },
-  centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
-  errorText: { color: Color.textMuted, fontSize: 14, textAlign: "center" },
-  thread: { paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md, gap: Spacing.sm },
-  emptyState: { alignItems: "center", paddingVertical: Spacing.xxl },
-  emptyTitle: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
-  emptySub: { fontSize: 12, color: Color.textMuted, marginTop: 4, textAlign: "center", maxWidth: 260 },
-  bubble: { maxWidth: "85%", borderRadius: Radius.md, padding: Spacing.sm },
-  bubbleStaff: { alignSelf: "flex-end", backgroundColor: Color.goldWeak },
-  bubbleMember: { alignSelf: "flex-start", borderWidth: 1, borderColor: Color.borderSubtle, backgroundColor: Color.surface1 },
-  bubbleStaffText: { fontSize: 13, color: Color.gold, lineHeight: 18 },
-  bubbleMemberText: { fontSize: 13, color: Color.textSecondary, lineHeight: 18 },
-  bubbleTime: { fontSize: 10, color: Color.textFaint, marginTop: 4 },
-  bubbleTimeStaff: { color: "rgba(198,161,91,0.6)" },
-  error: { fontSize: 11, color: Color.danger, marginHorizontal: Spacing.lg, marginBottom: Spacing.xs },
-  aiNote: { fontSize: 11, color: Color.textMuted, marginHorizontal: Spacing.lg, marginBottom: Spacing.xs },
-  inputRow: {
-    flexDirection: "row",
-    gap: Spacing.sm,
-    alignItems: "flex-end",
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: Color.borderSubtle,
-  },
-  input: {
-    flex: 1,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-    color: Color.textPrimary,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 10,
-    fontSize: 13,
-    maxHeight: 100,
-  },
-  inputButtons: { flexDirection: "row", gap: Spacing.xs },
-  aiButton: {
-    width: 40,
-    height: 40,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderDefault,
-    backgroundColor: "rgba(255,255,255,0.05)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  sendButton: {
-    backgroundColor: Color.gold,
-    borderRadius: Radius.md,
-    paddingHorizontal: Spacing.md,
-    justifyContent: "center",
-    height: 40,
-  },
-  buttonDisabled: { opacity: 0.5 },
-  sendButtonText: { fontSize: 12, fontWeight: "700", color: Color.goldForeground },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: Color.bg0 },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: Spacing.lg,
+      paddingVertical: Spacing.md,
+    },
+    backButton: { padding: 4 },
+    headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary, flex: 1, textAlign: "center" },
+    centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
+    errorText: { color: Color.textMuted, fontSize: 14, textAlign: "center" },
+    thread: { paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md, gap: Spacing.sm },
+    emptyState: { alignItems: "center", paddingVertical: Spacing.xxl },
+    emptyTitle: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
+    emptySub: { fontSize: 12, color: Color.textMuted, marginTop: 4, textAlign: "center", maxWidth: 260 },
+    bubble: { maxWidth: "85%", borderRadius: Radius.md, padding: Spacing.sm },
+    bubbleStaff: { alignSelf: "flex-end", backgroundColor: Color.goldWeak },
+    bubbleMember: { alignSelf: "flex-start", borderWidth: 1, borderColor: Color.borderSubtle, backgroundColor: Color.surface1 },
+    bubbleStaffText: { fontSize: 13, color: Color.gold, lineHeight: 18 },
+    bubbleMemberText: { fontSize: 13, color: Color.textSecondary, lineHeight: 18 },
+    bubbleTime: { fontSize: 10, color: Color.textFaint, marginTop: 4 },
+    bubbleTimeStaff: { color: "rgba(198,161,91,0.6)" },
+    error: { fontSize: 11, color: Color.danger, marginHorizontal: Spacing.lg, marginBottom: Spacing.xs },
+    aiNote: { fontSize: 11, color: Color.textMuted, marginHorizontal: Spacing.lg, marginBottom: Spacing.xs },
+    inputRow: {
+      flexDirection: "row",
+      gap: Spacing.sm,
+      alignItems: "flex-end",
+      paddingHorizontal: Spacing.lg,
+      paddingVertical: Spacing.md,
+      borderTopWidth: 1,
+      borderTopColor: Color.borderSubtle,
+    },
+    input: {
+      flex: 1,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface1,
+      color: Color.textPrimary,
+      paddingHorizontal: Spacing.sm,
+      paddingVertical: 10,
+      fontSize: 13,
+      maxHeight: 100,
+    },
+    inputButtons: { flexDirection: "row", gap: Spacing.xs },
+    aiButton: {
+      width: 40,
+      height: 40,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.borderDefault,
+      backgroundColor: Color.overlayFaint,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    sendButton: {
+      backgroundColor: Color.gold,
+      borderRadius: Radius.md,
+      paddingHorizontal: Spacing.md,
+      justifyContent: "center",
+      height: 40,
+    },
+    buttonDisabled: { opacity: 0.5 },
+    sendButtonText: { fontSize: 12, fontWeight: "700", color: Color.goldForeground },
+  })
+);

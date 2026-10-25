@@ -9,7 +9,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { CameraPermissionDenied, CameraUnavailable } from "@/components/nutrition/CameraPermissionGate";
-import { Color, Radius, Spacing } from "@/constants/theme";
+import { Radius, Spacing } from "@/constants/theme";
 import { ApiError } from "@/lib/api-client";
 import { trackEvent } from "@/lib/analytics";
 import { getDraftLabelPhoto } from "@/lib/draft-photo-cache";
@@ -22,6 +22,7 @@ import {
   type FoodSubmissionStatus,
 } from "@/lib/queries/food-catalog";
 import { SUBMISSION_STATUS_COPY } from "@/lib/submission-status";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 const REQUIRED_FIELD_LABELS: Record<string, string> = {
   brandName: "Brand name",
@@ -43,6 +44,8 @@ function PhotoSlot({
   onCapture: () => void;
   onClear: () => void;
 }) {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   if (photoUri) {
     return (
       <View style={styles.photoSlotFilled}>
@@ -62,6 +65,8 @@ function PhotoSlot({
 }
 
 export default function SubmitFoodScreen() {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id?: string }>();
   const { data: myFoods, isLoading: isLoadingFoods } = useMyCustomFoods();
@@ -305,73 +310,75 @@ export default function SubmitFoodScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Color.bg0 },
-  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md },
-  backButton: { padding: 4 },
-  headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
-  centerFill: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: Spacing.xl },
-  errorText: { color: Color.textMuted, fontSize: 14, textAlign: "center" },
-  confirmIconWrap: { width: 56, height: 56, borderRadius: 28, backgroundColor: Color.gold, alignItems: "center", justifyContent: "center" },
-  confirmTitle: { fontSize: 17, fontWeight: "700", color: Color.textPrimary, marginTop: Spacing.md },
-  confirmText: { fontSize: 13, color: Color.textMuted, textAlign: "center", marginTop: 6, lineHeight: 19 },
-  scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
-  foodName: { fontSize: 18, fontWeight: "700", color: Color.textPrimary },
-  introText: { fontSize: 12, color: Color.textMuted, lineHeight: 18, marginTop: Spacing.xs, marginBottom: Spacing.md },
-  statusCard: { padding: Spacing.md, borderWidth: 1, marginBottom: Spacing.md },
-  statusLabel: { fontSize: 13, fontWeight: "700" },
-  statusDetail: { fontSize: 12, color: Color.textMuted, marginTop: 4, lineHeight: 17 },
-  reviewNoteBox: { marginTop: Spacing.sm, paddingTop: Spacing.sm, borderTopWidth: 1, borderTopColor: Color.borderSubtle },
-  reviewNoteLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.5, color: Color.textFaint },
-  reviewNoteText: { fontSize: 12, color: Color.textSecondary, marginTop: 3, lineHeight: 17 },
-  sectionLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginTop: Spacing.sm, marginBottom: Spacing.sm },
-  eligibilityCard: { padding: Spacing.md, marginBottom: Spacing.md },
-  eligibilityRow: { flexDirection: "row", alignItems: "center", gap: Spacing.xs, marginTop: 6 },
-  eligibilityRowText: { fontSize: 13, color: Color.textSecondary },
-  eligibilityBlockedText: { fontSize: 12, color: Color.textMuted },
-  editLink: { marginTop: Spacing.sm },
-  editLinkText: { fontSize: 12, fontWeight: "600", color: Color.gold },
-  photoRow: { flexDirection: "row", gap: Spacing.sm, marginBottom: Spacing.md },
-  photoSlotEmpty: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    height: 44,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    borderStyle: "dashed",
-  },
-  photoSlotEmptyText: { fontSize: 12, fontWeight: "600", color: Color.gold },
-  photoSlotFilled: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    height: 44,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.success,
-    paddingHorizontal: Spacing.sm,
-  },
-  photoSlotFilledText: { fontSize: 12, fontWeight: "600", color: Color.success },
-  consentRow: { flexDirection: "row", alignItems: "flex-start", gap: Spacing.sm, marginTop: Spacing.sm },
-  consentText: { flex: 1, fontSize: 12, color: Color.textSecondary, lineHeight: 17 },
-  error: { fontSize: 12, color: Color.danger, marginTop: Spacing.sm },
-  cameraWrap: { flex: 1, marginHorizontal: Spacing.lg, borderRadius: Radius.lg, overflow: "hidden", backgroundColor: Color.surface1 },
-  overlay: { ...StyleSheet.absoluteFill, backgroundColor: "rgba(10,21,38,0.85)", alignItems: "center", justifyContent: "center" },
-  captureButton: {
-    alignSelf: "center",
-    width: 68,
-    height: 68,
-    borderRadius: 34,
-    borderWidth: 3,
-    borderColor: Color.gold,
-    alignItems: "center",
-    justifyContent: "center",
-    marginVertical: Spacing.md,
-  },
-  captureButtonInner: { width: 54, height: 54, borderRadius: 27, backgroundColor: Color.gold },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: Color.bg0 },
+    header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md },
+    backButton: { padding: 4 },
+    headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
+    centerFill: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: Spacing.xl },
+    errorText: { color: Color.textMuted, fontSize: 14, textAlign: "center" },
+    confirmIconWrap: { width: 56, height: 56, borderRadius: 28, backgroundColor: Color.gold, alignItems: "center", justifyContent: "center" },
+    confirmTitle: { fontSize: 17, fontWeight: "700", color: Color.textPrimary, marginTop: Spacing.md },
+    confirmText: { fontSize: 13, color: Color.textMuted, textAlign: "center", marginTop: 6, lineHeight: 19 },
+    scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
+    foodName: { fontSize: 18, fontWeight: "700", color: Color.textPrimary },
+    introText: { fontSize: 12, color: Color.textMuted, lineHeight: 18, marginTop: Spacing.xs, marginBottom: Spacing.md },
+    statusCard: { padding: Spacing.md, borderWidth: 1, marginBottom: Spacing.md },
+    statusLabel: { fontSize: 13, fontWeight: "700" },
+    statusDetail: { fontSize: 12, color: Color.textMuted, marginTop: 4, lineHeight: 17 },
+    reviewNoteBox: { marginTop: Spacing.sm, paddingTop: Spacing.sm, borderTopWidth: 1, borderTopColor: Color.borderSubtle },
+    reviewNoteLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.5, color: Color.textFaint },
+    reviewNoteText: { fontSize: 12, color: Color.textSecondary, marginTop: 3, lineHeight: 17 },
+    sectionLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginTop: Spacing.sm, marginBottom: Spacing.sm },
+    eligibilityCard: { padding: Spacing.md, marginBottom: Spacing.md },
+    eligibilityRow: { flexDirection: "row", alignItems: "center", gap: Spacing.xs, marginTop: 6 },
+    eligibilityRowText: { fontSize: 13, color: Color.textSecondary },
+    eligibilityBlockedText: { fontSize: 12, color: Color.textMuted },
+    editLink: { marginTop: Spacing.sm },
+    editLinkText: { fontSize: 12, fontWeight: "600", color: Color.gold },
+    photoRow: { flexDirection: "row", gap: Spacing.sm, marginBottom: Spacing.md },
+    photoSlotEmpty: {
+      flex: 1,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 6,
+      height: 44,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      borderStyle: "dashed",
+    },
+    photoSlotEmptyText: { fontSize: 12, fontWeight: "600", color: Color.gold },
+    photoSlotFilled: {
+      flex: 1,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      height: 44,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.success,
+      paddingHorizontal: Spacing.sm,
+    },
+    photoSlotFilledText: { fontSize: 12, fontWeight: "600", color: Color.success },
+    consentRow: { flexDirection: "row", alignItems: "flex-start", gap: Spacing.sm, marginTop: Spacing.sm },
+    consentText: { flex: 1, fontSize: 12, color: Color.textSecondary, lineHeight: 17 },
+    error: { fontSize: 12, color: Color.danger, marginTop: Spacing.sm },
+    cameraWrap: { flex: 1, marginHorizontal: Spacing.lg, borderRadius: Radius.lg, overflow: "hidden", backgroundColor: Color.surface1 },
+    overlay: { ...StyleSheet.absoluteFill, backgroundColor: "rgba(10,21,38,0.85)", alignItems: "center", justifyContent: "center" },
+    captureButton: {
+      alignSelf: "center",
+      width: 68,
+      height: 68,
+      borderRadius: 34,
+      borderWidth: 3,
+      borderColor: Color.gold,
+      alignItems: "center",
+      justifyContent: "center",
+      marginVertical: Spacing.md,
+    },
+    captureButtonInner: { width: 54, height: 54, borderRadius: 27, backgroundColor: Color.gold },
+  })
+);

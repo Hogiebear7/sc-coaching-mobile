@@ -2,9 +2,10 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { Card } from "@/components/ui/Card";
 import { MuscleMap } from "@/components/ui/MuscleMap";
-import { Color, Spacing } from "@/constants/theme";
+import { Spacing } from "@/constants/theme";
 import type { ExerciseSection, WorkoutSessionSummary } from "@/lib/queries/workouts";
 import { formatExerciseLoad, formatRun } from "@/lib/workout-formatters";
+import { makeLegacyStyles } from "@/lib/theme";
 
 function formatDate(dateISO: string): string {
   return new Date(dateISO).toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" });
@@ -33,6 +34,7 @@ export function SessionCard({
       without the muscle-map icon per line. */
   sectionByExerciseId?: Map<string, ExerciseSection>;
 }) {
+  const styles = useStyles();
   const previewExercises = session.exercises.slice(0, MAX_PREVIEW_LINES);
   const remainingSlots = Math.max(0, MAX_PREVIEW_LINES - previewExercises.length);
   const previewRuns = session.runs.slice(0, remainingSlots);
@@ -77,14 +79,16 @@ export function SessionCard({
   );
 }
 
-const styles = StyleSheet.create({
-  card: { padding: Spacing.md, marginBottom: Spacing.sm },
-  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "baseline" },
-  title: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
-  date: { fontSize: 11, color: Color.textMuted },
-  meta: { fontSize: 11, color: Color.textMuted, marginTop: 2 },
-  lineRow: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 4 },
-  line: { flex: 1, fontSize: 11, color: Color.textFaint },
-  moreLine: { fontSize: 11, color: Color.textMuted, fontWeight: "600", marginTop: 4 },
-  pressed: { opacity: 0.7 },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    card: { padding: Spacing.md, marginBottom: Spacing.sm },
+    header: { flexDirection: "row", justifyContent: "space-between", alignItems: "baseline" },
+    title: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
+    date: { fontSize: 11, color: Color.textMuted },
+    meta: { fontSize: 11, color: Color.textMuted, marginTop: 2 },
+    lineRow: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 4 },
+    line: { flex: 1, fontSize: 11, color: Color.textFaint },
+    moreLine: { fontSize: 11, color: Color.textMuted, fontWeight: "600", marginTop: 4 },
+    pressed: { opacity: 0.7 },
+  })
+);

@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { Color, Radius } from "@/constants/theme";
+import { Radius } from "@/constants/theme";
+import { makeLegacyStyles } from "@/lib/theme";
 
 const OPTIONS = [20, 50, 100] as const;
 export type ListLimit = (typeof OPTIONS)[number];
@@ -9,6 +10,7 @@ export type ListLimit = (typeof OPTIONS)[number];
 // list screens — same visual language as the leaderboard's metric/range
 // chips on the Community hub.
 export function LimitSelector({ value, onChange }: { value: ListLimit; onChange: (next: ListLimit) => void }) {
+  const styles = useStyles();
   return (
     <View style={styles.row}>
       {OPTIONS.map((n) => (
@@ -20,18 +22,20 @@ export function LimitSelector({ value, onChange }: { value: ListLimit; onChange:
   );
 }
 
-const styles = StyleSheet.create({
-  row: {
-    flexDirection: "row",
-    gap: 2,
-    padding: 3,
-    borderRadius: Radius.pill,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: "rgba(255,255,255,0.03)",
-  },
-  chip: { flex: 1, alignItems: "center", borderRadius: Radius.pill, paddingVertical: 7 },
-  chipActive: { backgroundColor: Color.gold },
-  chipText: { fontSize: 12, fontWeight: "600", color: Color.textFaint },
-  chipTextActive: { color: Color.goldForeground, fontWeight: "700" },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    row: {
+      flexDirection: "row",
+      gap: 2,
+      padding: 3,
+      borderRadius: Radius.pill,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.overlayFaint,
+    },
+    chip: { flex: 1, alignItems: "center", borderRadius: Radius.pill, paddingVertical: 7 },
+    chipActive: { backgroundColor: Color.gold },
+    chipText: { fontSize: 12, fontWeight: "600", color: Color.textFaint },
+    chipTextActive: { color: Color.goldForeground, fontWeight: "700" },
+  })
+);

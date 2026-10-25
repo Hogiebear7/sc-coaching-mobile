@@ -2,7 +2,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { Color, Radius, Spacing } from "@/constants/theme";
+import { Radius, Spacing } from "@/constants/theme";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 export interface IconSelectOption<T extends string> {
   value: T;
@@ -23,6 +24,8 @@ export function IconSelect<T extends string>({
   onChange: (value: T) => void;
   options: IconSelectOption<T>[];
 }) {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const [open, setOpen] = useState(false);
   const selected = options.find((o) => o.value === value) ?? options[0];
 
@@ -62,39 +65,41 @@ export function IconSelect<T extends string>({
   );
 }
 
-const styles = StyleSheet.create({
-  button: {
-    height: 44,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-    paddingHorizontal: Spacing.md,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  buttonContent: { flexDirection: "row", alignItems: "center", gap: Spacing.xs, flex: 1 },
-  icon: { fontSize: 16 },
-  label: { fontSize: 14, color: Color.textPrimary, flexShrink: 1 },
-  list: {
-    marginTop: 4,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface2,
-    overflow: "hidden",
-  },
-  option: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: Spacing.xs,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: Color.borderSubtle,
-  },
-  optionActive: { backgroundColor: Color.goldWeak },
-  optionLabel: { fontSize: 13, fontWeight: "500", color: Color.textPrimary },
-  optionSublabel: { fontSize: 11, color: Color.textMuted, marginTop: 1 },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    button: {
+      height: 44,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface1,
+      paddingHorizontal: Spacing.md,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+    },
+    buttonContent: { flexDirection: "row", alignItems: "center", gap: Spacing.xs, flex: 1 },
+    icon: { fontSize: 16 },
+    label: { fontSize: 14, color: Color.textPrimary, flexShrink: 1 },
+    list: {
+      marginTop: 4,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface2,
+      overflow: "hidden",
+    },
+    option: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      gap: Spacing.xs,
+      paddingHorizontal: Spacing.md,
+      paddingVertical: Spacing.sm,
+      borderBottomWidth: 1,
+      borderBottomColor: Color.borderSubtle,
+    },
+    optionActive: { backgroundColor: Color.goldWeak },
+    optionLabel: { fontSize: 13, fontWeight: "500", color: Color.textPrimary },
+    optionSublabel: { fontSize: 11, color: Color.textMuted, marginTop: 1 },
+  })
+);

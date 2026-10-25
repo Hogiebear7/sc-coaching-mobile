@@ -5,8 +5,9 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { Color, Radius, Spacing } from "@/constants/theme";
+import { Radius, Spacing } from "@/constants/theme";
 import { useStaffClassCategories, useStaffWorkoutTemplates, type StaffWorkoutTemplate } from "@/lib/queries/staff";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 function TemplateCard({
   template,
@@ -17,6 +18,7 @@ function TemplateCard({
   categoryLabel: (slug: string) => string;
   onPress: () => void;
 }) {
+  const styles = useStyles();
   return (
     <Pressable onPress={onPress}>
       <Card style={styles.templateCard}>
@@ -42,6 +44,8 @@ function TemplateCard({
 }
 
 export default function StaffWorkoutsScreen() {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const router = useRouter();
   const { data, isLoading, isError, refetch, isRefetching } = useStaffWorkoutTemplates();
   const { data: categories } = useStaffClassCategories();
@@ -106,35 +110,37 @@ export default function StaffWorkoutsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Color.bg0 },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-  },
-  headerTitle: { fontSize: 20, fontWeight: "700", fontStyle: "italic", color: Color.textPrimary },
-  addButton: { padding: 4 },
-  centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl, gap: Spacing.xs },
-  errorText: { color: Color.textMuted, fontSize: 14, textAlign: "center" },
-  scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
-  introText: { fontSize: 12, color: Color.textMuted, marginBottom: Spacing.md, lineHeight: 17 },
-  emptyCard: { alignItems: "center", padding: Spacing.xl, gap: 4 },
-  emptyText: { fontSize: 13, fontWeight: "600", color: Color.textSecondary, marginTop: Spacing.xs },
-  emptySub: { fontSize: 12, color: Color.textMuted, textAlign: "center" },
-  templateCard: { padding: Spacing.md, marginBottom: Spacing.sm },
-  templateName: { fontSize: 15, fontWeight: "600", color: Color.textPrimary },
-  categoryRow: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 6 },
-  categoryChip: {
-    borderRadius: Radius.pill,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 3,
-  },
-  categoryChipText: { fontSize: 10, fontWeight: "600", color: Color.textMuted },
-  templatePreview: { fontSize: 12, color: Color.textMuted, marginTop: Spacing.xs },
-  templateCount: { fontSize: 11, color: Color.textFaint, marginTop: 4 },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: Color.bg0 },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: Spacing.lg,
+      paddingVertical: Spacing.md,
+    },
+    headerTitle: { fontSize: 20, fontWeight: "700", fontStyle: "italic", color: Color.textPrimary },
+    addButton: { padding: 4 },
+    centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl, gap: Spacing.xs },
+    errorText: { color: Color.textMuted, fontSize: 14, textAlign: "center" },
+    scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
+    introText: { fontSize: 12, color: Color.textMuted, marginBottom: Spacing.md, lineHeight: 17 },
+    emptyCard: { alignItems: "center", padding: Spacing.xl, gap: 4 },
+    emptyText: { fontSize: 13, fontWeight: "600", color: Color.textSecondary, marginTop: Spacing.xs },
+    emptySub: { fontSize: 12, color: Color.textMuted, textAlign: "center" },
+    templateCard: { padding: Spacing.md, marginBottom: Spacing.sm },
+    templateName: { fontSize: 15, fontWeight: "600", color: Color.textPrimary },
+    categoryRow: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 6 },
+    categoryChip: {
+      borderRadius: Radius.pill,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      paddingHorizontal: Spacing.sm,
+      paddingVertical: 3,
+    },
+    categoryChipText: { fontSize: 10, fontWeight: "600", color: Color.textMuted },
+    templatePreview: { fontSize: 12, color: Color.textMuted, marginTop: Spacing.xs },
+    templateCount: { fontSize: 11, color: Color.textFaint, marginTop: 4 },
+  })
+);

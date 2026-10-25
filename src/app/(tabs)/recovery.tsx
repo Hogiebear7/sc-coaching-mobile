@@ -13,11 +13,12 @@ import { InfoModal } from "@/components/ui/InfoModal";
 import { ReadinessRing } from "@/components/ui/ReadinessRing";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Stepper } from "@/components/ui/Stepper";
-import { Color, headline, Spacing } from "@/constants/theme";
+import { headline, Spacing } from "@/constants/theme";
 import { ApiError } from "@/lib/auth-context";
 import { hasAccess } from "@/lib/member-access";
 import { useMemberTier } from "@/lib/queries/profile";
 import { useLogRecovery, useRecovery, type RecoveryLogSummary } from "@/lib/queries/recovery";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 function formatDate(dateISO: string): string {
   return new Date(dateISO).toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" });
@@ -42,6 +43,7 @@ function CheckInForm({
   initialSleepHours?: number;
   onDone?: () => void;
 }) {
+  const styles = useStyles();
   const [sleepHours, setSleepHours] = useState(initialSleepHours ?? existingLog?.sleepHours ?? 7);
   const [sleepQuality, setSleepQuality] = useState(existingLog?.sleepQuality ?? 5);
   const [soreness, setSoreness] = useState(existingLog?.soreness ?? 5);
@@ -121,6 +123,8 @@ function CheckInForm({
 }
 
 export default function RecoveryScreen() {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const router = useRouter();
   const tier = useMemberTier();
   const { prefillSleepHours } = useLocalSearchParams<{ prefillSleepHours?: string }>();
@@ -315,64 +319,66 @@ export default function RecoveryScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Color.bg0 },
-  centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
-  errorText: { color: Color.textMuted, fontSize: 14 },
-  scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
-  headerRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginTop: Spacing.md,
-    marginBottom: Spacing.lg,
-  },
-  heading: {
-    ...headline(34),
-    color: Color.textPrimary,
-  },
-  summaryCard: { padding: Spacing.md, marginBottom: Spacing.lg },
-  summaryRow: { flexDirection: "row", alignItems: "center", gap: Spacing.md },
-  guidance: { fontSize: 12, color: Color.textMuted, lineHeight: 17 },
-  phaseNote: { fontSize: 12, color: Color.textMuted, lineHeight: 17, marginTop: 4 },
-  loadRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginTop: Spacing.md,
-    paddingTop: Spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: Color.borderSubtle,
-  },
-  loadLabelRow: { flexDirection: "row", alignItems: "center", gap: 4 },
-  loadLabel: { fontSize: 11, color: Color.textMuted, fontWeight: "600" },
-  loadValue: { fontSize: 16, fontWeight: "700", color: Color.textPrimary, fontVariant: ["tabular-nums"] },
-  scoreHelp: { fontSize: 11, color: Color.textFaint, lineHeight: 15, marginTop: Spacing.sm },
-  scoreHelpSpaced: { marginTop: Spacing.md, fontWeight: "700", color: Color.textSecondary },
-  importLink: { alignSelf: "flex-end", paddingVertical: Spacing.xs, paddingHorizontal: 2 },
-  importLinkText: { fontSize: 12, fontWeight: "600", color: Color.gold },
-  formCard: { padding: Spacing.md, marginBottom: Spacing.lg },
-  formHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: Spacing.md },
-  formTitle: { fontSize: 15, fontWeight: "600", color: Color.textPrimary },
-  cancelText: { fontSize: 12, fontWeight: "600", color: Color.textMuted },
-  submit: { marginTop: Spacing.sm },
-  error: { fontSize: 12, color: Color.danger, marginBottom: Spacing.sm },
-  saved: { fontSize: 12, color: Color.success, marginBottom: Spacing.sm },
-  section: { marginBottom: Spacing.xl },
-  logCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    padding: Spacing.md,
-    marginBottom: Spacing.sm,
-  },
-  logCardActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
-  logDate: { fontSize: 13, fontWeight: "600", color: Color.textPrimary },
-  logMeta: { fontSize: 11, color: Color.textMuted, marginTop: 2 },
-  logScore: { fontSize: 18, fontWeight: "700", color: Color.gold, fontVariant: ["tabular-nums"] },
-  referenceCard: { padding: Spacing.md, marginBottom: Spacing.md },
-  referenceTitle: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginBottom: Spacing.sm },
-  referenceHeading: { fontSize: 12, fontWeight: "700", color: Color.textSecondary },
-  referenceBody: { fontSize: 12, color: Color.textMuted, lineHeight: 17, marginTop: 2 },
-  disclaimer: { fontSize: 10, color: Color.textFaint, lineHeight: 14, marginTop: Spacing.md, fontStyle: "italic" },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: Color.bg0 },
+    centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
+    errorText: { color: Color.textMuted, fontSize: 14 },
+    scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
+    headerRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginTop: Spacing.md,
+      marginBottom: Spacing.lg,
+    },
+    heading: {
+      ...headline(34),
+      color: Color.textPrimary,
+    },
+    summaryCard: { padding: Spacing.md, marginBottom: Spacing.lg },
+    summaryRow: { flexDirection: "row", alignItems: "center", gap: Spacing.md },
+    guidance: { fontSize: 12, color: Color.textMuted, lineHeight: 17 },
+    phaseNote: { fontSize: 12, color: Color.textMuted, lineHeight: 17, marginTop: 4 },
+    loadRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginTop: Spacing.md,
+      paddingTop: Spacing.md,
+      borderTopWidth: 1,
+      borderTopColor: Color.borderSubtle,
+    },
+    loadLabelRow: { flexDirection: "row", alignItems: "center", gap: 4 },
+    loadLabel: { fontSize: 11, color: Color.textMuted, fontWeight: "600" },
+    loadValue: { fontSize: 16, fontWeight: "700", color: Color.textPrimary, fontVariant: ["tabular-nums"] },
+    scoreHelp: { fontSize: 11, color: Color.textFaint, lineHeight: 15, marginTop: Spacing.sm },
+    scoreHelpSpaced: { marginTop: Spacing.md, fontWeight: "700", color: Color.textSecondary },
+    importLink: { alignSelf: "flex-end", paddingVertical: Spacing.xs, paddingHorizontal: 2 },
+    importLinkText: { fontSize: 12, fontWeight: "600", color: Color.gold },
+    formCard: { padding: Spacing.md, marginBottom: Spacing.lg },
+    formHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: Spacing.md },
+    formTitle: { fontSize: 15, fontWeight: "600", color: Color.textPrimary },
+    cancelText: { fontSize: 12, fontWeight: "600", color: Color.textMuted },
+    submit: { marginTop: Spacing.sm },
+    error: { fontSize: 12, color: Color.danger, marginBottom: Spacing.sm },
+    saved: { fontSize: 12, color: Color.success, marginBottom: Spacing.sm },
+    section: { marginBottom: Spacing.xl },
+    logCard: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      padding: Spacing.md,
+      marginBottom: Spacing.sm,
+    },
+    logCardActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
+    logDate: { fontSize: 13, fontWeight: "600", color: Color.textPrimary },
+    logMeta: { fontSize: 11, color: Color.textMuted, marginTop: 2 },
+    logScore: { fontSize: 18, fontWeight: "700", color: Color.gold, fontVariant: ["tabular-nums"] },
+    referenceCard: { padding: Spacing.md, marginBottom: Spacing.md },
+    referenceTitle: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginBottom: Spacing.sm },
+    referenceHeading: { fontSize: 12, fontWeight: "700", color: Color.textSecondary },
+    referenceBody: { fontSize: 12, color: Color.textMuted, lineHeight: 17, marginTop: 2 },
+    disclaimer: { fontSize: 10, color: Color.textFaint, lineHeight: 14, marginTop: Spacing.md, fontStyle: "italic" },
+  })
+);

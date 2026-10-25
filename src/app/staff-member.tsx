@@ -7,12 +7,13 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { API_BASE_URL } from "@/constants/config";
-import { Color, Radius, Spacing } from "@/constants/theme";
+import { Radius, Spacing } from "@/constants/theme";
 import { tapFeedback } from "@/lib/haptics";
 import { useStaffNutritionTarget } from "@/lib/queries/nutrition-diary";
 import { useStaffPrograms } from "@/lib/queries/programs";
 import { useSaveCoachNotes, useStaffMemberDetail } from "@/lib/queries/staff";
 import type { TrainingDayOfWeek } from "@/lib/queries/weekly-training";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 function formatDate(iso: string | null): string {
   if (!iso) return "—";
@@ -30,6 +31,8 @@ function openMemberOnWeb(userId: string) {
 }
 
 export default function StaffMemberScreen() {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const router = useRouter();
   const { userId } = useLocalSearchParams<{ userId: string }>();
   const { data, isLoading, isError, refetch } = useStaffMemberDetail(userId);
@@ -379,74 +382,76 @@ export default function StaffMemberScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Color.bg0 },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-  },
-  backButton: { padding: 4 },
-  headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
-  centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
-  errorText: { color: Color.textMuted, fontSize: 14 },
-  scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
-  name: { fontSize: 20, fontWeight: "700", color: Color.textPrimary },
-  email: { fontSize: 12, color: Color.textMuted, marginTop: 2, marginBottom: Spacing.lg },
-  card: { padding: Spacing.md, marginBottom: Spacing.md },
-  sectionLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginBottom: Spacing.sm },
-  rowLine: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingVertical: 6,
-    borderTopWidth: 1,
-    borderTopColor: Color.borderSubtle,
-  },
-  rowLabel: { fontSize: 12, color: Color.textMuted },
-  rowValue: { fontSize: 13, color: Color.textPrimary, fontWeight: "500" },
-  noteCard: { padding: Spacing.md, marginBottom: Spacing.md },
-  noteText: { fontSize: 12, color: Color.textMuted, lineHeight: 17 },
-  notesHint: { fontSize: 11, color: Color.textFaint, marginBottom: Spacing.sm },
-  notesInput: {
-    minHeight: 80,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-    color: Color.textPrimary,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.sm,
-    fontSize: 13,
-    lineHeight: 18,
-    textAlignVertical: "top",
-  },
-  notesFooter: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginTop: Spacing.sm,
-  },
-  notesSaved: { fontSize: 11, color: Color.success, fontWeight: "600" },
-  notesSaveButton: { height: 36, paddingHorizontal: Spacing.md },
-  pbGrid: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.sm },
-  pbCell: {
-    width: "47%",
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-    padding: Spacing.sm,
-  },
-  pbLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.4, color: Color.textFaint, marginBottom: 4 },
-  pbValue: { fontSize: 13, fontWeight: "600", color: Color.textPrimary },
-  pbEmpty: { fontSize: 12, color: Color.textFaint },
-  bookingRow: {
-    paddingVertical: 8,
-    borderTopWidth: 1,
-    borderTopColor: Color.borderSubtle,
-  },
-  bookingTitle: { fontSize: 13, fontWeight: "600", color: Color.textPrimary },
-  bookingMeta: { fontSize: 11, color: Color.textMuted, marginTop: 2 },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: Color.bg0 },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: Spacing.lg,
+      paddingVertical: Spacing.md,
+    },
+    backButton: { padding: 4 },
+    headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
+    centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
+    errorText: { color: Color.textMuted, fontSize: 14 },
+    scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
+    name: { fontSize: 20, fontWeight: "700", color: Color.textPrimary },
+    email: { fontSize: 12, color: Color.textMuted, marginTop: 2, marginBottom: Spacing.lg },
+    card: { padding: Spacing.md, marginBottom: Spacing.md },
+    sectionLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginBottom: Spacing.sm },
+    rowLine: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      paddingVertical: 6,
+      borderTopWidth: 1,
+      borderTopColor: Color.borderSubtle,
+    },
+    rowLabel: { fontSize: 12, color: Color.textMuted },
+    rowValue: { fontSize: 13, color: Color.textPrimary, fontWeight: "500" },
+    noteCard: { padding: Spacing.md, marginBottom: Spacing.md },
+    noteText: { fontSize: 12, color: Color.textMuted, lineHeight: 17 },
+    notesHint: { fontSize: 11, color: Color.textFaint, marginBottom: Spacing.sm },
+    notesInput: {
+      minHeight: 80,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface1,
+      color: Color.textPrimary,
+      paddingHorizontal: Spacing.sm,
+      paddingVertical: Spacing.sm,
+      fontSize: 13,
+      lineHeight: 18,
+      textAlignVertical: "top",
+    },
+    notesFooter: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      marginTop: Spacing.sm,
+    },
+    notesSaved: { fontSize: 11, color: Color.success, fontWeight: "600" },
+    notesSaveButton: { height: 36, paddingHorizontal: Spacing.md },
+    pbGrid: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.sm },
+    pbCell: {
+      width: "47%",
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface1,
+      padding: Spacing.sm,
+    },
+    pbLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.4, color: Color.textFaint, marginBottom: 4 },
+    pbValue: { fontSize: 13, fontWeight: "600", color: Color.textPrimary },
+    pbEmpty: { fontSize: 12, color: Color.textFaint },
+    bookingRow: {
+      paddingVertical: 8,
+      borderTopWidth: 1,
+      borderTopColor: Color.borderSubtle,
+    },
+    bookingTitle: { fontSize: 13, fontWeight: "600", color: Color.textPrimary },
+    bookingMeta: { fontSize: 11, color: Color.textMuted, marginTop: 2 },
+  })
+);

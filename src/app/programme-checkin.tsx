@@ -5,8 +5,9 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { Color, Spacing } from "@/constants/theme";
+import { Spacing } from "@/constants/theme";
 import { useApplyProgrammeAdjustment, useProgrammeCheckIn } from "@/lib/queries/programs";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 const PROPOSAL_LABEL: Record<string, string> = {
   accelerate: "Speed up your progression",
@@ -19,6 +20,8 @@ const PROPOSAL_LABEL: Record<string, string> = {
 // lib/ai.ts), an Accept/Decline card for a pace or timeline adjustment.
 // Nothing is ever applied without an explicit tap here.
 export default function ProgrammeCheckInScreen() {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const router = useRouter();
   const { programId, cycleIndex: cycleIndexParam } = useLocalSearchParams<{ programId?: string; cycleIndex?: string }>();
   const cycleIndex = cycleIndexParam !== undefined ? Number(cycleIndexParam) : undefined;
@@ -132,30 +135,32 @@ export default function ProgrammeCheckInScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Color.bg0 },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-  },
-  backButton: { padding: 4 },
-  headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
-  centerWrap: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
-  loadingText: { fontSize: 13, color: Color.textMuted, marginTop: Spacing.md },
-  errorText: { fontSize: 14, color: Color.textMuted, textAlign: "center" },
-  scroll: { padding: Spacing.lg, paddingBottom: Spacing.xxl },
-  weekLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginBottom: Spacing.sm },
-  feedbackCard: { borderColor: Color.goldBorder, backgroundColor: Color.goldWeak },
-  feedbackText: { fontSize: 14, color: Color.textPrimary, lineHeight: 20 },
-  proposalCard: { marginTop: Spacing.lg, borderColor: "rgba(85,196,254,0.35)", backgroundColor: "rgba(85,196,254,0.1)" },
-  proposalLabel: { fontSize: 14, fontWeight: "700", color: Color.accentData },
-  proposalRationale: { fontSize: 13, color: Color.textSecondary, lineHeight: 19, marginTop: Spacing.xs },
-  proposalDetail: { fontSize: 12, color: Color.textMuted, marginTop: Spacing.sm },
-  refreshCard: { marginTop: Spacing.lg, borderColor: "rgba(143,191,159,0.35)", backgroundColor: "rgba(143,191,159,0.1)" },
-  refreshLabel: { fontSize: 14, fontWeight: "700", color: Color.success },
-  decisionRow: { flexDirection: "row", gap: Spacing.sm, marginTop: Spacing.md },
-  decisionText: { fontSize: 12, color: Color.textMuted, marginTop: Spacing.md, fontStyle: "italic" },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: Color.bg0 },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: Spacing.lg,
+      paddingVertical: Spacing.md,
+    },
+    backButton: { padding: 4 },
+    headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
+    centerWrap: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
+    loadingText: { fontSize: 13, color: Color.textMuted, marginTop: Spacing.md },
+    errorText: { fontSize: 14, color: Color.textMuted, textAlign: "center" },
+    scroll: { padding: Spacing.lg, paddingBottom: Spacing.xxl },
+    weekLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginBottom: Spacing.sm },
+    feedbackCard: { borderColor: Color.goldBorder, backgroundColor: Color.goldWeak },
+    feedbackText: { fontSize: 14, color: Color.textPrimary, lineHeight: 20 },
+    proposalCard: { marginTop: Spacing.lg, borderColor: "rgba(85,196,254,0.35)", backgroundColor: "rgba(85,196,254,0.1)" },
+    proposalLabel: { fontSize: 14, fontWeight: "700", color: Color.accentData },
+    proposalRationale: { fontSize: 13, color: Color.textSecondary, lineHeight: 19, marginTop: Spacing.xs },
+    proposalDetail: { fontSize: 12, color: Color.textMuted, marginTop: Spacing.sm },
+    refreshCard: { marginTop: Spacing.lg, borderColor: "rgba(143,191,159,0.35)", backgroundColor: "rgba(143,191,159,0.1)" },
+    refreshLabel: { fontSize: 14, fontWeight: "700", color: Color.success },
+    decisionRow: { flexDirection: "row", gap: Spacing.sm, marginTop: Spacing.md },
+    decisionText: { fontSize: 12, color: Color.textMuted, marginTop: Spacing.md, fontStyle: "italic" },
+  })
+);

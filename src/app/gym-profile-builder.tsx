@@ -8,7 +8,7 @@ import { KeyboardAwareScroll } from "@/components/ui/KeyboardAwareScroll";
 import { Button } from "@/components/ui/Button";
 import { EquipmentPicker } from "@/components/ui/EquipmentPicker";
 import { TextField } from "@/components/ui/TextField";
-import { Color, Radius, Spacing } from "@/constants/theme";
+import { Radius, Spacing } from "@/constants/theme";
 import { ApiError } from "@/lib/api-client";
 import { tapFeedback } from "@/lib/haptics";
 import {
@@ -18,10 +18,13 @@ import {
   useGymProfiles,
   useUpdateGymProfile,
 } from "@/lib/queries/gym-profiles";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 const ICON_OPTIONS = ["🏠", "🏋️", "🧳", "🎒", "🩹", "💪", "🏟️", "🏃", "⚡", "🔥"];
 
 export default function GymProfileBuilderScreen() {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const router = useRouter();
   const { profileId } = useLocalSearchParams<{ profileId?: string }>();
   const { data: catalog, isLoading: catalogLoading } = useEquipmentCatalog();
@@ -176,34 +179,36 @@ export default function GymProfileBuilderScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Color.bg0 },
-  centerFill: { flex: 1, alignItems: "center", justifyContent: "center" },
-  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md },
-  backButton: { padding: 4 },
-  headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
-  scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
-  fieldLabel: { fontSize: 12, fontWeight: "500", color: Color.textSecondary, marginBottom: 4 },
-  presetRow: { gap: Spacing.sm, paddingBottom: Spacing.sm },
-  presetCard: {
-    width: 108,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-    padding: Spacing.sm,
-    alignItems: "center",
-  },
-  presetCardActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
-  presetIcon: { fontSize: 22 },
-  presetName: { fontSize: 12, fontWeight: "600", color: Color.textPrimary, marginTop: 4, textAlign: "center" },
-  presetMeta: { fontSize: 10, color: Color.textFaint, marginTop: 2 },
-  iconRow: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
-  iconChip: { width: 40, height: 40, borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, alignItems: "center", justifyContent: "center" },
-  iconChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
-  iconChipText: { fontSize: 18 },
-  equipmentHeaderRow: { marginTop: Spacing.md },
-  error: { fontSize: 12, color: Color.danger, marginTop: Spacing.md },
-  secondaryRow: { alignItems: "center", marginTop: Spacing.md, paddingVertical: Spacing.sm },
-  deleteText: { fontSize: 13, color: Color.danger, fontWeight: "600" },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: Color.bg0 },
+    centerFill: { flex: 1, alignItems: "center", justifyContent: "center" },
+    header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md },
+    backButton: { padding: 4 },
+    headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
+    scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
+    fieldLabel: { fontSize: 12, fontWeight: "500", color: Color.textSecondary, marginBottom: 4 },
+    presetRow: { gap: Spacing.sm, paddingBottom: Spacing.sm },
+    presetCard: {
+      width: 108,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface1,
+      padding: Spacing.sm,
+      alignItems: "center",
+    },
+    presetCardActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
+    presetIcon: { fontSize: 22 },
+    presetName: { fontSize: 12, fontWeight: "600", color: Color.textPrimary, marginTop: 4, textAlign: "center" },
+    presetMeta: { fontSize: 10, color: Color.textFaint, marginTop: 2 },
+    iconRow: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
+    iconChip: { width: 40, height: 40, borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, alignItems: "center", justifyContent: "center" },
+    iconChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
+    iconChipText: { fontSize: 18 },
+    equipmentHeaderRow: { marginTop: Spacing.md },
+    error: { fontSize: 12, color: Color.danger, marginTop: Spacing.md },
+    secondaryRow: { alignItems: "center", marginTop: Spacing.md, paddingVertical: Spacing.sm },
+    deleteText: { fontSize: 13, color: Color.danger, fontWeight: "600" },
+  })
+);

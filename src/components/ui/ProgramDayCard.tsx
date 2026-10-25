@@ -1,8 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { Color, Radius, Spacing } from "@/constants/theme";
+import { Radius, Spacing } from "@/constants/theme";
 import type { PrescribedExercise, ProgramDay } from "@/lib/queries/programs";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 // Read-only rendering of one program day's exercises (or its rest-day
 // state) — shared by the Workouts tab's ACTIVE PROGRAM card and the AI
@@ -15,6 +16,8 @@ import type { PrescribedExercise, ProgramDay } from "@/lib/queries/programs";
 // eligible strength exercise (a conditioning/run entry never gets one — same
 // exclusion applyExerciseRefresh makes server-side).
 export function ProgramDayCard({ day, onRequestSwap }: { day: ProgramDay; onRequestSwap?: (exercise: PrescribedExercise) => void }) {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   if (day.type === "rest") {
     return (
       <View style={styles.restRow}>
@@ -74,17 +77,19 @@ export function ProgramDayCard({ day, onRequestSwap }: { day: ProgramDay; onRequ
   );
 }
 
-const styles = StyleSheet.create({
-  restRow: { flexDirection: "row", alignItems: "center", gap: Spacing.xs, paddingVertical: Spacing.sm },
-  restText: { fontSize: 13, color: Color.textMuted },
-  exerciseRow: { paddingVertical: Spacing.sm, borderTopWidth: 1, borderTopColor: Color.borderSubtle },
-  exerciseNameRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: Spacing.sm },
-  exerciseName: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
-  exerciseTarget: { fontSize: 12, color: Color.textMuted, marginTop: 2 },
-  protocolNote: { fontSize: 12, color: Color.textMuted, marginTop: 4, fontStyle: "italic" },
-  supersetBadge: { borderRadius: 999, backgroundColor: Color.gold + "26", paddingHorizontal: 6, paddingVertical: 1 },
-  supersetBadgeText: { fontSize: 10, fontWeight: "700", color: Color.gold },
-  muscleTagRow: { flexDirection: "row", flexWrap: "wrap", gap: 4, marginTop: Spacing.xs },
-  muscleTagChip: { borderRadius: Radius.pill, backgroundColor: Color.goldWeak, paddingHorizontal: Spacing.sm, paddingVertical: 3 },
-  muscleTagChipText: { fontSize: 10, fontWeight: "600", color: Color.gold },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    restRow: { flexDirection: "row", alignItems: "center", gap: Spacing.xs, paddingVertical: Spacing.sm },
+    restText: { fontSize: 13, color: Color.textMuted },
+    exerciseRow: { paddingVertical: Spacing.sm, borderTopWidth: 1, borderTopColor: Color.borderSubtle },
+    exerciseNameRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: Spacing.sm },
+    exerciseName: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
+    exerciseTarget: { fontSize: 12, color: Color.textMuted, marginTop: 2 },
+    protocolNote: { fontSize: 12, color: Color.textMuted, marginTop: 4, fontStyle: "italic" },
+    supersetBadge: { borderRadius: 999, backgroundColor: Color.gold + "26", paddingHorizontal: 6, paddingVertical: 1 },
+    supersetBadgeText: { fontSize: 10, fontWeight: "700", color: Color.gold },
+    muscleTagRow: { flexDirection: "row", flexWrap: "wrap", gap: 4, marginTop: Spacing.xs },
+    muscleTagChip: { borderRadius: Radius.pill, backgroundColor: Color.goldWeak, paddingHorizontal: Spacing.sm, paddingVertical: 3 },
+    muscleTagChipText: { fontSize: 10, fontWeight: "600", color: Color.gold },
+  })
+);

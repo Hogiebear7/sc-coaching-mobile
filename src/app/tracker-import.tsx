@@ -9,10 +9,11 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { CameraPermissionDenied } from "@/components/nutrition/CameraPermissionGate";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { Color, Radius, Spacing } from "@/constants/theme";
+import { Radius, Spacing } from "@/constants/theme";
 import { ApiError } from "@/lib/api-client";
 import { tapFeedback } from "@/lib/haptics";
 import { useTrackerImportScan, type TrackerStatsExtraction } from "@/lib/queries/tracker-import";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 type Stage = "start" | "scanning" | "reviewing";
 
@@ -24,6 +25,8 @@ type Stage = "start" | "scanning" | "reviewing";
 // screens via prefill params so it reuses their save logic rather than
 // writing a second path to the same data.
 export default function TrackerImportScreen() {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const router = useRouter();
   const [permission, requestPermission] = useCameraPermissions();
   const [stage, setStage] = useState<Stage>("start");
@@ -299,38 +302,40 @@ export default function TrackerImportScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Color.bg0 },
-  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md },
-  backButton: { padding: 4 },
-  headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
-  subhead: { fontSize: 12, color: Color.textMuted, textAlign: "center", paddingHorizontal: Spacing.xl, marginBottom: Spacing.md },
-  centerFill: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: Spacing.xl },
-  confirmIconWrap: { width: 56, height: 56, borderRadius: 28, backgroundColor: Color.gold, alignItems: "center", justifyContent: "center" },
-  confirmTitle: { fontSize: 17, fontWeight: "700", color: Color.textPrimary, marginTop: Spacing.md, textAlign: "center" },
-  confirmText: { fontSize: 13, color: Color.textMuted, textAlign: "center", marginTop: 6, lineHeight: 19 },
-  scanErrorText: { textAlign: "center", fontSize: 12, color: Color.danger, marginTop: Spacing.sm, paddingHorizontal: Spacing.xl },
-  manualLink: { alignItems: "center", paddingVertical: Spacing.lg },
-  manualLinkText: { fontSize: 13, color: Color.gold, fontWeight: "600" },
-  scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
-  reviewCard: { padding: Spacing.md, marginBottom: Spacing.md, gap: Spacing.sm },
-  sectionLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted },
-  fieldRow: { marginTop: 2 },
-  gridRow: { flexDirection: "row", gap: Spacing.sm },
-  numberField: { flex: 1, marginTop: 2 },
-  fieldLabel: { fontSize: 11, fontWeight: "500", color: Color.textSecondary, marginBottom: 4 },
-  input: {
-    height: 40,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Color.borderSubtle,
-    backgroundColor: Color.surface1,
-    paddingHorizontal: Spacing.sm,
-    fontSize: 13,
-    color: Color.textPrimary,
-  },
-  inputReadOnly: { color: Color.textMuted },
-  noteCard: { padding: Spacing.md, marginBottom: Spacing.md, backgroundColor: Color.goldWeak, borderColor: Color.goldBorder },
-  noteLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.gold },
-  noteText: { fontSize: 12, color: Color.textSecondary, marginTop: 4, lineHeight: 17 },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: Color.bg0 },
+    header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md },
+    backButton: { padding: 4 },
+    headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
+    subhead: { fontSize: 12, color: Color.textMuted, textAlign: "center", paddingHorizontal: Spacing.xl, marginBottom: Spacing.md },
+    centerFill: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: Spacing.xl },
+    confirmIconWrap: { width: 56, height: 56, borderRadius: 28, backgroundColor: Color.gold, alignItems: "center", justifyContent: "center" },
+    confirmTitle: { fontSize: 17, fontWeight: "700", color: Color.textPrimary, marginTop: Spacing.md, textAlign: "center" },
+    confirmText: { fontSize: 13, color: Color.textMuted, textAlign: "center", marginTop: 6, lineHeight: 19 },
+    scanErrorText: { textAlign: "center", fontSize: 12, color: Color.danger, marginTop: Spacing.sm, paddingHorizontal: Spacing.xl },
+    manualLink: { alignItems: "center", paddingVertical: Spacing.lg },
+    manualLinkText: { fontSize: 13, color: Color.gold, fontWeight: "600" },
+    scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
+    reviewCard: { padding: Spacing.md, marginBottom: Spacing.md, gap: Spacing.sm },
+    sectionLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted },
+    fieldRow: { marginTop: 2 },
+    gridRow: { flexDirection: "row", gap: Spacing.sm },
+    numberField: { flex: 1, marginTop: 2 },
+    fieldLabel: { fontSize: 11, fontWeight: "500", color: Color.textSecondary, marginBottom: 4 },
+    input: {
+      height: 40,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: Color.borderSubtle,
+      backgroundColor: Color.surface1,
+      paddingHorizontal: Spacing.sm,
+      fontSize: 13,
+      color: Color.textPrimary,
+    },
+    inputReadOnly: { color: Color.textMuted },
+    noteCard: { padding: Spacing.md, marginBottom: Spacing.md, backgroundColor: Color.goldWeak, borderColor: Color.goldBorder },
+    noteLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, color: Color.gold },
+    noteText: { fontSize: 12, color: Color.textSecondary, marginTop: 4, lineHeight: 17 },
+  })
+);

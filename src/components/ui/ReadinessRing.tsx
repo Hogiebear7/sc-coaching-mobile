@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { Animated, StyleSheet, Text, View } from "react-native";
 import Svg, { Circle } from "react-native-svg";
 
-import { Color } from "@/constants/theme";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
@@ -13,6 +13,8 @@ const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 // Unlike the (static) web version, the ring fills in from empty over ~1.2s
 // on mount rather than snapping straight to its resting position.
 export function ReadinessRing({ score, size = 76 }: { score: number | null; size?: number }) {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const stroke = 6;
   // The glow stroke is wider than the base ring (stroke + 5), so it extends
   // past a size x size canvas and gets clipped at the edges. Draw into a
@@ -42,7 +44,7 @@ export function ReadinessRing({ score, size = 76 }: { score: number | null; size
         height={svgSize}
         style={{ position: "absolute", left: -glowPad, top: -glowPad, transform: [{ rotate: "-90deg" }] }}
       >
-        <Circle cx={svgSize / 2} cy={svgSize / 2} r={r} fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth={stroke} />
+        <Circle cx={svgSize / 2} cy={svgSize / 2} r={r} fill="none" stroke={Color.overlayStrong} strokeWidth={stroke} />
         {score !== null && (
           <>
             <AnimatedCircle
@@ -81,24 +83,26 @@ export function ReadinessRing({ score, size = 76 }: { score: number | null; size
   );
 }
 
-const styles = StyleSheet.create({
-  center: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  value: {
-    fontFamily: "System",
-    fontWeight: "700",
-    fontSize: 20,
-    lineHeight: 22,
-    color: Color.textPrimary,
-    fontVariant: ["tabular-nums"],
-  },
-  suffix: {
-    fontSize: 9,
-    fontWeight: "500",
-    color: Color.textMuted,
-    marginTop: 1,
-  },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    center: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    value: {
+      fontFamily: "System",
+      fontWeight: "700",
+      fontSize: 20,
+      lineHeight: 22,
+      color: Color.textPrimary,
+      fontVariant: ["tabular-nums"],
+    },
+    suffix: {
+      fontSize: 9,
+      fontWeight: "500",
+      color: Color.textMuted,
+      marginTop: 1,
+    },
+  })
+);

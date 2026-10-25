@@ -2,8 +2,8 @@ import { useEffect, useRef } from "react";
 import { Animated, View } from "react-native";
 import Svg, { Circle, G, Polyline } from "react-native-svg";
 
-import { Color } from "@/constants/theme";
 import { sparklineSegments } from "@/lib/readiness-formatters";
+import { useLegacyColors } from "@/lib/theme";
 
 const W = 112;
 const H = 40;
@@ -50,6 +50,7 @@ function polylineLength(points: string): number {
 // over ~1.2s on mount using the same pathLength-normalized dashoffset trick
 // as the web version's CSS animation, just driven by RN Animated instead.
 export function ReadinessSparkline({ series }: { series: (number | null)[] }) {
+  const Color = useLegacyColors();
   const segments = sparklineSegments(series, W, H);
   const lastIdx = series.length - 1 - [...series].reverse().findIndex((v) => v !== null);
   const lastVal = lastIdx >= 0 ? series[lastIdx] : null;

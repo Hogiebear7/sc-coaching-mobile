@@ -1049,7 +1049,7 @@ const useStyles = makeLegacyStyles((Color) =>
       fontSize: 13,
       color: Color.textPrimary,
       borderWidth: 1,
-      borderColor: Color.borderSubtle,
+      borderColor: "transparent",
       borderRadius: Radius.sm,
       paddingHorizontal: Spacing.sm,
       paddingVertical: 8,

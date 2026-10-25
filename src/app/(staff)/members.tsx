@@ -148,8 +148,8 @@ const useStyles = makeLegacyStyles((Color) =>
       height: 42,
       borderRadius: Radius.md,
       borderWidth: 1,
-      borderColor: Color.borderSubtle,
-      backgroundColor: Color.surface1,
+      borderColor: "transparent",
+      backgroundColor: Color.surface2,
     },
     searchInput: { flex: 1, color: Color.textPrimary, fontSize: 14 },
     sortRow: {

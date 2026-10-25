@@ -1761,8 +1761,8 @@ export default function LogWorkoutScreen() {
               <View style={styles.setColumnHeader}>
                 <Text style={[styles.setColumnLabel, { width: 36, textAlign: "center" }]}>Set</Text>
                 <Text style={[styles.setColumnLabel, { width: 66 }]}>Previous</Text>
-                <Text style={[styles.setColumnLabel, { flex: 1 }]}>{unitModeColumnLabel(row.unitMode)}</Text>
-                <Text style={[styles.setColumnLabel, { flex: 1 }]}>
+                <Text style={[styles.setColumnLabel, { flex: 1, textAlign: "center" }]}>{unitModeColumnLabel(row.unitMode)}</Text>
+                <Text style={[styles.setColumnLabel, { flex: 1, textAlign: "center" }]}>
                   {row.unitMode === "time" ? "" : row.perSide ? "Reps (R/L)" : "Reps"}
                 </Text>
                 <View style={{ width: 40 }} />
@@ -2244,8 +2244,8 @@ const useStyles = makeLegacyStyles((Color) =>
       height: 40,
       borderRadius: Radius.md,
       borderWidth: 1,
-      borderColor: Color.borderSubtle,
-      backgroundColor: Color.surface1,
+      borderColor: "transparent",
+      backgroundColor: Color.surface2,
       paddingHorizontal: Spacing.sm,
       fontSize: 13,
       color: Color.textPrimary,
@@ -2343,8 +2343,8 @@ const useStyles = makeLegacyStyles((Color) =>
       height: 38,
       borderRadius: Radius.md,
       borderWidth: 1,
-      borderColor: Color.borderSubtle,
-      backgroundColor: Color.surface1,
+      borderColor: "transparent",
+      backgroundColor: Color.surface2,
       paddingHorizontal: Spacing.sm,
       fontSize: 13,
       color: Color.textPrimary,
@@ -2356,8 +2356,8 @@ const useStyles = makeLegacyStyles((Color) =>
       height: 38,
       borderRadius: Radius.md,
       borderWidth: 1,
-      borderColor: Color.borderSubtle,
-      backgroundColor: Color.surface1,
+      borderColor: "transparent",
+      backgroundColor: Color.surface2,
       paddingHorizontal: Spacing.xs,
       fontSize: 13,
       color: Color.textPrimary,
@@ -2372,8 +2372,8 @@ const useStyles = makeLegacyStyles((Color) =>
       height: 38,
       borderRadius: Radius.md,
       borderWidth: 1,
-      borderColor: Color.borderSubtle,
-      backgroundColor: Color.surface1,
+      borderColor: "transparent",
+      backgroundColor: Color.surface2,
       paddingHorizontal: Spacing.xs,
       fontSize: 13,
       color: Color.textPrimary,
@@ -2385,8 +2385,8 @@ const useStyles = makeLegacyStyles((Color) =>
       height: 40,
       borderRadius: Radius.md,
       borderWidth: 1,
-      borderColor: Color.borderSubtle,
-      backgroundColor: Color.surface1,
+      borderColor: "transparent",
+      backgroundColor: Color.surface2,
       paddingHorizontal: Spacing.sm,
       fontSize: 13,
       color: Color.textPrimary,
@@ -2477,7 +2477,7 @@ const useFeelStyles = makeLegacyStyles((Color) =>
       minHeight: 64,
       borderRadius: Radius.md,
       borderWidth: 1,
-      borderColor: Color.borderSubtle,
+      borderColor: "transparent",
       backgroundColor: Color.surface2,
       paddingHorizontal: Spacing.sm,
       fontSize: 13,

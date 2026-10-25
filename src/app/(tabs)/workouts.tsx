@@ -5,19 +5,18 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Alert, Modal, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { MetricTile, PillButton, RangePills, RoundIconButton, SectionTitle, TileGrid } from "@/components/app/primitives";
 import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
 import { DateStrip } from "@/components/ui/DateStrip";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ExerciseSwapSheet } from "@/components/ui/ExerciseSwapSheet";
 import { ProgramDayCard } from "@/components/ui/ProgramDayCard";
-import { SectionHeader } from "@/components/ui/SectionHeader";
+import { Segmented } from "@/components/ui/Segmented";
 import { SessionCard } from "@/components/ui/SessionCard";
 import { TrendChart } from "@/components/ui/TrendChart";
-import { UpsellTile } from "@/components/ui/Upsell";
-import { figure, headline, Radius, Spacing } from "@/constants/theme";
+import { AppRadius, AppSpace, appTitle } from "@/constants/theme";
 import { useAuth } from "@/lib/auth-context";
-import { tapFeedback } from "@/lib/haptics";
+import { impactFeedback, selectionFeedback, tapFeedback } from "@/lib/haptics";
 import { hasAccess } from "@/lib/member-access";
 import { useAdvanceProgram, useMyProgram, useSetProgramStatus, type PrescribedExercise } from "@/lib/queries/programs";
 import { useMemberTier } from "@/lib/queries/profile";
@@ -33,7 +32,7 @@ import {
   todayDateString,
   type ExerciseMetricKey,
 } from "@/lib/workout-formatters";
-import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
+import { makeStyles, useAppTheme } from "@/lib/theme";
 
 // A deliberately narrow slice of the full EXERCISE_METRICS list (which also
 // has Volume/Best Set Vol./Sets) — this compact widget covers just
@@ -94,7 +93,7 @@ function AiCalloutModal({ visible, onDismiss }: { visible: boolean; onDismiss: (
             Your programme can adapt, not just log. Generate a session or swap any exercise that
             doesn&apos;t fit today.
           </Text>
-          <Button title="Got it" onPress={onDismiss} style={{ marginTop: Spacing.md }} />
+          <Button title="Got it" onPress={onDismiss} style={{ marginTop: 16 }} />
         </View>
       </View>
     </Modal>
@@ -103,7 +102,7 @@ function AiCalloutModal({ visible, onDismiss }: { visible: boolean; onDismiss: (
 
 export default function WorkoutsScreen() {
   const styles = useStyles();
-  const Color = useLegacyColors();
+  const { colors, data: dc } = useAppTheme();
   const router = useRouter();
   // A resumable session already exists in the workout-draft context the
   // moment any set/timer/title is present (see hasContent's own definition)
@@ -303,7 +302,7 @@ export default function WorkoutsScreen() {
     return (
       <SafeAreaView style={styles.safe}>
         <View style={styles.centerFill}>
-          <ActivityIndicator color={Color.gold} size="large" />
+          <ActivityIndicator color={colors.text} size="large" />
         </View>
       </SafeAreaView>
     );
@@ -314,30 +313,55 @@ export default function WorkoutsScreen() {
       <SafeAreaView style={styles.safe}>
         <View style={styles.centerFill}>
           <Text style={styles.errorText}>Couldn&apos;t load your workouts.</Text>
-          <Button title="Retry" onPress={() => refetch()} variant="secondary" style={{ marginTop: Spacing.md }} />
+          <PillButton title="Try again" variant="secondary" onPress={() => refetch()} style={{ marginTop: 16 }} />
         </View>
       </SafeAreaView>
     );
   }
 
+  const canImport = hasAccess(tier, "trackerImport");
+
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
       <ScrollView
         contentContainerStyle={styles.scroll}
-        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => refetch()} tintColor={Color.gold} />}
+        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => refetch()} tintColor={colors.text} />}
       >
-        <View style={styles.headerRow}>
-          <Text style={styles.heading}>Workouts</Text>
-          <Pressable onPress={() => router.push("/log-workout")} style={styles.logButton}>
-            <Ionicons name={hasActiveWorkout ? "play" : "add"} size={18} color={Color.goldForeground} />
-            <Text style={styles.logButtonText}>{hasActiveWorkout ? "Continue" : "Log"}</Text>
-          </Pressable>
+        {/* Header band: title, quick buttons, this week at a glance, day strip */}
+        <View style={styles.band}>
+          <View style={styles.headerRow}>
+            <Text style={appTitle(34, colors.text)}>Train</Text>
+            <View style={styles.headerActions}>
+              <RoundIconButton icon="time-outline" label="Workout history" onPress={() => router.push("/workout-history")} />
+              <RoundIconButton
+                icon={hasActiveWorkout ? "play" : "add"}
+                label={hasActiveWorkout ? "Continue workout" : "Log a workout"}
+                onPress={() => router.push("/log-workout")}
+              />
+            </View>
+          </View>
+
+          {weeklyStats ? (
+            <View style={styles.weekRow} accessibilityRole="summary">
+              <WeekFigure value={String(weeklyStats.workoutCount)} label="Workouts" color={dc.sessions} />
+              <WeekFigure value={String(weeklyStats.totalSets)} label="Sets" color={dc.load} />
+              <WeekFigure
+                value={weeklyStats.totalVolume > 0 ? weeklyStats.totalVolume.toLocaleString() : "0"}
+                label="kg volume"
+                color={dc.weight}
+              />
+            </View>
+          ) : null}
+
+          <View style={{ marginTop: 18 }}>
+            <DateStrip dates={dateWindow} selectedDate={selectedDate} today={today} markedDates={markedDates} onSelect={setSelectedDate} />
+          </View>
         </View>
 
-        <View style={styles.section}>
-          <DateStrip dates={dateWindow} selectedDate={selectedDate} today={today} markedDates={markedDates} onSelect={setSelectedDate} />
-          <Card style={styles.dayDetailCard} tier={selectedDate === today ? "hero" : "standard"}>
-            <Text style={styles.dayDetailDate}>{selectedDate === today ? "Today" : formatLongDate(selectedDate)}</Text>
+        <View style={styles.body}>
+          {/* Selected day */}
+          <View style={styles.section}>
+            <SectionTitle title={selectedDate === today ? "Today" : formatLongDate(selectedDate)} />
             {sessionsForSelectedDate.length > 0 ? (
               sessionsForSelectedDate.map((s) => (
                 <SessionCard
@@ -349,422 +373,362 @@ export default function WorkoutsScreen() {
                 />
               ))
             ) : (
-              <EmptyState
-                icon={hasActiveWorkout ? "play-circle-outline" : "barbell-outline"}
-                title={
-                  hasActiveWorkout
-                    ? "Workout in progress"
-                    : selectedDate === today
-                      ? "Nothing logged today"
-                      : "Nothing logged this day"
-                }
-                body={hasActiveWorkout ? "Pick up where you left off." : "Log a workout, or start a saved template from Workout Library."}
-                actionLabel={hasActiveWorkout ? "Continue Active Workout" : "Log a workout"}
-                onAction={() => router.push({ pathname: "/log-workout", params: { date: selectedDate } })}
-                variant="primary"
-              />
-            )}
-          </Card>
-        </View>
-
-        {program && program.status === "paused" ? (
-          <View style={styles.section}>
-            <SectionHeader label="ACTIVE PROGRAM" />
-            <Card style={styles.programCard} tier="hero">
-              <View style={styles.programHeaderRow}>
-                <Text style={styles.programName}>{program.name}</Text>
-                <Pressable onPress={handleCancelProgramme} hitSlop={12} accessibilityLabel="Cancel programme">
-                  <Ionicons name="close-circle-outline" size={18} color={Color.textMuted} />
-                </Pressable>
-              </View>
-              <Text style={styles.pausedBadge}>PAUSED</Text>
-              <Text style={styles.pausedHint}>Resume when you&apos;re ready to pick back up where you left off.</Text>
-              <Button
-                title="Resume programme"
-                onPress={handleResumeProgramme}
-                loading={setProgramStatus.isPending}
-                style={{ marginTop: Spacing.md }}
-              />
-            </Card>
-          </View>
-        ) : program && currentDay ? (
-          <View style={styles.section}>
-            <SectionHeader label="ACTIVE PROGRAM" />
-            <Card style={styles.programCard} tier="hero">
-              <View style={styles.programHeaderRow}>
-                <Text style={styles.programName}>{program.name}</Text>
-                <View style={styles.programHeaderActions}>
-                  <Pressable onPress={handlePauseProgramme} hitSlop={12} accessibilityLabel="Pause programme">
-                    <Ionicons name="pause-circle-outline" size={18} color={Color.textMuted} />
-                  </Pressable>
-                  <Pressable onPress={handleCancelProgramme} hitSlop={12} accessibilityLabel="Cancel programme">
-                    <Ionicons name="close-circle-outline" size={18} color={Color.textMuted} />
-                  </Pressable>
-                </View>
-              </View>
-              {program.source === "ai" && program.totalWeeks ? (
-                <Text style={styles.programWeekLabel}>
-                  Week {Math.min((program.completedCycles ?? 0) + 1, program.totalWeeks)} of {program.totalWeeks}
-                </Text>
-              ) : null}
-              {program.aiMeta?.rationale ? (
-                <Pressable onPress={() => setShowRationale((v) => !v)} style={styles.rationaleToggle}>
-                  <Text style={styles.rationaleToggleText}>Why this programme</Text>
-                  <Ionicons name={showRationale ? "chevron-up" : "chevron-down"} size={12} color={Color.textMuted} />
-                </Pressable>
-              ) : null}
-              {program.aiMeta?.rationale && showRationale ? (
-                <Text style={styles.rationaleText}>{program.aiMeta.rationale}</Text>
-              ) : null}
-              {program.source === "ai" && (program.completedCycles ?? 0) > 0 ? (
-                <Pressable
-                  onPress={() =>
-                    router.push({
-                      pathname: "/programme-checkin",
-                      params: { programId: program.id, cycleIndex: String((program.completedCycles ?? 0) - 1) },
-                    })
+              <View style={styles.card}>
+                <EmptyState
+                  icon={hasActiveWorkout ? "play-circle-outline" : "barbell-outline"}
+                  title={
+                    hasActiveWorkout ? "Workout in progress" : selectedDate === today ? "Nothing logged today" : "Nothing logged this day"
                   }
-                  style={styles.checkinBanner}
-                >
-                  <Ionicons name="flag-outline" size={14} color={Color.accentData} />
-                  <Text style={styles.checkinBannerText}>Week {program.completedCycles} check-in ready</Text>
-                  <Ionicons name="chevron-forward" size={14} color={Color.accentData} />
-                </Pressable>
-              ) : null}
-              {dueCheckpoint ? <Text style={styles.checkpointBadge}>CHECK-IN TEST</Text> : null}
-              <Text style={styles.programDayLabel}>{displayDay!.label}</Text>
-
-              <ProgramDayCard
-                day={displayDay!}
-                onRequestSwap={
-                  program.source === "ai" && displayDay!.type === "workout" ? (ex) => setSwapTarget(ex) : undefined
-                }
-              />
-
-              {displayDay!.type === "rest" ? (
-                <Button
-                  title="Mark complete"
-                  variant="secondary"
-                  onPress={handleMarkDayComplete}
-                  loading={advanceProgram.isPending}
-                  style={{ marginTop: Spacing.md }}
+                  body={hasActiveWorkout ? "Pick up where you left off." : "Log a workout, or start a saved template from your library."}
+                  actionLabel={hasActiveWorkout ? "Continue workout" : "Log a workout"}
+                  onAction={() => router.push({ pathname: "/log-workout", params: { date: selectedDate } })}
+                  variant="primary"
                 />
-              ) : (
-                <>
-                  <Button
-                    title={dueCheckpoint ? "Start test" : "Start workout"}
+              </View>
+            )}
+          </View>
+
+          {/* Programme */}
+          {program && program.status === "paused" ? (
+            <View style={styles.section}>
+              <SectionTitle title="Your programme" />
+              <View style={styles.card}>
+                <View style={styles.programHeaderRow}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.programName}>{program.name}</Text>
+                    <Text style={styles.programMeta}>Paused</Text>
+                  </View>
+                  <IconTap icon="close" label="Cancel programme" onPress={handleCancelProgramme} />
+                </View>
+                <Text style={styles.programHint}>Resume when you&apos;re ready to pick back up where you left off.</Text>
+                <Button title="Resume programme" onPress={handleResumeProgramme} loading={setProgramStatus.isPending} style={{ marginTop: 16 }} />
+              </View>
+            </View>
+          ) : program && currentDay ? (
+            <View style={styles.section}>
+              <SectionTitle title="Your programme" />
+              <View style={styles.card}>
+                <View style={styles.programHeaderRow}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.programName}>{program.name}</Text>
+                    {program.source === "ai" && program.totalWeeks ? (
+                      <Text style={styles.programMeta}>
+                        Week {Math.min((program.completedCycles ?? 0) + 1, program.totalWeeks)} of {program.totalWeeks}
+                      </Text>
+                    ) : null}
+                  </View>
+                  <IconTap icon="pause" label="Pause programme" onPress={handlePauseProgramme} />
+                  <IconTap icon="close" label="Cancel programme" onPress={handleCancelProgramme} />
+                </View>
+
+                {program.source === "ai" && program.totalWeeks ? (
+                  <View style={styles.weekProgress}>
+                    {Array.from({ length: program.totalWeeks }).map((_, i) => (
+                      <View
+                        key={i}
+                        style={[
+                          styles.weekProgressSeg,
+                          i < (program.completedCycles ?? 0) && { backgroundColor: dc.sessions },
+                          i === (program.completedCycles ?? 0) && { backgroundColor: colors.text },
+                        ]}
+                      />
+                    ))}
+                  </View>
+                ) : null}
+
+                {program.aiMeta?.rationale ? (
+                  <Pressable onPress={() => setShowRationale((v) => !v)} style={styles.rationaleToggle} accessibilityRole="button">
+                    <Text style={styles.rationaleToggleText}>Why this programme</Text>
+                    <Ionicons name={showRationale ? "chevron-up" : "chevron-down"} size={14} color={colors.textSecondary} />
+                  </Pressable>
+                ) : null}
+                {program.aiMeta?.rationale && showRationale ? <Text style={styles.rationaleText}>{program.aiMeta.rationale}</Text> : null}
+
+                {program.source === "ai" && (program.completedCycles ?? 0) > 0 ? (
+                  <Pressable
                     onPress={() =>
                       router.push({
-                        pathname: "/log-workout",
-                        params: { programId: program.id, dayId: displayDay!.id, title: displayDay!.label },
+                        pathname: "/programme-checkin",
+                        params: { programId: program.id, cycleIndex: String((program.completedCycles ?? 0) - 1) },
                       })
                     }
-                    style={{ marginTop: Spacing.md }}
-                  />
-                  <Pressable onPress={handleMarkDayComplete} style={styles.skipRow}>
-                    <Text style={styles.skipText}>Skip to next day</Text>
+                    style={styles.checkinBanner}
+                    accessibilityRole="button"
+                  >
+                    <Ionicons name="flag-outline" size={16} color={colors.text} />
+                    <Text style={styles.checkinBannerText}>Week {program.completedCycles} check-in ready</Text>
+                    <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
                   </Pressable>
-                </>
-              )}
-            </Card>
-          </View>
-        ) : null}
+                ) : null}
 
-        <View style={styles.section}>
-          <SectionHeader label="TOOLS" />
-          {/* Two explicit rows of 2, not one flex-wrap container relying on
-              flexBasis percentages to split evenly — the same fix already
-              proven for the Schedule tab's calendar grid, whose own
-              percentage-based wrap silently collapsed to one column per row
-              on some screen widths. */}
-          <View style={styles.toolsRow}>
-            <Card tier="compact" style={styles.toolCard}>
-              <Pressable onPress={() => router.push("/plate-calculator")} style={styles.toolCardInner}>
-                <Ionicons name="barbell-outline" size={18} color={Color.gold} />
-                <Text style={styles.toolCardText}>Plate Calculator</Text>
-              </Pressable>
-            </Card>
-            <Card tier="compact" style={styles.toolCard}>
-              <Pressable
+                <View style={styles.dayHeader}>
+                  {dueCheckpoint ? <Text style={styles.checkpointTag}>Check-in test</Text> : null}
+                  <Text style={styles.programDayLabel}>{displayDay!.label}</Text>
+                </View>
+
+                <ProgramDayCard
+                  day={displayDay!}
+                  onRequestSwap={program.source === "ai" && displayDay!.type === "workout" ? (ex) => setSwapTarget(ex) : undefined}
+                />
+
+                {displayDay!.type === "rest" ? (
+                  <Button
+                    title="Mark rest day done"
+                    variant="secondary"
+                    onPress={handleMarkDayComplete}
+                    loading={advanceProgram.isPending}
+                    style={{ marginTop: 16 }}
+                  />
+                ) : (
+                  <>
+                    <Button
+                      title={dueCheckpoint ? "Start test" : "Start workout"}
+                      onPress={() => {
+                        impactFeedback();
+                        router.push({
+                          pathname: "/log-workout",
+                          params: { programId: program.id, dayId: displayDay!.id, title: displayDay!.label },
+                        });
+                      }}
+                      style={{ marginTop: 16 }}
+                    />
+                    <Pressable onPress={handleMarkDayComplete} style={styles.skipRow} accessibilityRole="button">
+                      <Text style={styles.skipText}>Skip to next day</Text>
+                    </Pressable>
+                  </>
+                )}
+              </View>
+            </View>
+          ) : null}
+
+          {/* Tools */}
+          <View style={styles.section}>
+            <SectionTitle title="Tools" />
+            <View style={styles.toolsRow}>
+              <ToolButton icon="barbell-outline" label="Plates" onPress={() => router.push("/plate-calculator")} />
+              <ToolButton
+                icon="timer-outline"
+                label="Rest timer"
                 onPress={() => {
                   if (!restTimer.isRunning) restTimer.reset(90);
                   router.push({ pathname: "/rest-timer" });
                 }}
-                style={styles.toolCardInner}
-              >
-                <Ionicons name="timer-outline" size={18} color={Color.gold} />
-                <Text style={styles.toolCardText}>Rest Timer</Text>
-              </Pressable>
-            </Card>
-          </View>
-          <View style={styles.toolsRow}>
-            {canGenerate ? (
-              <Card tier="compact" style={styles.toolCard}>
-                <Pressable onPress={() => router.push("/workout-generator")} style={styles.toolCardInner}>
-                  <Ionicons name="sparkles-outline" size={18} color={Color.gold} />
-                  <Text style={styles.toolCardText}>Generate</Text>
-                </Pressable>
-              </Card>
-            ) : (
-              <UpsellTile title="Generate" style={styles.toolCard} />
-            )}
-            {hasAccess(tier, "trackerImport") ? (
-              <Card tier="compact" style={styles.toolCard}>
-                <Pressable onPress={() => router.push("/tracker-import")} style={styles.toolCardInner}>
-                  <Ionicons name="watch-outline" size={18} color={Color.gold} />
-                  <Text style={styles.toolCardText}>Import</Text>
-                </Pressable>
-              </Card>
-            ) : (
-              <UpsellTile title="Import" style={styles.toolCard} />
-            )}
-          </View>
-        </View>
-
-        {weeklyStats ? (
-          <View style={styles.section}>
-            <SectionHeader label="THIS WEEK" />
-            <View style={styles.weekStatsRow}>
-              <Card tier="compact" style={styles.weekStat}>
-                <Text style={styles.weekStatValue}>{weeklyStats.workoutCount}</Text>
-                <Text style={styles.weekStatLabel}>workouts</Text>
-              </Card>
-              <Card tier="compact" style={styles.weekStat}>
-                <Text style={styles.weekStatValue}>{weeklyStats.totalSets}</Text>
-                <Text style={styles.weekStatLabel}>sets</Text>
-              </Card>
-              <Card tier="compact" style={styles.weekStat}>
-                <Text style={styles.weekStatValue}>{weeklyStats.totalVolume > 0 ? weeklyStats.totalVolume.toLocaleString() : "0"}</Text>
-                <Text style={styles.weekStatLabel}>kg volume</Text>
-              </Card>
+              />
+              <ToolButton
+                icon="sparkles-outline"
+                label="Generate"
+                locked={!canGenerate}
+                onPress={() => router.push(canGenerate ? "/workout-generator" : "/membership")}
+              />
+              <ToolButton
+                icon="watch-outline"
+                label="Import"
+                locked={!canImport}
+                onPress={() => router.push(canImport ? "/tracker-import" : "/membership")}
+              />
             </View>
           </View>
-        ) : null}
 
-        {recentRecords.length > 0 ? (
-          <View style={styles.section}>
-            <SectionHeader
-              label="RECENT RECORDS"
-              action={allRecentRecords.length > 3 ? { label: "See more", onPress: () => router.push({ pathname: "/workout-records" }) } : undefined}
-            />
-            <Card style={styles.recordsList}>
-              {recentRecords.map((r, idx) => (
-                <Pressable
-                  key={`${r.exerciseName}-${r.type}-${r.date}`}
-                  onPress={() => router.push({ pathname: "/exercise-detail", params: { name: r.exerciseName } })}
-                  style={[styles.recordRow, idx > 0 && styles.recordRowDivider]}
-                >
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.recordExercise}>{r.exerciseName}</Text>
-                    <Text style={styles.recordLabel}>{r.label}</Text>
-                  </View>
-                  <View style={styles.recordValueWrap}>
-                    <Text style={styles.recordValue}>{r.value}</Text>
-                    <Text style={styles.recordDate}>{formatShortDate(r.date)}</Text>
-                  </View>
-                </Pressable>
-              ))}
-            </Card>
-          </View>
-        ) : null}
-
-        {data.personalBests.length > 0 && (
-          <View style={styles.section}>
-            <SectionHeader
-              label="PERSONAL BESTS"
-              action={{ label: pinnedBests.length > 0 ? "Edit" : "Choose", onPress: () => router.push("/personal-bests-edit") }}
-            />
-            {pinnedBests.length > 0 ? (
-              pinnedBests.map((pb) => (
-                <Pressable
-                  key={pb.exerciseName}
-                  onPress={() => router.push({ pathname: "/exercise-detail", params: { name: pb.exerciseName } })}
-                >
-                  <Card style={styles.pbCard}>
-                    <View style={styles.pbHeaderRow}>
-                      <Text style={styles.pbTitle}>{pb.exerciseName}</Text>
-                      <Ionicons name="chevron-forward" size={16} color={Color.textFaint} />
-                    </View>
-                    {pb.heaviestWeight ? (
-                      <View style={styles.pbStat}>
-                        <Text style={styles.pbValue}>{pb.heaviestWeight.weightStr}</Text>
-                        <Text style={styles.pbLabel}>PB weight — tap for reps, sets &amp; history</Text>
-                      </View>
-                    ) : pb.highestReps ? (
-                      <View style={styles.pbStat}>
-                        <Text style={styles.pbValue}>{pb.highestReps.reps} reps</Text>
-                        <Text style={styles.pbLabel}>best reps — tap for history</Text>
-                      </View>
-                    ) : null}
-                  </Card>
-                </Pressable>
-              ))
-            ) : (
-              <Card tier="quiet">
-                <EmptyState
-                  icon="trophy-outline"
-                  title="No personal bests yet"
-                  body="Pick up to 5 lifts to feature here and track them at a glance."
-                  actionLabel="Choose your personal bests"
-                  onAction={() => router.push("/personal-bests-edit")}
-                />
-              </Card>
-            )}
-          </View>
-        )}
-
-        {data.sessions.length > 0 && trendCandidates.length === 0 ? (
-          <View style={styles.section}>
-            <SectionHeader label="PROGRESSION" />
-            <Card tier="quiet">
-              <EmptyState
-                icon="trending-up-outline"
-                title="Not enough data yet"
-                body="Log the same exercise a couple more times to unlock your progression trend."
+          {/* Recent records */}
+          {recentRecords.length > 0 ? (
+            <View style={styles.section}>
+              <SectionTitle
+                title="Recent records"
+                action={allRecentRecords.length > 3 ? "See more" : undefined}
+                onAction={() => router.push({ pathname: "/workout-records" })}
               />
-            </Card>
-          </View>
-        ) : null}
-
-        {trendCandidates.length > 0 && activeTrendExercise ? (
-          <View style={styles.section}>
-            <SectionHeader
-              label="PROGRESSION"
-              action={{ label: "Edit", onPress: () => router.push("/progression-exercises-edit") }}
-            />
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.trendPicker} contentContainerStyle={{ gap: Spacing.xs }}>
-              {progressionChips.map((c) => (
-                <Pressable
-                  key={c.key}
-                  onPress={() => {
-                    setTrendExercise(c.name);
-                    setTrendMetric(null);
-                  }}
-                  style={[styles.trendChip, activeTrendExercise === c.name && styles.trendChipActive]}
-                >
-                  <Text style={[styles.trendChipText, activeTrendExercise === c.name && styles.trendChipTextActive]}>{c.name}</Text>
-                </Pressable>
-              ))}
-              <Pressable onPress={() => router.push("/progression-exercises-edit")} style={[styles.trendChip, styles.trendChipSearch]}>
-                <Ionicons name="search" size={12} color={Color.gold} />
-                <Text style={[styles.trendChipText, { color: Color.gold }]}>Search</Text>
-              </Pressable>
-            </ScrollView>
-            {availableMetrics.length > 1 ? (
-              <View style={styles.metricRow}>
-                {availableMetrics.map((m) => (
+              <View style={styles.list}>
+                {recentRecords.map((r, idx) => (
                   <Pressable
-                    key={m.key}
-                    onPress={() => setTrendMetric(m.key)}
-                    style={[styles.metricChip, activeTrendMetric === m.key && styles.metricChipActive]}
+                    key={`${r.exerciseName}-${r.type}-${r.date}`}
+                    onPress={() => router.push({ pathname: "/exercise-detail", params: { name: r.exerciseName } })}
+                    style={({ pressed }) => [styles.row, idx > 0 && styles.rowDivider, pressed && styles.pressed]}
+                    accessibilityRole="button"
                   >
-                    <Text style={[styles.metricChipText, activeTrendMetric === m.key && styles.metricChipTextActive]}>{m.label}</Text>
+                    <View style={styles.recordIcon}>
+                      <Ionicons name="trophy" size={16} color={colors.brand} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.rowTitle} numberOfLines={1}>
+                        {r.exerciseName}
+                      </Text>
+                      <Text style={styles.rowSub}>
+                        {r.label} · {formatShortDate(r.date)}
+                      </Text>
+                    </View>
+                    <Text style={styles.rowValue}>{r.value}</Text>
                   </Pressable>
                 ))}
               </View>
-            ) : null}
-            <View style={styles.rangeRow}>
-              {TREND_RANGES.map((r) => (
+            </View>
+          ) : null}
+
+          {/* Personal bests */}
+          {data.personalBests.length > 0 && (
+            <View style={styles.section}>
+              <SectionTitle
+                title="Personal bests"
+                action={pinnedBests.length > 0 ? "Edit" : "Choose"}
+                onAction={() => router.push("/personal-bests-edit")}
+              />
+              {pinnedBests.length > 0 ? (
+                <TileGrid>
+                  {pinnedBests.map((pb) => (
+                    <MetricTile
+                      key={pb.exerciseName}
+                      title={pb.exerciseName}
+                      window={pb.heaviestWeight ? "Heaviest weight" : "Most reps"}
+                      value={pb.heaviestWeight ? pb.heaviestWeight.weightStr : pb.highestReps ? String(pb.highestReps.reps) : null}
+                      unit={pb.heaviestWeight ? undefined : "reps"}
+                      color={dc.sessions}
+                      note="Tap for reps, sets and history"
+                      onPress={() => router.push({ pathname: "/exercise-detail", params: { name: pb.exerciseName } })}
+                    />
+                  ))}
+                </TileGrid>
+              ) : (
+                <View style={styles.card}>
+                  <EmptyState
+                    icon="trophy-outline"
+                    title="No personal bests yet"
+                    body="Pick up to 5 lifts to feature here and track them at a glance."
+                    actionLabel="Choose your lifts"
+                    onAction={() => router.push("/personal-bests-edit")}
+                  />
+                </View>
+              )}
+            </View>
+          )}
+
+          {/* Progression */}
+          {data.sessions.length > 0 && trendCandidates.length === 0 ? (
+            <View style={styles.section}>
+              <SectionTitle title="Progression" />
+              <View style={styles.card}>
+                <EmptyState
+                  icon="trending-up-outline"
+                  title="Not enough data yet"
+                  body="Log the same exercise a couple more times to unlock your progression trend."
+                />
+              </View>
+            </View>
+          ) : null}
+
+          {trendCandidates.length > 0 && activeTrendExercise ? (
+            <View style={styles.section}>
+              <SectionTitle title="Progression" action="Edit" onAction={() => router.push("/progression-exercises-edit")} />
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
+                {progressionChips.map((c) => {
+                  const active = activeTrendExercise === c.name;
+                  return (
+                    <Pressable
+                      key={c.key}
+                      onPress={() => {
+                        if (!active) selectionFeedback();
+                        setTrendExercise(c.name);
+                        setTrendMetric(null);
+                      }}
+                      style={[styles.chip, active && styles.chipActive]}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: active }}
+                    >
+                      <Text style={[styles.chipText, active && styles.chipTextActive]}>{c.name}</Text>
+                    </Pressable>
+                  );
+                })}
+                <Pressable onPress={() => router.push("/progression-exercises-edit")} style={styles.chip} accessibilityRole="button">
+                  <Ionicons name="search" size={14} color={colors.text} />
+                  <Text style={styles.chipText}>Search</Text>
+                </Pressable>
+              </ScrollView>
+              <View style={styles.card}>
+                <View style={styles.trendHead}>
+                  <Text style={styles.trendTitle} numberOfLines={1}>
+                    {activeTrendExercise}
+                  </Text>
+                  {availableMetrics.length > 1 ? (
+                    <View style={{ width: 180 }}>
+                      <Segmented
+                        options={availableMetrics.map((m) => m.key)}
+                        value={activeTrendMetric}
+                        onChange={(k) => setTrendMetric(k)}
+                        format={(k) => COMPACT_TREND_METRICS.find((m) => m.key === k)?.label ?? k}
+                      />
+                    </View>
+                  ) : null}
+                </View>
+                <TrendChart points={filteredTrendPoints} />
+                <View style={{ marginTop: 12 }}>
+                  <RangePills options={TREND_RANGES.map((r) => r.key)} value={trendRange} onChange={setTrendRange} />
+                </View>
+              </View>
+              <Pressable
+                onPress={() => router.push({ pathname: "/exercise-detail", params: { name: activeTrendExercise } })}
+                style={styles.linkRow}
+                accessibilityRole="button"
+              >
+                <Text style={styles.linkText}>View full {activeTrendExercise} history</Text>
+                <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
+              </Pressable>
+            </View>
+          ) : null}
+
+          {/* Recent sessions */}
+          <View style={styles.section}>
+            <SectionTitle
+              title="Recent sessions"
+              action={data.sessions.length > 0 ? "See all" : undefined}
+              onAction={() => router.push("/workout-history")}
+            />
+            {data.sessions.length === 0 ? (
+              <View style={styles.card}>
+                <EmptyState
+                  icon={hasActiveWorkout ? "play-circle-outline" : "barbell-outline"}
+                  title={hasActiveWorkout ? "Workout in progress" : "No workouts logged yet"}
+                  body={hasActiveWorkout ? "Pick up where you left off." : "Log your first workout to start building your training history."}
+                  actionLabel={hasActiveWorkout ? "Continue workout" : "Log your first workout"}
+                  onAction={() => router.push("/log-workout")}
+                  variant="primary"
+                />
+              </View>
+            ) : (
+              data.sessions
+                .slice(0, 5)
+                .map((s) => (
+                  <SessionCard
+                    key={s.id}
+                    session={s}
+                    onPress={() => router.push({ pathname: "/session-detail", params: { id: s.id } })}
+                    sectionByExerciseId={sectionByExerciseId}
+                  />
+                ))
+            )}
+          </View>
+
+          {/* More */}
+          <View style={styles.section}>
+            <SectionTitle title="More training" />
+            <View style={styles.list}>
+              {MORE_ROWS.map((r, i) => (
                 <Pressable
-                  key={r.key}
-                  onPress={() => setTrendRange(r.key)}
-                  style={[styles.rangeChip, trendRange === r.key && styles.rangeChipActive]}
+                  key={r.href}
+                  onPress={() => {
+                    tapFeedback();
+                    router.push(r.href as never);
+                  }}
+                  style={({ pressed }) => [styles.row, i > 0 && styles.rowDivider, pressed && styles.pressed]}
+                  accessibilityRole="button"
                 >
-                  <Text style={[styles.rangeChipText, trendRange === r.key && styles.rangeChipTextActive]}>{r.key}</Text>
+                  <Ionicons name={r.icon} size={22} color={colors.text} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.rowTitle}>{r.title}</Text>
+                    <Text style={styles.rowSub}>{r.sub}</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
                 </Pressable>
               ))}
             </View>
-            <Card style={styles.trendCard}>
-              <TrendChart points={filteredTrendPoints} />
-            </Card>
-            <Pressable
-              onPress={() => router.push({ pathname: "/exercise-detail", params: { name: activeTrendExercise } })}
-              style={styles.viewHistoryRow}
-            >
-              <Text style={styles.viewHistoryText}>View {activeTrendExercise} history</Text>
-              <Ionicons name="chevron-forward" size={14} color={Color.gold} />
-            </Pressable>
           </View>
-        ) : null}
-
-        <View style={styles.section}>
-          <SectionHeader
-            label="RECENT SESSIONS"
-            action={data.sessions.length > 0 ? { label: "See all", onPress: () => router.push("/workout-history") } : undefined}
-          />
-          {data.sessions.length === 0 ? (
-            <Card tier="quiet">
-              <EmptyState
-                icon={hasActiveWorkout ? "play-circle-outline" : "barbell-outline"}
-                title={hasActiveWorkout ? "Workout in progress" : "No workouts logged yet"}
-                body={
-                  hasActiveWorkout
-                    ? "Pick up where you left off."
-                    : "Log your first workout to start building your training history."
-                }
-                actionLabel={hasActiveWorkout ? "Continue Active Workout" : "Log your first workout"}
-                onAction={() => router.push("/log-workout")}
-                variant="primary"
-              />
-            </Card>
-          ) : (
-            data.sessions
-              .slice(0, 5)
-              .map((s) => (
-                <SessionCard
-                  key={s.id}
-                  session={s}
-                  onPress={() => router.push({ pathname: "/session-detail", params: { id: s.id } })}
-                  sectionByExerciseId={sectionByExerciseId}
-                />
-              ))
-          )}
-        </View>
-
-        <View style={styles.section}>
-          <SectionHeader label="MORE" />
-          <Card tier="quiet">
-            <Pressable onPress={() => router.push("/workout-trends")} style={styles.moreRow}>
-              <View style={styles.moreRowIcon}>
-                <Ionicons name="trending-up-outline" size={18} color={Color.gold} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.moreRowTitle}>Training Trends</Text>
-                <Text style={styles.moreRowSub}>Sets and volume over time</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={18} color={Color.textFaint} />
-            </Pressable>
-            <Pressable onPress={() => router.push("/workout-library")} style={[styles.moreRow, styles.moreRowDivider]}>
-              <View style={styles.moreRowIcon}>
-                <Ionicons name="albums-outline" size={18} color={Color.gold} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.moreRowTitle}>Workout Library</Text>
-                <Text style={styles.moreRowSub}>Your saved, reusable workouts</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={18} color={Color.textFaint} />
-            </Pressable>
-            <Pressable onPress={() => router.push("/workout-history")} style={[styles.moreRow, styles.moreRowDivider]}>
-              <View style={styles.moreRowIcon}>
-                <Ionicons name="time-outline" size={18} color={Color.gold} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.moreRowTitle}>Workout History</Text>
-                <Text style={styles.moreRowSub}>Every session you&apos;ve logged</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={18} color={Color.textFaint} />
-            </Pressable>
-            <Pressable onPress={() => router.push("/set-levels")} style={[styles.moreRow, styles.moreRowDivider]}>
-              <View style={styles.moreRowIcon}>
-                <Ionicons name="body-outline" size={18} color={Color.gold} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.moreRowTitle}>Set Levels</Text>
-                <Text style={styles.moreRowSub}>Weekly sets by muscle group</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={18} color={Color.textFaint} />
-            </Pressable>
-          </Card>
         </View>
       </ScrollView>
 
@@ -780,132 +744,171 @@ export default function WorkoutsScreen() {
   );
 }
 
-const useStyles = makeLegacyStyles((Color) =>
+const MORE_ROWS: { href: string; icon: keyof typeof Ionicons.glyphMap; title: string; sub: string }[] = [
+  { href: "/workout-trends", icon: "trending-up-outline", title: "Training trends", sub: "Sets and volume over time" },
+  { href: "/workout-library", icon: "albums-outline", title: "Workout library", sub: "Your saved, reusable workouts" },
+  { href: "/workout-history", icon: "time-outline", title: "Workout history", sub: "Every session you've logged" },
+  { href: "/set-levels", icon: "body-outline", title: "Set levels", sub: "Weekly sets by muscle group" },
+];
+
+function WeekFigure({ value, label, color }: { value: string; label: string; color: string }) {
+  const styles = useStyles();
+  return (
+    <View style={styles.weekFigure} accessible accessibilityLabel={`${value} ${label} this week`}>
+      <View style={[styles.weekDot, { backgroundColor: color }]} />
+      <Text style={styles.weekValue} numberOfLines={1} adjustsFontSizeToFit>
+        {value}
+      </Text>
+      <Text style={styles.weekLabel}>{label}</Text>
+    </View>
+  );
+}
+
+// Round shortcut with a caption — the same shape as the "+" sheet's quick
+// actions. Locked tools show a padlock badge and lead to Membership.
+function ToolButton({
+  icon,
+  label,
+  onPress,
+  locked = false,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  onPress: () => void;
+  locked?: boolean;
+}) {
+  const styles = useStyles();
+  const { colors } = useAppTheme();
+  return (
+    <Pressable
+      onPress={() => {
+        tapFeedback();
+        onPress();
+      }}
+      style={({ pressed }) => [styles.tool, pressed && styles.pressed]}
+      accessibilityRole="button"
+      accessibilityLabel={locked ? `${label}, upgrade to unlock` : label}
+    >
+      <View style={styles.toolIcon}>
+        <Ionicons name={icon} size={24} color={locked ? colors.textMuted : colors.text} />
+        {locked ? (
+          <View style={styles.toolLock}>
+            <Ionicons name="lock-closed" size={10} color={colors.onPrimary} />
+          </View>
+        ) : null}
+      </View>
+      <Text style={[styles.toolLabel, locked && { color: colors.textMuted }]}>{label}</Text>
+    </Pressable>
+  );
+}
+
+function IconTap({ icon, label, onPress }: { icon: keyof typeof Ionicons.glyphMap; label: string; onPress: () => void }) {
+  const styles = useStyles();
+  const { colors } = useAppTheme();
+  return (
+    <Pressable onPress={onPress} hitSlop={8} style={styles.iconTap} accessibilityRole="button" accessibilityLabel={label}>
+      <Ionicons name={icon} size={18} color={colors.textSecondary} />
+    </Pressable>
+  );
+}
+
+const useStyles = makeStyles((c) =>
   StyleSheet.create({
-    safe: { flex: 1, backgroundColor: Color.bg0 },
-    centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
-    calloutBackdrop: {
-      flex: 1,
-      backgroundColor: "rgba(4,10,20,0.72)",
-      alignItems: "center",
-      justifyContent: "center",
-      padding: Spacing.xl,
+    safe: { flex: 1, backgroundColor: c.bg },
+    centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: 24 },
+    errorText: { color: c.textMuted, fontSize: 16 },
+    calloutBackdrop: { flex: 1, backgroundColor: c.scrim, alignItems: "center", justifyContent: "center", padding: 24 },
+    calloutCard: { width: "100%", maxWidth: 360, borderRadius: AppRadius.card, backgroundColor: c.surface, padding: 20 },
+    calloutBody: { fontSize: 16, color: c.text, lineHeight: 23 },
+
+    scroll: { paddingBottom: 40 },
+    band: {
+      backgroundColor: c.surface,
+      borderBottomLeftRadius: 28,
+      borderBottomRightRadius: 28,
+      paddingHorizontal: AppSpace.gutter,
+      paddingBottom: 20,
     },
-    calloutCard: {
-      width: "100%",
-      maxWidth: 360,
-      borderRadius: Radius.lg,
-      borderWidth: 1,
-      borderColor: Color.borderDefault,
-      backgroundColor: Color.surface1,
-      padding: Spacing.lg,
-    },
-    calloutBody: { fontSize: 14, color: Color.textPrimary, lineHeight: 20 },
-    errorText: { color: Color.textMuted, fontSize: 14 },
-    scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
-    headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: Spacing.md, marginBottom: Spacing.lg },
-    heading: { ...headline(34), color: Color.textPrimary },
-    logButton: { flexDirection: "row", alignItems: "center", gap: 2, backgroundColor: Color.gold, borderRadius: Radius.pill, paddingHorizontal: Spacing.md, paddingVertical: 8 },
-    logButtonText: { fontSize: 12, fontWeight: "700", color: Color.goldForeground },
-    section: { marginBottom: Spacing.xl },
-    weekStatsRow: { flexDirection: "row", gap: Spacing.sm },
-    weekStat: {
-      flex: 1,
-      alignItems: "center",
-      paddingVertical: Spacing.md,
-    },
-    weekStatValue: { fontSize: 20, fontWeight: "700", color: Color.gold, fontVariant: ["tabular-nums"] },
-    weekStatLabel: { fontSize: 10, color: Color.textMuted, marginTop: 2 },
-    recordsList: { padding: 0, overflow: "hidden" },
-    recordRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", padding: Spacing.md, gap: Spacing.sm },
-    recordRowDivider: { borderTopWidth: 1, borderTopColor: Color.borderSubtle },
-    recordExercise: { fontSize: 13, fontWeight: "600", color: Color.textPrimary },
-    recordLabel: { fontSize: 11, color: Color.textMuted, marginTop: 1 },
-    recordValueWrap: { alignItems: "flex-end" },
-    recordValue: { fontSize: 14, fontWeight: "700", color: Color.gold, fontVariant: ["tabular-nums"] },
-    recordDate: { fontSize: 10, color: Color.textFaint, marginTop: 1 },
-    pbCard: { padding: Spacing.md, marginBottom: Spacing.sm },
-    pbHeaderRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: Spacing.xs },
-    pbTitle: { fontSize: 13, fontWeight: "600", color: Color.textPrimary },
-    pbStat: {},
-    pbValue: { ...figure(28), color: Color.gold },
-    pbLabel: { fontSize: 10, color: Color.textMuted, marginTop: 2 },
-    programCard: { padding: Spacing.md },
-    programHeaderRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
-    programHeaderActions: { flexDirection: "row", gap: 12 },
-    programName: { fontSize: 11, fontWeight: "600", color: Color.textMuted, flexShrink: 1 },
-    pausedBadge: { fontSize: 10, fontWeight: "700", color: Color.textMuted, letterSpacing: 0.5, marginTop: Spacing.sm },
-    pausedHint: { fontSize: 12, color: Color.textSecondary, marginTop: 4 },
-    programWeekLabel: { fontSize: 11, fontWeight: "600", color: Color.gold, marginTop: 2 },
-    rationaleToggle: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: Spacing.xs },
-    rationaleToggleText: { fontSize: 11, fontWeight: "600", color: Color.textMuted },
-    rationaleText: { fontSize: 12, color: Color.textSecondary, marginTop: 4, lineHeight: 17 },
+    headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingTop: 12 },
+    headerActions: { flexDirection: "row", gap: 10 },
+    weekRow: { flexDirection: "row", marginTop: 20, gap: 10 },
+    weekFigure: { flex: 1, backgroundColor: c.surfaceHi, borderRadius: AppRadius.card, paddingVertical: 14, paddingHorizontal: 12 },
+    weekDot: { width: 8, height: 8, borderRadius: 4, marginBottom: 8 },
+    weekValue: { fontSize: 26, fontWeight: "500", color: c.text, fontVariant: ["tabular-nums"] },
+    weekLabel: { fontSize: 14, color: c.textMuted, marginTop: 2 },
+
+    body: { paddingHorizontal: AppSpace.gutter, paddingTop: AppSpace.section },
+    section: { marginBottom: AppSpace.section },
+    card: { backgroundColor: c.surface, borderRadius: AppRadius.card, padding: 16 },
+
+    programHeaderRow: { flexDirection: "row", alignItems: "flex-start", gap: 4 },
+    programName: { fontSize: 18, fontWeight: "600", color: c.text },
+    programMeta: { fontSize: 14, color: c.textMuted, marginTop: 2 },
+    programHint: { fontSize: 15, color: c.textSecondary, marginTop: 10, lineHeight: 21 },
+    iconTap: { width: 40, height: 40, borderRadius: 20, backgroundColor: c.control, alignItems: "center", justifyContent: "center", marginLeft: 6 },
+    weekProgress: { flexDirection: "row", gap: 4, marginTop: 14 },
+    weekProgressSeg: { flex: 1, height: 6, borderRadius: 3, backgroundColor: c.control },
+    rationaleToggle: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 14, alignSelf: "flex-start", minHeight: 32 },
+    rationaleToggleText: { fontSize: 14, fontWeight: "500", color: c.textSecondary, textDecorationLine: "underline" },
+    rationaleText: { fontSize: 15, color: c.textSecondary, marginTop: 4, lineHeight: 21 },
     checkinBanner: {
       flexDirection: "row",
       alignItems: "center",
-      gap: 6,
-      alignSelf: "flex-start",
-      marginTop: Spacing.sm,
-      paddingHorizontal: Spacing.sm,
-      paddingVertical: 6,
-      borderRadius: Radius.pill,
-      backgroundColor: "rgba(85,196,254,0.12)",
+      gap: 8,
+      marginTop: 14,
+      paddingHorizontal: 14,
+      minHeight: 44,
+      borderRadius: AppRadius.inner,
+      backgroundColor: c.control,
     },
-    checkinBannerText: { fontSize: 12, fontWeight: "600", color: Color.accentData },
-    checkpointBadge: {
-      fontSize: 10,
-      fontWeight: "700",
-      color: Color.accentData,
-      letterSpacing: 0.6,
-      marginTop: Spacing.sm,
+    checkinBannerText: { flex: 1, fontSize: 15, fontWeight: "500", color: c.text },
+    dayHeader: { marginTop: 18, marginBottom: 8 },
+    checkpointTag: { fontSize: 13, fontWeight: "600", color: c.textSecondary, marginBottom: 2 },
+    programDayLabel: { fontSize: 21, fontWeight: "600", color: c.text },
+    skipRow: { alignItems: "center", marginTop: 8, minHeight: 40, justifyContent: "center" },
+    skipText: { fontSize: 14, color: c.textMuted, textDecorationLine: "underline" },
+
+    toolsRow: { flexDirection: "row", justifyContent: "space-between" },
+    tool: { alignItems: "center", width: 80 },
+    toolIcon: { width: 60, height: 60, borderRadius: 30, backgroundColor: c.surface, alignItems: "center", justifyContent: "center" },
+    toolLock: {
+      position: "absolute",
+      right: 0,
+      bottom: 0,
+      width: 20,
+      height: 20,
+      borderRadius: 10,
+      backgroundColor: c.textMuted,
+      alignItems: "center",
+      justifyContent: "center",
     },
-    programDayLabel: { fontSize: 18, fontWeight: "700", color: Color.textPrimary, marginTop: 2, marginBottom: Spacing.sm },
-    skipRow: { alignItems: "center", marginTop: Spacing.sm, paddingVertical: 6 },
-    skipText: { fontSize: 12, color: Color.textFaint },
-    toolsRow: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.sm },
-    toolCard: { flexGrow: 1, flexBasis: "47%" },
-    toolCardInner: {
+    toolLabel: { marginTop: 8, fontSize: 14, color: c.text },
+
+    list: { backgroundColor: c.surface, borderRadius: AppRadius.card, overflow: "hidden" },
+    row: { flexDirection: "row", alignItems: "center", gap: 14, minHeight: 62, paddingHorizontal: 16, paddingVertical: 10 },
+    rowDivider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: c.hairline },
+    rowTitle: { fontSize: 16, color: c.text },
+    rowSub: { fontSize: 14, color: c.textMuted, marginTop: 2 },
+    rowValue: { fontSize: 17, fontWeight: "600", color: c.text, fontVariant: ["tabular-nums"] },
+    recordIcon: { width: 36, height: 36, borderRadius: 18, backgroundColor: c.control, alignItems: "center", justifyContent: "center" },
+    pressed: { opacity: 0.8 },
+
+    chipRow: { gap: 8, paddingBottom: 12 },
+    chip: {
       flexDirection: "row",
       alignItems: "center",
-      justifyContent: "center",
-      gap: Spacing.xs,
-      paddingVertical: Spacing.sm,
+      gap: 6,
+      minHeight: 40,
+      paddingHorizontal: 16,
+      borderRadius: AppRadius.control,
+      backgroundColor: c.control,
     },
-    toolCardText: { fontSize: 12, fontWeight: "600", color: Color.textSecondary },
-    trendPicker: { marginBottom: Spacing.sm },
-    trendChip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.sm, paddingVertical: 6, marginRight: Spacing.xs },
-    trendChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
-    trendChipText: { fontSize: 11, fontWeight: "500", color: Color.textMuted },
-    trendChipTextActive: { color: Color.gold },
-    trendChipSearch: { flexDirection: "row", alignItems: "center", gap: 4, borderColor: Color.goldBorder, borderStyle: "dashed" },
-    metricRow: { flexDirection: "row", gap: 6, marginBottom: Spacing.sm },
-    metricChip: { flex: 1, alignItems: "center", borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingVertical: 6 },
-    metricChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
-    metricChipText: { fontSize: 11, fontWeight: "600", color: Color.textMuted },
-    metricChipTextActive: { color: Color.gold },
-    rangeRow: { flexDirection: "row", gap: 6, marginBottom: Spacing.sm },
-    rangeChip: { flex: 1, alignItems: "center", borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingVertical: 5 },
-    rangeChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
-    rangeChipText: { fontSize: 10, fontWeight: "600", color: Color.textMuted },
-    rangeChipTextActive: { color: Color.gold },
-    trendCard: { padding: Spacing.md, alignItems: "center" },
-    viewHistoryRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 4, marginTop: Spacing.sm, paddingVertical: 6 },
-    viewHistoryText: { fontSize: 12, fontWeight: "600", color: Color.gold },
-    dayDetailCard: { padding: Spacing.md, marginTop: Spacing.sm },
-    dayDetailDate: { fontSize: 13, fontWeight: "600", color: Color.textSecondary, marginBottom: Spacing.sm },
-    moreRow: { flexDirection: "row", alignItems: "center", gap: Spacing.sm, padding: Spacing.md },
-    moreRowDivider: { borderTopWidth: 1, borderTopColor: Color.borderSubtle },
-    moreRowIcon: {
-      width: 36,
-      height: 36,
-      borderRadius: Radius.md,
-      borderWidth: 1,
-      borderColor: Color.goldBorder,
-      backgroundColor: Color.goldWeak,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    moreRowTitle: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
-    moreRowSub: { fontSize: 11, color: Color.textMuted, marginTop: 2 },
+    chipActive: { backgroundColor: c.primary },
+    chipText: { fontSize: 15, fontWeight: "500", color: c.text },
+    chipTextActive: { color: c.onPrimary },
+    trendHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 12 },
+    trendTitle: { flex: 1, fontSize: 17, fontWeight: "600", color: c.text },
+    linkRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 4, minHeight: 44, marginTop: 4 },
+    linkText: { fontSize: 15, color: c.textSecondary, textDecorationLine: "underline" },
   })
 );

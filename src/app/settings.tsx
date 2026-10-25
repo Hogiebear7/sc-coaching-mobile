@@ -19,6 +19,8 @@ import { useAuth } from "@/lib/auth-context";
 import { isBatteryOptimizationRelevant, openBatteryOptimizationSettings } from "@/lib/battery-optimization";
 import { hapticsEnabled, setHapticsEnabled, tapFeedback } from "@/lib/haptics";
 import { hasAccess } from "@/lib/member-access";
+import { setTabChoice, useTabChoice } from "@/lib/tab-choice";
+import { canChooseTabs, normaliseChoice, TAB_PAIR_OPTIONS } from "@/lib/tab-config";
 import { LIGHT_MODE_AVAILABLE, makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 import { useTour } from "@/lib/tour-context";
 import {
@@ -88,6 +90,7 @@ export default function SettingsScreen() {
   const { restartTour } = useTour();
   const [haptics, setHaptics] = useState(hapticsEnabled());
   const tier = useMemberTier();
+  const tabChoice = normaliseChoice(useTabChoice(), tier);
   const canUseNotifications = hasAccess(tier, "notifications");
   const canUseGymProfiles = hasAccess(tier, "gymProfiles");
   const { data, isLoading } = useProfile();
@@ -290,6 +293,34 @@ export default function SettingsScreen() {
               onPress={() => router.push("/nutrition-targets")}
             />
           </Card>
+
+          {canChooseTabs(tier) ? (
+            <>
+              <SectionLabel>Tab bar</SectionLabel>
+              <Card style={styles.settingsCard}>
+                <Text style={styles.tabBarIntro}>Pick the two tabs either side of the + button. You can also long-press one of them to swap it.</Text>
+                {TAB_PAIR_OPTIONS.map((opt) => {
+                  const active = tabChoice[0] === opt.value[0] && tabChoice[1] === opt.value[1];
+                  return (
+                    <Pressable
+                      key={opt.label}
+                      onPress={() => {
+                        if (active) return;
+                        tapFeedback();
+                        setTabChoice(opt.value);
+                      }}
+                      style={styles.tabBarRow}
+                      accessibilityRole="radio"
+                      accessibilityState={{ selected: active }}
+                    >
+                      <Text style={styles.rowTitle}>{opt.label}</Text>
+                      <Ionicons name={active ? "checkmark-circle" : "ellipse-outline"} size={22} color={active ? Color.textPrimary : Color.textFaint} />
+                    </Pressable>
+                  );
+                })}
+              </Card>
+            </>
+          ) : null}
 
           {canUseGymProfiles ? (
             <>
@@ -639,5 +670,7 @@ const useStyles = makeLegacyStyles((Color) =>
     reminderSaveButton: { height: 36, paddingHorizontal: Spacing.lg },
     saved: { color: Color.success, fontSize: 14 },
     buildInfo: { fontSize: 13, color: Color.textFaint, textAlign: "center", marginTop: Spacing.xl },
+    tabBarIntro: { fontSize: 14, lineHeight: 20, color: Color.textMuted, paddingHorizontal: Spacing.md, paddingTop: Spacing.md, paddingBottom: Spacing.xs },
+    tabBarRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", minHeight: 52, paddingHorizontal: Spacing.md },
   })
 );

@@ -30,6 +30,8 @@ import {
   type CalorieDistribution,
 } from "@/lib/queries/nutrition-diary";
 import { useMemberTier, useProfile } from "@/lib/queries/profile";
+import { setTabChoice } from "@/lib/tab-choice";
+import { canChooseTabs, MAIN_USE_TABS, type MainUse } from "@/lib/tab-config";
 import { makeStyles, useAppTheme } from "@/lib/theme";
 import { useReduceMotionPref } from "@/lib/use-reduce-motion";
 import { todayDateString } from "@/lib/workout-formatters";
@@ -42,7 +44,7 @@ import { todayDateString } from "@/lib/workout-formatters";
 // v2 (the preferences route answers), it also asks for a weekly pace, how
 // active they are outside training and how to spread their calories, and
 // the target date follows from the pace rather than the other way round.
-type Step = "intro" | "goal" | "weight" | "pace" | "days" | "activity" | "split" | "building" | "plan" | "next";
+type Step = "intro" | "focus" | "goal" | "weight" | "pace" | "days" | "activity" | "split" | "building" | "plan" | "next";
 
 // Weeks to reach a goal at a % of bodyweight per week -> an ISO date.
 function dateForPace(currentKg: number, goalKg: number, pacePct: number): string | null {
@@ -83,6 +85,7 @@ export default function OnboardingScreen() {
   const [paceInput, setPace] = useState<number | null>(null);
   const [activity, setActivity] = useState<ActivityLevel | null>(null);
   const [splitInput, setSplit] = useState<CalorieDistribution | null>(null);
+  const [mainUse, setMainUse] = useState<MainUse | null>(null);
 
   // Prefilled from what the member already has on file until they change it.
   const hadWeight = timeline?.currentWeightKg != null;
@@ -93,9 +96,12 @@ export default function OnboardingScreen() {
   const paceFits = paceInput !== null && (direction === "gain" ? paceInput > 0 : direction === "lose" ? paceInput < 0 : paceInput === 0);
   const pacePct = paceFits ? paceInput : direction === "lose" ? -0.5 : direction === "gain" ? 0.25 : 0;
   const split: CalorieDistribution = splitInput ?? prefs?.calorieDistribution ?? (tier === "membership" ? "training" : "even");
+  // Gym members first say what they mainly use the app for; it picks their
+  // two middle tabs (changeable later in Settings or by long-pressing a tab).
+  const focusSteps: Step[] = canChooseTabs(tier) ? ["focus"] : [];
   const questionSteps: Step[] = v2
-    ? ["goal", "weight", ...(direction === "maintain" ? [] : (["pace"] as Step[])), "days", "activity", ...(prefs?.distributionLocked ? [] : (["split"] as Step[]))]
-    : ["goal", "weight", "days"];
+    ? [...focusSteps, "goal", "weight", ...(direction === "maintain" ? [] : (["pace"] as Step[])), "days", "activity", ...(prefs?.distributionLocked ? [] : (["split"] as Step[]))]
+    : [...focusSteps, "goal", "weight", "days"];
 
   function go(next: Step) {
     tapFeedback();
@@ -223,7 +229,35 @@ export default function OnboardingScreen() {
         </View>
       </>
     );
-    primary = { label: "Start", onPress: () => go("goal") };
+    primary = { label: "Start", onPress: () => go(questionSteps[0]) };
+  } else if (step === "focus") {
+    body = (
+      <>
+        <Text style={styles.question}>What will you mainly use the app for?</Text>
+        <Text style={styles.lead}>This sets the tabs at the bottom of the screen. You can change them any time.</Text>
+        {(
+          [
+            { v: "training", icon: "barbell-outline", label: "Training", sub: "Schedule and Train in the tab bar" },
+            { v: "nutrition", icon: "restaurant-outline", label: "Nutrition", sub: "Schedule and Nutrition in the tab bar" },
+            { v: "both", icon: "swap-horizontal", label: "Both", sub: "Train and Nutrition in the tab bar" },
+          ] as const
+        ).map((o) => (
+          <OptionCard
+            key={o.v}
+            icon={o.icon}
+            label={o.label}
+            sub={o.sub}
+            selected={mainUse === o.v}
+            onPress={() => {
+              selectionFeedback();
+              setMainUse(o.v);
+              setTabChoice(MAIN_USE_TABS[o.v]);
+            }}
+          />
+        ))}
+      </>
+    );
+    primary = { label: "Next", onPress: () => go(nextAfter("focus")), disabled: mainUse === null };
   } else if (step === "goal") {
     body = (
       <>

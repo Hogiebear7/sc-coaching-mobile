@@ -1,19 +1,31 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Tabs, usePathname, useRouter } from "expo-router";
-import { useMemo, useState } from "react";
-import { PanResponder, Pressable, StyleSheet, View } from "react-native";
+import { useEffect, useState } from "react";
+import { PanResponder, Pressable, StyleSheet, View, type PressableProps } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { QuickActionSheet } from "@/components/app/QuickActionSheet";
-import { impactFeedback, selectionFeedback } from "@/lib/haptics";
+import { TabSwapSheet } from "@/components/app/TabSwapSheet";
+import { impactFeedback, selectionFeedback, successFeedback } from "@/lib/haptics";
 import { useMemberTier } from "@/lib/queries/profile";
-import { ALL_TAB_ROUTES, barTabsForTier, swipeTabsForTier, type TabRoute } from "@/lib/tab-config";
+import {
+  ALL_TAB_ROUTES,
+  barTabsForTier,
+  canChooseTabs,
+  choosableTabsForTier,
+  normaliseChoice,
+  swapTab,
+  swipeTabsForTier,
+  type ChoosableTab,
+  type TabRoute,
+} from "@/lib/tab-config";
+import { setTabChoice, useTabChoice } from "@/lib/tab-choice";
 import { makeStyles, useAppTheme } from "@/lib/theme";
 
-// App v2 tab bar (docs/design-inspiration-macrofactor-2026-10.md). Which
-// four screens sit around the centre "+" depends on the member's tier (see
-// lib/tab-config.ts): gym members get Schedule, app-only members get
-// Nutrition. The "+" is not a screen — it opens the quick-action sheet.
+// App v2 tab bar (docs/design-inspiration-macrofactor-2026-10.md). The two
+// tabs either side of the centre "+" are the member's own choice from
+// Schedule, Train and Nutrition (lib/tab-config.ts, lib/tab-choice.ts):
+// long-press either one to swap it, or change both in Settings. The "+" is not a screen — it opens the quick-action sheet.
 // Routes left out of the bar stay registered (href: null), so every
 // existing link to them keeps working.
 const ICONS: Record<string, [keyof typeof Ionicons.glyphMap, keyof typeof Ionicons.glyphMap]> = {
@@ -42,6 +54,27 @@ function currentSegment(pathname: string): string {
   return pathname.replace(/^\/+|\/+$/g, "") || "index";
 }
 
+// Horizontal swipe between the four screen tabs. Generous threshold so it
+// never fights horizontal scrollers inside screens. Made once; the tab bar
+// keeps swipeState current (the tab order is the member's own choice).
+const swipeState: { order: string[]; path: string; push: (href: string) => void } = { order: [], path: "", push: () => {} };
+function updateSwipeState(order: string[], path: string, push: (href: string) => void) {
+  swipeState.order = order;
+  swipeState.path = path;
+  swipeState.push = push;
+}
+const tabSwipeResponder = PanResponder.create({
+  onMoveShouldSetPanResponderCapture: (_evt, { dx, dy }) => Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 2,
+  onPanResponderRelease: (_evt, { dx }) => {
+    const idx = swipeState.order.indexOf(currentSegment(swipeState.path));
+    if (idx === -1) return;
+    const next = dx < 0 ? swipeState.order[idx + 1] : swipeState.order[idx - 1];
+    if (!next) return;
+    selectionFeedback();
+    swipeState.push(hrefFor(next as TabRoute));
+  },
+});
+
 export default function TabsLayout() {
   const router = useRouter();
   const pathname = usePathname();
@@ -50,33 +83,25 @@ export default function TabsLayout() {
   const styles = useStyles();
   const insets = useSafeAreaInsets();
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [swapping, setSwapping] = useState<ChoosableTab | null>(null);
+  const storedChoice = useTabChoice();
+  const choice = normaliseChoice(storedChoice, tier);
 
-  const bar = barTabsForTier(tier);
-  const swipe = useMemo(() => swipeTabsForTier(tier), [tier]);
+  const bar = barTabsForTier(tier, choice);
+  const swipe = swipeTabsForTier(tier, choice);
+  const swipeKey = swipe.join(",");
+  const swapOptions = choosableTabsForTier(tier).filter((t) => !choice.includes(t));
   // Bar routes first, in bar order (Tabs renders in declaration order),
   // then the rest hidden.
   const ordered = [...bar, ...ALL_TAB_ROUTES.filter((r) => !bar.includes(r))];
 
-  // Horizontal swipe between the four screen tabs. Generous threshold so it
-  // never fights horizontal scrollers inside screens.
-  const panResponder = useMemo(
-    () =>
-      PanResponder.create({
-        onMoveShouldSetPanResponderCapture: (_evt, { dx, dy }) => Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 2,
-        onPanResponderRelease: (_evt, { dx }) => {
-          const idx = swipe.indexOf(currentSegment(pathname) as TabRoute);
-          if (idx === -1) return;
-          const next = dx < 0 ? swipe[idx + 1] : swipe[idx - 1];
-          if (!next) return;
-          selectionFeedback();
-          router.push(hrefFor(next) as never);
-        },
-      }),
-    [pathname, router, swipe]
-  );
+  // Keep the shared swipe handler pointed at this render's tab order/route.
+  useEffect(() => {
+    updateSwipeState(swipeKey.split(","), pathname, (href) => router.push(href as never));
+  }, [swipeKey, pathname, router]);
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.bg }} {...panResponder.panHandlers}>
+    <View style={{ flex: 1, backgroundColor: colors.bg }} {...tabSwipeResponder.panHandlers}>
       <Tabs
         screenListeners={{ tabPress: () => selectionFeedback() }}
         screenOptions={({ route }) => ({
@@ -132,11 +157,48 @@ export default function TabsLayout() {
               }}
             />
           ) : (
-            <Tabs.Screen key={name} name={name} options={bar.includes(name) ? undefined : { href: null }} />
+            <Tabs.Screen
+              key={name}
+              name={name}
+              options={
+                !bar.includes(name)
+                  ? { href: null }
+                  : canChooseTabs(tier) && (choice as string[]).includes(name)
+                    ? {
+                        // Long-press opens the swap sheet; a normal tap still switches tab.
+                        tabBarButton: (props) => (
+                          <Pressable
+                            {...(props as unknown as PressableProps)}
+                            delayLongPress={350}
+                            onLongPress={() => {
+                              impactFeedback();
+                              setSwapping(name as ChoosableTab);
+                            }}
+                          />
+                        ),
+                      }
+                    : undefined
+              }
+            />
           )
         )}
       </Tabs>
       <QuickActionSheet visible={sheetOpen} onClose={() => setSheetOpen(false)} />
+      <TabSwapSheet
+        tab={swapping}
+        options={swapOptions}
+        onChoose={(into) => {
+          if (swapping) setTabChoice(swapTab(choice, swapping, into, tier));
+          successFeedback();
+          setSwapping(null);
+        }}
+        onSettings={() => {
+          setSwapping(null);
+          // Let the sheet finish closing before navigating (one transition at a time).
+          setTimeout(() => router.push("/settings" as never), 250);
+        }}
+        onClose={() => setSwapping(null)}
+      />
     </View>
   );
 }

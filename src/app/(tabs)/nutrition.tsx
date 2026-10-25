@@ -55,6 +55,7 @@ import {
   type NutritionAiMessage,
 } from "@/lib/queries/nutrition";
 import { extractTargetProposal, type TargetProposal } from "@/lib/nutrition-target-proposal";
+import { calorieExplanation } from "@/lib/calorie-explanation";
 import { classifyLoad, LOAD_BAND_LABEL } from "@/lib/nutrition-calc";
 import { todayDateString } from "@/lib/workout-formatters";
 import { makeStyles, useAppTheme } from "@/lib/theme";
@@ -487,6 +488,7 @@ export default function NutritionScreen() {
   const today = todayDateString();
   const [selectedDate, setSelectedDate] = useState(today);
   const [macroInfo, setMacroInfo] = useState<MacroKind | null>(null);
+  const [showCalorieWhy, setShowCalorieWhy] = useState(false);
   const [quickAddTab, setQuickAddTab] = useState<"recent" | "favourites">("recent");
   // Collapsed by default — a member who logs a lot of foods can otherwise
   // end up scrolling past a long, always-expanded list for every meal just
@@ -654,6 +656,19 @@ export default function NutritionScreen() {
                 <View style={{ marginTop: 10 }}>
                   <ProgressBar pct={(consumed / target!.calories!) * 100} color={colors.text} />
                 </View>
+                <Pressable
+                  onPress={() => {
+                    tapFeedback();
+                    setShowCalorieWhy(true);
+                  }}
+                  hitSlop={8}
+                  style={styles.whyLink}
+                  accessibilityRole="button"
+                  accessibilityLabel="Why is my calorie target this number?"
+                >
+                  <Ionicons name="information-circle-outline" size={18} color={colors.textSecondary} />
+                  <Text style={styles.whyLinkText}>Why this number?</Text>
+                </Pressable>
               </>
             ) : (
               <Text style={styles.calRemaining}>
@@ -886,6 +901,12 @@ export default function NutritionScreen() {
       </KeyboardAwareScroll>
 
       <InfoModal
+        visible={showCalorieWhy}
+        onClose={() => setShowCalorieWhy(false)}
+        title="Your calorie target"
+        body={calorieExplanation(target)}
+      />
+      <InfoModal
         visible={macroInfo !== null}
         onClose={() => setMacroInfo(null)}
         title={macroInfo ? MACRO_INFO[macroInfo].title : ""}
@@ -977,6 +998,8 @@ const useStyles = makeStyles((c, dc) =>
     calLinkText: { fontSize: 14, color: c.textMuted },
     calValue: { fontSize: 40, fontWeight: "500", color: c.text, fontVariant: ["tabular-nums"], marginTop: 2 },
     calUnit: { fontSize: 17, fontWeight: "400", color: c.textSecondary },
+    whyLink: { flexDirection: "row", alignItems: "center", gap: 6, alignSelf: "flex-start", minHeight: 44, marginTop: 4 },
+    whyLinkText: { fontSize: 15, fontWeight: "500", color: c.textSecondary, textDecorationLine: "underline" },
     calRemaining: { fontSize: 15, color: c.textSecondary, marginTop: 2, lineHeight: 21 },
     macroRow: { flexDirection: "row", gap: 10, marginTop: 18 },
     macro: { flex: 1, backgroundColor: c.surfaceHi, borderRadius: AppRadius.inner + 4, padding: 12, gap: 6 },

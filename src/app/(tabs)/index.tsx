@@ -357,6 +357,7 @@ export default function DashboardScreen() {
               unit="kg"
               color={DataColor.weight}
               bars={recentWeights.length > 1 ? recentWeights.map((w) => w.weightKg) : undefined}
+              scale="range"
               note="Add a weigh-in"
               onPress={() => router.push("/profile")}
             />

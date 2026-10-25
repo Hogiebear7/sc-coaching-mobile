@@ -75,6 +75,7 @@ export function MetricTile({
   bars,
   onPress,
   note,
+  scale = "zero",
 }: {
   title: string;
   window: string;
@@ -86,8 +87,14 @@ export function MetricTile({
   onPress?: () => void;
   /** Shown instead of the chart when there is nothing to plot. */
   note?: string;
+  /** "range": bars span min→max (for values far from zero, like body weight). */
+  scale?: "zero" | "range";
 }) {
-  const max = Math.max(1, ...(bars ?? []).map((b) => b ?? 0));
+  const vals = (bars ?? []).filter((b): b is number => b !== null);
+  const max = Math.max(1, ...vals);
+  const min = vals.length ? Math.min(...vals) : 0;
+  const pct = (b: number) =>
+    scale === "range" && max > min ? 25 + ((b - min) / (max - min)) * 75 : Math.max(8, (b / max) * 100);
   const body = (
     <>
       <Text style={styles.tileTitle} numberOfLines={1}>{title}</Text>
@@ -102,7 +109,7 @@ export function MetricTile({
                     styles.miniBar,
                     b === null
                       ? styles.miniBarEmpty
-                      : { height: `${Math.max(8, (b / max) * 100)}%`, backgroundColor: color, opacity: i === bars.length - 1 ? 1 : 0.55 },
+                      : { height: `${pct(b)}%`, backgroundColor: color, opacity: i === bars.length - 1 ? 1 : 0.55 },
                   ]}
                 />
               </View>

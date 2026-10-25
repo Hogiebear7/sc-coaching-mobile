@@ -169,7 +169,7 @@ export const AppSpace = { gutter: 16, gap: 10, section: 28 } as const;
 
 // Screen title: the one loud Teko moment per screen.
 export function appTitle(size = 34): TextStyle {
-  return { ...headline(size), letterSpacing: size * 0.02 };
+  return { ...headline(size), letterSpacing: size * 0.02, color: AppColor.text };
 }
 
 // Values: platform sans, regular weight, with a separately styled unit.

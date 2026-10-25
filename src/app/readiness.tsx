@@ -10,6 +10,7 @@ import { AppColor, AppRadius, AppSpace, appValue, DataColor, readinessColor } fr
 import { useRecovery } from "@/lib/queries/recovery";
 
 const RANGES = ["1W", "1M", "3M", "All"] as const;
+const TOP = 12; // headroom so the "100" axis label is not clipped
 type Range = (typeof RANGES)[number];
 const RANGE_DAYS: Record<Range, number | null> = { "1W": 7, "1M": 30, "3M": 90, All: null };
 
@@ -89,15 +90,15 @@ export default function ReadinessScreen() {
           </Text>
 
           <View style={styles.chart}>
-            <Svg width={chartW} height={chartH + 22}>
+            <Svg width={chartW} height={chartH + 34}>
               {[0, 50, 100].map((v) => {
-                const y = chartH - (v / 100) * chartH + 1;
+                const y = TOP + chartH - (v / 100) * chartH;
                 return (
                   <Line key={v} x1={0} x2={plotW} y1={y} y2={y} stroke="rgba(255,255,255,0.18)" strokeWidth={1} strokeDasharray={v === 0 ? undefined : "4 5"} />
                 );
               })}
               {[0, 50, 100].map((v) => (
-                <SvgText key={`t${v}`} x={chartW - 2} y={chartH - (v / 100) * chartH + 5} fill="rgba(255,255,255,0.6)" fontSize={13} textAnchor="end">
+                <SvgText key={`t${v}`} x={chartW - 2} y={TOP + chartH - (v / 100) * chartH + 5} fill="rgba(255,255,255,0.6)" fontSize={13} textAnchor="end">
                   {v}
                 </SvgText>
               ))}
@@ -105,15 +106,15 @@ export default function ReadinessScreen() {
                 const s = p.readinessScore as number;
                 const h = Math.max(4, (s / 100) * chartH);
                 return (
-                  <Rect key={p.id} x={i * slot + (slot - barW) / 2} y={chartH - h + 1} width={barW} height={h} rx={Math.min(4, barW / 2)} fill={readinessColor(s)} />
+                  <Rect key={p.id} x={i * slot + (slot - barW) / 2} y={TOP + chartH - h} width={barW} height={h} rx={Math.min(4, barW / 2)} fill={readinessColor(s)} />
                 );
               })}
               {points.length > 0 ? (
                 <>
-                  <SvgText x={0} y={chartH + 18} fill="rgba(255,255,255,0.6)" fontSize={13}>
+                  <SvgText x={0} y={TOP + chartH + 20} fill="rgba(255,255,255,0.6)" fontSize={13}>
                     {shortDate(points[0].date)}
                   </SvgText>
-                  <SvgText x={plotW} y={chartH + 18} fill="rgba(255,255,255,0.6)" fontSize={13} textAnchor="end">
+                  <SvgText x={plotW} y={TOP + chartH + 20} fill="rgba(255,255,255,0.6)" fontSize={13} textAnchor="end">
                     {shortDate(points[points.length - 1].date)}
                   </SvgText>
                 </>

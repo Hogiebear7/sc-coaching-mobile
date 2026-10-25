@@ -170,10 +170,10 @@ export default function RestTimerScreen() {
   const dialAngle = isStopwatch ? 360 * ((stopwatchElapsed % 60) / 60) : 360 * (1 - pct);
 
   const headerTitle = timer.state.label
-    ? `${isStopwatch ? "Stopwatch" : "Countdown"} Timer — ${timer.state.label}`
+    ? `${isStopwatch ? "Stopwatch" : "Countdown"} — ${timer.state.label}`
     : isStopwatch
     ? "Stopwatch"
-    : "Rest Timer";
+    : "Rest timer";
 
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
@@ -188,10 +188,10 @@ export default function RestTimerScreen() {
       </View>
 
       <View style={styles.modeBar}>
-        <Pressable onPress={() => switchMode("countdown")} style={[styles.modeButton, !isStopwatch && styles.modeButtonActive]}>
+        <Pressable onPress={() => switchMode("countdown")} style={[styles.modeButton, !isStopwatch && styles.modeButtonActive]} accessibilityRole="tab" accessibilityState={{ selected: !isStopwatch }}>
           <Text style={[styles.modeButtonText, !isStopwatch && styles.modeButtonTextActive]}>Countdown</Text>
         </Pressable>
-        <Pressable onPress={() => switchMode("stopwatch")} style={[styles.modeButton, isStopwatch && styles.modeButtonActive]}>
+        <Pressable onPress={() => switchMode("stopwatch")} style={[styles.modeButton, isStopwatch && styles.modeButtonActive]} accessibilityRole="tab" accessibilityState={{ selected: isStopwatch }}>
           <Text style={[styles.modeButtonText, isStopwatch && styles.modeButtonTextActive]}>Stopwatch</Text>
         </Pressable>
       </View>
@@ -321,37 +321,25 @@ const useStyles = makeLegacyStyles((Color) =>
     },
     backButton: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center", marginLeft: -8 },
     headerTitle: { fontSize: 20, fontWeight: "600", color: Color.textPrimary, flexShrink: 1, textAlign: "center" },
-    modeBar: {
-      flexDirection: "row",
-      gap: 4,
-      marginHorizontal: Spacing.lg,
-      marginBottom: Spacing.sm,
-      padding: 4,
-      borderRadius: Radius.md,
-      borderWidth: 1,
-      borderColor: "transparent",
-      backgroundColor: Color.surface2,
-    },
-    modeButton: { flex: 1, paddingVertical: Spacing.sm, borderRadius: Radius.sm, alignItems: "center" },
-    modeButtonActive: { backgroundColor: Color.surface2 },
-    modeButtonText: { fontSize: 13, fontWeight: "600", color: Color.textMuted },
-    modeButtonTextActive: { color: Color.textPrimary },
+    modeBar: { flexDirection: "row", gap: 2, marginHorizontal: Spacing.lg, marginBottom: Spacing.md, padding: 3, borderRadius: Radius.pill, backgroundColor: Color.surface2 },
+    modeButton: { flex: 1, minHeight: 38, borderRadius: Radius.pill, alignItems: "center", justifyContent: "center" },
+    modeButtonActive: { backgroundColor: Color.gold },
+    modeButtonText: { fontSize: 14, fontWeight: "600", color: Color.textSecondary },
+    modeButtonTextActive: { color: Color.goldForeground },
     body: { flex: 1, alignItems: "center", paddingTop: Spacing.xl, paddingHorizontal: Spacing.lg },
     batteryBanner: {
       flexDirection: "row",
       gap: Spacing.sm,
       width: "100%",
-      borderRadius: Radius.md,
-      borderWidth: 1,
-      borderColor: Color.goldBorder,
-      backgroundColor: Color.goldWeak,
+      borderRadius: Radius.lg,
+      backgroundColor: Color.surface2,
       padding: Spacing.md,
       marginBottom: Spacing.lg,
     },
-    batteryBannerTitle: { fontSize: 13, fontWeight: "700", color: Color.textPrimary },
-    batteryBannerBody: { fontSize: 14, color: Color.textMuted, marginTop: 2, lineHeight: 16 },
+    batteryBannerTitle: { fontSize: 15, fontWeight: "600", color: Color.textPrimary },
+    batteryBannerBody: { fontSize: 14, color: Color.textMuted, marginTop: 2, lineHeight: 20 },
     batteryBannerActions: { flexDirection: "row", gap: Spacing.lg, marginTop: Spacing.sm },
-    batteryBannerLink: { fontSize: 14, fontWeight: "700", color: Color.gold },
+    batteryBannerLink: { fontSize: 14, fontWeight: "600", color: Color.textPrimary, textDecorationLine: "underline" },
     batteryBannerDismiss: { fontSize: 14, fontWeight: "600", color: Color.textFaint },
     dialWrap: { width: 240, height: 240, alignItems: "center", justifyContent: "center" },
     dialCenter: { ...StyleSheet.absoluteFill, alignItems: "center", justifyContent: "center" },
@@ -359,21 +347,21 @@ const useStyles = makeLegacyStyles((Color) =>
     clockText: { ...figure(48, "700"), color: Color.gold },
     doneText: { fontSize: 14, color: Color.success, marginTop: 4, fontWeight: "600" },
     getReadyWrap: { flex: 1, alignItems: "center", justifyContent: "center" },
-    getReadyLabel: { fontSize: 13, fontWeight: "700", letterSpacing: 1.2, color: Color.textMuted },
+    getReadyLabel: { fontSize: 17, fontWeight: "500", color: Color.textMuted },
     getReadyNumber: { ...figure(110, "700"), color: Color.gold, marginTop: Spacing.sm },
     getReadyHint: { fontSize: 13, color: Color.textMuted, marginTop: Spacing.sm, textAlign: "center" },
     adjustRow: { flexDirection: "row", gap: Spacing.md, marginTop: Spacing.xl },
-    adjustButton: { paddingHorizontal: Spacing.lg, paddingVertical: Spacing.sm, borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle },
-    adjustText: { fontSize: 13, fontWeight: "600", color: Color.textSecondary },
+    adjustButton: { minHeight: 44, justifyContent: "center", paddingHorizontal: Spacing.lg, borderRadius: Radius.pill, backgroundColor: Color.surface2 },
+    adjustText: { fontSize: 15, fontWeight: "600", color: Color.textPrimary },
     controlsRow: { flexDirection: "row", alignItems: "center", gap: Spacing.xl, marginTop: Spacing.xl },
-    secondaryControl: { width: 48, height: 48, borderRadius: 24, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: Color.borderSubtle },
+    secondaryControl: { width: 52, height: 52, borderRadius: 26, alignItems: "center", justifyContent: "center", backgroundColor: Color.surface2 },
     primaryControl: { width: 72, height: 72, borderRadius: 36, alignItems: "center", justifyContent: "center", backgroundColor: Color.gold },
     presetsWrap: { marginTop: Spacing.xxl, width: "100%" },
-    presetsLabel: { fontSize: 12, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginBottom: Spacing.sm, textAlign: "center" },
+    presetsLabel: { fontSize: 15, fontWeight: "500", color: Color.textMuted, marginBottom: Spacing.sm, textAlign: "center" },
     presetsRow: { flexDirection: "row", flexWrap: "wrap", justifyContent: "center", gap: Spacing.xs },
-    presetChip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.md, paddingVertical: 8 },
-    presetChipActive: { borderColor: Color.gold, backgroundColor: Color.gold },
-    presetChipText: { fontSize: 14, fontWeight: "600", color: Color.textMuted },
+    presetChip: { minHeight: 40, justifyContent: "center", borderRadius: Radius.pill, backgroundColor: Color.surface2, paddingHorizontal: Spacing.md },
+    presetChipActive: { backgroundColor: Color.gold },
+    presetChipText: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
     presetChipTextActive: { color: Color.goldForeground },
   })
 );

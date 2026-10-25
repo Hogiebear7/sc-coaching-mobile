@@ -21,6 +21,7 @@ import {
   type NotificationRecord,
   type NotificationType,
 } from "@/lib/queries/notifications";
+import { tapFeedback } from "@/lib/haptics";
 import { mapLinkHrefToRoute } from "@/lib/push-notifications";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
@@ -117,7 +118,14 @@ function NotificationRow({
   const accentColor = urgent ? Color.gold : Color.accentData;
 
   return (
-    <Pressable onPress={onPress}>
+    <Pressable
+      onPress={() => {
+        tapFeedback();
+        onPress();
+      }}
+      style={({ pressed }) => pressed && { opacity: 0.85 }}
+      accessibilityRole="button"
+    >
       <Card style={styles.row}>
         {isUnread ? <View style={[styles.unreadBar, { backgroundColor: accentColor }]} /> : null}
         <View style={styles.rowInner}>
@@ -254,16 +262,10 @@ const useStyles = makeLegacyStyles((Color) =>
     markAllButton: { alignSelf: "flex-end", paddingVertical: Spacing.xs, marginBottom: Spacing.sm },
     markAllText: { fontSize: 14, fontWeight: "600", color: Color.textMuted, textDecorationLine: "underline" },
     emptyState: { alignItems: "center", paddingVertical: Spacing.xxl, gap: Spacing.xs },
-    emptyTitle: { fontSize: 14, fontWeight: "600", color: Color.textPrimary, marginTop: 4 },
-    emptyBody: { fontSize: 14, color: Color.textMuted, textAlign: "center", maxWidth: 260 },
+    emptyTitle: { fontSize: 17, fontWeight: "600", color: Color.textPrimary, marginTop: 4 },
+    emptyBody: { fontSize: 15, lineHeight: 21, color: Color.textMuted, textAlign: "center", maxWidth: 280 },
     section: { marginBottom: Spacing.lg },
-    sectionLabel: {
-      fontSize: 12,
-      fontWeight: "700",
-      letterSpacing: 0.6,
-      color: Color.gold,
-      marginBottom: Spacing.sm,
-    },
+    sectionLabel: { fontSize: 19, fontWeight: "600", color: Color.textPrimary, marginBottom: Spacing.sm },
     row: { padding: 0 },
     unreadBar: { position: "absolute", left: 0, top: 0, bottom: 0, width: 3 },
     rowInner: {
@@ -285,12 +287,12 @@ const useStyles = makeLegacyStyles((Color) =>
       justifyContent: "space-between",
       gap: Spacing.sm,
     },
-    typeLabel: { fontSize: 12, fontWeight: "700", letterSpacing: 0.4, textTransform: "uppercase" },
+    typeLabel: { fontSize: 13, fontWeight: "600" },
     rowTimeWrap: { flexDirection: "row", alignItems: "center", gap: 5 },
     dot: { width: 6, height: 6, borderRadius: 3 },
     time: { fontSize: 13, color: Color.textFaint },
-    title: { fontSize: 13, fontWeight: "600", color: Color.textPrimary, marginTop: 4 },
+    title: { fontSize: 16, fontWeight: "600", color: Color.textPrimary, marginTop: 4 },
     titleRead: { color: Color.textSecondary },
-    body: { fontSize: 14, color: Color.textMuted, marginTop: 2, lineHeight: 16 },
+    body: { fontSize: 14, color: Color.textMuted, marginTop: 2, lineHeight: 20 },
   })
 );

@@ -282,7 +282,7 @@ function StaffClassesCalendar({ classesByDate }: { classesByDate: Record<string,
       </Card>
 
       <View style={styles.calendarDetail}>
-        <Text style={styles.dateLabel}>{selectedDate ? formatClassDate(selectedDate).toUpperCase() : "SELECT A DATE"}</Text>
+        <Text style={styles.dateLabel}>{selectedDate ? formatClassDate(selectedDate) : "Select a date"}</Text>
         {selectedClasses.length === 0 ? (
           <Card style={styles.emptyDetailCard}>
             <Text style={styles.errorText}>No classes scheduled.</Text>
@@ -414,7 +414,7 @@ export default function StaffOperationsScreen() {
               return (
                 <View key={group.date} style={styles.dateGroup}>
                   <Pressable onPress={() => toggleDate(group.date)} style={styles.dateGroupHeader}>
-                    <Text style={styles.dateLabel}>{formatClassDate(group.date).toUpperCase()}</Text>
+                    <Text style={styles.dateLabel}>{formatClassDate(group.date)}</Text>
                     <View style={styles.dateGroupRight}>
                       {collapsed ? (
                         <Text style={styles.dateGroupCount}>
@@ -508,7 +508,7 @@ const useStyles = makeLegacyStyles((Color) =>
     },
     dateGroupRight: { flexDirection: "row", alignItems: "center", gap: Spacing.xs },
     dateGroupCount: { fontSize: 13, color: Color.textFaint },
-    dateLabel: { fontSize: 12, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted },
+    dateLabel: { fontSize: 15, fontWeight: "600", color: Color.textSecondary },
     classCard: { marginBottom: Spacing.sm, overflow: "hidden" },
     classHeader: { flexDirection: "row", alignItems: "center", padding: Spacing.md },
     classTitle: { fontSize: 15, fontWeight: "600", color: Color.textPrimary },

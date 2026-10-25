@@ -6,6 +6,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Card } from "@/components/ui/Card";
 import { Spacing } from "@/constants/theme";
+import { tapFeedback } from "@/lib/haptics";
 import { useWorkouts } from "@/lib/queries/workouts";
 import { getRecentRecords, groupRecordsByWeek, todayDateString } from "@/lib/workout-formatters";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
@@ -35,7 +36,7 @@ export default function WorkoutRecordsScreen() {
         <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backButton} accessibilityRole="button" accessibilityLabel="Back">
           <Ionicons name="chevron-back" size={26} color={Color.textPrimary} />
         </Pressable>
-        <Text style={styles.headerTitle}>All Records</Text>
+        <Text style={styles.headerTitle}>All records</Text>
         <View style={{ width: 36 }} />
       </View>
 
@@ -56,8 +57,12 @@ export default function WorkoutRecordsScreen() {
                 {week.records.map((r, idx) => (
                   <Pressable
                     key={`${r.exerciseName}-${r.type}-${r.date}`}
-                    onPress={() => router.push({ pathname: "/exercise-detail", params: { name: r.exerciseName } })}
-                    style={[styles.recordRow, idx > 0 && styles.recordRowDivider]}
+                    onPress={() => {
+                      tapFeedback();
+                      router.push({ pathname: "/exercise-detail", params: { name: r.exerciseName } });
+                    }}
+                    style={({ pressed }) => [styles.recordRow, idx > 0 && styles.recordRowDivider, pressed && { opacity: 0.8 }]}
+                    accessibilityRole="button"
                   >
                     <View style={{ flex: 1 }}>
                       <Text style={styles.recordExercise}>{r.exerciseName}</Text>
@@ -94,14 +99,14 @@ const useStyles = makeLegacyStyles((Color) =>
     emptyText: { fontSize: 14, color: Color.textMuted, textAlign: "center" },
     scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
     section: { marginBottom: Spacing.lg },
-    weekLabel: { fontSize: 12, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginBottom: Spacing.sm },
+    weekLabel: { fontSize: 19, fontWeight: "600", color: Color.textPrimary, marginBottom: Spacing.sm },
     recordsList: { padding: 0, overflow: "hidden" },
-    recordRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", padding: Spacing.md, gap: Spacing.sm },
-    recordRowDivider: { borderTopWidth: 1, borderTopColor: Color.borderSubtle },
-    recordExercise: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
+    recordRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", minHeight: 62, paddingHorizontal: Spacing.md, paddingVertical: 10, gap: Spacing.sm },
+    recordRowDivider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: Color.borderSubtle },
+    recordExercise: { fontSize: 16, fontWeight: "500", color: Color.textPrimary },
     recordLabel: { fontSize: 14, color: Color.textMuted, marginTop: 2 },
     recordValueWrap: { alignItems: "flex-end" },
-    recordValue: { fontSize: 14, fontWeight: "700", color: Color.gold },
+    recordValue: { fontSize: 16, fontWeight: "600", color: Color.textPrimary, fontVariant: ["tabular-nums"] },
     recordDate: { fontSize: 13, color: Color.textFaint, marginTop: 2 },
   })
 );

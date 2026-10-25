@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/Card";
 import { MonthCalendar } from "@/components/ui/MonthCalendar";
 import { SessionCard } from "@/components/ui/SessionCard";
 import { Radius, Spacing } from "@/constants/theme";
+import { selectionFeedback } from "@/lib/haptics";
 import { useWorkouts, type WorkoutSessionSummary } from "@/lib/queries/workouts";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
@@ -74,17 +75,28 @@ export default function WorkoutHistoryScreen() {
         <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backButton} accessibilityRole="button" accessibilityLabel="Back">
           <Ionicons name="chevron-back" size={26} color={Color.textPrimary} />
         </Pressable>
-        <Text style={styles.headerTitle}>Workout History</Text>
+        <Text style={styles.headerTitle}>Workout history</Text>
         <View style={{ width: 36 }} />
       </View>
 
-      <View style={styles.viewToggle}>
-        <Pressable onPress={() => setView("list")} style={[styles.viewToggleBtn, view === "list" && styles.viewToggleBtnActive]}>
-          <Text style={[styles.viewToggleText, view === "list" && styles.viewToggleTextActive]}>List</Text>
-        </Pressable>
-        <Pressable onPress={() => setView("calendar")} style={[styles.viewToggleBtn, view === "calendar" && styles.viewToggleBtnActive]}>
-          <Text style={[styles.viewToggleText, view === "calendar" && styles.viewToggleTextActive]}>Calendar</Text>
-        </Pressable>
+      <View style={styles.viewToggle} accessibilityRole="tablist">
+        {(["list", "calendar"] as const).map((mode) => {
+          const active = view === mode;
+          return (
+            <Pressable
+              key={mode}
+              onPress={() => {
+                if (!active) selectionFeedback();
+                setView(mode);
+              }}
+              style={[styles.viewToggleBtn, active && styles.viewToggleBtnActive]}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: active }}
+            >
+              <Text style={[styles.viewToggleText, active && styles.viewToggleTextActive]}>{mode === "list" ? "List" : "Calendar"}</Text>
+            </Pressable>
+          );
+        })}
       </View>
 
       {view === "list" ? (
@@ -114,7 +126,7 @@ export default function WorkoutHistoryScreen() {
         <ScrollView contentContainerStyle={styles.scroll}>
           <MonthCalendar countByDate={countByDate} selectedDate={selectedDate} onSelectDate={setSelectedDate} />
           <View style={styles.calendarDetail}>
-            <Text style={styles.monthLabel}>{selectedDate ? formatDateLabel(selectedDate).toUpperCase() : "SELECT A DATE"}</Text>
+            <Text style={styles.monthLabel}>{selectedDate ? formatDateLabel(selectedDate) : "Select a date"}</Text>
             {selectedSessions.length === 0 ? (
               <Card style={styles.emptyCard}>
                 <Text style={styles.emptyText}>{selectedDate ? "Nothing logged this day." : "Tap a day to see what you logged."}</Text>
@@ -143,7 +155,7 @@ export default function WorkoutHistoryScreen() {
           ) : (
             groups.map(([label, sessions]) => (
               <View key={label} style={styles.monthGroup}>
-                <Text style={styles.monthLabel}>{label.toUpperCase()}</Text>
+                <Text style={styles.monthLabel}>{label}</Text>
                 {sessions.map((s) => (
                   <SessionCard
                     key={s.id}
@@ -167,19 +179,11 @@ const useStyles = makeLegacyStyles((Color) =>
     header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md },
     backButton: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center", marginLeft: -8 },
     headerTitle: { fontSize: 20, fontWeight: "600", color: Color.textPrimary, flexShrink: 1, textAlign: "center" },
-    viewToggle: {
-      flexDirection: "row",
-      marginHorizontal: Spacing.lg,
-      marginBottom: Spacing.md,
-      borderRadius: Radius.md,
-      borderWidth: 1,
-      borderColor: Color.borderSubtle,
-      padding: 3,
-    },
-    viewToggleBtn: { flex: 1, alignItems: "center", paddingVertical: 8, borderRadius: Radius.sm },
-    viewToggleBtnActive: { backgroundColor: Color.goldWeak },
-    viewToggleText: { fontSize: 13, fontWeight: "600", color: Color.textMuted },
-    viewToggleTextActive: { color: Color.gold },
+    viewToggle: { flexDirection: "row", gap: 2, marginHorizontal: Spacing.lg, marginBottom: Spacing.md, padding: 3, borderRadius: Radius.pill, backgroundColor: Color.surface2 },
+    viewToggleBtn: { flex: 1, minHeight: 38, borderRadius: Radius.pill, alignItems: "center", justifyContent: "center" },
+    viewToggleBtnActive: { backgroundColor: Color.gold },
+    viewToggleText: { fontSize: 14, fontWeight: "600", color: Color.textSecondary },
+    viewToggleTextActive: { color: Color.goldForeground },
     calendarDetail: { marginTop: Spacing.lg },
     searchRow: {
       flexDirection: "row",
@@ -199,7 +203,7 @@ const useStyles = makeLegacyStyles((Color) =>
     errorText: { color: Color.textMuted, fontSize: 14 },
     scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
     monthGroup: { marginBottom: Spacing.lg },
-    monthLabel: { fontSize: 12, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginBottom: Spacing.sm },
+    monthLabel: { fontSize: 19, fontWeight: "600", color: Color.textPrimary, marginBottom: Spacing.sm },
     emptyCard: { alignItems: "center", padding: Spacing.xl, gap: Spacing.sm },
     emptyText: { fontSize: 14, color: Color.textMuted, textAlign: "center" },
   })

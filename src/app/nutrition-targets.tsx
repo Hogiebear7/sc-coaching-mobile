@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/Card";
 import { Collapsible } from "@/components/ui/Collapsible";
 import { LiveColor as Color, figure, Radius, Spacing } from "@/constants/theme";
 import { useNutritionDiary, useMyNutritionTarget, useWeeklyNutritionTargets, type ResolvedNutritionTarget } from "@/lib/queries/nutrition-diary";
+import { selectionFeedback } from "@/lib/haptics";
 import { todayDateString } from "@/lib/workout-formatters";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
@@ -131,28 +132,39 @@ export default function NutritionTargetsScreen() {
         <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backButton} accessibilityRole="button" accessibilityLabel="Back">
           <Ionicons name="chevron-back" size={26} color={Color.textPrimary} />
         </Pressable>
-        <Text style={styles.headerTitle}>Calorie & Macro Targets</Text>
+        <Text style={styles.headerTitle}>Calorie and macro targets</Text>
         <View style={{ width: 36 }} />
       </View>
 
       <View style={styles.toggleRow}>
-        <Pressable onPress={() => setView("day")} style={[styles.toggleChip, view === "day" && styles.toggleChipActive]}>
-          <Text style={[styles.toggleText, view === "day" && styles.toggleTextActive]}>Day</Text>
-        </Pressable>
-        <Pressable onPress={() => setView("week")} style={[styles.toggleChip, view === "week" && styles.toggleChipActive]}>
-          <Text style={[styles.toggleText, view === "week" && styles.toggleTextActive]}>Week</Text>
-        </Pressable>
+        {(["day", "week"] as const).map((mode) => {
+          const active = view === mode;
+          return (
+            <Pressable
+              key={mode}
+              onPress={() => {
+                if (!active) selectionFeedback();
+                setView(mode);
+              }}
+              style={[styles.toggleChip, active && styles.toggleChipActive]}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: active }}
+            >
+              <Text style={[styles.toggleText, active && styles.toggleTextActive]}>{mode === "day" ? "Day" : "Week"}</Text>
+            </Pressable>
+          );
+        })}
       </View>
 
       <ScrollView contentContainerStyle={styles.scroll}>
         {view === "day" ? (
           <>
             <View style={styles.dateNavRow}>
-              <Pressable onPress={() => setSelectedDate((d) => shiftDate(d, -1))} hitSlop={10} style={styles.dateArrow}>
+              <Pressable onPress={() => setSelectedDate((d) => shiftDate(d, -1))} hitSlop={10} style={styles.dateArrow} accessibilityRole="button" accessibilityLabel="Previous day">
                 <Ionicons name="chevron-back" size={18} color={Color.textSecondary} />
               </Pressable>
               <Text style={styles.dateLabel}>{formatDateLabel(selectedDate, today)}</Text>
-              <Pressable onPress={() => setSelectedDate((d) => shiftDate(d, 1))} hitSlop={10} style={styles.dateArrow}>
+              <Pressable onPress={() => setSelectedDate((d) => shiftDate(d, 1))} hitSlop={10} style={styles.dateArrow} accessibilityRole="button" accessibilityLabel="Next day">
                 <Ionicons name="chevron-forward" size={18} color={Color.textSecondary} />
               </Pressable>
             </View>
@@ -263,17 +275,17 @@ const useStyles = makeLegacyStyles((Color) =>
     header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md },
     backButton: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center", marginLeft: -8 },
     headerTitle: { fontSize: 20, fontWeight: "600", color: Color.textPrimary, flexShrink: 1, textAlign: "center" },
-    toggleRow: { flexDirection: "row", gap: Spacing.xs, paddingHorizontal: Spacing.lg, marginBottom: Spacing.md },
-    toggleChip: { flex: 1, borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingVertical: 8, alignItems: "center" },
-    toggleChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
-    toggleText: { fontSize: 13, fontWeight: "600", color: Color.textMuted },
-    toggleTextActive: { color: Color.gold },
+    toggleRow: { flexDirection: "row", gap: 2, marginHorizontal: Spacing.lg, marginBottom: Spacing.md, padding: 3, borderRadius: Radius.pill, backgroundColor: Color.surface2 },
+    toggleChip: { flex: 1, minHeight: 38, borderRadius: Radius.pill, alignItems: "center", justifyContent: "center" },
+    toggleChipActive: { backgroundColor: Color.gold },
+    toggleText: { fontSize: 14, fontWeight: "600", color: Color.textSecondary },
+    toggleTextActive: { color: Color.goldForeground },
     scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
     dateNavRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: Spacing.md, marginBottom: Spacing.md },
-    dateArrow: { padding: 4 },
-    dateLabel: { fontSize: 14, fontWeight: "600", color: Color.textPrimary, minWidth: 140, textAlign: "center" },
+    dateArrow: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center", backgroundColor: Color.surface2 },
+    dateLabel: { fontSize: 17, fontWeight: "600", color: Color.textPrimary, minWidth: 150, textAlign: "center" },
     dayCard: { padding: Spacing.lg, alignItems: "center" },
-    fuelDayLabel: { fontSize: 13, fontWeight: "700", letterSpacing: 0.5, textTransform: "uppercase", color: Color.gold, marginBottom: Spacing.sm },
+    fuelDayLabel: { fontSize: 15, fontWeight: "600", color: Color.textSecondary, marginBottom: Spacing.sm },
     ringWrap: { marginVertical: Spacing.sm },
     ringCenter: { flex: 1, alignItems: "center", justifyContent: "center" },
     ringValue: { ...figure(38), color: Color.textPrimary },
@@ -287,9 +299,9 @@ const useStyles = makeLegacyStyles((Color) =>
     macroTrack: { height: 6, borderRadius: 3, backgroundColor: Color.surface1, overflow: "hidden" },
     macroFill: { height: "100%", borderRadius: 3 },
     notesText: { fontSize: 14, color: Color.textMuted, marginTop: Spacing.md, textAlign: "center", fontStyle: "italic" },
-    rationaleBlock: { width: "100%", marginTop: Spacing.lg, borderTopWidth: 1, borderTopColor: Color.borderSubtle, paddingTop: Spacing.sm },
-    rationaleLine: { fontSize: 14, color: Color.textMuted, lineHeight: 17, marginTop: 4 },
-    emptyText: { fontSize: 13, color: Color.textMuted, textAlign: "center" },
+    rationaleBlock: { width: "100%", marginTop: Spacing.lg, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: Color.borderSubtle, paddingTop: Spacing.sm },
+    rationaleLine: { fontSize: 14, color: Color.textMuted, lineHeight: 20, marginTop: 4 },
+    emptyText: { fontSize: 15, lineHeight: 21, color: Color.textMuted, textAlign: "center" },
     weekAvgText: { fontSize: 14, color: Color.textMuted, textAlign: "center", marginBottom: Spacing.md },
     weekStrip: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.sm, justifyContent: "center" },
     dayChip: {
@@ -303,12 +315,12 @@ const useStyles = makeLegacyStyles((Color) =>
       alignItems: "center",
       gap: 2,
     },
-    dayChipToday: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
-    dayChipWeekday: { fontSize: 12, fontWeight: "700", color: Color.textFaint, textTransform: "uppercase" },
+    dayChipToday: { backgroundColor: Color.gold },
+    dayChipWeekday: { fontSize: 12, fontWeight: "600", color: Color.textMuted },
     dayChipDate: { fontSize: 13, fontWeight: "700", color: Color.textPrimary },
     dayChipCalories: { fontSize: 14, fontWeight: "700", color: Color.textPrimary, marginTop: 2, fontVariant: ["tabular-nums"] },
-    dayChipUnit: { fontSize: 8, color: Color.textFaint },
-    dayChipTextToday: { color: Color.gold },
+    dayChipUnit: { fontSize: 11, color: Color.textMuted },
+    dayChipTextToday: { color: Color.goldForeground },
     dayChipDot: { width: 5, height: 5, borderRadius: 3, marginTop: 2 },
   })
 );

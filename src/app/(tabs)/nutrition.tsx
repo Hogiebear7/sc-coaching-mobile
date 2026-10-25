@@ -18,6 +18,8 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { PillButton, RoundIconButton, SectionTitle } from "@/components/app/primitives";
+import { DayCompleteCard } from "@/components/nutrition/DayCompleteCard";
+import { TrainingTipCard } from "@/components/nutrition/TrainingTipCard";
 import { BodyWeightCard } from "@/components/ui/BodyWeightCard";
 import { Card } from "@/components/ui/Card";
 import { ContinueWorkoutPill } from "@/components/ui/ContinueWorkoutPill";
@@ -674,6 +676,8 @@ export default function NutritionScreen() {
         </View>
 
         <View style={styles.body}>
+          <TrainingTipCard target={target} />
+
           {/* Diary */}
           <View style={styles.section}>
             <SectionTitle title="Diary" action="Add food" onAction={() => addFood()} />
@@ -743,6 +747,12 @@ export default function NutritionScreen() {
                 );
               })}
             </View>
+            <DayCompleteCard
+              date={selectedDate}
+              dayStatus={diary?.dayStatus}
+              hasEntries={(diary?.entries.length ?? 0) > 0}
+              isFuture={selectedDate > today}
+            />
           </View>
 
           {/* Quick add */}

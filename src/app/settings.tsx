@@ -281,6 +281,16 @@ export default function SettingsScreen() {
             />
           </Card>
 
+          <SectionLabel>Nutrition</SectionLabel>
+          <Card style={styles.settingsCard}>
+            <Row
+              icon="flame-outline"
+              title="Calorie targets"
+              sub="Weekly pace, activity, and same-every-day or match-my-training"
+              onPress={() => router.push("/nutrition-targets")}
+            />
+          </Card>
+
           {canUseGymProfiles ? (
             <>
               <SectionLabel>Training</SectionLabel>

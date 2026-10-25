@@ -1,11 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View, Animated } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Svg, { Circle } from "react-native-svg";
 
 import { Card } from "@/components/ui/Card";
+import { NutritionPlanPanel } from "@/components/nutrition/NutritionPlanPanel";
 import { Collapsible } from "@/components/ui/Collapsible";
 import { LiveColor as Color, figure, Radius, Spacing } from "@/constants/theme";
 import { useNutritionDiary, useMyNutritionTarget, useWeeklyNutritionTargets, type ResolvedNutritionTarget } from "@/lib/queries/nutrition-diary";
@@ -41,7 +42,7 @@ function CalorieRing({ consumed, target, size = 176 }: { consumed: number; targe
   const over = target !== null && consumed > target;
   const color = over ? Color.warning : Color.gold;
 
-  const fill = useRef(new Animated.Value(0)).current;
+  const [fill] = useState(() => new Animated.Value(0));
   useEffect(() => {
     fill.setValue(0);
     Animated.timing(fill, { toValue: pct, duration: 900, useNativeDriver: false }).start();
@@ -100,7 +101,8 @@ function MacroBar({ label, consumed, target, tone }: { label: string; consumed: 
 
 function sourceLine(target: ResolvedNutritionTarget): string {
   if (target.mode === "manual") return target.setByMember ? "Set by you via the AI Nutrition Coach." : "Set by your coach.";
-  if (target.source === "adaptive") return "Learned from your logged weight and food trend.";
+  if (target.source === "adaptive") return "Learned from your complete food days and weigh-ins.";
+  if (target.weekBudgetKcal != null) return "Your share of this week's budget — see This week below.";
   return "Estimated from your weight and training load — sharpens as you log more.";
 }
 
@@ -257,6 +259,8 @@ export default function NutritionTargetsScreen() {
             </Text>
           </Card>
         )}
+
+        <NutritionPlanPanel target={view === "day" ? dayTarget : (week?.days.find((d) => d.mode === "auto") ?? dayTarget)} />
       </ScrollView>
     </SafeAreaView>
   );

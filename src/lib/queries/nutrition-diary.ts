@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { apiFetch } from "@/lib/api-client";
+import { ApiError, apiFetch } from "@/lib/api-client";
 
 // Mirrors NutritionTargetRecord/FoodEntryRecord in the main repo's lib/db.ts.
 export type MealType = "breakfast" | "lunch" | "dinner" | "snack";
@@ -18,6 +18,41 @@ export const MEAL_TYPE_OPTIONS: { value: MealType; label: string }[] = [
 // NutritionTargetMode in the main repo's lib/db.ts.
 export type NutritionTargetMode = "auto" | "manual" | "disabled";
 
+// Nutrition targets v2 (gym-app docs/nutrition-targets-v2-plan-2026-10.md).
+// How a weekly calorie budget is spread, and how active a member is outside
+// training. Mirrors profile-schema.ts in the main repo.
+export type CalorieDistribution = "even" | "training";
+export type ActivityLevel = "sedentary" | "light" | "moderate" | "very";
+export type DistributionSource = "coach-locked" | "member" | "coach" | "default";
+export type DayLogStatus = "complete" | "incomplete";
+
+export const DISTRIBUTION_OPTIONS: { value: CalorieDistribution; label: string; detail: string }[] = [
+  { value: "even", label: "Same every day", detail: "One number, your weekly budget split evenly." },
+  {
+    value: "training",
+    label: "Match my training",
+    detail: "More on heavy and match days, less on rest days — never more than 20% either way.",
+  },
+];
+
+export const ACTIVITY_OPTIONS: { value: ActivityLevel; label: string; detail: string }[] = [
+  { value: "sedentary", label: "Mostly sitting", detail: "Desk job, little walking" },
+  { value: "light", label: "Lightly active", detail: "On your feet some of the day" },
+  { value: "moderate", label: "Moderately active", detail: "On your feet most of the day" },
+  { value: "very", label: "Very active", detail: "Physical job or lots of walking" },
+];
+
+// Signed % of bodyweight per week. Mirrors PACE_OPTIONS in the main repo.
+export const PACE_CHOICES: { value: number; label: string }[] = [
+  { value: -0.25, label: "Gentle" },
+  { value: -0.5, label: "Moderate" },
+  { value: -0.75, label: "Faster" },
+  { value: -1, label: "Maximum" },
+  { value: 0, label: "Maintain" },
+  { value: 0.25, label: "Lean gain" },
+  { value: 0.5, label: "Faster gain" },
+];
+
 // The raw staff-set record — what the staff editor reads/writes.
 export interface NutritionTarget {
   id: string;
@@ -29,6 +64,10 @@ export interface NutritionTarget {
   fatG: number | null;
   setByStaffId: string;
   notes: string | null;
+  /** v2: the coach's default spread and whether the member can change it.
+      Absent from servers that predate v2. */
+  distribution?: CalorieDistribution | null;
+  distributionLocked?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -58,6 +97,20 @@ export interface ResolvedNutritionTarget {
       for auto/disabled. Mirrors ResolvedNutritionTarget in the main repo's
       lib/nutrition-target-data.ts. */
   setByMember: boolean;
+  // ── v2 weekly fields. Optional: a server that predates v2 omits them, and
+  //    every screen hides the matching UI when they're missing. Null when
+  //    the target isn't auto-computed (manual, disabled, no weight).
+  weekStart?: string | null;
+  weekBudgetKcal?: number | null;
+  dailyAverageKcal?: number | null;
+  expenditureKcal?: number | null;
+  expenditureSource?: "formula" | "learned" | null;
+  completeDaysLast14?: number | null;
+  pacePctPerWeek?: number | null;
+  paceLimited?: boolean;
+  minimumApplied?: boolean;
+  distribution?: CalorieDistribution | null;
+  distributionSource?: DistributionSource | null;
 }
 
 export interface ResolvedNutritionWeek {
@@ -112,7 +165,7 @@ export function useNutritionDiary(date: string) {
   return useQuery({
     queryKey: ["nutrition-diary", date],
     queryFn: () =>
-      apiFetch<{ success: true; data: { entries: FoodEntry[]; totals: DailyTotals } }>(
+      apiFetch<{ success: true; data: { entries: FoodEntry[]; totals: DailyTotals; dayStatus?: DayLogStatus | null } }>(
         `/api/mobile/nutrition/diary?date=${encodeURIComponent(date)}`
       ).then((r) => r.data),
   });
@@ -218,13 +271,17 @@ export function useStaffNutritionTarget(userId: string | undefined) {
 
 export interface NutritionTargetInput {
   userId: string;
-  mode: NutritionTargetMode;
+  /** Omit (with no numbers) to change only the distribution fields — the
+      server then keeps the member's mode and numbers as they are. */
+  mode?: NutritionTargetMode;
   // Required when mode is "manual"; ignored (sent or not) otherwise.
   calories?: number;
   proteinG?: number;
   carbsG?: number;
   fatG?: number;
   notes?: string;
+  distribution?: CalorieDistribution | null;
+  distributionLocked?: boolean;
 }
 
 export function useUpdateStaffNutritionTarget() {
@@ -237,4 +294,78 @@ export function useUpdateStaffNutritionTarget() {
       }),
     onSuccess: (_res, vars) => qc.invalidateQueries({ queryKey: ["staff-nutrition-target", vars.userId] }),
   });
+}
+
+// ── v2 member preferences + day marks ────────────────────────────────────
+
+export interface NutritionPreferences {
+  calorieDistribution: CalorieDistribution | null;
+  goalPacePctPerWeek: number | null;
+  activityLevel: ActivityLevel | null;
+  coachDistribution: CalorieDistribution | null;
+  distributionLocked: boolean;
+}
+
+// null means the server doesn't have v2 yet (the route 404s) — callers hide
+// the v2 controls rather than show an error.
+export function useNutritionPreferences() {
+  return useQuery({
+    queryKey: ["nutrition-preferences"],
+    queryFn: async () => {
+      try {
+        const r = await apiFetch<{ success: true; data: NutritionPreferences }>("/api/mobile/nutrition/preferences");
+        return r.data;
+      } catch (e) {
+        if (e instanceof ApiError && e.status === 404) return null;
+        throw e;
+      }
+    },
+    retry: false,
+  });
+}
+
+export interface NutritionPreferencesInput {
+  calorieDistribution?: CalorieDistribution | null;
+  goalPacePctPerWeek?: number | null;
+  activityLevel?: ActivityLevel | null;
+}
+
+export function useSaveNutritionPreferences() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: NutritionPreferencesInput) =>
+      apiFetch<{ success: true; data: NutritionPreferences }>("/api/mobile/nutrition/preferences", {
+        method: "POST",
+        body: input,
+      }).then((r) => r.data),
+    onSuccess: (data) => {
+      qc.setQueryData(["nutrition-preferences"], data);
+      qc.invalidateQueries({ queryKey: ["my-nutrition-target"] });
+      qc.invalidateQueries({ queryKey: ["weekly-nutrition-targets"] });
+    },
+  });
+}
+
+export function useSetDayStatus() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { date: string; status: DayLogStatus | null }) =>
+      apiFetch<{ success: true; data: { date: string; status: DayLogStatus | null } }>(
+        "/api/mobile/nutrition/diary/day-status",
+        { method: "POST", body: input }
+      ),
+    onSuccess: (_res, vars) => {
+      qc.invalidateQueries({ queryKey: ["nutrition-diary", vars.date] });
+      qc.invalidateQueries({ queryKey: ["my-nutrition-target"] });
+      qc.invalidateQueries({ queryKey: ["weekly-nutrition-targets"] });
+    },
+  });
+}
+
+// "Lose 0.5% a week" / "Maintain" — for pace labels across screens.
+export function paceLabel(pace: number): string {
+  const choice = PACE_CHOICES.find((c) => c.value === pace);
+  if (pace === 0) return "Maintain";
+  const verb = pace < 0 ? "Lose" : "Gain";
+  return `${choice ? `${choice.label} · ` : ""}${verb} ${Math.abs(pace)}% a week`;
 }

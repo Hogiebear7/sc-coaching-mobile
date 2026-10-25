@@ -125,7 +125,7 @@ export default function CompleteMembershipScreen() {
     <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
       <KeyboardAwareScroll ref={scrollRef} contentContainerStyle={styles.scroll}>
         <BrandMark height={28} style={styles.logo} />
-        <Text style={styles.eyebrow}>MEMBERSHIP</Text>
+        <Text style={styles.eyebrow}>Membership</Text>
         <Text style={styles.title}>Add an emergency contact</Text>
         <Text style={styles.hint}>
           Now that you&apos;re training in person, who should we contact if something happens to you

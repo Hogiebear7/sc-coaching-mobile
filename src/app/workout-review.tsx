@@ -73,13 +73,13 @@ export default function WorkoutReviewScreen() {
       ) : (
         <ScrollView contentContainerStyle={styles.scroll}>
           <Card style={styles.reviewCard}>
-            <Text style={styles.reviewLabel}>YOUR REVIEW</Text>
+            <Text style={styles.reviewLabel}>Your review</Text>
             <Text style={styles.reviewText}>{data.reviewText}</Text>
           </Card>
 
           {data.score ? (
             <>
-              <Text style={styles.sectionLabel}>SESSION SCORE</Text>
+              <Text style={styles.sectionLabel}>Session score</Text>
               <Card style={styles.detailCard}>
                 <View style={styles.scoreHeader}>
                   <Text style={[styles.scoreTotal, { color: bandColor(data.score.band) }]}>{data.score.total}</Text>
@@ -127,7 +127,7 @@ export default function WorkoutReviewScreen() {
 
           {data.recovery ? (
             <>
-              <Text style={styles.sectionLabel}>RECOVERY THAT DAY</Text>
+              <Text style={styles.sectionLabel}>Recovery that day</Text>
               <Card style={styles.detailCard}>
                 <DetailRow label="Sleep" value={data.recovery.sleepHours != null ? `${data.recovery.sleepHours} hrs` : "—"} />
                 <DetailRow label="Sleep quality" value={data.recovery.sleepQuality != null ? `${data.recovery.sleepQuality}/10` : "—"} />
@@ -139,7 +139,7 @@ export default function WorkoutReviewScreen() {
 
           {data.cyclePhase ? (
             <>
-              <Text style={styles.sectionLabel}>CYCLE PHASE THAT DAY</Text>
+              <Text style={styles.sectionLabel}>Cycle phase that day</Text>
               <Card style={styles.detailCard}>
                 <DetailRow label="Phase" value={data.cyclePhase.phaseLabel} />
                 <DetailRow
@@ -153,7 +153,7 @@ export default function WorkoutReviewScreen() {
 
           {data.pregnancy?.content ? (
             <>
-              <Text style={styles.sectionLabel}>PREGNANCY STAGE THAT DAY</Text>
+              <Text style={styles.sectionLabel}>Pregnancy stage that day</Text>
               <Card style={styles.detailCard}>
                 <DetailRow label="Stage" value={data.pregnancy.content.label} last={data.pregnancy.weeksPregnant === null} />
                 {data.pregnancy.weeksPregnant !== null ? (
@@ -165,7 +165,7 @@ export default function WorkoutReviewScreen() {
 
           {data.nutrition ? (
             <>
-              <Text style={styles.sectionLabel}>FUELING THAT DAY</Text>
+              <Text style={styles.sectionLabel}>Fueling that day</Text>
               <Card style={styles.detailCard}>
                 {data.nutrition.logged ? (
                   <>
@@ -188,7 +188,7 @@ export default function WorkoutReviewScreen() {
 
           {data.hydration && data.hydration.targetMl !== null ? (
             <>
-              <Text style={styles.sectionLabel}>HYDRATION THAT DAY</Text>
+              <Text style={styles.sectionLabel}>Hydration that day</Text>
               <Card style={styles.detailCard}>
                 <DetailRow
                   label="Water"
@@ -242,7 +242,7 @@ const useStyles = makeLegacyStyles((Color) =>
     reviewCard: { borderColor: Color.goldBorder, backgroundColor: Color.goldWeak },
     reviewLabel: { fontSize: 12, fontWeight: "700", letterSpacing: 0.6, color: Color.gold },
     reviewText: { fontSize: 14, color: Color.textPrimary, lineHeight: 20, marginTop: Spacing.xs },
-    sectionLabel: { fontSize: 12, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginTop: Spacing.xl, marginBottom: Spacing.sm },
+    sectionLabel: { fontSize: 15, fontWeight: "600", color: Color.textSecondary, marginTop: Spacing.xl, marginBottom: Spacing.sm },
     statsGrid: { gap: Spacing.sm },
     statsRow: { flexDirection: "row", gap: Spacing.sm },
     noCompareText: { fontSize: 14, color: Color.textFaint, marginTop: Spacing.xs, lineHeight: 17 },

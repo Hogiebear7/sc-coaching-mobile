@@ -106,11 +106,11 @@ export default function ExerciseLibraryDetailScreen() {
 
           {stats && stats.sessionCount > 0 ? (
             <>
-              <Text style={styles.sectionLabel}>YOUR HISTORY</Text>
+              <Text style={styles.sectionLabel}>Your history</Text>
               <View style={styles.historyStatsRow}>
-                <StatCard label="HEAVIEST" value={stats.heaviestWeight ? stats.heaviestWeight.weightStr : "—"} />
+                <StatCard label="Heaviest" value={stats.heaviestWeight ? stats.heaviestWeight.weightStr : "—"} />
                 <StatCard label="EST. 1RM" value={stats.estimatedOneRepMax ? `${stats.estimatedOneRepMax.value} kg` : "—"} />
-                <StatCard label="SESSIONS" value={String(stats.sessionCount)} />
+                <StatCard label="Sessions" value={String(stats.sessionCount)} />
               </View>
               <Pressable
                 onPress={() => router.push({ pathname: "/exercise-detail", params: { name: data.exercise.name } })}
@@ -159,7 +159,7 @@ export default function ExerciseLibraryDetailScreen() {
 
           {data.exercise.instructions.length > 0 ? (
             <>
-              <Text style={styles.sectionLabel}>HOW TO</Text>
+              <Text style={styles.sectionLabel}>How to</Text>
               <Card style={styles.instructionsCard}>
                 {data.exercise.instructions.map((step, idx) => (
                   <View key={idx} style={[styles.stepRow, idx > 0 && styles.stepDivider]}>
@@ -173,7 +173,7 @@ export default function ExerciseLibraryDetailScreen() {
 
           {data.exercise.targetMuscle || data.exercise.secondaryMuscles.length > 0 ? (
             <>
-              <Text style={styles.sectionLabel}>MUSCLES WORKED</Text>
+              <Text style={styles.sectionLabel}>Muscles worked</Text>
               <Card style={styles.musclesCard}>
                 {data.exercise.targetMuscle ? (
                   <Text style={styles.muscleText}>
@@ -251,7 +251,7 @@ const useStyles = makeLegacyStyles((Color) =>
     availabilityTextYes: { color: Color.success },
     availabilityTextNo: { color: Color.danger },
     description: { fontSize: 13, color: Color.textSecondary, lineHeight: 19, marginTop: Spacing.md },
-    sectionLabel: { fontSize: 12, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginTop: Spacing.xl, marginBottom: Spacing.sm },
+    sectionLabel: { fontSize: 15, fontWeight: "600", color: Color.textSecondary, marginTop: Spacing.xl, marginBottom: Spacing.sm },
     instructionsCard: { padding: 0, overflow: "hidden" },
     stepRow: { flexDirection: "row", gap: Spacing.sm, padding: Spacing.md },
     stepDivider: { borderTopWidth: 1, borderTopColor: Color.borderSubtle },

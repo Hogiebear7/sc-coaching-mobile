@@ -66,7 +66,7 @@ export default function ForgotPasswordScreen() {
             <Ionicons name="chevron-back" size={26} color={Color.textPrimary} />
           </Pressable>
 
-          <Text style={styles.eyebrow}>ACCOUNT ACCESS</Text>
+          <Text style={styles.eyebrow}>Account access</Text>
           <Text style={styles.title}>Forgot password</Text>
           <Text style={styles.subtitle}>Enter your account email and we&apos;ll send you a reset link.</Text>
 

@@ -1293,7 +1293,7 @@ export default function LogWorkoutScreen() {
           {isLive ? (
             <View style={styles.timerCard}>
               <View>
-                <Text style={styles.timerLabel}>LIVE WORKOUT TIME</Text>
+                <Text style={styles.timerLabel}>Live workout time</Text>
                 <Text style={styles.timerClock}>{formatDuration(liveElapsedSecs)}</Text>
               </View>
               <View style={{ flexDirection: "row", gap: Spacing.sm }}>
@@ -1336,7 +1336,7 @@ export default function LogWorkoutScreen() {
             />
           ) : null}
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionLabel}>WORKOUT FORMAT</Text>
+            <Text style={styles.sectionLabel}>Workout format</Text>
           </View>
           <View style={styles.formatRow}>
             {FORMAT_OPTIONS.map((opt) => (
@@ -1571,7 +1571,7 @@ export default function LogWorkoutScreen() {
           ) : null}
 
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionLabel}>SESSION ENTRIES</Text>
+            <Text style={styles.sectionLabel}>Session entries</Text>
           </View>
 
           {exerciseRows.length === 0 && runRows.length === 0 ? (
@@ -2040,7 +2040,7 @@ const useStyles = makeLegacyStyles((Color) =>
     scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
     multiline: { height: 80, paddingTop: 12, textAlignVertical: "top" },
     sectionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: Spacing.md, marginBottom: Spacing.sm },
-    sectionLabel: { fontSize: 12, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted },
+    sectionLabel: { fontSize: 15, fontWeight: "600", color: Color.textSecondary },
     addChip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.sm, paddingVertical: 6 },
     addChipText: { fontSize: 13, fontWeight: "600", color: Color.textSecondary },
     addButtonsRow: { flexDirection: "row", gap: Spacing.sm, marginTop: Spacing.sm, marginBottom: Spacing.md },
@@ -2114,7 +2114,7 @@ const useStyles = makeLegacyStyles((Color) =>
       marginTop: Spacing.md,
       marginBottom: Spacing.lg,
     },
-    timerLabel: { fontSize: 12, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted },
+    timerLabel: { fontSize: 15, fontWeight: "600", color: Color.textSecondary },
     timerClock: { ...figure(30, "700"), color: Color.gold, marginTop: 2 },
     timerToggle: {
       width: 40,
@@ -2164,7 +2164,7 @@ const useStyles = makeLegacyStyles((Color) =>
     linkText: { fontSize: 14, fontWeight: "600", color: Color.gold, marginTop: Spacing.sm },
     linkTextMuted: { fontSize: 14, color: Color.textMuted, marginTop: 4 },
     setColumnHeader: { flexDirection: "row", alignItems: "center", gap: Spacing.xs, marginTop: Spacing.md, paddingHorizontal: 2 },
-    setColumnLabel: { fontSize: 12, fontWeight: "700", letterSpacing: 0.4, color: Color.textFaint, textTransform: "uppercase" },
+    setColumnLabel: { fontSize: 15, fontWeight: "600", color: Color.textSecondary },
     setRow2: {
       flexDirection: "row",
       alignItems: "center",

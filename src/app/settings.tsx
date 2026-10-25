@@ -244,7 +244,7 @@ export default function SettingsScreen() {
             </View>
           </View>
 
-          <SectionLabel>ACCOUNT</SectionLabel>
+          <SectionLabel>Account</SectionLabel>
           <Card style={styles.settingsCard}>
             <Row
               icon="key-outline"
@@ -261,7 +261,7 @@ export default function SettingsScreen() {
             />
           </Card>
 
-          <SectionLabel>MEMBERSHIP</SectionLabel>
+          <SectionLabel>Membership</SectionLabel>
           <Card style={styles.settingsCard}>
             <Row
               icon="card-outline"
@@ -271,7 +271,7 @@ export default function SettingsScreen() {
             />
           </Card>
 
-          <SectionLabel>COMMUNITY</SectionLabel>
+          <SectionLabel>Community</SectionLabel>
           <Card style={styles.settingsCard}>
             <Row
               icon="people-outline"
@@ -283,7 +283,7 @@ export default function SettingsScreen() {
 
           {canUseGymProfiles ? (
             <>
-              <SectionLabel>TRAINING</SectionLabel>
+              <SectionLabel>Training</SectionLabel>
               <Card style={styles.settingsCard}>
                 <Row
                   icon="barbell-outline"
@@ -295,7 +295,7 @@ export default function SettingsScreen() {
             </>
           ) : null}
 
-          <SectionLabel>PREFERENCES</SectionLabel>
+          <SectionLabel>Preferences</SectionLabel>
           <Card style={styles.settingsCard}>
             <View style={styles.row}>
               <View style={styles.rowIcon}>
@@ -375,7 +375,7 @@ export default function SettingsScreen() {
             ) : null}
           </Card>
 
-          <SectionLabel>NOTIFICATIONS</SectionLabel>
+          <SectionLabel>Notifications</SectionLabel>
           <Card style={styles.settingsCard}>
             {canUseNotifications ? (
               <>
@@ -496,7 +496,7 @@ export default function SettingsScreen() {
 
           {user?.role === "member" ? (
             <>
-              <SectionLabel>HELP</SectionLabel>
+              <SectionLabel>Help</SectionLabel>
               <Card style={styles.settingsCard} tier="quiet">
                 <Row
                   icon="compass-outline"

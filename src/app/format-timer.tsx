@@ -411,7 +411,7 @@ function PhaseLiveView({ phases, timeCapSecs }: { phases: Phase[]; timeCapSecs?:
 
       {nextPhase ? (
         <View style={styles.nextPreview}>
-          <Text style={styles.nextPreviewLabel}>UP NEXT</Text>
+          <Text style={styles.nextPreviewLabel}>Up next</Text>
           <Text style={styles.nextPreviewText}>{nextPhase.label}</Text>
         </View>
       ) : null}
@@ -804,7 +804,7 @@ function ChipperLiveView({ config }: { config: ChipperConfig }) {
 
   return (
     <KeyboardAwareScroll contentContainerStyle={styles.body}>
-      <Text style={styles.phaseKind}>CHIPPER</Text>
+      <Text style={styles.phaseKind}>Chipper</Text>
       <Text style={styles.clock}>{formatDuration(Math.floor(totalElapsed))}</Text>
 
       <View style={styles.chipperMovements}>

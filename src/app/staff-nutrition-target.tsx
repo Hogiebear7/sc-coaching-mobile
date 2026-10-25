@@ -119,7 +119,7 @@ export default function StaffNutritionTargetScreen() {
         </View>
 
         <KeyboardAwareScroll contentContainerStyle={styles.scroll}>
-          <Text style={styles.sectionLabel}>TARGET MODE</Text>
+          <Text style={styles.sectionLabel}>Target mode</Text>
           <View style={styles.modeRow}>
             {MODE_OPTIONS.map((opt) => (
               <Pressable
@@ -140,7 +140,7 @@ export default function StaffNutritionTargetScreen() {
 
           {mode === "manual" && (
             <>
-              <Text style={[styles.sectionLabel, { marginTop: Spacing.lg }]}>QUICK PRESETS</Text>
+              <Text style={[styles.sectionLabel, { marginTop: Spacing.lg }]}>Quick presets</Text>
               <View style={styles.presetRow}>
                 {PRESETS.map((p) => (
                   <Pressable key={p.label} onPress={() => applyPreset(p)} style={styles.presetChip}>
@@ -195,7 +195,7 @@ const useStyles = makeLegacyStyles((Color) =>
     modeChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },
     modeChipText: { fontSize: 14, fontWeight: "600", color: Color.textMuted },
     modeChipTextActive: { color: Color.gold },
-    sectionLabel: { fontSize: 12, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginBottom: Spacing.sm },
+    sectionLabel: { fontSize: 15, fontWeight: "600", color: Color.textSecondary, marginBottom: Spacing.sm },
     presetRow: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.xs, marginBottom: Spacing.lg },
     presetChip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.sm, paddingVertical: 6 },
     presetChipText: { fontSize: 13, fontWeight: "600", color: Color.textSecondary },

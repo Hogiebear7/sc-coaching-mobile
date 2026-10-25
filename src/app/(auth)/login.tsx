@@ -43,7 +43,7 @@ export default function LoginScreen() {
     <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
         <KeyboardAwareScroll contentContainerStyle={styles.scroll}>
           <BrandMark style={styles.logo} />
-          <Text style={styles.eyebrow}>WELCOME BACK</Text>
+          <Text style={styles.eyebrow}>Welcome back</Text>
           <Text style={styles.title}>Sign in</Text>
           <Text style={styles.subtitle}>
             Access your training, schedule, messages, and profile.

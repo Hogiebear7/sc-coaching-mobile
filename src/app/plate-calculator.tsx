@@ -126,7 +126,7 @@ export default function PlateCalculatorScreen() {
 
         {result ? (
           <Card style={styles.resultCard}>
-            <Text style={styles.resultLabel}>PER SIDE</Text>
+            <Text style={styles.resultLabel}>Per side</Text>
             {result.perSide.length === 0 ? (
               <Text style={styles.noPlatesText}>Just the bar — no plates needed.</Text>
             ) : (

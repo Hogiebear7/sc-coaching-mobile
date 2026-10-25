@@ -22,7 +22,7 @@ export function WeightChangeInsights({ logs }: { logs: BodyWeightLog[] }) {
 
   return (
     <View style={styles.wrap}>
-      <Text style={styles.sectionTitle}>INSIGHTS & DATA</Text>
+      <Text style={styles.sectionTitle}>Insights & data</Text>
       <Text style={styles.subTitle}>Weight Changes</Text>
       <ChangeInsightRow label="3-day" delta={threeDay?.deltaValue ?? null} unit="kg" maxAbsDelta={maxAbsDelta} />
       <ChangeInsightRow label="7-day" delta={sevenDay?.deltaValue ?? null} unit="kg" maxAbsDelta={maxAbsDelta} />

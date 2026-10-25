@@ -355,7 +355,7 @@ export default function ProfileScreen() {
               </Card>
             </View>
 
-            <Text style={styles.sectionLabel}>PERSONAL DETAILS</Text>
+            <Text style={styles.sectionLabel}>Personal details</Text>
             <Card style={styles.detailsCard}>
               {!detailsExpanded ? (
                 <>
@@ -414,7 +414,7 @@ export default function ProfileScreen() {
               )}
             </Card>
 
-            <Text style={[styles.sectionLabel, styles.sectionLabelSpaced]}>COACHING GOALS</Text>
+            <Text style={[styles.sectionLabel, styles.sectionLabelSpaced]}>Coaching goals</Text>
             <Card style={styles.detailsCard}>
               <Text style={styles.label}>Primary goal</Text>
               <View style={styles.chipRow}>
@@ -463,7 +463,7 @@ export default function ProfileScreen() {
               </View>
             </Card>
 
-            <Text style={[styles.sectionLabel, styles.sectionLabelSpaced]}>DIETARY REQUIREMENTS</Text>
+            <Text style={[styles.sectionLabel, styles.sectionLabelSpaced]}>Dietary requirements</Text>
             <Card style={styles.dietaryCard}>
               <Text style={styles.dietaryHint}>
                 Optional — powers your nutrition suggestions. Change these any time.
@@ -535,7 +535,7 @@ export default function ProfileScreen() {
               />
             </Card>
 
-            <Text style={[styles.sectionLabel, styles.sectionLabelSpaced]}>EMERGENCY CONTACT</Text>
+            <Text style={[styles.sectionLabel, styles.sectionLabelSpaced]}>Emergency contact</Text>
             <Card style={styles.detailsCard}>
               {!emergencyExpanded ? (
                 <>
@@ -611,7 +611,7 @@ export default function ProfileScreen() {
                 on from Save with only a section-label's worth of spacing. */}
             <View style={styles.closingDivider} />
 
-            <Text style={styles.sectionLabel}>BODY METRICS</Text>
+            <Text style={styles.sectionLabel}>Body metrics</Text>
             <Text style={styles.label}>Body weight</Text>
             <BodyWeightCard />
 
@@ -621,7 +621,7 @@ export default function ProfileScreen() {
             <Text style={[styles.label, styles.labelSpaced]}>Goal timeline</Text>
             <GoalTimelineCard />
 
-            <Text style={[styles.sectionLabel, styles.sectionLabelSpaced]}>ACCOUNT</Text>
+            <Text style={[styles.sectionLabel, styles.sectionLabelSpaced]}>Account</Text>
             <Pressable onPress={() => router.push("/settings")} style={styles.cycleRow}>
               <View style={styles.cycleRowIcon}>
                 <Ionicons name="settings-outline" size={18} color={Color.gold} />
@@ -720,7 +720,7 @@ const useStyles = makeLegacyStyles((Color) =>
     statCard: { flex: 1, padding: Spacing.md, alignItems: "center" },
     statValue: { fontSize: 16, fontWeight: "700", color: Color.gold, fontVariant: ["tabular-nums"] },
     statLabel: { fontSize: 13, color: Color.textMuted, marginTop: 4 },
-    sectionLabel: { fontSize: 12, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginBottom: Spacing.sm },
+    sectionLabel: { fontSize: 15, fontWeight: "600", color: Color.textSecondary, marginBottom: Spacing.sm },
     sectionLabelSpaced: { marginTop: Spacing.xl },
     label: { fontSize: 13, fontWeight: "500", color: Color.textSecondary, marginBottom: 6 },
     labelSpaced: { marginTop: Spacing.md },

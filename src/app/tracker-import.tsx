@@ -153,7 +153,7 @@ export default function TrackerImportScreen() {
           )}
 
           <Card style={styles.reviewCard}>
-            <Text style={styles.sectionLabel}>ACTIVITY</Text>
+            <Text style={styles.sectionLabel}>Activity</Text>
             <View style={styles.fieldRow}>
               <Text style={styles.fieldLabel}>Name</Text>
               <TextInput
@@ -220,7 +220,7 @@ export default function TrackerImportScreen() {
           </Card>
 
           <Card style={styles.reviewCard}>
-            <Text style={styles.sectionLabel}>SLEEP</Text>
+            <Text style={styles.sectionLabel}>Sleep</Text>
             <View style={styles.numberField}>
               <Text style={styles.fieldLabel}>Sleep hours</Text>
               <TextInput
@@ -318,7 +318,7 @@ const useStyles = makeLegacyStyles((Color) =>
     manualLinkText: { fontSize: 13, color: Color.gold, fontWeight: "600" },
     scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
     reviewCard: { padding: Spacing.md, marginBottom: Spacing.md, gap: Spacing.sm },
-    sectionLabel: { fontSize: 12, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted },
+    sectionLabel: { fontSize: 15, fontWeight: "600", color: Color.textSecondary },
     fieldRow: { marginTop: 2 },
     gridRow: { flexDirection: "row", gap: Spacing.sm },
     numberField: { flex: 1, marginTop: 2 },

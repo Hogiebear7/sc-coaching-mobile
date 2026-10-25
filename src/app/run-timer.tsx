@@ -108,7 +108,7 @@ export default function RunTimerScreen() {
 
         {splits.length > 0 ? (
           <View style={styles.splitsCard}>
-            <Text style={styles.splitsTitle}>SPLITS</Text>
+            <Text style={styles.splitsTitle}>Splits</Text>
             <ScrollView style={{ maxHeight: 220 }}>
               {splits.map((s, i) => (
                 <View key={i} style={styles.splitRow}>

@@ -116,7 +116,7 @@ export default function WorkoutTrendsScreen() {
               body="Log a few workouts to see sets, volume, and top-exercise trends here."
             />
           </Card>
-          <Text style={styles.sectionLabel}>BODYWEIGHT</Text>
+          <Text style={styles.sectionLabel}>Bodyweight</Text>
           {sortedWeightLogs.length < 2 ? (
             <Card tier="quiet">
               <EmptyState
@@ -198,7 +198,7 @@ export default function WorkoutTrendsScreen() {
 
           {topExercises.length > 0 ? (
             <>
-              <Text style={styles.sectionLabel}>TOP EXERCISES THIS RANGE</Text>
+              <Text style={styles.sectionLabel}>Top exercises this range</Text>
               <Card style={styles.list}>
                 {topExercises.map((ex, idx) => (
                   <Pressable
@@ -219,7 +219,7 @@ export default function WorkoutTrendsScreen() {
             </>
           ) : null}
 
-          <Text style={styles.sectionLabel}>BODYWEIGHT</Text>
+          <Text style={styles.sectionLabel}>Bodyweight</Text>
           {sortedWeightLogs.length < 2 ? (
             <Card tier="quiet">
               <EmptyState
@@ -301,7 +301,7 @@ const useStyles = makeLegacyStyles((Color) =>
     summaryLabel: { fontSize: 12, color: Color.textMuted, marginTop: 2 },
     trendCard: { padding: Spacing.md, alignItems: "center", marginTop: Spacing.md },
     chartCaption: { fontSize: 13, color: Color.textFaint, textAlign: "center", marginTop: Spacing.xs },
-    sectionLabel: { fontSize: 12, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginTop: Spacing.xl, marginBottom: Spacing.sm },
+    sectionLabel: { fontSize: 15, fontWeight: "600", color: Color.textSecondary, marginTop: Spacing.xl, marginBottom: Spacing.sm },
     list: { padding: 0, overflow: "hidden" },
     row: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", padding: Spacing.md, gap: Spacing.sm },
     rowDivider: { borderTopWidth: 1, borderTopColor: Color.borderSubtle },

@@ -87,7 +87,7 @@ export default function MembershipScreen() {
               data.isPeriodLapsed && styles.statusCardAttention,
             ]}
           >
-            <Text style={styles.planLabel}>CURRENT PLAN</Text>
+            <Text style={styles.planLabel}>Current plan</Text>
             <Text style={styles.planName}>{data.currentPlanName ?? "No active plan"}</Text>
             {data.subscriptionStatus ? (
               <View style={styles.statusChip}>

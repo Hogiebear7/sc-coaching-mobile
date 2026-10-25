@@ -209,7 +209,7 @@ export default function NotificationsScreen() {
             <>
               {urgent.length > 0 ? (
                 <View style={styles.section}>
-                  <Text style={styles.sectionLabel}>NEEDS A RESPONSE</Text>
+                  <Text style={styles.sectionLabel}>Needs a response</Text>
                   <View style={{ gap: Spacing.sm }}>
                     {urgent.map((n) => (
                       <NotificationRow key={n.id} notification={n} urgent onPress={() => handlePress(n)} />
@@ -220,7 +220,7 @@ export default function NotificationsScreen() {
 
               {routine.length > 0 ? (
                 <View style={styles.section}>
-                  <Text style={styles.sectionLabel}>UPDATES</Text>
+                  <Text style={styles.sectionLabel}>Updates</Text>
                   <View style={{ gap: Spacing.sm }}>
                     {routine.map((n) => (
                       <NotificationRow key={n.id} notification={n} urgent={false} onPress={() => handlePress(n)} />

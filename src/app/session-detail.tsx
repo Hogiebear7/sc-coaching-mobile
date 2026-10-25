@@ -165,18 +165,18 @@ export default function SessionDetailScreen() {
 
           <View style={styles.statsGrid}>
             <View style={styles.statsRow}>
-              <StatCard label="DURATION" value={session.durationMins ? `${session.durationMins} min` : "—"} />
-              <StatCard label="VOLUME" value={totals.totalVolume > 0 ? `${totals.totalVolume.toLocaleString()} kg` : "—"} />
+              <StatCard label="Duration" value={session.durationMins ? `${session.durationMins} min` : "—"} />
+              <StatCard label="Volume" value={totals.totalVolume > 0 ? `${totals.totalVolume.toLocaleString()} kg` : "—"} />
             </View>
             <View style={styles.statsRow}>
-              <StatCard label="SETS" value={String(totals.totalSets)} />
-              <StatCard label="EXERCISES" value={String(session.exercises.length)} />
+              <StatCard label="Sets" value={String(totals.totalSets)} />
+              <StatCard label="Exercises" value={String(session.exercises.length)} />
             </View>
           </View>
 
           {session.exercises.length > 0 ? (
             <>
-              <Text style={styles.sectionLabel}>EXERCISES</Text>
+              <Text style={styles.sectionLabel}>Exercises</Text>
               <Card style={styles.list}>
                 {session.exercises.map((ex, idx) => {
                   const exTotals = computeExerciseSetTotals(ex);
@@ -223,7 +223,7 @@ export default function SessionDetailScreen() {
 
           {session.runs.length > 0 ? (
             <>
-              <Text style={styles.sectionLabel}>RUNS</Text>
+              <Text style={styles.sectionLabel}>Runs</Text>
               <Card style={styles.list}>
                 {session.runs.map((run, idx) => (
                   <View key={idx} style={[styles.row, idx > 0 && styles.rowDivider]}>
@@ -237,7 +237,7 @@ export default function SessionDetailScreen() {
 
           {session.notes ? (
             <>
-              <Text style={styles.sectionLabel}>NOTES</Text>
+              <Text style={styles.sectionLabel}>Notes</Text>
               <Card style={styles.notesCard}>
                 <Text style={styles.notesText}>{session.notes}</Text>
               </Card>
@@ -272,7 +272,7 @@ const useStyles = makeLegacyStyles((Color) =>
     privateBadgeText: { fontSize: 13, color: Color.textFaint },
     statsGrid: { gap: Spacing.sm, marginTop: Spacing.lg },
     statsRow: { flexDirection: "row", gap: Spacing.sm },
-    sectionLabel: { fontSize: 12, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginTop: Spacing.xl, marginBottom: Spacing.sm },
+    sectionLabel: { fontSize: 15, fontWeight: "600", color: Color.textSecondary, marginTop: Spacing.xl, marginBottom: Spacing.sm },
     list: { padding: 0, overflow: "hidden" },
     row: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", padding: Spacing.md, gap: Spacing.sm },
     rowDivider: { borderTopWidth: 1, borderTopColor: Color.borderSubtle },

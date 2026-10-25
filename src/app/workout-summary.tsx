@@ -75,18 +75,18 @@ export default function WorkoutSummaryScreen() {
 
         <View style={styles.statsGrid}>
           <View style={styles.statsRow}>
-            <StatCard label="DURATION" value={summary.durationLabel} />
-            <StatCard label="VOLUME" value={summary.totalVolume > 0 ? `${summary.totalVolume.toLocaleString()} kg` : "—"} />
+            <StatCard label="Duration" value={summary.durationLabel} />
+            <StatCard label="Volume" value={summary.totalVolume > 0 ? `${summary.totalVolume.toLocaleString()} kg` : "—"} />
           </View>
           <View style={styles.statsRow}>
-            <StatCard label="SETS" value={`${summary.completedSets}/${summary.totalSets}`} />
-            <StatCard label="EXERCISES" value={`${summary.completedExercises}/${summary.totalExercises}`} />
+            <StatCard label="Sets" value={`${summary.completedSets}/${summary.totalSets}`} />
+            <StatCard label="Exercises" value={`${summary.completedExercises}/${summary.totalExercises}`} />
           </View>
         </View>
 
         {summary.exercises.length > 0 ? (
           <>
-            <Text style={styles.sectionLabel}>EXERCISES</Text>
+            <Text style={styles.sectionLabel}>Exercises</Text>
             <Card style={styles.exerciseList}>
               {summary.exercises.map((ex, idx) => (
                 <View key={`${ex.name}-${idx}`} style={[styles.exerciseRow, idx > 0 && styles.exerciseRowDivider]}>
@@ -166,7 +166,7 @@ const useStyles = makeLegacyStyles((Color) =>
     pbPillText: { fontSize: 14, fontWeight: "700", color: Color.gold },
     statsGrid: { gap: Spacing.sm, marginTop: Spacing.md },
     statsRow: { flexDirection: "row", gap: Spacing.sm },
-    sectionLabel: { fontSize: 12, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginTop: Spacing.xl, marginBottom: Spacing.sm },
+    sectionLabel: { fontSize: 15, fontWeight: "600", color: Color.textSecondary, marginTop: Spacing.xl, marginBottom: Spacing.sm },
     exerciseList: { padding: 0, overflow: "hidden" },
     exerciseRow: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", padding: Spacing.md, gap: Spacing.sm },
     exerciseRowDivider: { borderTopWidth: 1, borderTopColor: Color.borderSubtle },

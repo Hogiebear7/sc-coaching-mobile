@@ -96,7 +96,7 @@ export default function StaffMemberScreen() {
           />
 
           <Card style={styles.card}>
-            <Text style={styles.sectionLabel}>MEMBERSHIP</Text>
+            <Text style={styles.sectionLabel}>Membership</Text>
             <View style={styles.rowLine}>
               <Text style={styles.rowLabel}>Plan</Text>
               <Text style={styles.rowValue}>{data.currentPlanName ?? "No active plan"}</Text>
@@ -112,7 +112,7 @@ export default function StaffMemberScreen() {
           </Card>
 
           <Card style={styles.card}>
-            <Text style={styles.sectionLabel}>CONTACT</Text>
+            <Text style={styles.sectionLabel}>Contact</Text>
             <View style={styles.rowLine}>
               <Text style={styles.rowLabel}>Phone</Text>
               <Text style={styles.rowValue}>{data.phone ?? "—"}</Text>
@@ -128,7 +128,7 @@ export default function StaffMemberScreen() {
           </Card>
 
           <Card style={styles.card}>
-            <Text style={styles.sectionLabel}>EMERGENCY CONTACT</Text>
+            <Text style={styles.sectionLabel}>Emergency contact</Text>
             {!data.emergencyContactName && !data.emergencyContactPhone ? (
               <Text style={styles.rowValue}>Not provided yet.</Text>
             ) : (
@@ -146,7 +146,7 @@ export default function StaffMemberScreen() {
           </Card>
 
           <Card style={styles.card}>
-            <Text style={styles.sectionLabel}>TRAINING</Text>
+            <Text style={styles.sectionLabel}>Training</Text>
             <View style={styles.rowLine}>
               <Text style={styles.rowLabel}>Primary goal</Text>
               <Text style={styles.rowValue}>{data.primaryGoal}</Text>
@@ -178,7 +178,7 @@ export default function StaffMemberScreen() {
           </Card>
 
           <Card style={styles.card}>
-            <Text style={styles.sectionLabel}>PERSONAL BESTS</Text>
+            <Text style={styles.sectionLabel}>Personal bests</Text>
             <View style={styles.pbGrid}>
               {data.personalBests.map((pb) => (
                 <View key={pb.label} style={styles.pbCell}>
@@ -202,7 +202,7 @@ export default function StaffMemberScreen() {
           </Card>
 
           <Card style={styles.card}>
-            <Text style={styles.sectionLabel}>WEEKLY TRAINING PATTERN</Text>
+            <Text style={styles.sectionLabel}>Weekly training pattern</Text>
             {!data.weeklyTrainingSchedule || data.weeklyTrainingSchedule.sessions.length === 0 ? (
               <Text style={styles.rowValue}>Not set up yet.</Text>
             ) : (
@@ -228,7 +228,7 @@ export default function StaffMemberScreen() {
           </Card>
 
           <Card style={styles.card}>
-            <Text style={styles.sectionLabel}>UPCOMING BOOKINGS</Text>
+            <Text style={styles.sectionLabel}>Upcoming bookings</Text>
             {data.upcomingBookings.length === 0 ? (
               <Text style={styles.rowValue}>No upcoming bookings.</Text>
             ) : (
@@ -245,7 +245,7 @@ export default function StaffMemberScreen() {
 
           {data.pastBookings.length > 0 ? (
             <Card style={styles.card}>
-              <Text style={styles.sectionLabel}>PAST BOOKINGS</Text>
+              <Text style={styles.sectionLabel}>Past bookings</Text>
               {data.pastBookings.map((b) => (
                 <View key={b.bookingId} style={styles.bookingRow}>
                   <Text style={styles.bookingTitle}>{b.title}</Text>
@@ -258,7 +258,7 @@ export default function StaffMemberScreen() {
           ) : null}
 
           <Card style={styles.card}>
-            <Text style={styles.sectionLabel}>TRAINING PROGRAM</Text>
+            <Text style={styles.sectionLabel}>Training program</Text>
             {activeProgram ? (
               <>
                 <View style={styles.rowLine}>
@@ -298,7 +298,7 @@ export default function StaffMemberScreen() {
           </Card>
 
           <Card style={styles.card}>
-            <Text style={styles.sectionLabel}>NUTRITION TARGET</Text>
+            <Text style={styles.sectionLabel}>Nutrition target</Text>
             {nutritionTarget ? (
               <>
                 <View style={styles.rowLine}>
@@ -337,7 +337,7 @@ export default function StaffMemberScreen() {
           </Card>
 
           <Card style={styles.card}>
-            <Text style={styles.sectionLabel}>COACH NOTES</Text>
+            <Text style={styles.sectionLabel}>Coach notes</Text>
             <Text style={styles.notesHint}>Internal only — the member never sees these.</Text>
             <TextInput
               value={notes}
@@ -400,7 +400,7 @@ const useStyles = makeLegacyStyles((Color) =>
     name: { fontSize: 20, fontWeight: "700", color: Color.textPrimary },
     email: { fontSize: 14, color: Color.textMuted, marginTop: 2, marginBottom: Spacing.lg },
     card: { padding: Spacing.md, marginBottom: Spacing.md },
-    sectionLabel: { fontSize: 12, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginBottom: Spacing.sm },
+    sectionLabel: { fontSize: 15, fontWeight: "600", color: Color.textSecondary, marginBottom: Spacing.sm },
     rowLine: {
       flexDirection: "row",
       justifyContent: "space-between",

@@ -404,7 +404,7 @@ export default function DrinkCalculatorScreen() {
           </View>
           <Text style={styles.sodiumExplainerText}>{sodiumExplainer(drink.sodiumBadge)}</Text>
 
-          <Text style={[styles.sectionLabel, { marginTop: Spacing.lg }]}>DRINKING PLAN</Text>
+          <Text style={[styles.sectionLabel, { marginTop: Spacing.lg }]}>Drinking plan</Text>
           <Text style={styles.hintText}>
             <Text style={{ fontWeight: "600", color: Color.textPrimary }}>{sportCfg.runMode ? "Carry: " : "Bottle: "}</Text>
             {plan.bottleAdvice}
@@ -492,7 +492,7 @@ const useStyles = makeLegacyStyles((Color) =>
     errorText: { color: Color.textMuted, fontSize: 14 },
     scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
     fieldLabel: { fontSize: 13, fontWeight: "600", color: Color.textMuted, marginBottom: 6, marginTop: Spacing.md, textTransform: "uppercase", letterSpacing: 0.4 },
-    sectionLabel: { fontSize: 12, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginBottom: Spacing.sm },
+    sectionLabel: { fontSize: 15, fontWeight: "600", color: Color.textSecondary, marginBottom: Spacing.sm },
     gridRow: { flexDirection: "row", gap: Spacing.sm },
     textInput: {
       height: 44,

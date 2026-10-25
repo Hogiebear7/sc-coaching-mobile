@@ -206,7 +206,7 @@ export default function ProgrammePreviewScreen() {
 
         {preview.testCheckpoints && preview.testCheckpoints.length > 0 ? (
           <>
-            <Text style={styles.sectionLabel}>TEST CHECKPOINTS</Text>
+            <Text style={styles.sectionLabel}>Test checkpoints</Text>
             {preview.testCheckpoints.map((checkpoint) => (
               <Card key={checkpoint.day.id} style={styles.dayCard}>
                 <Text style={styles.dayLabel}>

@@ -100,7 +100,7 @@ export default function ResetPasswordScreen() {
             <Ionicons name="chevron-back" size={26} color={Color.textPrimary} />
           </Pressable>
 
-          <Text style={styles.eyebrow}>ACCOUNT ACCESS</Text>
+          <Text style={styles.eyebrow}>Account access</Text>
           <Text style={styles.title}>Reset password</Text>
           <Text style={styles.subtitle}>
             Paste the reset code or link from your email, then choose a new password.

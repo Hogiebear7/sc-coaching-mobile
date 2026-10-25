@@ -677,7 +677,7 @@ export default function LogFoodScreen() {
                   </Text>
                 </View>
               ) : null}
-              <Text style={styles.sectionLabel}>REVIEW BEFORE LOGGING</Text>
+              <Text style={styles.sectionLabel}>Review before logging</Text>
               <Text style={styles.fieldLabel}>Food name</Text>
               <TextInput
                 value={name}
@@ -840,7 +840,7 @@ const useStyles = makeLegacyStyles((Color) =>
     // primary state of this one.
     methodChipPrimary: { backgroundColor: Color.gold },
     methodChipTextPrimary: { color: Color.goldForeground },
-    sectionLabel: { fontSize: 12, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginTop: Spacing.lg, marginBottom: Spacing.sm },
+    sectionLabel: { fontSize: 15, fontWeight: "600", color: Color.textSecondary, marginTop: Spacing.lg, marginBottom: Spacing.sm },
     fallbackSection: { marginTop: Spacing.sm },
     fallbackLink: { paddingVertical: 6 },
     fallbackLinkText: { fontSize: 13, fontWeight: "600", color: Color.textMuted },
@@ -862,7 +862,7 @@ const useStyles = makeLegacyStyles((Color) =>
     reportMissingLink: { marginTop: Spacing.sm },
     reportMissingLinkText: { fontSize: 14, fontWeight: "600", color: Color.gold },
     resultGroup: { marginBottom: Spacing.sm },
-    resultGroupLabel: { fontSize: 12, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginBottom: 4 },
+    resultGroupLabel: { fontSize: 15, fontWeight: "600", color: Color.textSecondary, marginBottom: 4 },
     resultRow: {
       flexDirection: "row",
       alignItems: "center",

@@ -45,7 +45,7 @@ export function RestTimerBar({ onExpand }: { onExpand: () => void }) {
   if (timer.isPreCountingDown) {
     return (
       <View style={[styles.bar, styles.barGetReady, { paddingBottom: Math.max(insets.bottom, Spacing.sm) }]}>
-        <Text style={styles.getReadyText}>GET READY</Text>
+        <Text style={styles.getReadyText}>Get ready</Text>
         <Text style={styles.getReadyClock}>{preCountdownRemaining}</Text>
       </View>
     );

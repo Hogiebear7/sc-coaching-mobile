@@ -252,7 +252,7 @@ export default function CustomFoodScreen() {
           <TextField label="Brand (optional)" value={brandName} onChangeText={setBrandName} placeholder="e.g. Kitchen made" />
           <TextField label="Barcode (optional)" value={barcode} onChangeText={setBarcode} placeholder="e.g. 5901234123457" keyboardType="number-pad" />
 
-          <Text style={styles.sectionLabel}>SERVING</Text>
+          <Text style={styles.sectionLabel}>Serving</Text>
           <View style={styles.gridRow}>
             <View style={{ flex: 2 }}>
               <TextField label="Serving label" value={servingLabel} onChangeText={setServingLabel} placeholder="e.g. 1 bar" />
@@ -262,7 +262,7 @@ export default function CustomFoodScreen() {
             </View>
           </View>
 
-          <Text style={styles.sectionLabel}>NUTRITION PER SERVING</Text>
+          <Text style={styles.sectionLabel}>Nutrition per serving</Text>
           <Text style={styles.sectionCaption}>Enter these exactly as printed on the label — we'll work out the per-100g figures automatically.</Text>
           <View style={styles.gridRow}>
             <View style={styles.numberField}>
@@ -285,7 +285,7 @@ export default function CustomFoodScreen() {
             </View>
           </View>
 
-          <Text style={styles.sectionLabel}>OPTIONAL DETAIL</Text>
+          <Text style={styles.sectionLabel}>Optional detail</Text>
           <View style={styles.gridRow}>
             <View style={styles.numberField}>
               <Text style={styles.fieldLabel}>Fiber (g)</Text>
@@ -333,7 +333,7 @@ const useStyles = makeLegacyStyles((Color) =>
     hintBannerText: { flex: 1, fontSize: 13, color: Color.textSecondary, lineHeight: 15 },
     photoChip: { flexDirection: "row", gap: Spacing.xs, alignItems: "center", marginBottom: Spacing.md },
     photoChipText: { flex: 1, fontSize: 13, color: Color.textMuted, lineHeight: 15 },
-    sectionLabel: { fontSize: 12, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginTop: Spacing.sm, marginBottom: Spacing.sm },
+    sectionLabel: { fontSize: 15, fontWeight: "600", color: Color.textSecondary, marginTop: Spacing.sm, marginBottom: Spacing.sm },
     sectionCaption: { fontSize: 13, color: Color.textMuted, lineHeight: 15, marginTop: -Spacing.xs, marginBottom: Spacing.sm },
     gridRow: { flexDirection: "row", gap: Spacing.sm },
     numberField: { flex: 1, marginBottom: Spacing.md },

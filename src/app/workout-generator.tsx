@@ -658,7 +658,7 @@ export default function WorkoutGeneratorScreen() {
 
           {mode === "workout" ? (
             <>
-          <Text style={styles.sectionLabel}>STRUCTURE</Text>
+          <Text style={styles.sectionLabel}>Structure</Text>
           <Text style={styles.sectionSub}>
             {workoutStructure === "fullBody"
               ? "A balanced full-body session — compound lifts first, alternating upper and lower, finishing with a conditioning move and core."
@@ -723,7 +723,7 @@ export default function WorkoutGeneratorScreen() {
 
           {workoutStructure === "chooseAreas" ? (
             <>
-          <Text style={[styles.sectionLabel, { marginTop: Spacing.md }]}>MUSCLE AREAS</Text>
+          <Text style={[styles.sectionLabel, { marginTop: Spacing.md }]}>Muscle areas</Text>
           <Text style={styles.sectionSub}>Tap the body to pick where to focus.</Text>
 
           <Card style={styles.diagramCard}>
@@ -1148,7 +1148,7 @@ const useStyles = makeLegacyStyles((Color) =>
     tierDot: { width: 8, height: 8, borderRadius: 4 },
     tierTitle: { fontSize: 13, fontWeight: "700", color: Color.textPrimary },
     tierRationale: { fontSize: 14, color: Color.textMuted, marginTop: 4, lineHeight: 17 },
-    sectionLabel: { fontSize: 12, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginTop: Spacing.lg },
+    sectionLabel: { fontSize: 15, fontWeight: "600", color: Color.textSecondary, marginTop: Spacing.lg },
     sectionSub: { fontSize: 14, color: Color.textFaint, marginTop: 2, marginBottom: Spacing.sm },
     // The one loud label per logical group ("Programme setup", "Practical
     // constraints", "Context for AI") — everything under it uses the quieter

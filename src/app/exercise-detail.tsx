@@ -84,12 +84,12 @@ export default function ExerciseDetailScreen() {
         <ScrollView contentContainerStyle={styles.scroll}>
           <View style={styles.statsGrid}>
             <View style={styles.statsRow}>
-              <StatCard label="HEAVIEST" value={stats.heaviestWeight ? stats.heaviestWeight.weightStr : "—"} />
+              <StatCard label="Heaviest" value={stats.heaviestWeight ? stats.heaviestWeight.weightStr : "—"} />
               <StatCard label="EST. 1RM" value={stats.estimatedOneRepMax ? `${stats.estimatedOneRepMax.value} kg` : "—"} />
             </View>
             <View style={styles.statsRow}>
-              <StatCard label="TOTAL VOLUME" value={stats.totalVolume > 0 ? `${stats.totalVolume.toLocaleString()} kg` : "—"} />
-              <StatCard label="SESSIONS" value={String(stats.sessionCount)} />
+              <StatCard label="Total volume" value={stats.totalVolume > 0 ? `${stats.totalVolume.toLocaleString()} kg` : "—"} />
+              <StatCard label="Sessions" value={String(stats.sessionCount)} />
             </View>
           </View>
 
@@ -110,7 +110,7 @@ export default function ExerciseDetailScreen() {
             </View>
           </Card>
 
-          <Text style={styles.sectionLabel}>TREND</Text>
+          <Text style={styles.sectionLabel}>Trend</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.metricPicker} contentContainerStyle={{ gap: Spacing.xs }}>
             {EXERCISE_METRICS.map((m) => (
               <Pressable
@@ -137,7 +137,7 @@ export default function ExerciseDetailScreen() {
             <TrendChart points={filteredTrendPoints} formatValue={formatTrendValue} />
           </Card>
 
-          <Text style={styles.sectionLabel}>HISTORY</Text>
+          <Text style={styles.sectionLabel}>History</Text>
           <Card style={styles.list}>
             {stats.history.map((h, idx) => (
               <Pressable
@@ -181,7 +181,7 @@ const useStyles = makeLegacyStyles((Color) =>
     secondaryDivider: { width: 1, height: 28, backgroundColor: Color.borderSubtle },
     secondaryValue: { fontSize: 16, fontWeight: "700", color: Color.textPrimary, fontVariant: ["tabular-nums"] },
     secondaryLabel: { fontSize: 12, color: Color.textMuted, marginTop: 2 },
-    sectionLabel: { fontSize: 12, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginTop: Spacing.xl, marginBottom: Spacing.sm },
+    sectionLabel: { fontSize: 15, fontWeight: "600", color: Color.textSecondary, marginTop: Spacing.xl, marginBottom: Spacing.sm },
     metricPicker: { marginBottom: Spacing.sm },
     metricChip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.sm, paddingVertical: 6 },
     metricChipActive: { borderColor: Color.gold, backgroundColor: Color.goldWeak },

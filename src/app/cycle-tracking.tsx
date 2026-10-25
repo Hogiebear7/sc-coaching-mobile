@@ -312,9 +312,9 @@ export default function CycleTrackingScreen() {
                   </View>
                 ) : null}
                 <View style={styles.guidanceWrap}>
-                  <GuidanceRow label="TRAINING" value={phase.trainingGuidance} />
-                  <GuidanceRow label="INTENSITY" value={phase.intensityGuidance} />
-                  <GuidanceRow label="RECOVERY" value={phase.recoveryGuidance} />
+                  <GuidanceRow label="Training" value={phase.trainingGuidance} />
+                  <GuidanceRow label="Intensity" value={phase.intensityGuidance} />
+                  <GuidanceRow label="Recovery" value={phase.recoveryGuidance} />
                 </View>
                 <Text style={styles.disclaimer}>
                   Educational guidance only — not medical advice. This estimate is based on the cycle
@@ -386,7 +386,7 @@ export default function CycleTrackingScreen() {
               </Card>
             ) : null}
 
-            <Text style={styles.sectionLabel}>CYCLE INFORMATION</Text>
+            <Text style={styles.sectionLabel}>Cycle information</Text>
             <Card style={styles.formCard}>
               <Text style={styles.formHint}>These details are private to you unless you choose to share them below.</Text>
               <DateField
@@ -438,7 +438,7 @@ export default function CycleTrackingScreen() {
               <Button title="Save settings" onPress={handleSaveSettings} loading={saveSettings.isPending} style={{ marginTop: Spacing.sm }} />
             </Card>
 
-            <Text style={styles.sectionLabel}>COACH SHARING PREFERENCES</Text>
+            <Text style={styles.sectionLabel}>Coach sharing preferences</Text>
             <Card style={styles.formCard}>
               <Text style={styles.formHint}>
                 All options are off by default. Nothing is shared unless you explicitly turn it on.
@@ -470,7 +470,7 @@ export default function CycleTrackingScreen() {
               <Button title="Save sharing preferences" onPress={handleSavePrivacy} loading={savePrivacy.isPending} style={{ marginTop: Spacing.sm }} />
             </Card>
 
-            <Text style={styles.sectionLabel}>PREGNANCY</Text>
+            <Text style={styles.sectionLabel}>Pregnancy</Text>
             <Card style={styles.formCard}>
               <View style={styles.settingRow}>
                 <View style={{ flex: 1 }}>
@@ -521,7 +521,7 @@ export default function CycleTrackingScreen() {
                       <BulletList label="TRAINING — AVOID" items={pregnancy.estimate.content.trainingAvoid} />
                       <BulletList label="NUTRITION — PRIORITISE" items={pregnancy.estimate.content.nutritionDo} />
                       <BulletList label="NUTRITION — AVOID" items={pregnancy.estimate.content.nutritionAvoid} />
-                      <BulletList label="RECOVERY" items={pregnancy.estimate.content.recoveryDo} />
+                      <BulletList label="Recovery" items={pregnancy.estimate.content.recoveryDo} />
 
                       <Text style={styles.disclaimer}>{pregnancy.estimate.disclaimer}</Text>
                     </View>
@@ -554,7 +554,7 @@ export default function CycleTrackingScreen() {
               ) : null}
             </Card>
 
-            <Text style={styles.sectionLabel}>PREFERENCES</Text>
+            <Text style={styles.sectionLabel}>Preferences</Text>
             <Card style={styles.settingsCard}>
               <View style={styles.settingRow}>
                 <View style={{ flex: 1 }}>
@@ -634,7 +634,7 @@ const useStyles = makeLegacyStyles((Color) =>
     menopauseTitle: { fontSize: 13, fontWeight: "700", color: Color.textPrimary },
     menopauseBody: { fontSize: 14, color: Color.textMuted, marginTop: 2, lineHeight: 17 },
     sectionTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
-    sectionLabel: { fontSize: 12, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginTop: Spacing.xl, marginBottom: Spacing.sm },
+    sectionLabel: { fontSize: 15, fontWeight: "600", color: Color.textSecondary, marginTop: Spacing.xl, marginBottom: Spacing.sm },
     formCard: { padding: Spacing.lg },
     formHint: { fontSize: 14, color: Color.textMuted, marginBottom: Spacing.md, lineHeight: 17 },
     label: { fontSize: 13, fontWeight: "500", color: Color.textSecondary, marginBottom: 6 },

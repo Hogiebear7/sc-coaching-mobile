@@ -218,7 +218,7 @@ export default function StaffWorkoutTemplateBuilderScreen() {
           </View>
 
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionLabel}>EXERCISES</Text>
+            <Text style={styles.sectionLabel}>Exercises</Text>
             <Pressable onPress={() => setExercises((prev) => [...prev, newExerciseRow()])} style={styles.addChip}>
               <Text style={styles.addChipText}>+ Exercise</Text>
             </Pressable>
@@ -365,7 +365,7 @@ const useStyles = makeLegacyStyles((Color) =>
     categoryChipText: { fontSize: 13, fontWeight: "500", color: Color.textMuted },
     categoryChipTextActive: { color: Color.gold },
     sectionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: Spacing.md, marginBottom: 4 },
-    sectionLabel: { fontSize: 12, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted },
+    sectionLabel: { fontSize: 15, fontWeight: "600", color: Color.textSecondary },
     addChip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.sm, paddingVertical: 6 },
     addChipText: { fontSize: 13, fontWeight: "600", color: Color.textSecondary },
     hintText: { fontSize: 13, color: Color.textFaint, marginBottom: Spacing.sm, lineHeight: 15 },

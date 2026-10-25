@@ -220,7 +220,7 @@ export default function RestTimerScreen() {
 
         {timer.isPreCountingDown ? (
           <View style={styles.getReadyWrap}>
-            <Text style={styles.getReadyLabel}>GET READY</Text>
+            <Text style={styles.getReadyLabel}>Get ready</Text>
             <Text style={styles.getReadyNumber}>{preCountdownRemaining}</Text>
             <Text style={styles.getReadyHint}>
               {timer.state.label ? `${timer.state.label} starts in a moment` : "Your rest starts in a moment"}
@@ -260,7 +260,7 @@ export default function RestTimerScreen() {
             </View>
 
             <View style={styles.presetsWrap}>
-              <Text style={styles.presetsLabel}>PRESETS</Text>
+              <Text style={styles.presetsLabel}>Presets</Text>
               <View style={styles.presetsRow}>
                 {PRESETS.map((p) => (
                   <Pressable key={p} onPress={() => handlePreset(p)} style={[styles.presetChip, timer.state.durationSecs === p && styles.presetChipActive]}>

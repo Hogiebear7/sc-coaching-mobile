@@ -360,7 +360,7 @@ export default function SignupScreen() {
     <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
         <KeyboardAwareScroll contentContainerStyle={styles.scroll}>
           <BrandMark height={28} style={styles.logo} />
-          <Text style={styles.eyebrow}>CREATE YOUR ACCOUNT</Text>
+          <Text style={styles.eyebrow}>Create your account</Text>
           <Text style={styles.title}>Join the floor</Text>
           <Text style={styles.stepIndicator}>
             Step {step + 1} of {totalSteps} · {stepTitles[step]}
@@ -656,12 +656,12 @@ export default function SignupScreen() {
                 {formError ? <Text style={[styles.error, { marginBottom: Spacing.md }]}>{formError}</Text> : null}
 
                 <Card style={styles.reviewCard}>
-                  <Text style={styles.reviewCardTitle}>ACCOUNT</Text>
+                  <Text style={styles.reviewCardTitle}>Account</Text>
                   <ReviewRow label="Email" value={values.email || "—"} />
                 </Card>
 
                 <Card style={styles.reviewCard}>
-                  <Text style={styles.reviewCardTitle}>PROFILE</Text>
+                  <Text style={styles.reviewCardTitle}>Profile</Text>
                   <ReviewRow label="Full name" value={values.fullName || "—"} />
                   <ReviewRow label="Phone" value={values.phone || "—"} />
                   <ReviewRow
@@ -695,7 +695,7 @@ export default function SignupScreen() {
 
                 {cycleEligible ? (
                   <Card style={styles.reviewCard}>
-                    <Text style={styles.reviewCardTitle}>CYCLE TRACKING</Text>
+                    <Text style={styles.reviewCardTitle}>Cycle tracking</Text>
                     <ReviewRow label="Cycle tracking" value={values.cycleTrackingEnabled ? "Yes" : "No"} />
                     <ReviewRow label="Menopause support" value={values.menopauseSupportEnabled ? "Yes" : "No"} />
                     {cycleFieldsVisible ? (

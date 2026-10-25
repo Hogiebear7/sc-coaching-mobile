@@ -219,11 +219,11 @@ function CrashViewer({ crash, onDismiss }: { crash: CrashRecord; onDismiss: () =
           {new Date(crash.timestamp).toLocaleString()} · Screenshot this and send it over so it can be fixed.
         </Text>
         <View style={styles.crashBox}>
-          <Text style={styles.crashLabel}>MESSAGE</Text>
+          <Text style={styles.crashLabel}>Message</Text>
           <Text style={styles.crashText}>{crash.message}</Text>
           {crash.stack ? (
             <>
-              <Text style={[styles.crashLabel, { marginTop: Spacing.md }]}>STACK</Text>
+              <Text style={[styles.crashLabel, { marginTop: Spacing.md }]}>Stack</Text>
               <Text style={styles.crashText}>{crash.stack}</Text>
             </>
           ) : null}

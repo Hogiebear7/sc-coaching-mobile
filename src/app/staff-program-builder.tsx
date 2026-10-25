@@ -301,7 +301,7 @@ export default function StaffProgramBuilderScreen() {
           <TextField label="Program name" value={name} onChangeText={setName} placeholder="e.g. Hypertrophy Block 1" />
 
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionLabel}>DAYS</Text>
+            <Text style={styles.sectionLabel}>Days</Text>
             <Pressable onPress={() => setDays((prev) => [...prev, newDayRow(prev.length)])} style={styles.addChip}>
               <Text style={styles.addChipText}>+ Day</Text>
             </Pressable>
@@ -447,7 +447,7 @@ const useStyles = makeLegacyStyles((Color) =>
     headerTitle: { fontSize: 20, fontWeight: "600", color: Color.textPrimary, flexShrink: 1, textAlign: "center" },
     scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
     sectionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: Spacing.sm, marginBottom: Spacing.sm },
-    sectionLabel: { fontSize: 12, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted },
+    sectionLabel: { fontSize: 15, fontWeight: "600", color: Color.textSecondary },
     addChip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.sm, paddingVertical: 6 },
     addChipText: { fontSize: 13, fontWeight: "600", color: Color.textSecondary },
     addExerciseChip: {

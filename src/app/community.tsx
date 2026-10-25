@@ -212,7 +212,7 @@ export default function CommunityScreen() {
         {winsPreview.length > 0 ? (
           <View style={styles.section}>
             <SectionHeader
-              label="COMMUNITY WINS"
+              label="Community wins"
               action={{ label: "See more", onPress: () => router.push("/community/wins") }}
             />
             <Card style={styles.winsCard}>
@@ -235,7 +235,7 @@ export default function CommunityScreen() {
             scrollToLeaderboardIfRequested();
           }}
         >
-          <SectionHeader label="LEADERBOARD" />
+          <SectionHeader label="Leaderboard" />
           <View style={styles.metricRow}>
             {LEADERBOARD_METRICS.map((m) => (
               <Pressable
@@ -337,7 +337,7 @@ export default function CommunityScreen() {
 
         <View style={styles.section}>
           <SectionHeader
-            label="ACTIVITY"
+            label="Activity"
             action={
               activityPreview.length > 0
                 ? { label: "See more", onPress: () => router.push("/community/activity") }
@@ -357,7 +357,7 @@ export default function CommunityScreen() {
                 <ActivityIndicator color={Color.gold} style={{ marginTop: Spacing.sm }} />
               ) : suggested.data && suggested.data.length > 0 ? (
                 <Card style={styles.suggestedCard}>
-                  <Text style={styles.suggestedLabel}>MEMBERS TO FOLLOW</Text>
+                  <Text style={styles.suggestedLabel}>Members to follow</Text>
                   {suggested.data.map((r, i) => (
                     <SuggestedMemberRow
                       key={r.userId}

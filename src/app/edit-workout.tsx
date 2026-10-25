@@ -354,7 +354,7 @@ export default function EditWorkoutScreen() {
             />
 
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionLabel}>SESSION ENTRIES</Text>
+              <Text style={styles.sectionLabel}>Session entries</Text>
               <View style={{ flexDirection: "row", gap: Spacing.sm }}>
                 <Pressable onPress={() => setExerciseRows((prev) => [...prev, newExerciseRow()])} style={styles.addChip}>
                   <Text style={styles.addChipText}>+ Exercise</Text>
@@ -563,7 +563,7 @@ const useStyles = makeLegacyStyles((Color) =>
     scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
     multiline: { minHeight: 80, textAlignVertical: "top", paddingTop: Spacing.sm },
     sectionHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: Spacing.lg, marginBottom: Spacing.sm },
-    sectionLabel: { fontSize: 13, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted },
+    sectionLabel: { fontSize: 15, fontWeight: "600", color: Color.textSecondary },
     addChip: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.borderSubtle, paddingHorizontal: Spacing.md, paddingVertical: 6 },
     addChipText: { fontSize: 14, fontWeight: "600", color: Color.textSecondary },
     emptyHint: { fontSize: 13, color: Color.textFaint, paddingVertical: Spacing.md },
@@ -575,7 +575,7 @@ const useStyles = makeLegacyStyles((Color) =>
     gridRow: { flexDirection: "row", gap: Spacing.sm },
     gridInput: { flex: 1 },
     setColumnHeader: { flexDirection: "row", alignItems: "center", gap: Spacing.xs, marginTop: Spacing.sm, paddingHorizontal: 2 },
-    setColumnLabel: { fontSize: 12, fontWeight: "700", letterSpacing: 0.4, color: Color.textFaint, textTransform: "uppercase" },
+    setColumnLabel: { fontSize: 15, fontWeight: "600", color: Color.textSecondary },
     setEditRow: { flexDirection: "row", alignItems: "center", gap: Spacing.xs, marginTop: Spacing.xs, padding: 4 },
     setNumber: { fontSize: 13, fontWeight: "700", color: Color.textPrimary, textAlign: "center" },
     setTypeTag: { fontSize: 7, fontWeight: "700", color: Color.gold, textAlign: "center", textTransform: "uppercase" },

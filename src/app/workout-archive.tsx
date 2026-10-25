@@ -52,7 +52,7 @@ export default function WorkoutArchiveScreen() {
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.scroll}>
-          <Text style={styles.sectionLabel}>PAST PROGRAMS</Text>
+          <Text style={styles.sectionLabel}>Past programs</Text>
           {!programs || programs.length === 0 ? (
             <Text style={styles.emptyText}>No archived programs yet.</Text>
           ) : (
@@ -66,7 +66,7 @@ export default function WorkoutArchiveScreen() {
             ))
           )}
 
-          <Text style={[styles.sectionLabel, { marginTop: Spacing.lg }]}>RETIRED WORKOUTS</Text>
+          <Text style={[styles.sectionLabel, { marginTop: Spacing.lg }]}>Retired workouts</Text>
           {archivedTemplates.length === 0 ? (
             <Text style={styles.emptyText}>No retired workouts yet.</Text>
           ) : (
@@ -99,7 +99,7 @@ const useStyles = makeLegacyStyles((Color) =>
     headerTitle: { fontSize: 20, fontWeight: "600", color: Color.textPrimary, flexShrink: 1, textAlign: "center" },
     centerFill: { flex: 1, alignItems: "center", justifyContent: "center" },
     scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
-    sectionLabel: { fontSize: 12, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginBottom: Spacing.sm },
+    sectionLabel: { fontSize: 15, fontWeight: "600", color: Color.textSecondary, marginBottom: Spacing.sm },
     emptyText: { fontSize: 14, color: Color.textMuted, marginBottom: Spacing.md },
     card: { padding: Spacing.md, marginBottom: Spacing.sm },
     name: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },

@@ -132,7 +132,7 @@ function ShoppingListView() {
 
           {checked.length > 0 ? (
             <>
-              <Text style={styles.sectionLabel}>CHECKED</Text>
+              <Text style={styles.sectionLabel}>Checked</Text>
               <Card tier="quiet" style={styles.itemList}>
                 {checked.map((item, idx) => (
                   <View key={item.id} style={idx > 0 ? styles.itemDivider : undefined}>
@@ -319,7 +319,7 @@ const useStyles = makeLegacyStyles((Color) =>
     itemText: { fontSize: 14, fontWeight: "500", color: Color.textPrimary },
     itemTextChecked: { color: Color.textFaint, textDecorationLine: "line-through" },
     itemQty: { fontSize: 13, color: Color.textMuted, marginTop: 2 },
-    sectionLabel: { fontSize: 12, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginBottom: Spacing.sm },
+    sectionLabel: { fontSize: 15, fontWeight: "600", color: Color.textSecondary, marginBottom: Spacing.sm },
     recipeCard: { padding: Spacing.md, marginBottom: Spacing.md },
     recipeIngredient: { fontSize: 13, color: Color.textSecondary, marginTop: 4 },
     recipeNotes: { fontSize: 14, color: Color.textMuted, marginTop: Spacing.sm, fontStyle: "italic" },

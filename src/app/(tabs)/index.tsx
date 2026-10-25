@@ -233,7 +233,7 @@ export default function DashboardScreen() {
               <Text style={styles.todayStatus}>
                 {readiness.today !== null ? (
                   <>
-                    <Text style={{ color: readinessColor(readiness.today) }}>{readiness.today}</Text>
+                    <Text style={{ color: readinessColor(readiness.today, dc, colors.textMuted) }}>{readiness.today}</Text>
                     {"  "}
                     {readiness.status}
                   </>
@@ -317,7 +317,7 @@ export default function DashboardScreen() {
               window="Last 7 days"
               value={readiness.today !== null ? String(readiness.today) : null}
               unit="/100"
-              color={readinessColor(readiness.today)}
+              color={readinessColor(readiness.today, dc, colors.textMuted)}
               bars={week.map((w) => w.score)}
               note="Log a check-in to start your trend"
               onPress={() => router.push("/readiness" as never)}

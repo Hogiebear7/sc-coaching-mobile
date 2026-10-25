@@ -76,8 +76,8 @@ export default function CommunityPrivacyScreen() {
                 <Switch
                   value={communityOptIn}
                   onValueChange={(v) => update({ communityOptIn: v })}
-                  trackColor={{ false: Color.surface3, true: Color.gold }}
-                  thumbColor={Color.textPrimary}
+                  trackColor={{ false: Color.surface3, true: Color.success }}
+                  thumbColor="#ffffff"
                   disabled={setPrivacy.isPending}
                 />
               </View>
@@ -98,8 +98,8 @@ export default function CommunityPrivacyScreen() {
               <Switch
                 value={discoverable}
                 onValueChange={(v) => update({ discoverable: v })}
-                trackColor={{ false: Color.surface3, true: Color.gold }}
-                thumbColor={Color.textPrimary}
+                trackColor={{ false: Color.surface3, true: Color.success }}
+                thumbColor="#ffffff"
                 disabled={setPrivacy.isPending}
               />
             </View>
@@ -114,8 +114,8 @@ export default function CommunityPrivacyScreen() {
               <Switch
                 value={leaderboardVisible}
                 onValueChange={(v) => update({ leaderboardVisible: v })}
-                trackColor={{ false: Color.surface3, true: Color.gold }}
-                thumbColor={Color.textPrimary}
+                trackColor={{ false: Color.surface3, true: Color.success }}
+                thumbColor="#ffffff"
                 disabled={setPrivacy.isPending}
               />
             </View>
@@ -130,8 +130,8 @@ export default function CommunityPrivacyScreen() {
               <Switch
                 value={showRealName}
                 onValueChange={(v) => update({ showRealName: v })}
-                trackColor={{ false: Color.surface3, true: Color.gold }}
-                thumbColor={Color.textPrimary}
+                trackColor={{ false: Color.surface3, true: Color.success }}
+                thumbColor="#ffffff"
                 disabled={setPrivacy.isPending}
               />
             </View>

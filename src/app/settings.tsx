@@ -359,8 +359,8 @@ export default function SettingsScreen() {
                   setHapticsEnabled(v);
                   if (v) tapFeedback();
                 }}
-                trackColor={{ false: Color.surface3, true: Color.gold }}
-                thumbColor={Color.textPrimary}
+                trackColor={{ false: Color.surface3, true: Color.success }}
+                thumbColor="#ffffff"
                 accessibilityLabel="Vibration"
               />
             </View>
@@ -387,8 +387,8 @@ export default function SettingsScreen() {
                   <Switch
                     value={data.pushNotificationsEnabled}
                     onValueChange={(v) => setPush.mutate(v)}
-                    trackColor={{ false: Color.surface3, true: Color.gold }}
-                    thumbColor={Color.textPrimary}
+                    trackColor={{ false: Color.surface3, true: Color.success }}
+                    thumbColor="#ffffff"
                   />
                 </View>
                 <View style={styles.divider} />
@@ -400,8 +400,8 @@ export default function SettingsScreen() {
                   <Switch
                     value={data.emailNotificationsEnabled}
                     onValueChange={(v) => setEmail.mutate(v)}
-                    trackColor={{ false: Color.surface3, true: Color.gold }}
-                    thumbColor={Color.textPrimary}
+                    trackColor={{ false: Color.surface3, true: Color.success }}
+                    thumbColor="#ffffff"
                   />
                 </View>
               </>

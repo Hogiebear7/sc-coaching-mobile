@@ -483,8 +483,8 @@ export default function CycleTrackingScreen() {
                 <Switch
                   value={pregnantToggle}
                   onValueChange={handleTogglePregnant}
-                  trackColor={{ false: Color.surface3, true: Color.gold }}
-                  thumbColor={Color.textPrimary}
+                  trackColor={{ false: Color.surface3, true: Color.success }}
+                  thumbColor="#ffffff"
                   disabled={savePregnancy.isPending}
                 />
               </View>
@@ -539,8 +539,8 @@ export default function CycleTrackingScreen() {
                       <Switch
                         value={pregnancy.shareWithCoach}
                         onValueChange={handleToggleShareWithCoach}
-                        trackColor={{ false: Color.surface3, true: Color.gold }}
-                        thumbColor={Color.textPrimary}
+                        trackColor={{ false: Color.surface3, true: Color.success }}
+                        thumbColor="#ffffff"
                         disabled={savePregnancy.isPending}
                       />
                     </View>
@@ -567,8 +567,8 @@ export default function CycleTrackingScreen() {
                 <Switch
                   value={data.menopauseSupportEnabled}
                   onValueChange={(v) => setMenopause.mutate(v)}
-                  trackColor={{ false: Color.surface3, true: Color.gold }}
-                  thumbColor={Color.textPrimary}
+                  trackColor={{ false: Color.surface3, true: Color.success }}
+                  thumbColor="#ffffff"
                   disabled={setMenopause.isPending}
                 />
               </View>

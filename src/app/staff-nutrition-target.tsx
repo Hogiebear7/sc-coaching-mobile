@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Pressable, StyleSheet, Switch, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { KeyboardAwareScroll } from "@/components/ui/KeyboardAwareScroll";
 
@@ -11,7 +11,12 @@ import { TextField } from "@/components/ui/TextField";
 import { Radius, Spacing } from "@/constants/theme";
 import { ApiError } from "@/lib/api-client";
 import { tapFeedback } from "@/lib/haptics";
-import { useStaffNutritionTarget, useUpdateStaffNutritionTarget, type NutritionTargetMode } from "@/lib/queries/nutrition-diary";
+import {
+  useStaffNutritionTarget,
+  useUpdateStaffNutritionTarget,
+  type CalorieDistribution,
+  type NutritionTargetMode,
+} from "@/lib/queries/nutrition-diary";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 // Quick presets so a coach isn't doing macro math on their phone — grams
@@ -23,9 +28,18 @@ const PRESETS: { label: string; calories: number; proteinG: number; carbsG: numb
 ];
 
 const MODE_OPTIONS: { value: NutritionTargetMode; label: string; hint: string }[] = [
-  { value: "auto", label: "Auto", hint: "The app calculates this member's target from their weight, training load, and logged food — no setup needed. This is the default for everyone." },
+  { value: "auto", label: "Auto", hint: "The app sets a weekly budget from this member's weight, activity, chosen pace and complete food days, reviewed every Monday — no setup needed. This is the default for everyone." },
   { value: "manual", label: "Manual", hint: "Set your own fixed numbers below — the member sees exactly this every day." },
   { value: "disabled", label: "Off", hint: "No target is shown to the member at all. Logging still works." },
+];
+
+// Nutrition targets v2: the coach's say over how an auto target's weekly
+// budget is spread. "Member's choice" leaves it to the member (and their
+// tier default); a set value is the member's default, or fixed if locked.
+const DISTRIBUTION_CHOICES: { value: CalorieDistribution | null; label: string }[] = [
+  { value: null, label: "Member's choice" },
+  { value: "even", label: "Same every day" },
+  { value: "training", label: "Match training" },
 ];
 
 export default function StaffNutritionTargetScreen() {
@@ -42,6 +56,8 @@ export default function StaffNutritionTargetScreen() {
   const [carbsG, setCarbsG] = useState("");
   const [fatG, setFatG] = useState("");
   const [notes, setNotes] = useState("");
+  const [distribution, setDistribution] = useState<CalorieDistribution | null>(null);
+  const [locked, setLocked] = useState(false);
   const [hydrated, setHydrated] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -54,6 +70,8 @@ export default function StaffNutritionTargetScreen() {
       if (existing.carbsG !== null) setCarbsG(String(existing.carbsG));
       if (existing.fatG !== null) setFatG(String(existing.fatG));
       setNotes(existing.notes ?? "");
+      setDistribution(existing.distribution ?? null);
+      setLocked(Boolean(existing.distributionLocked && existing.distribution));
     }
     setHydrated(true);
   }, [existing, hydrated, isLoading]);
@@ -71,7 +89,13 @@ export default function StaffNutritionTargetScreen() {
 
     if (mode !== "manual") {
       try {
-        await update.mutateAsync({ userId, mode, notes: notes.trim() || undefined });
+        await update.mutateAsync({
+          userId,
+          mode,
+          notes: notes.trim() || undefined,
+          distribution,
+          distributionLocked: distribution !== null && locked,
+        });
         tapFeedback();
         router.back();
       } catch (e) {
@@ -114,7 +138,7 @@ export default function StaffNutritionTargetScreen() {
           <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backButton} accessibilityRole="button" accessibilityLabel="Back">
             <Ionicons name="chevron-back" size={26} color={Color.textPrimary} />
           </Pressable>
-          <Text style={styles.headerTitle}>Nutrition Target</Text>
+          <Text style={styles.headerTitle}>Nutrition target</Text>
           <View style={{ width: 36 }} />
         </View>
 
@@ -137,6 +161,61 @@ export default function StaffNutritionTargetScreen() {
           <Card style={styles.hintCard}>
             <Text style={styles.hintText}>{MODE_OPTIONS.find((o) => o.value === mode)?.hint}</Text>
           </Card>
+
+          {mode === "auto" && (
+            <>
+              <Text style={[styles.sectionLabel, { marginTop: Spacing.lg }]}>Calorie distribution</Text>
+              <View style={styles.modeRow}>
+                {DISTRIBUTION_CHOICES.map((opt) => {
+                  const active = distribution === opt.value;
+                  return (
+                    <Pressable
+                      key={opt.label}
+                      onPress={() => {
+                        tapFeedback();
+                        setDistribution(opt.value);
+                        if (opt.value === null) setLocked(false);
+                      }}
+                      style={[styles.modeChip, active && styles.modeChipActive]}
+                      accessibilityRole="radio"
+                      accessibilityState={{ selected: active }}
+                    >
+                      <Text style={[styles.modeChipText, active && styles.modeChipTextActive]} numberOfLines={1}>
+                        {opt.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+              <Card style={styles.hintCard}>
+                <Text style={styles.hintText}>
+                  {distribution === null
+                    ? "The member picks how their weekly budget is spread. Members default to Match training; app-only members to Same every day."
+                    : distribution === "training"
+                      ? "More on heavy and match days, less on rest days, within 20% of their daily average. Same weekly total."
+                      : "The same number every day. Same weekly total."}
+                </Text>
+                {distribution !== null ? (
+                  <View style={styles.lockRow}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.lockTitle}>Lock it</Text>
+                      <Text style={styles.hintText}>The member can&apos;t change it while locked.</Text>
+                    </View>
+                    <Switch
+                      value={locked}
+                      onValueChange={(v) => {
+                        tapFeedback();
+                        setLocked(v);
+                      }}
+                      trackColor={{ false: Color.surface2, true: Color.gold }}
+                      thumbColor={locked ? Color.goldForeground : Color.textPrimary}
+                      accessibilityLabel="Lock calorie distribution"
+                    />
+                  </View>
+                ) : null}
+              </Card>
+            </>
+          )}
 
           {mode === "manual" && (
             <>
@@ -216,5 +295,7 @@ const useStyles = makeLegacyStyles((Color) =>
     hintCard: { padding: Spacing.md, marginTop: Spacing.sm },
     hintText: { fontSize: 14, color: Color.textMuted, lineHeight: 17 },
     error: { fontSize: 14, color: Color.danger, marginTop: Spacing.md },
+    lockRow: { flexDirection: "row", alignItems: "center", gap: Spacing.md, marginTop: Spacing.md },
+    lockTitle: { fontSize: 15, fontWeight: "600", color: Color.textPrimary },
   })
 );

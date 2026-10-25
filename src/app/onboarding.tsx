@@ -19,7 +19,16 @@ import {
 } from "@/lib/onboarding";
 import { useLogBodyWeight } from "@/lib/queries/body-weight";
 import { useGoalTimeline, useSaveGoal } from "@/lib/queries/goal-timeline";
-import { useMyNutritionTarget } from "@/lib/queries/nutrition-diary";
+import {
+  ACTIVITY_OPTIONS,
+  DISTRIBUTION_OPTIONS,
+  PACE_CHOICES,
+  useMyNutritionTarget,
+  useNutritionPreferences,
+  useSaveNutritionPreferences,
+  type ActivityLevel,
+  type CalorieDistribution,
+} from "@/lib/queries/nutrition-diary";
 import { useMemberTier, useProfile } from "@/lib/queries/profile";
 import { makeStyles, useAppTheme } from "@/lib/theme";
 import { useReduceMotionPref } from "@/lib/use-reduce-motion";
@@ -29,9 +38,21 @@ import { todayDateString } from "@/lib/workout-formatters";
 // docs/design-inspiration-macrofactor-2026-10.md §6). One question per
 // screen, a fixed primary button, then the plan shown *and explained*.
 // It writes through the same goal + body-weight routes as Profile's goal
-// timeline, so nothing new on the server. Skippable at every step.
-type Step = "intro" | "goal" | "weight" | "days" | "building" | "plan" | "next";
-const QUESTION_STEPS: Step[] = ["goal", "weight", "days"];
+// timeline. Skippable at every step. When the server has nutrition targets
+// v2 (the preferences route answers), it also asks for a weekly pace, how
+// active they are outside training and how to spread their calories, and
+// the target date follows from the pace rather than the other way round.
+type Step = "intro" | "goal" | "weight" | "pace" | "days" | "activity" | "split" | "building" | "plan" | "next";
+
+// Weeks to reach a goal at a % of bodyweight per week -> an ISO date.
+function dateForPace(currentKg: number, goalKg: number, pacePct: number): string | null {
+  const kgPerWeek = Math.abs((pacePct / 100) * currentKg);
+  if (kgPerWeek <= 0 || Math.abs(goalKg - currentKg) < 0.1) return null;
+  const weeks = Math.abs(goalKg - currentKg) / kgPerWeek;
+  const d = new Date();
+  d.setDate(d.getDate() + Math.ceil(weeks * 7));
+  return d.toISOString().slice(0, 10);
+}
 const BUILD_ITEMS = ["Your starting point", "Your goal", "Your training week", "A realistic timeline", "Your calorie target"];
 
 export default function OnboardingScreen() {
@@ -45,6 +66,10 @@ export default function OnboardingScreen() {
   const { data: target } = useMyNutritionTarget();
   const saveGoal = useSaveGoal();
   const logWeight = useLogBodyWeight();
+  const { data: prefs } = useNutritionPreferences();
+  const savePrefs = useSaveNutritionPreferences();
+  // v2 questions only when the server has the preferences route.
+  const v2 = prefs != null;
 
   const [step, setStep] = useState<Step>("intro");
   const [direction, setDirection] = useState<GoalDirection | null>(null);
@@ -55,27 +80,46 @@ export default function OnboardingScreen() {
   const [buildError, setBuildError] = useState<string | null>(null);
   const [suggestedDate, setSuggestedDate] = useState<string | null>(null);
   const [buildRun, setBuildRun] = useState(0);
+  const [paceInput, setPace] = useState<number | null>(null);
+  const [activity, setActivity] = useState<ActivityLevel | null>(null);
+  const [splitInput, setSplit] = useState<CalorieDistribution | null>(null);
 
   // Prefilled from what the member already has on file until they change it.
   const hadWeight = timeline?.currentWeightKg != null;
   const currentKg = currentKgInput ?? (timeline?.currentWeightKg != null ? clampWeight(timeline.currentWeightKg) : null);
   const days = daysInput ?? timeline?.trainingDaysPerWeek ?? null;
+  // A pace picked before the member flipped direction on the weight step no
+  // longer applies, so fall back to the default for the new direction.
+  const paceFits = paceInput !== null && (direction === "gain" ? paceInput > 0 : direction === "lose" ? paceInput < 0 : paceInput === 0);
+  const pacePct = paceFits ? paceInput : direction === "lose" ? -0.5 : direction === "gain" ? 0.25 : 0;
+  const split: CalorieDistribution = splitInput ?? prefs?.calorieDistribution ?? (tier === "membership" ? "training" : "even");
+  const questionSteps: Step[] = v2
+    ? ["goal", "weight", ...(direction === "maintain" ? [] : (["pace"] as Step[])), "days", "activity", ...(prefs?.distributionLocked ? [] : (["split"] as Step[]))]
+    : ["goal", "weight", "days"];
 
   function go(next: Step) {
     tapFeedback();
     setStep(next);
   }
 
+  // The step after `from` in this member's question order ("building" after
+  // the last one).
+  function nextAfter(from: Step): Step {
+    const i = questionSteps.indexOf(from);
+    return i >= 0 && i < questionSteps.length - 1 ? questionSteps[i + 1] : "building";
+  }
+
   function chooseDirection(d: GoalDirection) {
     selectionFeedback();
     setDirection(d);
+    setPace(null);
     const base = currentKg ?? 75;
     setGoalKg(defaultGoalWeight(d, base));
   }
 
   function back() {
     tapFeedback();
-    const order: Step[] = ["intro", "goal", "weight", "days"];
+    const order: Step[] = ["intro", ...questionSteps];
     const i = order.indexOf(step);
     if (i > 0) setStep(order[i - 1]);
     else router.back();
@@ -93,9 +137,22 @@ export default function OnboardingScreen() {
       try {
         if (!hadWeight && currentKg !== null) await logWeight.mutateAsync({ date: todayDateString(), weightKg: currentKg });
         await saveGoal.mutateAsync({ goalWeightKg: goalKg, trainingDaysPerWeek: days });
-        const projection = await refetchTimeline();
-        const suggested = projection.data?.weightTimeline?.suggestedDate ?? null;
-        if (suggested) await saveGoal.mutateAsync({ goalTargetDate: suggested });
+        let suggested: string | null;
+        if (v2) {
+          // v2: the pace drives the target; the date is what that pace gives.
+          await savePrefs.mutateAsync({
+            goalPacePctPerWeek: pacePct,
+            ...(activity ? { activityLevel: activity } : {}),
+            ...(prefs?.distributionLocked ? {} : { calorieDistribution: split }),
+          });
+          suggested = currentKg !== null && goalKg !== null ? dateForPace(currentKg, goalKg, pacePct) : null;
+          await saveGoal.mutateAsync({ goalTargetDate: suggested });
+          await refetchTimeline();
+        } else {
+          const projection = await refetchTimeline();
+          suggested = projection.data?.weightTimeline?.suggestedDate ?? null;
+          if (suggested) await saveGoal.mutateAsync({ goalTargetDate: suggested });
+        }
         await minWait;
         if (cancelled) return;
         setSuggestedDate(suggested);
@@ -129,7 +186,7 @@ export default function OnboardingScreen() {
     else router.back();
   }
 
-  const qIndex = QUESTION_STEPS.indexOf(step);
+  const qIndex = questionSteps.indexOf(step);
   const firstName = profile?.fullName?.split(" ")[0] ?? "";
   const weightTimeline = timeline?.weightTimeline ?? null;
   const pace = weightTimeline?.clampedWeeklyRate ?? null;
@@ -182,7 +239,7 @@ export default function OnboardingScreen() {
         ))}
       </>
     );
-    primary = { label: "Next", onPress: () => go("weight"), disabled: direction === null };
+    primary = { label: "Next", onPress: () => go(nextAfter("goal")), disabled: direction === null };
   } else if (step === "weight") {
     const cur = currentKg ?? 75;
     const goal = goalKg ?? cur;
@@ -217,7 +274,75 @@ export default function OnboardingScreen() {
         </View>
       </>
     );
-    primary = { label: "Next", onPress: () => go("days") };
+    primary = { label: "Next", onPress: () => go(nextAfter("weight")) };
+  } else if (step === "pace") {
+    const choices = PACE_CHOICES.filter((c) => (direction === "gain" ? c.value > 0 : c.value < 0));
+    const cur = currentKg ?? 75;
+    body = (
+      <>
+        <Text style={styles.question}>How fast do you want to go?</Text>
+        <Text style={styles.lead}>As a share of your bodyweight each week. Slower is easier to keep up.</Text>
+        {choices.map((c) => {
+          const kg = Math.abs((c.value / 100) * cur);
+          return (
+            <OptionCard
+              key={c.value}
+              icon={direction === "gain" ? "trending-up" : "trending-down"}
+              label={`${c.label} · ${Math.abs(c.value)}% a week`}
+              sub={`About ${kg.toFixed(2)} kg a week${c.value === -1 ? " — the fastest we allow" : ""}`}
+              selected={pacePct === c.value}
+              onPress={() => {
+                selectionFeedback();
+                setPace(c.value);
+              }}
+            />
+          );
+        })}
+      </>
+    );
+    primary = { label: "Next", onPress: () => go(nextAfter("pace")) };
+  } else if (step === "activity") {
+    body = (
+      <>
+        <Text style={styles.question}>How active are you outside training?</Text>
+        <Text style={styles.lead}>Sets your starting burn. After about two weeks of logging, the app learns your real one.</Text>
+        {ACTIVITY_OPTIONS.map((o, i) => (
+          <OptionCard
+            key={o.value}
+            icon={(["cafe-outline", "walk-outline", "bicycle-outline", "flash-outline"] as const)[i]}
+            label={o.label}
+            sub={o.detail}
+            selected={activity === o.value}
+            onPress={() => {
+              selectionFeedback();
+              setActivity(o.value);
+            }}
+          />
+        ))}
+      </>
+    );
+    primary = { label: nextAfter("activity") === "building" ? "Build my plan" : "Next", onPress: () => go(nextAfter("activity")), disabled: activity === null };
+  } else if (step === "split") {
+    body = (
+      <>
+        <Text style={styles.question}>How should your calories be spread?</Text>
+        <Text style={styles.lead}>You get one weekly budget either way. You can change this any time.</Text>
+        {DISTRIBUTION_OPTIONS.map((o) => (
+          <OptionCard
+            key={o.value}
+            icon={o.value === "even" ? "reorder-four-outline" : "stats-chart-outline"}
+            label={o.label}
+            sub={o.detail}
+            selected={split === o.value}
+            onPress={() => {
+              selectionFeedback();
+              setSplit(o.value);
+            }}
+          />
+        ))}
+      </>
+    );
+    primary = { label: "Build my plan", onPress: () => go("building") };
   } else if (step === "days") {
     body = (
       <>
@@ -250,7 +375,11 @@ export default function OnboardingScreen() {
         ) : null}
       </>
     );
-    primary = { label: "Build my plan", onPress: () => go("building"), disabled: days === null };
+    primary = {
+      label: nextAfter("days") === "building" ? "Build my plan" : "Next",
+      onPress: () => go(nextAfter("days")),
+      disabled: days === null,
+    };
   } else if (step === "building") {
     body = (
       <>
@@ -306,11 +435,20 @@ export default function OnboardingScreen() {
             v: goalKg !== null && currentKg !== null ? goalGapLabel(currentKg, goalKg) : "—",
             b: "Where you want to get to. You can change it any time in Profile.",
           },
-          {
-            t: "Pace",
-            v: pace !== null ? `${pace > 0 ? "+" : pace < 0 ? "−" : ""}${Math.abs(pace).toFixed(2)} kg/week` : "Steady",
-            b: `Set for ${days ?? "—"} training days a week and capped at a safe rate, so the plan stays something you can keep up.`,
-          },
+          v2
+            ? {
+                t: "Pace",
+                v:
+                  pacePct === 0
+                    ? "Maintain"
+                    : `${pacePct > 0 ? "+" : "−"}${Math.abs(pacePct)}% a week (about ${Math.abs((pacePct / 100) * (currentKg ?? 75)).toFixed(2)} kg)`,
+                b: "The pace you chose. If it would take your calories below a safe minimum, the app slows it for you.",
+              }
+            : {
+                t: "Pace",
+                v: pace !== null ? `${pace > 0 ? "+" : pace < 0 ? "−" : ""}${Math.abs(pace).toFixed(2)} kg/week` : "Steady",
+                b: `Set for ${days ?? "—"} training days a week and capped at a safe rate, so the plan stays something you can keep up.`,
+              },
           {
             t: "Timeline",
             v: date ? formatDateDisplay(date) : "—",
@@ -319,7 +457,9 @@ export default function OnboardingScreen() {
           {
             t: "Calories",
             v: target?.calories != null ? `${target.calories.toLocaleString()} kcal` : "—",
-            b: "Your daily starting target. It adjusts as your weight and training change.",
+            b: v2
+              ? `Your share of a weekly budget, spread ${split === "training" ? "to match your training" : "evenly across the week"}. It's reviewed every Monday as the app learns your real burn.`
+              : "Your daily starting target. It adjusts as your weight and training change.",
           },
         ].map((r, i, arr) => (
           <View key={r.t} style={styles.explainRow}>
@@ -389,8 +529,8 @@ export default function OnboardingScreen() {
         )}
       </View>
       {qIndex >= 0 ? (
-        <View style={styles.progress} accessibilityRole="progressbar" accessibilityValue={{ min: 0, max: 3, now: qIndex + 1 }}>
-          <View style={[styles.progressFill, { width: `${((qIndex + 1) / QUESTION_STEPS.length) * 100}%` }]} />
+        <View style={styles.progress} accessibilityRole="progressbar" accessibilityValue={{ min: 0, max: questionSteps.length, now: qIndex + 1 }}>
+          <View style={[styles.progressFill, { width: `${((qIndex + 1) / questionSteps.length) * 100}%` }]} />
         </View>
       ) : null}
 

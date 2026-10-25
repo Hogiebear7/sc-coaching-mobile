@@ -100,3 +100,18 @@ exercise-detail, profile, settings, messages, community, membership, auth, staff
 - **Bottom sheets** for short tasks over a list (comments): top radius 24, grab handle,
   44dp round close and send buttons, safe-area bottom padding.
 - **Trend entries** show the latest five, with Show all / Show fewer.
+
+## Nutrition targets v2 (pairs with gym-app docs/nutrition-targets-v2-plan-2026-10.md)
+
+- **NutritionPlanPanel** (`components/nutrition`), on the calorie targets screen:
+  - This week: budget, daily average, burn (estimated or learned), pace-limited notice.
+  - The member's distribution, pace and activity. When a coach has locked the
+    distribution, the panel shows it with a lock icon instead.
+- **DayCompleteCard**: under the diary. Choices are Day complete or Missed some, with Undo.
+- **TrainingTipCard**: shown once on the Nutrition tab for regular trainers on even calories.
+- **Settings → Nutrition → Calorie targets** opens the same screen.
+- **Onboarding** adds pace, activity and split questions.
+- **Staff nutrition target**: in Auto mode, sets a distribution default and the lock.
+- **Older servers:** every v2 element hides itself when the server doesn't send the
+  v2 fields or the preferences route returns 404, so the app works against a server
+  that predates v2.

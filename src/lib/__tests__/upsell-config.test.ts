@@ -35,6 +35,22 @@ describe("every purchase-promoting entry point is governed by the config", () =>
       .filter((f) => !readFileSync(f, "utf8").includes("@/lib/upsell-config"))
       .map(rel);
     // push-notifications.ts only maps an incoming notification link to a screen; it opens nothing on the web and promotes nothing.
-    expect(offenders).toEqual(["src/lib/push-notifications.ts"]);
+    // membership-web.ts (used by membership.tsx and gym.tsx) is the one sanctioned web link: in-person gym memberships, which store rules
+    // let members pay for outside the app. The page they open is limited to in-person plans (checked below).
+    expect(offenders).toEqual([
+      "src/app/membership.tsx",
+      "src/lib/membership-web.ts",
+      "src/lib/push-notifications.ts",
+    ]);
+  });
+
+  it("the in-person membership link only ever opens the in-person view of the web page", () => {
+    const helper = readFileSync(path.join(root, "lib", "membership-web.ts"), "utf8");
+    expect(helper).toMatch(/\/dashboard\/membership\?source=app/);
+    for (const f of ["app/gym.tsx", "app/membership.tsx"]) {
+      const src = readFileSync(path.join(root, f), "utf8");
+      expect(src).toContain("@/lib/membership-web");
+      expect(src).not.toMatch(/Linking\.openURL\([^)]*dashboard\/membership/);
+    }
   });
 });

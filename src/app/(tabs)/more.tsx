@@ -27,6 +27,7 @@ const GROUPS: { title: string; rows: Row[] }[] = [
     title: "Club",
     rows: [
       { label: "Messages", icon: "chatbubble-ellipses-outline", href: "/messages" },
+      { label: "Our gym", icon: "location-outline", href: "/gym" },
       { label: "Membership", icon: "card-outline", href: "/membership" },
       { label: "Community", icon: "people-outline", href: "/community" },
       { label: "Notifications", icon: "notifications-outline", href: "/notifications" },

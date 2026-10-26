@@ -1,44 +1,23 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { ActivityIndicator, Linking, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { API_BASE_URL } from "@/constants/config";
 import { figure, Radius, Spacing } from "@/constants/theme";
-import { apiFetch } from "@/lib/api-client";
 import { tapFeedback } from "@/lib/haptics";
 import { useMembership } from "@/lib/queries/membership";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
-import { CAN_PROMOTE_PURCHASE } from "@/lib/upsell-config";
+import { openMembershipOnWeb } from "@/lib/membership-web";
 
-const MEMBERSHIP_PATH = "/dashboard/membership";
-
-// Deliberately opens the system browser rather than an in-app WebView, and
-// deliberately shows no prices or "Buy" button here — gym membership is a
-// real-world service, exempt from Apple/Google's in-app-purchase
-// requirement, but only as long as the app itself never presents a
-// purchase flow. Handing off to the browser for the actual checkout keeps
-// this clearly on the right side of that line.
-//
-// Mints a short-lived, single-use handoff token first so that browser lands
-// already signed in as the same member, instead of dropping them at a login
-// screen (see gym-app's app/api/mobile/auth/web-handoff and app/api/auth/
-// web-handoff routes). If minting fails for any reason (offline, expired
-// mobile session, server hiccup), falls back to opening the bare URL —
-// exactly today's behavior — rather than blocking the button.
-async function openMembershipOnWeb() {
+// Gym membership is a real-world service, so paying for it on the web is
+// allowed by both stores. The app never shows prices or a "Buy" button
+// itself; it hands off to the website, already signed in, where only
+// in-person plans are offered (see src/lib/membership-web.ts).
+function joinOnWeb() {
   tapFeedback();
-  try {
-    const res = await apiFetch<{ success: true; data: { token: string } }>("/api/mobile/auth/web-handoff", {
-      method: "POST",
-    });
-    const params = new URLSearchParams({ token: res.data.token, next: MEMBERSHIP_PATH });
-    Linking.openURL(`${API_BASE_URL}/api/auth/web-handoff?${params.toString()}`);
-  } catch {
-    Linking.openURL(`${API_BASE_URL}${MEMBERSHIP_PATH}`);
-  }
+  void openMembershipOnWeb();
 }
 
 const STATUS_LABEL: Record<string, string> = {
@@ -96,14 +75,10 @@ export default function MembershipScreen() {
                   {data.isPeriodLapsed ? "Period ended" : STATUS_LABEL[data.subscriptionStatus] ?? data.subscriptionStatus}
                 </Text>
               </View>
-            ) : CAN_PROMOTE_PURCHASE ? (
-              <Pressable style={styles.statusChip} onPress={openMembershipOnWeb}>
+            ) : (
+              <Pressable style={styles.statusChip} onPress={joinOnWeb}>
                 <Text style={styles.statusChipText}>Get started</Text>
               </Pressable>
-            ) : (
-              <View style={styles.statusChip}>
-                <Text style={styles.statusChipText}>No plan</Text>
-              </View>
             )}
             {/* Mirrors the web Membership page: "renews" only for an active,
                 unexpired period. Automatic renewal doesn't exist yet, so a
@@ -155,18 +130,15 @@ export default function MembershipScreen() {
             </Card>
           ) : null}
 
-          {CAN_PROMOTE_PURCHASE ? (
-            <Button
-              title={data.isPeriodLapsed ? "Renew on web" : data.currentPlanName ? "Manage membership on web" : "View plans on web"}
-              onPress={openMembershipOnWeb}
-              variant={data.isPeriodLapsed || !data.currentPlanName ? "primary" : "secondary"}
-              style={{ marginTop: Spacing.sm }}
-            />
-          ) : null}
+          <Button
+            title={data.isPeriodLapsed ? "Renew on the website" : data.currentPlanName ? "Manage membership on the website" : "Join on the website"}
+            onPress={joinOnWeb}
+            variant={data.isPeriodLapsed || !data.currentPlanName ? "primary" : "secondary"}
+            style={{ marginTop: Spacing.sm }}
+          />
           <Text style={styles.noteText}>
-            {CAN_PROMOTE_PURCHASE
-              ? "Plan changes, pass packs, and billing open in your browser — full checkout is coming to the app itself soon."
-              : "This shows your current plan and status. Your gym arranges plan changes, pass packs and billing."}
+            Gym memberships, class packs and passes are bought on our website and open in your browser, already signed in.
+            Come back to the app afterwards to book.
           </Text>
         </ScrollView>
       )}

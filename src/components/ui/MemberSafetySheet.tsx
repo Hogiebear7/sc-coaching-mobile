@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, View } from "react-native";
 
-import { Color, Radius, Spacing } from "@/constants/theme";
+import { Radius, Spacing } from "@/constants/theme";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 import { useBlockMember, useReportWorkout } from "@/lib/queries/community";
 
 const REPORT_REASONS = ["Offensive or abusive", "Spam or fake", "Something else"] as const;
@@ -27,6 +28,8 @@ export function MemberSafetySheet({
   /** Skip the menu (e.g. "Block" tapped directly beside a comment). */
   initialStep?: "block";
 }) {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const [step, setStep] = useState<Step>(initialStep ?? "menu");
   const [doneText, setDoneText] = useState("");
   const report = useReportWorkout();
@@ -133,7 +136,8 @@ export function MemberSafetySheet({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "center", padding: Spacing.lg },
   card: { backgroundColor: Color.surface1, borderRadius: Radius.lg, padding: Spacing.lg, borderWidth: 1, borderColor: Color.borderSubtle },
   title: { fontSize: 16, fontWeight: "700", color: Color.textPrimary, marginBottom: Spacing.sm },
@@ -147,4 +151,5 @@ const styles = StyleSheet.create({
   buttonGhost: { borderWidth: 1, borderColor: Color.borderSubtle },
   buttonDanger: { backgroundColor: Color.danger },
   buttonDangerText: { fontSize: 14, fontWeight: "700", color: Color.textPrimary },
-});
+})
+);

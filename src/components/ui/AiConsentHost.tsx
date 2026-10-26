@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, View } from "react-native";
 
-import { Color, Radius, Spacing } from "@/constants/theme";
+import { Radius, Spacing } from "@/constants/theme";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 import { registerAiConsentHandler } from "@/lib/api-client";
 import { useSetAiConsent } from "@/lib/queries/ai-consent";
 
@@ -9,6 +10,9 @@ import { useSetAiConsent } from "@/lib/queries/ai-consent";
 // here: the member sees exactly what is shared and with whom, and chooses. "Allow" saves the consent and the original request is sent again; "Not now" leaves
 // AI off and the request fails with a plain message. Several refusals at the same moment share one prompt.
 export function AiConsentHost() {
+  const styles = useStyles();
+  const Color = useLegacyColors();
+
   const [visible, setVisible] = useState(false);
   const pending = useRef<((granted: boolean) => void)[]>([]);
   const setConsent = useSetAiConsent();
@@ -58,7 +62,7 @@ export function AiConsentHost() {
               <Text style={styles.ghostText}>Not now</Text>
             </Pressable>
             <Pressable style={[styles.button, styles.primary]} onPress={allow} disabled={setConsent.isPending} accessibilityRole="button">
-              {setConsent.isPending ? <ActivityIndicator color={Color.bg0} size="small" /> : <Text style={styles.primaryText}>Allow</Text>}
+              {setConsent.isPending ? <ActivityIndicator color={Color.goldForeground} size="small" /> : <Text style={styles.primaryText}>Allow</Text>}
             </Pressable>
           </View>
         </View>
@@ -67,7 +71,8 @@ export function AiConsentHost() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.7)", justifyContent: "center", padding: Spacing.lg },
   card: { backgroundColor: Color.surface1, borderRadius: Radius.lg, padding: Spacing.lg, borderWidth: 1, borderColor: Color.borderSubtle },
   title: { fontSize: 18, fontWeight: "700", color: Color.textPrimary, marginBottom: Spacing.sm },
@@ -78,5 +83,6 @@ const styles = StyleSheet.create({
   ghost: { borderWidth: 1, borderColor: Color.borderSubtle },
   ghostText: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
   primary: { backgroundColor: Color.gold },
-  primaryText: { fontSize: 14, fontWeight: "700", color: Color.bg0 },
-});
+  primaryText: { fontSize: 14, fontWeight: "700", color: Color.goldForeground },
+})
+);

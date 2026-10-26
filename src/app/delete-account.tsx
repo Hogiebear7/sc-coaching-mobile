@@ -6,7 +6,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { Color, Radius, Spacing } from "@/constants/theme";
+import { Radius, Spacing } from "@/constants/theme";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 import { canSubmitDeletion, DELETE_CONFIRM_WORD } from "@/lib/account-deletion";
 import { ApiError } from "@/lib/api-client";
 import { useAuth } from "@/lib/auth-context";
@@ -17,6 +18,9 @@ import { useDeleteAccount } from "@/lib/queries/profile";
 // the root AuthGate replaces the route with the login screen. Nothing else is closed, reset or navigated in the same burst (two native transitions at once
 // have crashed this app before).
 export default function DeleteAccountScreen() {
+  const styles = useStyles();
+  const Color = useLegacyColors();
+
   const router = useRouter();
   const { logout } = useAuth();
   const deleteAccount = useDeleteAccount();
@@ -111,7 +115,8 @@ export default function DeleteAccountScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
   safe: { flex: 1, backgroundColor: Color.bg0 },
   header: {
     flexDirection: "row",
@@ -150,4 +155,5 @@ const styles = StyleSheet.create({
   },
   dangerButtonDisabled: { opacity: 0.5 },
   dangerText: { color: Color.danger, fontSize: 15, fontWeight: "700" },
-});
+})
+);

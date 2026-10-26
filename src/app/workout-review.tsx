@@ -160,6 +160,18 @@ export default function WorkoutReviewScreen() {
                   <DetailRow label="Week" value={String(data.pregnancy.weeksPregnant)} last />
                 ) : null}
               </Card>
+              {data.pregnancyFlags && data.pregnancyFlags.length > 0 ? (
+                <Card style={styles.detailCard}>
+                  {data.pregnancyFlags.map((f, i) => (
+                    <DetailRow
+                      key={f.exercise}
+                      label={f.exercise}
+                      value={`${f.reason} Try: ${f.swap}`}
+                      last={i === data.pregnancyFlags!.length - 1}
+                    />
+                  ))}
+                </Card>
+              ) : null}
             </>
           ) : null}
 

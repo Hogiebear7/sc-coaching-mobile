@@ -43,6 +43,7 @@ const TYPE_LABEL: Record<NotificationType, string> = {
   workout_liked: "Workout liked",
   workout_commented: "New comment",
   mentioned_in_comment: "Mentioned you",
+  nutrition_update: "Nutrition",
 };
 
 const TYPE_ICON: Record<NotificationType, keyof typeof Ionicons.glyphMap> = {
@@ -66,6 +67,7 @@ const TYPE_ICON: Record<NotificationType, keyof typeof Ionicons.glyphMap> = {
   workout_liked: "heart-outline",
   workout_commented: "chatbubble-ellipses-outline",
   mentioned_in_comment: "chatbubble-ellipses-outline",
+  nutrition_update: "nutrition-outline",
 };
 
 // Mirrors the web app's urgent/routine split (dashboard/notifications/
@@ -89,6 +91,7 @@ const TYPE_IS_URGENT: Record<NotificationType, boolean> = {
   workout_liked: false,
   workout_commented: false,
   mentioned_in_comment: false,
+  nutrition_update: false,
 };
 
 function formatRelativeTime(iso: string): string {

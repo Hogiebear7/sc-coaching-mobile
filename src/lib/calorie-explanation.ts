@@ -40,11 +40,17 @@ export function calorieExplanation(target: ResolvedNutritionTarget | null | unde
       );
     }
     const pace = target.pacePctPerWeek ?? 0;
+    const extra = target.stageExtraKcal ?? 0;
     steps.push(
-      pace === 0
-        ? "2. Your goal — maintain your weight, so no deficit or surplus is applied."
-        : `2. Your goal — ${pace < 0 ? "lose" : "gain"} about ${Math.abs(pace)}% of your bodyweight a week, so the budget is ${pace < 0 ? "below" : "above"} your burn by the right amount.`
+      target.nutritionStage === "pregnant" || target.nutritionStage === "postpartum"
+        ? `2. Your goal — paused ${target.nutritionStage === "pregnant" ? "while you're pregnant" : "for the first 12 weeks after the birth"}, so your target maintains your weight${extra > 0 ? ` plus ${kcal(extra)} a day${target.nutritionStage === "pregnant" ? " for your stage of pregnancy" : " for breastfeeding"}` : ""}.`
+        : pace === 0
+          ? "2. Your goal — maintain your weight, so no deficit or surplus is applied."
+          : `2. Your goal — ${pace < 0 ? "lose" : "gain"} about ${Math.abs(pace)}% of your bodyweight a week, so the budget is ${pace < 0 ? "below" : "above"} your burn by the right amount.`
     );
+    if (target.nutritionStage === "breastfeeding" && extra > 0) {
+      steps.push(`   Plus ${kcal(extra)} a day while you're breastfeeding. Let the app know when you stop, in Cycle tracking.`);
+    }
     steps.push(
       target.paceLimited
         ? "3. A safe minimum — your pace would have taken you too low, so it's been slowed to keep you at a safe level."

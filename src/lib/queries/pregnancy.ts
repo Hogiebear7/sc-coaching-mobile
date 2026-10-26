@@ -24,18 +24,28 @@ export interface PregnancyEstimate {
   disclaimer: string;
 }
 
+// Mirrors lib/pregnancy-training.ts's TrainingGuidance.
+export interface TrainingGuidance {
+  headline: string;
+  effort: string;
+  points: string[];
+}
+
 export interface PregnancyData {
   isPregnant: boolean;
   shareWithCoach: boolean;
+  /** Set by "Baby has arrived". Optional: older servers don't send it. */
+  birthDate?: string | null;
+  breastfeeding?: boolean | null;
   estimate: PregnancyEstimate;
+  /** Stage training guidance (pregnancy and the 12 weeks after the birth). */
+  training?: TrainingGuidance | null;
 }
 
 interface PregnancyResponse {
   success: true;
   data: PregnancyData;
 }
-
-export const COACH_SHARE_UNLOCK_WEEKS = 12;
 
 export function usePregnancyData(enabled: boolean) {
   return useQuery({
@@ -48,20 +58,23 @@ export function usePregnancyData(enabled: boolean) {
 export interface PregnancyStatusInput {
   isPregnant: boolean;
   weeksAlong?: number;
-  shareWithCoach: boolean;
+  shareWithCoach?: boolean;
+  birthDate?: string | null;
+  breastfeeding?: boolean;
 }
 
 export function useSavePregnancyStatus() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (input: PregnancyStatusInput) =>
-      apiFetch<{ success: true; data: PregnancyData }>("/api/pregnancy/status", {
+      apiFetch<{ success: true; data: PregnancyData & { goalPaused?: boolean } }>("/api/pregnancy/status", {
         method: "POST",
         body: input,
       }),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["pregnancy"] });
-      qc.invalidateQueries({ queryKey: ["dashboard"] });
+      // Pregnancy changes the calorie target, the cycle phase and training
+      // guidance, so refresh everything rather than guess which screens.
+      qc.invalidateQueries();
     },
   });
 }

@@ -42,6 +42,9 @@ export function NutritionPlanPanel({ target }: { target: ResolvedNutritionTarget
   const distribution: CalorieDistribution = target?.distribution ?? prefs?.calorieDistribution ?? "even";
   const locked = prefs?.distributionLocked ?? target?.distributionSource === "coach-locked";
   const pace = prefs?.goalPacePctPerWeek ?? target?.pacePctPerWeek ?? null;
+  // Pregnancy and the 12 weeks after the birth hold the goal at maintenance
+  // server-side, so the pace can't be chosen until then.
+  const pacePaused = target?.nutritionStage === "pregnant" || target?.nutritionStage === "postpartum";
 
   return (
     <View style={styles.wrap}>
@@ -109,6 +112,20 @@ export function NutritionPlanPanel({ target }: { target: ResolvedNutritionTarget
 
           <View style={styles.section}>
             <SectionTitle title="Weekly pace" />
+            {pacePaused ? (
+              <View style={[styles.card, styles.lockedRow]}>
+                <Ionicons name="pause-circle-outline" size={18} color={colors.textSecondary} />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.rowTitle}>Paused</Text>
+                  <Text style={styles.rowSub}>
+                    {target?.nutritionStage === "pregnant"
+                      ? "Your target maintains your weight while you're pregnant, with extra calories for your stage."
+                      : "Your target maintains your weight for the first 12 weeks after the birth."}
+                  </Text>
+                </View>
+              </View>
+            ) : (
+            <>
             <View style={styles.chips}>
               {PACE_CHOICES.map((c) => {
                 const active = pace === c.value;
@@ -137,6 +154,8 @@ export function NutritionPlanPanel({ target }: { target: ResolvedNutritionTarget
               })}
             </View>
             <Text style={styles.helper}>% of your bodyweight per week. The app never goes below a safe minimum for you.</Text>
+            </>
+            )}
           </View>
 
           <View style={styles.section}>

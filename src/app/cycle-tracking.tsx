@@ -20,7 +20,7 @@ import { TextField } from "@/components/ui/TextField";
 import { Radius, Spacing } from "@/constants/theme";
 import { ApiError } from "@/lib/api-client";
 import { useProfile } from "@/lib/queries/profile";
-import { COACH_SHARE_UNLOCK_WEEKS, usePregnancyData, useSavePregnancyStatus } from "@/lib/queries/pregnancy";
+import { usePregnancyData, useSavePregnancyStatus } from "@/lib/queries/pregnancy";
 import { todayDateString } from "@/lib/workout-formatters";
 import {
   useCycleData,
@@ -131,7 +131,9 @@ export default function CycleTrackingScreen() {
   const [weeksAlongInput, setWeeksAlongInput] = useState("");
   const [pregnancyError, setPregnancyError] = useState<string | null>(null);
   const [pregnancySaved, setPregnancySaved] = useState(false);
+  const [pregnancyNotice, setPregnancyNotice] = useState<string | null>(null);
   const [weeksHydrated, setWeeksHydrated] = useState(false);
+  const [birthDateInput, setBirthDateInput] = useState("");
 
   useEffect(() => {
     if (!pregnancy || weeksHydrated) return;
@@ -139,6 +141,7 @@ export default function CycleTrackingScreen() {
     if (pregnancy.isPregnant && pregnancy.estimate.weeksPregnant !== null) {
       setWeeksAlongInput(String(pregnancy.estimate.weeksPregnant));
     }
+    setBirthDateInput(pregnancy.birthDate ?? "");
     setWeeksHydrated(true);
   }, [pregnancy, weeksHydrated]);
 
@@ -237,14 +240,48 @@ export default function CycleTrackingScreen() {
       return;
     }
     try {
-      await savePregnancy.mutateAsync({
+      const res = await savePregnancy.mutateAsync({
         isPregnant: true,
         weeksAlong: weeks,
         shareWithCoach: pregnancy?.shareWithCoach ?? false,
       });
       setPregnancySaved(true);
+      if (res.data.goalPaused) {
+        setPregnancyNotice(
+          "Your weight goal is paused while you're pregnant. Your calorie target is now set to maintain your weight, with extra calories added as your pregnancy goes on."
+        );
+      }
     } catch (e) {
       setPregnancyError(e instanceof ApiError ? e.message : "Could not save.");
+    }
+  }
+
+  async function handleSaveBirth() {
+    setPregnancyError(null);
+    setPregnancySaved(false);
+    if (!birthDateInput) {
+      setPregnancyError("Enter your baby's birth date.");
+      return;
+    }
+    try {
+      await savePregnancy.mutateAsync({ isPregnant: true, birthDate: birthDateInput });
+      setPregnancyNotice("Congratulations! Your calorie target and guidance now follow the weeks after the birth.");
+    } catch (e) {
+      setPregnancyError(e instanceof ApiError ? e.message : "Could not save.");
+    }
+  }
+
+  async function handleToggleBreastfeeding(next: boolean) {
+    setPregnancyError(null);
+    try {
+      await savePregnancy.mutateAsync({ isPregnant: true, breastfeeding: next });
+      setPregnancyNotice(
+        next
+          ? "Your calorie target now includes about 500 extra kcal a day for breastfeeding. Turn this off when you stop."
+          : "Breastfeeding is off, so the extra 500 kcal comes off your target."
+      );
+    } catch (e) {
+      setPregnancyError(e instanceof ApiError ? e.message : "Could not update.");
     }
   }
 
@@ -323,10 +360,11 @@ export default function CycleTrackingScreen() {
               </Card>
             ) : (
               <Card style={[styles.phaseCard, { marginTop: 0 }]}>
-                <Text style={styles.phaseTitle}>Estimated phase</Text>
+                <Text style={styles.phaseTitle}>{phase?.pausedFor ? "Cycle tracking paused" : "Estimated phase"}</Text>
                 <Text style={styles.phaseExplanation}>
-                  Add your cycle information below to see a phase estimate. All information is
-                  private to you.
+                  {phase?.pausedFor
+                    ? phase.explanation
+                    : "Add your cycle information below to see a phase estimate. All information is private to you."}
                 </Text>
               </Card>
             )}
@@ -474,10 +512,10 @@ export default function CycleTrackingScreen() {
             <Card style={styles.formCard}>
               <View style={styles.settingRow}>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.settingTitle}>I&apos;m currently pregnant</Text>
+                  <Text style={styles.settingTitle}>I&apos;m pregnant or have recently had my baby</Text>
                   <Text style={styles.settingSub}>
-                    Private by default. Turning this on adjusts general training, nutrition, and
-                    recovery guidance across the app for your stage of pregnancy.
+                    Private by default. Turning this on pauses cycle tracking and adjusts your calorie
+                    target and training guidance for your stage.
                   </Text>
                 </View>
                 <Switch
@@ -491,21 +529,62 @@ export default function CycleTrackingScreen() {
 
               {pregnantToggle ? (
                 <View style={{ marginTop: Spacing.lg }}>
-                  <TextField
-                    label="How many weeks along are you?"
-                    value={weeksAlongInput}
-                    onChangeText={setWeeksAlongInput}
-                    placeholder="e.g. 8"
-                    keyboardType="number-pad"
-                  />
+                  {pregnancy?.estimate.trimester !== "postpartum" ? (
+                    <>
+                      <TextField
+                        label="How many weeks along are you?"
+                        value={weeksAlongInput}
+                        onChangeText={setWeeksAlongInput}
+                        placeholder="e.g. 8"
+                        keyboardType="number-pad"
+                      />
+                      <Button
+                        title={pregnancy?.isPregnant ? "Update" : "Save"}
+                        onPress={handleSaveWeeksAlong}
+                        loading={savePregnancy.isPending}
+                        style={{ marginTop: Spacing.sm }}
+                      />
+                    </>
+                  ) : null}
                   {pregnancyError ? <Text style={styles.error}>{pregnancyError}</Text> : null}
-                  {pregnancySaved && !pregnancyError ? <Text style={styles.saved}>Saved.</Text> : null}
-                  <Button
-                    title={pregnancy?.isPregnant ? "Update" : "Save"}
-                    onPress={handleSaveWeeksAlong}
-                    loading={savePregnancy.isPending}
-                    style={{ marginTop: Spacing.sm }}
-                  />
+                  {pregnancySaved && !pregnancyError && !pregnancyNotice ? <Text style={styles.saved}>Saved.</Text> : null}
+                  {pregnancyNotice ? <Text style={styles.saved}>{pregnancyNotice}</Text> : null}
+
+                  {pregnancy?.isPregnant ? (
+                    <View style={{ marginTop: Spacing.lg }}>
+                      <DateField
+                        label="Baby has arrived? Birth date"
+                        value={birthDateInput}
+                        onChange={setBirthDateInput}
+                        maxDate={new Date().toISOString().slice(0, 10)}
+                      />
+                      <Button
+                        title={pregnancy.birthDate ? "Update birth date" : "Save birth date"}
+                        onPress={handleSaveBirth}
+                        loading={savePregnancy.isPending}
+                        variant="secondary"
+                        style={{ marginTop: Spacing.sm }}
+                      />
+                    </View>
+                  ) : null}
+
+                  {pregnancy?.isPregnant && pregnancy.estimate.trimester === "postpartum" ? (
+                    <View style={[styles.settingRow, { paddingHorizontal: 0, marginTop: Spacing.lg }]}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.settingTitle}>I&apos;m breastfeeding</Text>
+                        <Text style={styles.settingSub}>
+                          Adds about 500 kcal a day to your calorie target. Turn this off when you stop.
+                        </Text>
+                      </View>
+                      <Switch
+                        value={pregnancy.breastfeeding === true}
+                        onValueChange={handleToggleBreastfeeding}
+                        trackColor={{ false: Color.surface3, true: Color.success }}
+                        thumbColor="#ffffff"
+                        disabled={savePregnancy.isPending}
+                      />
+                    </View>
+                  ) : null}
 
                   {pregnancy?.isPregnant && pregnancy.estimate.content ? (
                     <View style={styles.pregnancyGuidanceBox}>
@@ -517,23 +596,34 @@ export default function CycleTrackingScreen() {
                       </View>
                       <Text style={styles.phaseExplanation}>{pregnancy.estimate.content.summary}</Text>
 
-                      <BulletList label="TRAINING — GENERALLY FINE" items={pregnancy.estimate.content.trainingDo} />
-                      <BulletList label="TRAINING — AVOID" items={pregnancy.estimate.content.trainingAvoid} />
-                      <BulletList label="NUTRITION — PRIORITISE" items={pregnancy.estimate.content.nutritionDo} />
-                      <BulletList label="NUTRITION — AVOID" items={pregnancy.estimate.content.nutritionAvoid} />
+                      <BulletList label="Eat and take" items={pregnancy.estimate.content.nutritionDo} />
+                      <BulletList label="Avoid" items={pregnancy.estimate.content.nutritionAvoid} />
+                      {pregnancy.training ? (
+                        <>
+                          <Text style={styles.phaseTitle}>{pregnancy.training.headline}</Text>
+                          <Text style={styles.phaseExplanation}>{pregnancy.training.effort}</Text>
+                          <BulletList label="Training" items={pregnancy.training.points} />
+                        </>
+                      ) : (
+                        <>
+                          <BulletList label="Training: generally fine" items={pregnancy.estimate.content.trainingDo} />
+                          <BulletList label="Training: avoid" items={pregnancy.estimate.content.trainingAvoid} />
+                        </>
+                      )}
                       <BulletList label="Recovery" items={pregnancy.estimate.content.recoveryDo} />
 
                       <Text style={styles.disclaimer}>{pregnancy.estimate.disclaimer}</Text>
                     </View>
                   ) : null}
 
-                  {pregnancy?.isPregnant && (pregnancy.estimate.weeksPregnant ?? 0) >= COACH_SHARE_UNLOCK_WEEKS ? (
+                  {pregnancy?.isPregnant ? (
                     <View style={[styles.settingRow, { paddingHorizontal: 0, marginTop: Spacing.lg }]}>
                       <View style={{ flex: 1 }}>
                         <Text style={styles.settingTitle}>Let your coach know</Text>
                         <Text style={styles.settingSub}>
-                          Shares only that you&apos;re pregnant and your approximate stage — no dates,
-                          no other details.
+                          Shares only that you&apos;re pregnant or have had your baby, and your
+                          approximate stage, so your coach can adjust your training. No dates or other
+                          details.
                         </Text>
                       </View>
                       <Switch
@@ -544,11 +634,6 @@ export default function CycleTrackingScreen() {
                         disabled={savePregnancy.isPending}
                       />
                     </View>
-                  ) : pregnancy?.isPregnant ? (
-                    <Text style={styles.formHint}>
-                      Once you&apos;re {COACH_SHARE_UNLOCK_WEEKS} weeks along, you&apos;ll be able to
-                      choose whether to let your coach know.
-                    </Text>
                   ) : null}
                 </View>
               ) : null}

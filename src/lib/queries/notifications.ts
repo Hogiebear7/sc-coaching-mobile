@@ -20,7 +20,8 @@ export type NotificationType =
   | "new_follower"
   | "workout_liked"
   | "workout_commented"
-  | "mentioned_in_comment";
+  | "mentioned_in_comment"
+  | "nutrition_update";
 
 export interface NotificationRecord {
   id: string;

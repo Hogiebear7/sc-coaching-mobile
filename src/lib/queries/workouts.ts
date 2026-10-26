@@ -301,6 +301,9 @@ export interface WorkoutReviewData {
   recovery: WorkoutReviewRecovery | null;
   cyclePhase: WorkoutReviewCyclePhase | null;
   pregnancy: WorkoutReviewPregnancy | null;
+  /** Exercises that need a swap at the member's pregnancy or after-birth
+      stage. Optional: older servers don't send it. */
+  pregnancyFlags?: { exercise: string; reason: string; swap: string }[];
   nutrition: WorkoutReviewNutrition | null;
   hydration: WorkoutReviewHydration | null;
   reviewText: string;

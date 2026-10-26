@@ -111,6 +111,10 @@ export interface ResolvedNutritionTarget {
   minimumApplied?: boolean;
   distribution?: CalorieDistribution | null;
   distributionSource?: DistributionSource | null;
+  /** Pregnancy / first 12 weeks after the birth / breastfeeding, when it
+      shaped this target. */
+  nutritionStage?: "pregnant" | "postpartum" | "breastfeeding" | null;
+  stageExtraKcal?: number;
 }
 
 export interface ResolvedNutritionWeek {

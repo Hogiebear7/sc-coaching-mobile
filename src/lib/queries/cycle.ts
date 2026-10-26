@@ -37,6 +37,8 @@ export interface PhaseEstimate {
   intensityGuidance: string;
   recoveryGuidance: string;
   readinessNote: string;
+  /** Set while pregnancy or the time after a birth pauses tracking. */
+  pausedFor?: "pregnancy" | "postpartum";
 }
 
 // Mirrors lib/cycle-phase.ts's phaseSegments() — same day-range boundaries

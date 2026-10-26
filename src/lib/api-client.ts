@@ -19,9 +19,24 @@ export function registerUnauthorizedHandler(handler: (() => void) | null) {
   onUnauthorized = handler;
 }
 
+// AI features need the member's explicit consent to send their data to the AI provider (gym-app lib/ai-consent.ts). The server refuses such a request with
+// 403 + code "ai_consent_required" BEFORE anything reaches the provider. The root AiConsentHost registers a handler that asks the member; if they allow it the
+// original request is sent again once, if they decline it fails with a plain message and nothing else in the app is affected.
+export const AI_CONSENT_REQUIRED_CODE = "ai_consent_required";
+export const AI_DECLINED_MESSAGE = "AI features are off. You can turn them on in Settings.";
+let askAiConsent: (() => Promise<boolean>) | null = null;
+export function registerAiConsentHandler(handler: (() => Promise<boolean>) | null) {
+  askAiConsent = handler;
+}
+
+function isConsentRefusal(status: number, json: unknown): boolean {
+  return status === 403 && !!json && typeof json === "object" && "code" in json && json.code === AI_CONSENT_REQUIRED_CODE;
+}
+
 export async function apiFetch<T>(
   path: string,
-  options: { method?: string; body?: unknown; skipAuth?: boolean } = {}
+  options: { method?: string; body?: unknown; skipAuth?: boolean } = {},
+  retriedAfterConsent = false
 ): Promise<T> {
   const { method = "GET", body, skipAuth = false } = options;
 
@@ -50,6 +65,10 @@ export async function apiFetch<T>(
   }
 
   if (!res.ok) {
+    if (isConsentRefusal(res.status, json) && askAiConsent && !retriedAfterConsent) {
+      if (await askAiConsent()) return apiFetch<T>(path, options, true);
+      throw new ApiError(403, AI_DECLINED_MESSAGE);
+    }
     if (res.status === 401 && !skipAuth) {
       await clearToken();
       onUnauthorized?.();
@@ -70,7 +89,11 @@ export async function apiFetch<T>(
 // is inconsistent), so this awaits the full text — no live token-by-token
 // typing effect for now, but reliable everywhere. A streaming upgrade is a
 // native-polish-phase item once this is running on real devices.
-export async function apiFetchText(path: string, options: { body?: unknown } = {}): Promise<string> {
+export async function apiFetchText(
+  path: string,
+  options: { body?: unknown } = {},
+  retriedAfterConsent = false
+): Promise<string> {
   const token = await getToken();
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (token) headers.Authorization = `Bearer ${token}`;
@@ -89,17 +112,22 @@ export async function apiFetchText(path: string, options: { body?: unknown } = {
   const text = await res.text();
 
   if (!res.ok) {
+    let parsed: unknown = null;
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      // Not JSON — keep the generic message.
+    }
+    if (isConsentRefusal(res.status, parsed) && askAiConsent && !retriedAfterConsent) {
+      if (await askAiConsent()) return apiFetchText(path, options, true);
+      throw new ApiError(403, AI_DECLINED_MESSAGE);
+    }
     if (res.status === 401) {
       await clearToken();
       onUnauthorized?.();
     }
     let message = `Request failed (${res.status}).`;
-    try {
-      const json = JSON.parse(text);
-      if (json && typeof json.message === "string") message = json.message;
-    } catch {
-      // Not JSON — keep the generic message.
-    }
+    if (parsed && typeof parsed === "object" && "message" in parsed && typeof parsed.message === "string") message = parsed.message;
     throw new ApiError(res.status, message);
   }
 

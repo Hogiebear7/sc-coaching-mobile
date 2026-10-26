@@ -5,12 +5,14 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-nati
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
+import { MemberSafetySheet } from "@/components/ui/MemberSafetySheet";
 import { LikeButton } from "@/components/app/LikeButton";
 import { Card } from "@/components/ui/Card";
 import { CommentSheet } from "@/components/ui/CommentSheet";
 import { ExercisePreviewList } from "@/components/ui/ExercisePreviewList";
 import { Spacing } from "@/constants/theme";
 import { formatCommunityDate, formatPbExerciseName, formatWorkoutTitle } from "@/lib/community-formatters";
+import { useAuth } from "@/lib/auth-context";
 import { tapFeedback } from "@/lib/haptics";
 import { useCommunityWorkoutItem, useToggleWorkoutLike } from "@/lib/queries/community";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
@@ -27,6 +29,8 @@ export default function CommunityWorkoutScreen() {
   const { data: item, isLoading, isError } = useCommunityWorkoutItem(id ?? "");
   const toggleLike = useToggleWorkoutLike();
   const [commentsOpen, setCommentsOpen] = useState(true);
+  const { user } = useAuth();
+  const [safetyOpen, setSafetyOpen] = useState(false);
   const pbExerciseName = item?.isPersonalBest ? formatPbExerciseName(item.personalBestExercise) : null;
 
   return (
@@ -36,7 +40,19 @@ export default function CommunityWorkoutScreen() {
           <Ionicons name="chevron-back" size={26} color={Color.textPrimary} />
         </Pressable>
         <Text style={styles.headerTitle}>Workout</Text>
-        <View style={{ width: 36 }} />
+        {item && item.userId !== user?.id ? (
+          <Pressable
+            onPress={() => setSafetyOpen(true)}
+            hitSlop={12}
+            style={styles.backButton}
+            accessibilityRole="button"
+            accessibilityLabel={`Report or block ${item.authorName}`}
+          >
+            <Ionicons name="ellipsis-horizontal" size={22} color={Color.textMuted} />
+          </Pressable>
+        ) : (
+          <View style={{ width: 36 }} />
+        )}
       </View>
 
       {isLoading ? (
@@ -104,6 +120,15 @@ export default function CommunityWorkoutScreen() {
 
       {item ? (
         <CommentSheet visible={commentsOpen} onClose={() => setCommentsOpen(false)} workoutSessionId={item.id} />
+      ) : null}
+      {safetyOpen && item ? (
+        <MemberSafetySheet
+          visible
+          onClose={() => setSafetyOpen(false)}
+          memberUserId={item.userId}
+          memberName={item.authorName}
+          workoutId={item.id}
+        />
       ) : null}
     </SafeAreaView>
   );

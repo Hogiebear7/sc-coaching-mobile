@@ -29,6 +29,7 @@ import {
 } from "@/lib/queries/messages";
 import { useMemberTier } from "@/lib/queries/profile";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
+import { notInPlanCopy } from "@/lib/upsell-config";
 
 type Tab = "ai" | "coach";
 
@@ -74,7 +75,7 @@ function AiCoachTab({
   if (!hasAccess(tier, "aiCoachChat")) {
     return (
       <View style={{ margin: Spacing.lg }}>
-        <UpsellCard icon="chatbubble-ellipses-outline" title="AI Coach" body="Chat with the AI Coach — available on App Subscription and above." />
+        <UpsellCard icon="chatbubble-ellipses-outline" title="AI Coach" body={notInPlanCopy("Chat with the AI Coach")} />
       </View>
     );
   }

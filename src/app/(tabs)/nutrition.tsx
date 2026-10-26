@@ -59,6 +59,7 @@ import { calorieExplanation } from "@/lib/calorie-explanation";
 import { classifyLoad, LOAD_BAND_LABEL } from "@/lib/nutrition-calc";
 import { todayDateString } from "@/lib/workout-formatters";
 import { makeStyles, useAppTheme } from "@/lib/theme";
+import { notInPlanCopy } from "@/lib/upsell-config";
 
 function shiftDate(dateISO: string, days: number): string {
   const [y, m, d] = dateISO.split("-").map(Number);
@@ -400,7 +401,7 @@ function CoachChat({
       <UpsellCard
         icon="chatbubble-ellipses-outline"
         title="AI Nutrition Coach"
-        body="Chat with the AI Nutrition Coach — available on App Subscription and above."
+        body={notInPlanCopy("Chat with the AI Nutrition Coach")}
       />
     );
   }

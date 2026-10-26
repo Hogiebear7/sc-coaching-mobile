@@ -17,6 +17,7 @@ import {
   type WorkoutComment,
 } from "@/lib/queries/community";
 
+import { MemberSafetySheet } from "./MemberSafetySheet";
 import { MemberSearchSheet } from "./MemberSearchSheet";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
@@ -49,6 +50,7 @@ export function CommentSheet({
   const [mentions, setMentions] = useState<{ userId: string; fullName: string }[]>([]);
   const [mentionPickerOpen, setMentionPickerOpen] = useState(false);
   const [reportingId, setReportingId] = useState<string | null>(null);
+  const [blockTarget, setBlockTarget] = useState<{ userId: string; name: string } | null>(null);
   const [reportReason, setReportReason] = useState("");
 
   function handleChangeText(next: string) {
@@ -153,9 +155,14 @@ export function CommentSheet({
                             </Text>
                           </Pressable>
                         ) : (
-                          <Pressable onPress={() => setReportingId(reportingId === c.id ? null : c.id)} hitSlop={8}>
-                            <Text style={styles.commentActionText}>Report</Text>
-                          </Pressable>
+                          <>
+                            <Pressable onPress={() => setReportingId(reportingId === c.id ? null : c.id)} hitSlop={8}>
+                              <Text style={styles.commentActionText}>Report</Text>
+                            </Pressable>
+                            <Pressable onPress={() => setBlockTarget({ userId: c.userId, name: c.authorName })} hitSlop={8}>
+                              <Text style={styles.commentActionText}>Block</Text>
+                            </Pressable>
+                          </>
                         )}
                       </View>
                       {deleteComment.isError && deleteComment.variables === c.id ? (
@@ -221,9 +228,20 @@ export function CommentSheet({
             {postComment.isError ? (
               <Text style={styles.errorText}>{postComment.error?.message ?? "Couldn't post your comment."}</Text>
             ) : null}
+            <Text style={styles.rulesNote}>Keep it respectful. Abusive comments are removed, and you can report or block anyone.</Text>
           </View>
         </KeyboardAvoidingView>
       </Modal>
+
+      {blockTarget ? (
+        <MemberSafetySheet
+          visible
+          onClose={() => setBlockTarget(null)}
+          memberUserId={blockTarget.userId}
+          memberName={blockTarget.name}
+          initialStep="block"
+        />
+      ) : null}
 
       <MemberSearchSheet
         visible={mentionPickerOpen}
@@ -262,6 +280,7 @@ const useStyles = makeLegacyStyles((Color) =>
     commentBody: { fontSize: 15, color: Color.textSecondary, marginTop: 4, lineHeight: 21 },
     commentActions: { flexDirection: "row", marginTop: 6 },
     commentActionText: { fontSize: 13, fontWeight: "600", color: Color.textMuted },
+    rulesNote: { fontSize: 12, color: Color.textFaint, marginTop: 6 },
     commentActionTextDisabled: { opacity: 0.6 },
     errorText: { fontSize: 13, color: Color.danger, marginTop: 4 },
     reportRow: { flexDirection: "row", gap: Spacing.xs, marginTop: Spacing.xs, alignItems: "center" },

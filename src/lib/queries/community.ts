@@ -282,6 +282,52 @@ export function useReportComment() {
   });
 }
 
+export function useReportWorkout() {
+  return useMutation({
+    mutationFn: (input: { workoutId: string; reason: string }) =>
+      apiFetch<{ success: true }>(`/api/mobile/community/workouts/${input.workoutId}/report`, {
+        method: "POST",
+        body: { reason: input.reason },
+      }),
+  });
+}
+
+// Blocking changes what every Community surface returns (feed, wins, highlight, leaderboard, search, comments), so refetch all of them.
+function invalidateAllCommunity(qc: ReturnType<typeof useQueryClient>) {
+  qc.invalidateQueries({ predicate: (q) => typeof q.queryKey[0] === "string" && q.queryKey[0].startsWith("community-") });
+}
+
+export interface BlockedMember {
+  userId: string;
+  name: string;
+}
+
+export function useBlockedMembers() {
+  return useQuery({
+    queryKey: ["community-blocked"],
+    queryFn: () =>
+      apiFetch<{ success: true; data: { blocked: BlockedMember[] } }>("/api/mobile/community/blocked").then((r) => r.data.blocked),
+  });
+}
+
+export function useBlockMember() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (userId: string) =>
+      apiFetch<{ success: true }>("/api/mobile/community/block", { method: "POST", body: { userId } }),
+    onSuccess: () => invalidateAllCommunity(qc),
+  });
+}
+
+export function useUnblockMember() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (userId: string) =>
+      apiFetch<{ success: true }>("/api/mobile/community/unblock", { method: "POST", body: { userId } }),
+    onSuccess: () => invalidateAllCommunity(qc),
+  });
+}
+
 export interface CommunityPrivacy {
   discoverable: boolean;
   leaderboardVisible: boolean;

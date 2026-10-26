@@ -5,6 +5,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Radius, Spacing } from "@/constants/theme";
 import { FREE_CUSTOM_FOOD_LIMIT, hasAccess } from "@/lib/member-access";
+import { CAN_PROMOTE_PURCHASE } from "@/lib/upsell-config";
 import { getFoodSubmissionEligibility, useMyCustomFoods, useMySubmissions, type FoodRecord } from "@/lib/queries/food-catalog";
 import { useMemberTier } from "@/lib/queries/profile";
 import { SUBMISSION_STATUS_COPY } from "@/lib/submission-status";
@@ -60,7 +61,16 @@ export default function MyFoodsScreen() {
           <Ionicons name="chevron-back" size={26} color={Color.textPrimary} />
         </Pressable>
         <Text style={styles.headerTitle}>My custom foods</Text>
-        <Pressable onPress={() => router.push(atFreeLimit ? "/membership" : "/custom-food")} hitSlop={12}>
+        <Pressable
+          onPress={() => {
+            if (atFreeLimit) {
+              if (CAN_PROMOTE_PURCHASE) router.push("/membership");
+              return;
+            }
+            router.push("/custom-food");
+          }}
+          hitSlop={12}
+        >
           <Ionicons name={atFreeLimit ? "lock-closed-outline" : "add"} size={22} color={Color.gold} />
         </Pressable>
       </View>
@@ -69,7 +79,7 @@ export default function MyFoodsScreen() {
         <View style={styles.limitBanner}>
           <Text style={styles.limitBannerText}>
             {(foods?.length ?? 0)}/{FREE_CUSTOM_FOOD_LIMIT} saved on the Free tier
-            {atFreeLimit ? " — upgrade for unlimited." : "."}
+            {atFreeLimit ? (CAN_PROMOTE_PURCHASE ? " — upgrade for unlimited." : " — limit reached.") : "."}
           </Text>
         </View>
       ) : null}

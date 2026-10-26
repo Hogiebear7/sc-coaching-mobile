@@ -33,6 +33,7 @@ import {
   type ExerciseMetricKey,
 } from "@/lib/workout-formatters";
 import { makeStyles, useAppTheme } from "@/lib/theme";
+import { CAN_PROMOTE_PURCHASE } from "@/lib/upsell-config";
 
 // A deliberately narrow slice of the full EXERCISE_METRICS list (which also
 // has Volume/Best Set Vol./Sets) — this compact widget covers just
@@ -518,13 +519,13 @@ export default function WorkoutsScreen() {
                 icon="sparkles-outline"
                 label="Generate"
                 locked={!canGenerate}
-                onPress={() => router.push(canGenerate ? "/workout-generator" : "/membership")}
+                onPress={() => (canGenerate ? router.push("/workout-generator") : CAN_PROMOTE_PURCHASE && router.push("/membership"))}
               />
               <ToolButton
                 icon="watch-outline"
                 label="Import"
                 locked={!canImport}
-                onPress={() => router.push(canImport ? "/tracker-import" : "/membership")}
+                onPress={() => (canImport ? router.push("/tracker-import") : CAN_PROMOTE_PURCHASE && router.push("/membership"))}
               />
             </View>
           </View>
@@ -787,7 +788,7 @@ function ToolButton({
       }}
       style={({ pressed }) => [styles.tool, pressed && styles.pressed]}
       accessibilityRole="button"
-      accessibilityLabel={locked ? `${label}, upgrade to unlock` : label}
+      accessibilityLabel={locked ? (CAN_PROMOTE_PURCHASE ? `${label}, upgrade to unlock` : `${label}, not included in your plan`) : label}
     >
       <View style={styles.toolIcon}>
         <Ionicons name={icon} size={24} color={locked ? colors.textMuted : colors.text} />

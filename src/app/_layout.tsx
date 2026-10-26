@@ -7,6 +7,7 @@ import type { AppStateStatus } from "react-native";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
+import { AiConsentHost } from "@/components/ui/AiConsentHost";
 import { Button } from "@/components/ui/Button";
 import { TourHost } from "@/components/ui/TourOverlay";
 import { Radius, Spacing } from "@/constants/theme";
@@ -294,6 +295,7 @@ export default function RootLayout() {
                     <View style={styles.root}>
                       <AuthGate />
                       <TourHost />
+                      <AiConsentHost />
                     </View>
                   </WorkoutDraftProvider>
                 </RestTimerProvider>

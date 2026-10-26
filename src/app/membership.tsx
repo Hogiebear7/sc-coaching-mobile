@@ -11,6 +11,7 @@ import { apiFetch } from "@/lib/api-client";
 import { tapFeedback } from "@/lib/haptics";
 import { useMembership } from "@/lib/queries/membership";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
+import { CAN_PROMOTE_PURCHASE } from "@/lib/upsell-config";
 
 const MEMBERSHIP_PATH = "/dashboard/membership";
 
@@ -95,10 +96,14 @@ export default function MembershipScreen() {
                   {data.isPeriodLapsed ? "Period ended" : STATUS_LABEL[data.subscriptionStatus] ?? data.subscriptionStatus}
                 </Text>
               </View>
-            ) : (
+            ) : CAN_PROMOTE_PURCHASE ? (
               <Pressable style={styles.statusChip} onPress={openMembershipOnWeb}>
                 <Text style={styles.statusChipText}>Get started</Text>
               </Pressable>
+            ) : (
+              <View style={styles.statusChip}>
+                <Text style={styles.statusChipText}>No plan</Text>
+              </View>
             )}
             {/* Mirrors the web Membership page: "renews" only for an active,
                 unexpired period. Automatic renewal doesn't exist yet, so a
@@ -150,15 +155,18 @@ export default function MembershipScreen() {
             </Card>
           ) : null}
 
-          <Button
-            title={data.isPeriodLapsed ? "Renew on web" : data.currentPlanName ? "Manage membership on web" : "View plans on web"}
-            onPress={openMembershipOnWeb}
-            variant={data.isPeriodLapsed || !data.currentPlanName ? "primary" : "secondary"}
-            style={{ marginTop: Spacing.sm }}
-          />
+          {CAN_PROMOTE_PURCHASE ? (
+            <Button
+              title={data.isPeriodLapsed ? "Renew on web" : data.currentPlanName ? "Manage membership on web" : "View plans on web"}
+              onPress={openMembershipOnWeb}
+              variant={data.isPeriodLapsed || !data.currentPlanName ? "primary" : "secondary"}
+              style={{ marginTop: Spacing.sm }}
+            />
+          ) : null}
           <Text style={styles.noteText}>
-            Plan changes, pass packs, and billing open in your browser — full checkout is coming to the app
-            itself soon.
+            {CAN_PROMOTE_PURCHASE
+              ? "Plan changes, pass packs, and billing open in your browser — full checkout is coming to the app itself soon."
+              : "This shows your current plan and status. Your gym arranges plan changes, pass packs and billing."}
           </Text>
         </ScrollView>
       )}

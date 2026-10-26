@@ -22,6 +22,7 @@ import {
   type RadiusKm,
 } from "@/lib/queries/gyms";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
+import { CAN_PROMOTE_PURCHASE } from "@/lib/upsell-config";
 
 type Status = "idle" | "requesting" | "denied" | "ready" | "error";
 
@@ -279,7 +280,11 @@ export default function FindACoachScreen() {
             ) : !gyms || gyms.length === 0 ? (
               <View style={styles.centerFill}>
                 <Text style={styles.errorHeading}>No gyms or coaches found within {radiusKm} km</Text>
-                <Text style={styles.errorText}>Try a wider radius, a nearby town or postcode, or browse digital coaching from S&C.</Text>
+                <Text style={styles.errorText}>
+                  {CAN_PROMOTE_PURCHASE
+                    ? "Try a wider radius, a nearby town or postcode, or browse digital coaching from S&C."
+                    : "Try a wider radius or a nearby town or postcode."}
+                </Text>
                 {nextRadius ? (
                   <Button
                     title={`Search within ${nextRadius} km`}
@@ -293,9 +298,11 @@ export default function FindACoachScreen() {
                   variant="secondary"
                   style={{ marginTop: nextRadius ? Spacing.sm : Spacing.md }}
                 />
-                <Pressable onPress={() => router.push("/membership")} hitSlop={8} style={styles.noResultsSecondary}>
-                  <Text style={styles.noResultsSecondaryText}>See S&C app plans</Text>
-                </Pressable>
+                {CAN_PROMOTE_PURCHASE ? (
+                  <Pressable onPress={() => router.push("/membership")} hitSlop={8} style={styles.noResultsSecondary}>
+                    <Text style={styles.noResultsSecondaryText}>See S&C app plans</Text>
+                  </Pressable>
+                ) : null}
               </View>
             ) : (
               <View>

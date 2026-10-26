@@ -5,6 +5,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Radius, Spacing, FontSize } from "@/constants/theme";
 import { Card } from "./Card";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
+import { CAN_PROMOTE_PURCHASE } from "@/lib/upsell-config";
 
 // Shared "you don't have this yet" treatment for Free-tier gating (see
 // src/lib/member-access.ts) — used wherever a feature is shown but disabled
@@ -24,6 +25,24 @@ const UPGRADE_COPY: Record<"appSubscription" | "membership", string> = {
   membership: "Available on the Membership tier",
 };
 
+// Store builds never promote a purchase (see src/lib/upsell-config.ts): the
+// same locked treatment stays, but it only says the feature isn't part of the
+// member's current plan, shows a plain "Locked" badge instead of "Upgrade",
+// and does not navigate anywhere.
+const NOT_INCLUDED_COPY = "Not included in your current plan";
+const lockedCopy = (variant: "appSubscription" | "membership") => (CAN_PROMOTE_PURCHASE ? UPGRADE_COPY[variant] : NOT_INCLUDED_COPY);
+
+function LockBadge() {
+  const styles = useStyles();
+  const Color = useLegacyColors();
+  return (
+    <View style={styles.badge}>
+      <Ionicons name="lock-closed" size={11} color={Color.gold} />
+      <Text style={styles.badgeText}>{CAN_PROMOTE_PURCHASE ? "Upgrade" : "Locked"}</Text>
+    </View>
+  );
+}
+
 // A settings-style row (icon + title + sub), greyed out, tappable through to
 // the membership screen. Matches the shape of settings.tsx's local `Row`.
 export function UpsellRow({
@@ -40,18 +59,15 @@ export function UpsellRow({
   const router = useRouter();
 
   return (
-    <Pressable onPress={() => router.push("/membership")} style={styles.row}>
+    <Pressable onPress={CAN_PROMOTE_PURCHASE ? () => router.push("/membership") : undefined} disabled={!CAN_PROMOTE_PURCHASE} style={styles.row}>
       <View style={styles.rowIcon}>
         <Ionicons name={icon} size={16} color={Color.textFaint} />
       </View>
       <View style={{ flex: 1 }}>
         <Text style={styles.rowTitle}>{title}</Text>
-        <Text style={styles.rowSub}>{UPGRADE_COPY[copyVariant]}</Text>
+        <Text style={styles.rowSub}>{lockedCopy(copyVariant)}</Text>
       </View>
-      <View style={styles.badge}>
-        <Ionicons name="lock-closed" size={11} color={Color.gold} />
-        <Text style={styles.badgeText}>Upgrade</Text>
-      </View>
+      <LockBadge />
     </Pressable>
   );
 }
@@ -74,19 +90,16 @@ export function UpsellCard({
   const router = useRouter();
 
   return (
-    <Pressable onPress={() => router.push("/membership")}>
+    <Pressable onPress={CAN_PROMOTE_PURCHASE ? () => router.push("/membership") : undefined} disabled={!CAN_PROMOTE_PURCHASE}>
       <Card tier="compact" style={styles.card}>
         <View style={styles.cardIcon}>
           <Ionicons name={icon} size={18} color={Color.textFaint} />
         </View>
         <View style={{ flex: 1 }}>
           <Text style={styles.cardTitle}>{title}</Text>
-          <Text style={styles.cardBody}>{body ?? UPGRADE_COPY[copyVariant]}</Text>
+          <Text style={styles.cardBody}>{body ?? lockedCopy(copyVariant)}</Text>
         </View>
-        <View style={styles.badge}>
-          <Ionicons name="lock-closed" size={11} color={Color.gold} />
-          <Text style={styles.badgeText}>Upgrade</Text>
-        </View>
+        <LockBadge />
       </Card>
     </Pressable>
   );
@@ -108,7 +121,7 @@ export function UpsellTile({
 
   return (
     <Card tier="compact" style={style}>
-      <Pressable onPress={() => router.push("/membership")} style={styles.tileInner}>
+      <Pressable onPress={CAN_PROMOTE_PURCHASE ? () => router.push("/membership") : undefined} disabled={!CAN_PROMOTE_PURCHASE} style={styles.tileInner}>
         <Ionicons name="lock-closed" size={14} color={Color.textFaint} />
         <Text style={styles.tileText}>{title}</Text>
       </Pressable>

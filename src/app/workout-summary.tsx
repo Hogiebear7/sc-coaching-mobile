@@ -12,6 +12,7 @@ import { celebrateFeedback } from "@/lib/haptics";
 import { hasAccess } from "@/lib/member-access";
 import { useMemberTier } from "@/lib/queries/profile";
 import { makeStyles, useAppTheme } from "@/lib/theme";
+import { notInPlanCopy } from "@/lib/upsell-config";
 import { takePendingWorkoutSummary } from "@/lib/workout-summary-handoff";
 
 // Built entirely from the payload the logging screen just submitted, plus
@@ -133,7 +134,7 @@ export default function WorkoutSummaryScreen() {
         {hasAccess(tier, "workoutReview") ? (
           <Button title="View your session review" onPress={() => router.push({ pathname: "/workout-review", params: { id: summary.id } })} />
         ) : (
-          <UpsellCard icon="analytics-outline" title="Session review" body="Available on App Subscription and above" />
+          <UpsellCard icon="analytics-outline" title="Session review" body={notInPlanCopy("Session review")} />
         )}
         <Button title="Done" variant="secondary" onPress={() => router.replace("/workouts")} style={{ marginTop: 10 }} />
         <Button title="View full history" variant="secondary" onPress={() => router.push("/workout-history")} style={{ marginTop: 10 }} />

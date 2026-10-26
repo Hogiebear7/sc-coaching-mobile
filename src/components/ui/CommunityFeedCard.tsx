@@ -1,9 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
+import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { LikeButton } from "@/components/app/LikeButton";
 import { ExercisePreviewList } from "@/components/ui/ExercisePreviewList";
+import { MemberSafetySheet } from "@/components/ui/MemberSafetySheet";
 import { Radius, Spacing } from "@/constants/theme";
+import { useAuth } from "@/lib/auth-context";
 import { formatCommunityDate, formatWorkoutTitle } from "@/lib/community-formatters";
 import { tapFeedback } from "@/lib/haptics";
 import { useToggleWorkoutLike, type CommunityFeedItem } from "@/lib/queries/community";
@@ -24,6 +27,8 @@ export function CommunityFeedCard({ item, onOpenComments }: { item: CommunityFee
   const Color = useLegacyColors();
   const toggleLike = useToggleWorkoutLike();
   const isLiking = toggleLike.isPending && toggleLike.variables === item.id;
+  const { user } = useAuth();
+  const [safetyOpen, setSafetyOpen] = useState(false);
 
   return (
     <View style={styles.card}>
@@ -37,6 +42,17 @@ export function CommunityFeedCard({ item, onOpenComments }: { item: CommunityFee
           </Text>
           <Text style={styles.date}>{formatCommunityDate(item.date, "compact")}</Text>
         </View>
+        {item.userId !== user?.id ? (
+          <Pressable
+            onPress={() => setSafetyOpen(true)}
+            hitSlop={10}
+            style={styles.moreButton}
+            accessibilityRole="button"
+            accessibilityLabel={`Report or block ${item.authorName}`}
+          >
+            <Ionicons name="ellipsis-horizontal" size={18} color={Color.textMuted} />
+          </Pressable>
+        ) : null}
       </View>
 
       <View style={styles.titleRow}>
@@ -80,12 +96,22 @@ export function CommunityFeedCard({ item, onOpenComments }: { item: CommunityFee
         </Pressable>
         {toggleLike.isError ? <Text style={styles.actionError}>Couldn&apos;t update — try again</Text> : null}
       </View>
+      {safetyOpen ? (
+        <MemberSafetySheet
+          visible
+          onClose={() => setSafetyOpen(false)}
+          memberUserId={item.userId}
+          memberName={item.authorName}
+          workoutId={item.id}
+        />
+      ) : null}
     </View>
   );
 }
 
 const useStyles = makeLegacyStyles((Color) =>
   StyleSheet.create({
+    moreButton: { width: 40, height: 40, alignItems: "center", justifyContent: "center" },
     card: { backgroundColor: Color.surface1, borderRadius: Radius.lg, padding: Spacing.md, marginBottom: Spacing.sm },
     header: { flexDirection: "row", alignItems: "center", gap: 10 },
     avatar: { width: 36, height: 36, borderRadius: 18, backgroundColor: Color.surface2, alignItems: "center", justifyContent: "center" },

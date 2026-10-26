@@ -13,6 +13,7 @@ import { POST_SIGNUP_SETUP_KEY_PREFIX } from "@/lib/post-signup-setup";
 import { useBodyWeightLogs } from "@/lib/queries/body-weight";
 import { useCommunityHighlight } from "@/lib/queries/community";
 import { useDashboard } from "@/lib/queries/dashboard";
+import { CAN_PROMOTE_PURCHASE } from "@/lib/upsell-config";
 import { useNotifications } from "@/lib/queries/notifications";
 import { useProfile } from "@/lib/queries/profile";
 import { useTour } from "@/lib/tour-context";
@@ -264,7 +265,9 @@ export default function DashboardScreen() {
             <View style={styles.nextCard}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.nextTitle}>Find a coach near you</Text>
-                <Text style={styles.nextMeta}>Or unlock digital coaching from S&amp;C.</Text>
+                <Text style={styles.nextMeta}>
+                  {CAN_PROMOTE_PURCHASE ? "Or unlock digital coaching from S&C." : "Search nearby gyms and coaches."}
+                </Text>
               </View>
               <PillButton title="Find" variant="secondary" onPress={() => router.push("/find-a-coach" as never)} />
             </View>
@@ -351,7 +354,7 @@ export default function DashboardScreen() {
             <ListRow
               icon="card-outline"
               title={data.club.planName ?? "No active plan"}
-              detail={data.club.remainingSessionsLabel ?? data.club.statusLabel ?? "Choose a plan"}
+              detail={data.club.remainingSessionsLabel ?? data.club.statusLabel ?? (CAN_PROMOTE_PURCHASE ? "Choose a plan" : "No plan on this account yet")}
               attention={data.club.needsAttention}
               onPress={() => router.push("/membership")}
             />

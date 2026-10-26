@@ -6,7 +6,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Card } from "@/components/ui/Card";
 import { Spacing } from "@/constants/theme";
 import { useAuth } from "@/lib/auth-context";
-import { useCommunityPrivacy, useSetCommunityPrivacy } from "@/lib/queries/community";
+import { useBlockedMembers, useCommunityPrivacy, useSetCommunityPrivacy, useUnblockMember } from "@/lib/queries/community";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 export default function CommunityPrivacyScreen() {
@@ -15,6 +15,8 @@ export default function CommunityPrivacyScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const { data, isLoading } = useCommunityPrivacy();
+  const { data: blocked } = useBlockedMembers();
+  const unblock = useUnblockMember();
   const setPrivacy = useSetCommunityPrivacy();
 
   // A member is always Community-eligible — this screen looks exactly as it
@@ -137,6 +139,36 @@ export default function CommunityPrivacyScreen() {
             </View>
           </Card>
           ) : null}
+
+          <Card style={[styles.card, styles.cardSpaced]}>
+            <Text style={styles.settingTitle}>Blocked members</Text>
+            <Text style={styles.settingSub}>
+              You and a blocked member can&apos;t see each other&apos;s workouts, comments or name in Community. Unblocking
+              brings them back; it doesn&apos;t make you follow each other again.
+            </Text>
+            {(blocked ?? []).length === 0 ? (
+              <Text style={[styles.settingSub, { marginTop: Spacing.sm }]}>You haven&apos;t blocked anyone.</Text>
+            ) : (
+              (blocked ?? []).map((m) => (
+                <View key={m.userId} style={[styles.settingRow, styles.settingRowDivider]}>
+                  <Text style={[styles.settingTitle, { flex: 1 }]} numberOfLines={1}>
+                    {m.name}
+                  </Text>
+                  <Pressable
+                    onPress={() => unblock.mutate(m.userId)}
+                    disabled={unblock.isPending}
+                    hitSlop={8}
+                    style={styles.unblockButton}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Unblock ${m.name}`}
+                  >
+                    <Text style={styles.unblockText}>Unblock</Text>
+                  </Pressable>
+                </View>
+              ))
+            )}
+            {unblock.isError ? <Text style={styles.errorText}>{unblock.error?.message ?? "Couldn't unblock that member."}</Text> : null}
+          </Card>
         </ScrollView>
       )}
     </SafeAreaView>
@@ -163,5 +195,8 @@ const useStyles = makeLegacyStyles((Color) =>
     settingRowDivider: { borderTopWidth: 1, borderTopColor: Color.borderSubtle },
     settingTitle: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
     settingSub: { fontSize: 14, color: Color.textMuted, marginTop: 2, lineHeight: 20 },
+    unblockButton: { minHeight: 40, justifyContent: "center", paddingHorizontal: Spacing.md, borderRadius: 999, backgroundColor: Color.surface2 },
+    unblockText: { fontSize: 13, fontWeight: "600", color: Color.textPrimary },
+    errorText: { fontSize: 12, color: Color.danger, marginTop: Spacing.sm },
   })
 );

@@ -19,6 +19,8 @@ import { useAuth } from "@/lib/auth-context";
 import { isBatteryOptimizationRelevant, openBatteryOptimizationSettings } from "@/lib/battery-optimization";
 import { hapticsEnabled, setHapticsEnabled, tapFeedback } from "@/lib/haptics";
 import { hasAccess } from "@/lib/member-access";
+import { useAiConsent, useSetAiConsent } from "@/lib/queries/ai-consent";
+import { CAN_PROMOTE_PURCHASE } from "@/lib/upsell-config";
 import { setTabChoice, useTabChoice } from "@/lib/tab-choice";
 import { canChooseTabs, normaliseChoice, TAB_PAIR_OPTIONS } from "@/lib/tab-config";
 import { LIGHT_MODE_AVAILABLE, makeLegacyStyles, useLegacyColors } from "@/lib/theme";
@@ -90,6 +92,8 @@ export default function SettingsScreen() {
   const { restartTour } = useTour();
   const [haptics, setHaptics] = useState(hapticsEnabled());
   const tier = useMemberTier();
+  const aiConsent = useAiConsent();
+  const setAiConsent = useSetAiConsent();
   const tabChoice = normaliseChoice(useTabChoice(), tier);
   const canUseNotifications = hasAccess(tier, "notifications");
   const canUseGymProfiles = hasAccess(tier, "gymProfiles");
@@ -267,7 +271,7 @@ export default function SettingsScreen() {
                 icon="trash-outline"
                 title="Delete account"
                 sub="Permanently delete your account and data"
-                onPress={() => router.push("/delete-account")}
+                onPress={() => router.push("/delete-account" as never)}
                 right={<Ionicons name="chevron-forward" size={16} color={Color.textFaint} />}
               />
             ) : null}
@@ -278,9 +282,33 @@ export default function SettingsScreen() {
             <Row
               icon="card-outline"
               title="Manage membership"
-              sub="Plan, billing, and payment method"
+              sub={CAN_PROMOTE_PURCHASE ? "Plan, billing, and payment method" : "Your current plan and status"}
               onPress={() => router.push("/membership")}
             />
+          </Card>
+
+          <SectionLabel>AI features</SectionLabel>
+          <Card style={styles.settingsCard}>
+            <View style={styles.row}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.rowTitle}>Send my data to the AI provider</Text>
+                <Text style={styles.rowSub}>
+                  {aiConsent.data?.granted
+                    ? "On. The AI coach, food photos, receipts, meal ideas, programme generation and workout reviews send your text, photos and the training, recovery and nutrition data they need to Anthropic to write your answer."
+                    : "Off. Nothing is sent. Turn on to use the AI coach, food photos, receipts, meal ideas, programme generation and workout reviews."}{" "}
+                  Turning it off stops AI requests straight away. See the privacy policy for how the provider handles data already sent.
+                </Text>
+              </View>
+              <Switch
+                value={aiConsent.data?.granted ?? false}
+                onValueChange={(v) => setAiConsent.mutate(v)}
+                disabled={aiConsent.isLoading || setAiConsent.isPending}
+                trackColor={{ false: Color.surface3, true: Color.success }}
+                thumbColor="#ffffff"
+                accessibilityLabel="AI features"
+              />
+            </View>
+            {setAiConsent.isError ? <Text style={styles.rowSub}>Couldn&apos;t save that. Check your connection and try again.</Text> : null}
           </Card>
 
           <SectionLabel>Community</SectionLabel>

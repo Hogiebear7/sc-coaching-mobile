@@ -75,9 +75,30 @@ export function phaseSegments(cycleLength: number, periodLengthDays: number | nu
     .map((seg) => ({ ...seg, dayCount: seg.endDay - seg.startDay + 1 }));
 }
 
+// Mirrors lib/menopause.ts in the main repo.
+export type MenopauseStage = "perimenopause" | "postmenopause";
+
+export interface MenopausePoint {
+  text: string;
+  evidence: "Strong evidence" | "Good evidence" | "Expert advice";
+}
+
+export interface MenopauseContent {
+  label: string;
+  summary: string;
+  training: MenopausePoint[];
+  nutrition: MenopausePoint[];
+  recovery: MenopausePoint[];
+  disclaimer: string;
+}
+
 export interface CycleData {
   enabled: boolean;
   menopauseSupportEnabled: boolean;
+  /** Optional: older servers don't send these. */
+  menopauseStage?: MenopauseStage | null;
+  menopauseShareWithCoach?: boolean;
+  menopause?: MenopauseContent | null;
   settings: CycleSettings | null;
   privacy: CyclePrivacy | null;
   phaseEstimate: PhaseEstimate;
@@ -139,6 +160,15 @@ export function useSaveCyclePrivacy() {
         body: input,
       }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["cycle"] }),
+  });
+}
+
+export function useSaveMenopausePreferences() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { menopauseStage?: MenopauseStage; menopauseShareWithCoach?: boolean }) =>
+      apiFetch<{ success: true; message: string }>("/api/cycle/preferences", { method: "POST", body: input }),
+    onSuccess: () => qc.invalidateQueries(),
   });
 }
 

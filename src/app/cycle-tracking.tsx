@@ -26,7 +26,10 @@ import {
   useCycleData,
   useSaveCyclePrivacy,
   useSaveCycleSettings,
+  useSaveMenopausePreferences,
   useSetMenopauseSupport,
+  type MenopausePoint,
+  type MenopauseStage,
   type CycleRegularity,
 } from "@/lib/queries/cycle";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
@@ -88,6 +91,26 @@ function BulletList({ label, items }: { label: string; items: string[] }) {
   );
 }
 
+function MenopausePoints({ title, points }: { title: string; points: MenopausePoint[] }) {
+  const styles = useStyles();
+  return (
+    <View style={{ marginTop: Spacing.md }}>
+      <Text style={styles.menopauseTitle}>{title}</Text>
+      {points.map((p) => (
+        <Text key={p.text} style={styles.menopauseBody}>
+          {"• "}
+          {p.text} <Text style={styles.menopauseBadge}>({p.evidence})</Text>
+        </Text>
+      ))}
+    </View>
+  );
+}
+
+const MENOPAUSE_STAGES: { value: MenopauseStage; label: string; detail: string }[] = [
+  { value: "perimenopause", label: "Perimenopause", detail: "Periods still come but are changing" },
+  { value: "postmenopause", label: "Post-menopause", detail: "12 months or more since your last period" },
+];
+
 function MenopauseSection({ title, body }: { title: string; body: string }) {
   const styles = useStyles();
   return (
@@ -108,6 +131,7 @@ export default function CycleTrackingScreen() {
   const saveSettings = useSaveCycleSettings();
   const savePrivacy = useSaveCyclePrivacy();
   const setMenopause = useSetMenopauseSupport();
+  const saveMenopause = useSaveMenopausePreferences();
 
   const [lastPeriodStartDate, setLastPeriodStartDate] = useState("");
   const [averageCycleLengthDays, setAverageCycleLengthDays] = useState("");
@@ -399,7 +423,52 @@ export default function CycleTrackingScreen() {
               {beginDayError ? <Text style={styles.error}>{beginDayError}</Text> : null}
             </Card>
 
-            {data.menopauseSupportEnabled ? (
+            {data.menopauseSupportEnabled && data.menopauseStage !== undefined ? (
+              <Card style={styles.menopauseCard}>
+                <View style={styles.menopauseHeaderRow}>
+                  <Text style={styles.sectionTitle}>Menopause support</Text>
+                  <Text style={styles.menopauseBadge}>Evidence-based, not medical advice</Text>
+                </View>
+                <Text style={styles.menopauseTitle}>Which stage are you at?</Text>
+                {MENOPAUSE_STAGES.map((s) => {
+                  const active = data.menopauseStage === s.value;
+                  return (
+                    <CheckboxRow
+                      key={s.value}
+                      label={s.label}
+                      description={s.detail}
+                      checked={active}
+                      onToggle={() => !active && saveMenopause.mutate({ menopauseStage: s.value })}
+                    />
+                  );
+                })}
+                {data.menopauseStage ? (
+                  <View style={[styles.settingRow, { paddingHorizontal: 0 }]}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.settingTitle}>Share my stage with my coach</Text>
+                    </View>
+                    <Switch
+                      value={data.menopauseShareWithCoach === true}
+                      onValueChange={(v) => saveMenopause.mutate({ menopauseShareWithCoach: v })}
+                      trackColor={{ false: Color.surface3, true: Color.success }}
+                      thumbColor="#ffffff"
+                      disabled={saveMenopause.isPending}
+                    />
+                  </View>
+                ) : null}
+                {data.menopause ? (
+                  <>
+                    <Text style={styles.phaseExplanation}>{data.menopause.summary}</Text>
+                    <MenopausePoints title="Training" points={data.menopause.training} />
+                    <MenopausePoints title="Nutrition" points={data.menopause.nutrition} />
+                    <MenopausePoints title="Recovery and sleep" points={data.menopause.recovery} />
+                    <Text style={styles.disclaimer}>{data.menopause.disclaimer}</Text>
+                  </>
+                ) : (
+                  <Text style={styles.phaseExplanation}>Choose your stage to see guidance for it.</Text>
+                )}
+              </Card>
+            ) : data.menopauseSupportEnabled ? (
               <Card style={styles.menopauseCard}>
                 <View style={styles.menopauseHeaderRow}>
                   <Text style={styles.sectionTitle}>Menopause support</Text>

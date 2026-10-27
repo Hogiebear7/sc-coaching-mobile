@@ -115,6 +115,8 @@ export interface ResolvedNutritionTarget {
       shaped this target. */
   nutritionStage?: "pregnant" | "postpartum" | "breastfeeding" | null;
   stageExtraKcal?: number;
+  /** Extra kcal today for training logged beyond the plan. */
+  workoutExtraKcal?: number;
 }
 
 export interface ResolvedNutritionWeek {

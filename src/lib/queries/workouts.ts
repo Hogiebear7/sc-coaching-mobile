@@ -204,6 +204,21 @@ export function useSetWorkoutVisibility() {
   });
 }
 
+// What the member's watch reported for a session — see gym-app's
+// app/api/mobile/workouts/[id]/wearable/route.ts. Calories can raise that
+// day's calorie target, so the targets are refreshed too.
+export function useSaveWatchData() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { sessionId: string; calories?: number; avgHr?: number; maxHr?: number }) =>
+      apiFetch<{ success: true }>(`/api/mobile/workouts/${input.sessionId}/wearable`, {
+        method: "POST",
+        body: { calories: input.calories, avgHr: input.avgHr, maxHr: input.maxHr },
+      }),
+    onSuccess: () => qc.invalidateQueries(),
+  });
+}
+
 export interface UpdateClassWorkoutInput {
   sessionId: string;
   exercises: CreateWorkoutExerciseInput[];

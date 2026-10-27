@@ -26,7 +26,9 @@ export function calorieExplanation(target: ResolvedNutritionTarget | null | unde
   const hasWeek = target.weekBudgetKcal != null && target.dailyAverageKcal != null;
   lines.push(
     hasWeek
-      ? `Today's target is ${kcal(target.calories)} — your share of this week's ${kcal(target.weekBudgetKcal!)} budget (about ${kcal(target.dailyAverageKcal!)} a day on average).`
+      ? `Today's target is ${kcal(target.calories)} — your share of this week's ${kcal(target.weekBudgetKcal!)} budget (about ${kcal(target.dailyAverageKcal!)} a day on average)${
+          (target.workoutExtraKcal ?? 0) > 0 ? `, plus ${kcal(target.workoutExtraKcal!)} for training beyond your plan` : ""
+        }.`
       : `Today's target is ${kcal(target.calories)}.`
   );
 

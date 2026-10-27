@@ -6,6 +6,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { SectionTitle } from "@/components/app/primitives";
 import { Button } from "@/components/ui/Button";
+import { WatchDataCard } from "@/components/workout/WatchDataCard";
 import { UpsellCard } from "@/components/ui/Upsell";
 import { AppRadius, AppSpace, appTitle } from "@/constants/theme";
 import { celebrateFeedback } from "@/lib/haptics";
@@ -130,6 +131,8 @@ export default function WorkoutSummaryScreen() {
             </View>
           </View>
         ) : null}
+
+        <WatchDataCard sessionId={summary.id} />
 
         {hasAccess(tier, "workoutReview") ? (
           <Button title="View your session review" onPress={() => router.push({ pathname: "/workout-review", params: { id: summary.id } })} />

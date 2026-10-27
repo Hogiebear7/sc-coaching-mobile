@@ -1,4 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { asCardioType } from "@/lib/cardio";
 import * as Notifications from "expo-notifications";
 import {
   createContext,
@@ -54,6 +55,10 @@ export type RunRow = {
   sets: string;
   notes: string;
   splits: string[];
+  /** "Add cardio" type; older drafts have none and are runs. */
+  cardioType: import("@/lib/cardio").CardioType;
+  /** Machine level or incline, as typed. */
+  level: string;
 };
 
 export type WorkoutFormat = "standard" | "circuit" | "amrap" | "emom" | "tabata" | "chipper";
@@ -319,6 +324,8 @@ function normalizeRunRow(raw: Partial<RunRow> | null | undefined): RunRow {
     sets: r.sets ?? "",
     notes: r.notes ?? "",
     splits: Array.isArray(r.splits) ? r.splits : [],
+    cardioType: asCardioType(r.cardioType),
+    level: r.level ?? "",
   };
 }
 

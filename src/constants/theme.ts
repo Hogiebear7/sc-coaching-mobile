@@ -6,7 +6,7 @@
 // remain the dark values. App v2 palettes (DarkPalette / LightPalette,
 // below) are the themeable layer; see lib/theme.tsx.
 
-import type { TextStyle } from "react-native";
+import { Platform, type TextStyle } from "react-native";
 
 export const Color = {
   // Surfaces. Dark values follow the App v2 near-black navy so legacy
@@ -134,13 +134,16 @@ export const Font = {
 
 // Uppercase Teko headline, the website's `text-headline`. Teko's capitals sit
 // tall, so lineHeight stays at 1x the size rather than the web's 0.9 to avoid
-// Android clipping the tops of the glyphs.
+// Android clipping the tops of the glyphs. iOS lays the line box out
+// differently and still clipped the tops at 1x (seen on iPhone), so it gets
+// a taller line with the extra above the glyphs.
 export function headline(size: number): TextStyle {
   return {
     fontFamily: Font.display,
     fontWeight: "600",
     fontSize: size,
-    lineHeight: Math.round(size * 1.0),
+    lineHeight: Platform.OS === "ios" ? Math.round(size * 1.2) : Math.round(size * 1.0),
+    ...(Platform.OS === "ios" ? { paddingTop: Math.round(size * 0.12) } : null),
     letterSpacing: size * 0.01,
     textTransform: "uppercase",
   };

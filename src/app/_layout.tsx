@@ -174,6 +174,7 @@ function AuthGate() {
       <Stack.Screen name="messages" options={{ presentation: "card" }} />
       <Stack.Screen name="notifications" options={{ presentation: "card" }} />
       <Stack.Screen name="exercise-library-detail" options={{ presentation: "card" }} />
+      <Stack.Screen name="exercise-demo" options={{ presentation: "modal" }} />
       <Stack.Screen name="profile" options={{ presentation: "card" }} />
       <Stack.Screen name="settings" options={{ presentation: "card" }} />
       <Stack.Screen name="readiness" options={{ presentation: "card" }} />

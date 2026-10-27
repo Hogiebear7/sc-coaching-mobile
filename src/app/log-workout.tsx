@@ -1,20 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import {
-  Alert,
-  Image,
-  InteractionManager,
-  Keyboard,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+import { Alert, Image, InteractionManager, Keyboard, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import type { KeyboardAwareScrollViewRef } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -31,6 +18,7 @@ import { SupersetChips } from "@/components/ui/SupersetChips";
 import { TextField } from "@/components/ui/TextField";
 import { TimeWheelPicker } from "@/components/ui/TimeWheelPicker";
 import { figure, Radius, Spacing, type LegacyPalette } from "@/constants/theme";
+import { CARDIO_LABEL, CARDIO_TYPES, hasLevel, hasPace, parseLevel } from "@/lib/cardio";
 import { selectionFeedback, successFeedback, tapFeedback } from "@/lib/haptics";
 import { ApiError } from "@/lib/api-client";
 import { useAdvanceProgram, useMyProgram, type PrescribedExercise } from "@/lib/queries/programs";
@@ -283,7 +271,7 @@ function groupExerciseRowsBySuperset(rows: ExerciseRow[]): { group: string | nul
 }
 
 function newRunRow(): RunRow {
-  return { key: nextKey(), distance: "", distanceUnit: "km", duration: "", reps: "", sets: "", notes: "", splits: [] };
+  return { key: nextKey(), distance: "", distanceUnit: "km", duration: "", reps: "", sets: "", notes: "", splits: [], cardioType: "run", level: "" };
 }
 
 // Small demo-image thumbnail beside an exercise row, sourced from the same
@@ -1192,6 +1180,8 @@ export default function LogWorkoutScreen() {
           reps: r.reps.trim() ? parseInt(r.reps, 10) : null,
           sets: r.sets.trim() ? parseInt(r.sets, 10) : null,
           notes: combinedNotes || null,
+          cardioType: r.cardioType,
+          level: hasLevel(r.cardioType) ? parseLevel(r.level) : null,
         };
       });
 
@@ -1728,7 +1718,7 @@ export default function LogWorkoutScreen() {
                     <View style={styles.exerciseInfoText}>
                       {slug ? (
                         <Pressable
-                          onPress={() => router.push({ pathname: "/exercise-library-detail", params: { slug } })}
+                          onPress={() => router.push({ pathname: "/exercise-demo" as never, params: { slug } })}
                           style={styles.demoLink}
                         >
                           <Ionicons name="play-circle-outline" size={13} color={Color.gold} />
@@ -1990,28 +1980,47 @@ export default function LogWorkoutScreen() {
           {runRows.map((row, idx) => (
             <Card key={row.key} style={styles.entryCard}>
               <View style={styles.entryHeader}>
-                <Text style={styles.entryLabel}>Run {idx + 1}</Text>
+                <Text style={styles.entryLabel}>{CARDIO_LABEL[row.cardioType]} {idx + 1}</Text>
                 <View style={styles.entryHeaderActions}>
-                  <Pressable
-                    onPress={() => router.push({ pathname: "/run-timer", params: { runKey: row.key } })}
-                    hitSlop={4}
-                    style={styles.roundTool}
-                    accessibilityRole="button"
-                    accessibilityLabel="Run timer"
-                  >
-                    <Ionicons name="stopwatch-outline" size={18} color={Color.textPrimary} />
-                  </Pressable>
+                  {row.cardioType === "run" ? (
+                    <Pressable
+                      onPress={() => router.push({ pathname: "/run-timer", params: { runKey: row.key } })}
+                      hitSlop={4}
+                      style={styles.roundTool}
+                      accessibilityRole="button"
+                      accessibilityLabel="Run timer"
+                    >
+                      <Ionicons name="stopwatch-outline" size={18} color={Color.textPrimary} />
+                    </Pressable>
+                  ) : null}
                   <Pressable
                     onPress={() => removeRunRow(row.key)}
                     hitSlop={4}
                     style={styles.roundTool}
                     accessibilityRole="button"
-                    accessibilityLabel="Remove run"
+                    accessibilityLabel={`Remove ${CARDIO_LABEL[row.cardioType].toLowerCase()}`}
                   >
                     <Ionicons name="trash-outline" size={18} color={Color.danger} />
                   </Pressable>
                 </View>
               </View>
+
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.cardioChips}>
+                {CARDIO_TYPES.map((t) => {
+                  const active = row.cardioType === t;
+                  return (
+                    <Pressable
+                      key={t}
+                      onPress={() => updateRunRow(row.key, { cardioType: t })}
+                      style={[styles.cardioChip, active && styles.cardioChipActive]}
+                      accessibilityRole="radio"
+                      accessibilityState={{ selected: active }}
+                    >
+                      <Text style={[styles.cardioChipText, active && styles.cardioChipTextActive]}>{CARDIO_LABEL[t]}</Text>
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
 
               <View style={styles.gridRow}>
                 <View style={styles.numberField}>
@@ -2045,7 +2054,18 @@ export default function LogWorkoutScreen() {
                 </View>
               </View>
 
-              {livePace(row.distance, row.distanceUnit, row.duration) ? (
+              {hasLevel(row.cardioType) ? (
+                <View style={styles.gridRow}>
+                  <NumberField
+                    label={row.cardioType === "treadmill_walk" ? "Incline % (opt.)" : "Level (opt.)"}
+                    value={row.level}
+                    onChangeText={(v) => updateRunRow(row.key, { level: v })}
+                    placeholder={row.cardioType === "treadmill_walk" ? "e.g. 12" : "e.g. 8"}
+                  />
+                </View>
+              ) : null}
+
+              {hasPace(row.cardioType) && livePace(row.distance, row.distanceUnit, row.duration) ? (
                 <Text style={styles.paceText}>
                   Pace: <Text style={{ color: Color.gold, fontWeight: "700" }}>{livePace(row.distance, row.distanceUnit, row.duration)}</Text>
                 </Text>
@@ -2055,10 +2075,12 @@ export default function LogWorkoutScreen() {
                 <Text style={styles.splitsText}>Splits: {row.splits.join(", ")}</Text>
               ) : null}
 
-              <View style={styles.gridRow}>
-                <NumberField label="Reps (opt.)" value={row.reps} onChangeText={(v) => updateRunRow(row.key, { reps: v })} placeholder="e.g. 8" />
-                <NumberField label="Sets (opt.)" value={row.sets} onChangeText={(v) => updateRunRow(row.key, { sets: v })} placeholder="e.g. 3" />
-              </View>
+              {row.cardioType === "run" ? (
+                <View style={styles.gridRow}>
+                  <NumberField label="Reps (opt.)" value={row.reps} onChangeText={(v) => updateRunRow(row.key, { reps: v })} placeholder="e.g. 8" />
+                  <NumberField label="Sets (opt.)" value={row.sets} onChangeText={(v) => updateRunRow(row.key, { sets: v })} placeholder="e.g. 3" />
+                </View>
+              ) : null}
 
               <Text style={[styles.fieldLabel, { marginTop: Spacing.sm }]}>Notes (optional)</Text>
               <TextInput
@@ -2077,8 +2099,8 @@ export default function LogWorkoutScreen() {
               <Text style={styles.addChipText}>Add exercise</Text>
             </Pressable>
             <Pressable onPress={handleAddRun} style={styles.addChip} accessibilityRole="button">
-              <Ionicons name="walk-outline" size={18} color={Color.textPrimary} />
-              <Text style={styles.addChipText}>Add run</Text>
+              <Ionicons name="pulse-outline" size={18} color={Color.textPrimary} />
+              <Text style={styles.addChipText}>Add cardio</Text>
             </Pressable>
           </View>
 
@@ -2166,6 +2188,11 @@ const useStyles = makeLegacyStyles((Color) =>
     sectionLabel: { fontSize: 19, fontWeight: "600", color: Color.textPrimary },
     addChip: { flexDirection: "row", alignItems: "center", gap: 6, borderRadius: Radius.pill, backgroundColor: Color.surface1, paddingHorizontal: 16, minHeight: 46 },
     addChipText: { fontSize: 15, fontWeight: "600", color: Color.textPrimary },
+    cardioChips: { gap: 8, paddingBottom: Spacing.sm },
+    cardioChip: { minHeight: 40, paddingHorizontal: 14, borderRadius: Radius.pill, backgroundColor: Color.surface2, justifyContent: "center" },
+    cardioChipActive: { backgroundColor: Color.gold },
+    cardioChipText: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
+    cardioChipTextActive: { color: Color.goldForeground },
     addButtonsRow: { flexDirection: "row", gap: Spacing.sm, marginTop: Spacing.sm, marginBottom: Spacing.md },
     emptyHint: { fontSize: 14, color: Color.textMuted, borderStyle: "dashed", borderRadius: Radius.md, padding: Spacing.md, backgroundColor: Color.surface2 },
     entryCard: { padding: Spacing.md, marginBottom: Spacing.md, borderRadius: 16 },

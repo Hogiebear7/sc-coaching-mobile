@@ -47,6 +47,9 @@ export interface WorkoutRunEntry {
   reps: number | null;
   sets: number | null;
   notes: string | null;
+  /** Absent on older entries (runs) and from older servers. */
+  cardioType?: import("@/lib/cardio").CardioType;
+  level?: number | null;
 }
 
 // Mirrors WorkoutsData in the main repo's lib/workouts-data.ts.
@@ -122,6 +125,8 @@ export interface CreateWorkoutRunInput {
   reps: number | null;
   sets: number | null;
   notes: string | null;
+  cardioType?: import("@/lib/cardio").CardioType;
+  level?: number | null;
 }
 
 export interface CreateWorkoutInput {

@@ -12,6 +12,7 @@ import { ExerciseAutocomplete } from "@/components/ui/ExerciseAutocomplete";
 import { SupersetChips } from "@/components/ui/SupersetChips";
 import { TextField } from "@/components/ui/TextField";
 import { Radius, Spacing } from "@/constants/theme";
+import { asCardioType, CARDIO_LABEL, type CardioType } from "@/lib/cardio";
 import { tapFeedback } from "@/lib/haptics";
 import { ApiError } from "@/lib/api-client";
 import { useExerciseLibraryNameIndex } from "@/lib/queries/exercise-library";
@@ -71,6 +72,9 @@ type EditRunRow = {
   reps: string;
   sets: string;
   notes: string;
+  // Kept as logged so an edit never drops them ("Add cardio").
+  cardioType: CardioType;
+  level: number | null;
 };
 
 function newEditSetRow(setType: WorkoutSetType = "standard"): EditSetRow {
@@ -123,7 +127,7 @@ function newExerciseRow(): EditExerciseRow {
 }
 
 function newRunRow(): EditRunRow {
-  return { key: nextKey(), distance: "", duration: "", reps: "", sets: "", notes: "" };
+  return { key: nextKey(), distance: "", duration: "", reps: "", sets: "", notes: "", cardioType: "run", level: null };
 }
 
 // A focused editor for a previously logged, self-logged session — any date,
@@ -181,6 +185,8 @@ export default function EditWorkoutScreen() {
         reps: r.reps != null ? String(r.reps) : "",
         sets: r.sets != null ? String(r.sets) : "",
         notes: r.notes ?? "",
+        cardioType: asCardioType(r.cardioType),
+        level: r.level ?? null,
       }))
     );
     setHydrated(true);
@@ -288,6 +294,8 @@ export default function EditWorkoutScreen() {
       reps: row.reps.trim() ? parseInt(row.reps, 10) : null,
       sets: row.sets.trim() ? parseInt(row.sets, 10) : null,
       notes: row.notes.trim() || null,
+      cardioType: row.cardioType,
+      level: row.level,
     }));
 
     try {
@@ -480,7 +488,7 @@ export default function EditWorkoutScreen() {
             {runRows.map((row, idx) => (
               <Card key={row.key} style={styles.entryCard}>
                 <View style={styles.entryHeader}>
-                  <Text style={styles.entryLabel}>Run {idx + 1}</Text>
+                  <Text style={styles.entryLabel}>{CARDIO_LABEL[row.cardioType]} {idx + 1}</Text>
                   <Pressable onPress={() => removeRunRow(row.key)}>
                     <Text style={styles.removeText}>Remove</Text>
                   </Pressable>

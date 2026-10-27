@@ -274,7 +274,13 @@ export default function SettingsScreen() {
                 onPress={() => router.push("/delete-account" as never)}
                 right={<Ionicons name="chevron-forward" size={16} color={Color.textFaint} />}
               />
-            ) : null}
+            ) : (
+              <Row
+                icon="trash-outline"
+                title="Delete account"
+                sub="Staff accounts are removed by the gym owner. Email info@sandccoaching.com."
+              />
+            )}
           </Card>
 
           <SectionLabel>Membership</SectionLabel>

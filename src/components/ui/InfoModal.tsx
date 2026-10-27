@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Modal, Pressable, ScrollView, StyleSheet, Text } from "react-native";
+import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { Radius, Spacing } from "@/constants/theme";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
@@ -23,17 +23,21 @@ export function InfoModal({
   const Color = useLegacyColors();
   return (
     <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={onClose}>
-      <Pressable style={styles.backdrop} onPress={onClose}>
-        <Pressable style={styles.card} onPress={(e) => e.stopPropagation()}>
+      {/* The tap-to-close backdrop sits BEHIND the card, not around it: on
+          iPhone a Pressable wrapped around the ScrollView took the swipe, so
+          long text was cut off and couldn't scroll. */}
+      <View style={styles.backdrop}>
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityRole="button" accessibilityLabel="Close" />
+        <View style={styles.card}>
           <Text style={styles.title}>{title}</Text>
-          <ScrollView style={styles.bodyScroll} showsVerticalScrollIndicator={false}>
+          <ScrollView style={styles.bodyScroll} contentContainerStyle={{ paddingBottom: 4 }} showsVerticalScrollIndicator>
             <Text style={styles.body}>{body}</Text>
           </ScrollView>
           <Pressable onPress={onClose} hitSlop={8} style={styles.closeButton}>
             <Ionicons name="close" size={16} color={Color.textMuted} />
           </Pressable>
-        </Pressable>
-      </Pressable>
+        </View>
+      </View>
     </Modal>
   );
 }

@@ -262,7 +262,7 @@ export default function WorkoutLibraryScreen() {
           <Text style={[styles.tabButtonText, tab === "exercises" && styles.tabButtonTextActive]}>Exercises</Text>
         </Pressable>
         <Pressable onPress={() => setTab("workouts")} style={[styles.tabButton, tab === "workouts" && styles.tabButtonActive]}>
-          <Text style={[styles.tabButtonText, tab === "workouts" && styles.tabButtonTextActive]}>My Workouts</Text>
+          <Text style={[styles.tabButtonText, tab === "workouts" && styles.tabButtonTextActive]}>My workouts</Text>
         </Pressable>
       </View>
 

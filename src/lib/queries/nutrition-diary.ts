@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { ApiError, apiFetch } from "@/lib/api-client";
+import { useHasFeature } from "@/lib/queries/profile";
 
 // Mirrors NutritionTargetRecord/FoodEntryRecord in the main repo's lib/db.ts.
 export type MealType = "breakfast" | "lunch" | "dinner" | "snack";
@@ -147,7 +148,9 @@ export interface DailyTotals {
 // ── Member-facing ────────────────────────────────────────────────────────
 
 export function useMyNutritionTarget(date?: string) {
+  const enabled = useHasFeature("calorieTargets");
   return useQuery({
+    enabled,
     queryKey: ["my-nutrition-target", date ?? "today"],
     queryFn: () =>
       apiFetch<{ success: true; data: ResolvedNutritionTarget | null }>(
@@ -158,7 +161,9 @@ export function useMyNutritionTarget(date?: string) {
 
 // The Mon-Sun week containing `date` (defaults to the week containing today).
 export function useWeeklyNutritionTargets(date?: string) {
+  const enabled = useHasFeature("calorieTargets");
   return useQuery({
+    enabled,
     queryKey: ["weekly-nutrition-targets", date ?? "this-week"],
     queryFn: () =>
       apiFetch<{ success: true; data: ResolvedNutritionWeek | null }>(

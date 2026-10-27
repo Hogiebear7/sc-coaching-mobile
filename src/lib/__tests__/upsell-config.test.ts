@@ -85,8 +85,12 @@ describe("every purchase-promoting entry point is governed by the config", () =>
     // push-notifications.ts only maps an incoming notification link to a screen; it opens nothing on the web and promotes nothing.
     // membership-web.ts (used by membership.tsx and gym.tsx) is the one sanctioned web link: in-person gym memberships, which store rules
     // let members pay for outside the app. The page they open is limited to in-person plans (checked below).
+    // _layout.tsx mounts UpgradeHost and api-client.ts passes the server's upgrade answer to it: the words match, but neither promotes anything
+    // itself. UpgradeHost (which does) imports upsell-config.
     expect(offenders).toEqual([
       "src/app/membership.tsx",
+      "src/app/_layout.tsx",
+      "src/lib/api-client.ts",
       "src/lib/membership-web.ts",
       "src/lib/push-notifications.ts",
     ]);

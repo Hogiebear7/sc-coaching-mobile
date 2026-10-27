@@ -86,6 +86,8 @@ export interface ExerciseLibraryEntry {
 }
 
 export interface WorkoutsData {
+  /** Days of history a Free member sees (sessions and bests are limited to them), or null for full history. Older servers don't send it. */
+  historyLimitedToDays?: number | null;
   sessions: WorkoutSessionSummary[];
   personalBests: PersonalBest[];
   exerciseLibrary: ExerciseLibraryEntry[];

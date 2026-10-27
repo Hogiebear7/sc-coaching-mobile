@@ -29,6 +29,8 @@ import {
 } from "@/lib/queries/community";
 import { todayDateString } from "@/lib/workout-formatters";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
+import { useHasFeature } from "@/lib/queries/profile";
+import { UpsellCard } from "@/components/ui/Upsell";
 
 // Emphasis order, top to bottom: wins/milestones, leaderboards, supporting
 // feed activity — comments/likes/mentions stay a tap away (the per-item
@@ -146,6 +148,8 @@ export default function CommunityScreen() {
   // just because nobody's most recent activity happens to include one.
   const wins = useCommunityWins(20);
   const leaderboard = useLeaderboard(metric, range, customStart || null, customEnd || null);
+  // Leaderboards are part of the App Subscription; the feed, likes, comments and follows are on every plan.
+  const canLeaderboard = useHasFeature("communityLeaderboards");
   const suggested = useSuggestedMembers();
   const followUser = useFollowUser();
 
@@ -236,6 +240,8 @@ export default function CommunityScreen() {
           }}
         >
           <SectionHeader label="Leaderboard" />
+          {canLeaderboard ? (
+          <>
           <View style={styles.metricRow}>
             {LEADERBOARD_METRICS.map((m) => (
               <Pressable
@@ -332,6 +338,10 @@ export default function CommunityScreen() {
                 </Card>
               )}
             </>
+          )}
+          </>
+          ) : (
+            <UpsellCard icon="trophy-outline" title="Leaderboards" body="See where you rank on volume, squat, bench and deadlift. Part of the App Subscription." />
           )}
         </View>
 

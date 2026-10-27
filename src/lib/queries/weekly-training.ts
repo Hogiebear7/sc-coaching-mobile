@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { apiFetch } from "@/lib/api-client";
+import { useHasFeature } from "@/lib/queries/profile";
 
 // Mirrors the types in the main repo's lib/profile-schema.ts.
 export type TrainingDayOfWeek = 0 | 1 | 2 | 3 | 4 | 5 | 6; // matches Date#getDay(), 0 = Sunday
@@ -45,7 +46,9 @@ interface WeeklyTrainingResponse {
 }
 
 export function useWeeklyTraining() {
+  const enabled = useHasFeature("weeklyPlanner");
   return useQuery({
+    enabled,
     queryKey: ["weekly-training"],
     queryFn: () => apiFetch<WeeklyTrainingResponse>("/api/mobile/weekly-training").then((r) => r.data),
   });

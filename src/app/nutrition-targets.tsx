@@ -13,6 +13,8 @@ import { useNutritionDiary, useMyNutritionTarget, useWeeklyNutritionTargets, typ
 import { selectionFeedback } from "@/lib/haptics";
 import { todayDateString } from "@/lib/workout-formatters";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
+import { useHasFeature } from "@/lib/queries/profile";
+import { LockedScreen } from "@/components/ui/LockedScreen";
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
@@ -117,6 +119,7 @@ export default function NutritionTargetsScreen() {
   const { data: dayTarget, isLoading: dayLoading } = useMyNutritionTarget(selectedDate);
   const { data: diary } = useNutritionDiary(selectedDate);
   const { data: week, isLoading: weekLoading } = useWeeklyNutritionTargets(selectedDate);
+  const allowed = useHasFeature("calorieTargets");
 
   const consumed = diary?.totals.calories ?? 0;
   const hasTarget = dayTarget && dayTarget.mode !== "disabled" && dayTarget.calories !== null;
@@ -127,6 +130,8 @@ export default function NutritionTargetsScreen() {
     if (withTargets.length === 0) return null;
     return Math.round(withTargets.reduce((sum, d) => sum + (d.calories ?? 0), 0) / withTargets.length);
   }, [week]);
+
+  if (!allowed) return <LockedScreen title="Calorie and macro targets" icon="nutrition-outline" body="A daily calorie and macro target that adapts to your training, with a weekly budget and a plain explanation of every number." />;
 
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>

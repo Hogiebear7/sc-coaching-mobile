@@ -32,6 +32,14 @@ export function registerAiConsentHandler(handler: (() => Promise<boolean>) | nul
   askAiConsent = handler;
 }
 
+// A feature that is part of the App Subscription: the server answers 403 with "upgrade_required" (or "ai_upgrade_required" for AI) before doing any
+// work. The root UpgradeHost registers a handler that explains it; the request still fails, with the server's own friendly message.
+export const UPGRADE_CODES: ReadonlySet<string> = new Set(["upgrade_required", "ai_upgrade_required"]);
+let onUpgradeRequired: ((message: string) => void) | null = null;
+export function registerUpgradeHandler(handler: ((message: string) => void) | null) {
+  onUpgradeRequired = handler;
+}
+
 function isConsentRefusal(status: number, json: unknown): boolean {
   return status === 403 && !!json && typeof json === "object" && "code" in json && json.code === AI_CONSENT_REQUIRED_CODE;
 }
@@ -81,6 +89,7 @@ export async function apiFetch<T>(
         ? json.message
         : `Request failed (${res.status}).`;
     const code = json && typeof json === "object" && "code" in json && typeof json.code === "string" ? json.code : null;
+    if (res.status === 403 && code && UPGRADE_CODES.has(code)) onUpgradeRequired?.(message);
     throw new ApiError(res.status, message, code);
   }
 

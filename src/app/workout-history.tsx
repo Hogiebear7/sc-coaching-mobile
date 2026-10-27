@@ -12,6 +12,7 @@ import { Radius, Spacing } from "@/constants/theme";
 import { selectionFeedback } from "@/lib/haptics";
 import { useWorkouts, type WorkoutSessionSummary } from "@/lib/queries/workouts";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
+import { UpsellCard } from "@/components/ui/Upsell";
 
 function monthLabel(dateISO: string): string {
   const [y, m] = dateISO.split("-").map(Number);
@@ -124,6 +125,13 @@ export default function WorkoutHistoryScreen() {
         </View>
       ) : view === "calendar" ? (
         <ScrollView contentContainerStyle={styles.scroll}>
+          {data.historyLimitedToDays ? (
+            <UpsellCard
+              icon="time-outline"
+              title={`Showing the last ${data.historyLimitedToDays} days`}
+              body="Your full history, trends and personal bests are part of the App Subscription. Nothing you log is deleted."
+            />
+          ) : null}
           <MonthCalendar countByDate={countByDate} selectedDate={selectedDate} onSelectDate={setSelectedDate} />
           <View style={styles.calendarDetail}>
             <Text style={styles.monthLabel}>{selectedDate ? formatDateLabel(selectedDate) : "Select a date"}</Text>
@@ -145,6 +153,13 @@ export default function WorkoutHistoryScreen() {
         </ScrollView>
       ) : (
         <ScrollView contentContainerStyle={styles.scroll}>
+          {data.historyLimitedToDays ? (
+            <UpsellCard
+              icon="time-outline"
+              title={`Showing the last ${data.historyLimitedToDays} days`}
+              body="Your full history, trends and personal bests are part of the App Subscription. Nothing you log is deleted."
+            />
+          ) : null}
           {groups.length === 0 ? (
             <Card style={styles.emptyCard}>
               <Ionicons name="time-outline" size={22} color={Color.textFaint} />

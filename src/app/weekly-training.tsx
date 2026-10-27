@@ -27,6 +27,8 @@ import {
   type WeeklyTrainingSession,
 } from "@/lib/queries/weekly-training";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
+import { useHasFeature } from "@/lib/queries/profile";
+import { LockedScreen } from "@/components/ui/LockedScreen";
 
 let keySeq = 0;
 function nextId(): string {
@@ -113,6 +115,7 @@ export default function WeeklyTrainingScreen() {
   const Color = useLegacyColors();
   const router = useRouter();
   const { data, isLoading } = useWeeklyTraining();
+  const allowed = useHasFeature("weeklyPlanner");
   const updateSchedule = useUpdateWeeklyTraining();
 
   const [sessions, setSessions] = useState<WeeklyTrainingSession[]>([]);
@@ -163,6 +166,8 @@ export default function WeeklyTrainingScreen() {
       setError(e instanceof ApiError ? e.message : "Could not save your weekly pattern. Please try again.");
     }
   }
+
+  if (!allowed) return <LockedScreen title="Weekly training" icon="calendar-outline" body="Plan your training week, and your calorie targets follow it: more on training days, less on rest days." />;
 
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>

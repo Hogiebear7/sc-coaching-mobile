@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { apiFetch } from "@/lib/api-client";
-import { NO_ACCESS, type MemberAccess, tierFromAccess, type MemberTier } from "@/lib/member-access";
+import { hasAccess, NO_ACCESS, type MemberAccess, type MemberFeature, tierFromAccess, type MemberTier } from "@/lib/member-access";
 import { readProfileAccess } from "@/lib/profile-access";
 
 export type Gender = "Male" | "Female" | "Other";
@@ -100,6 +100,11 @@ export function useProfile(options?: { enabled?: boolean }) {
 /** The access flags as the tab bar's single tier (see tierFromAccess). */
 export function useMemberTier(): MemberTier {
   return tierFromAccess(useMemberAccess());
+}
+
+/** Whether this member has a feature now (src/lib/member-access.ts). False until the profile has loaded, so nothing locked is requested early. */
+export function useHasFeature(feature: MemberFeature): boolean {
+  return hasAccess(useMemberAccess(), feature);
 }
 
 export function useMemberAccess(): MemberAccess {

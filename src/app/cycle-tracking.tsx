@@ -33,6 +33,7 @@ import {
   type CycleRegularity,
 } from "@/lib/queries/cycle";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
+import { UpsellCard } from "@/components/ui/Upsell";
 
 const REGULARITY_OPTIONS: CycleRegularity[] = ["Regular", "Irregular", "Unsure"];
 
@@ -372,11 +373,19 @@ export default function CycleTrackingScreen() {
                     </Text>
                   </View>
                 ) : null}
-                <View style={styles.guidanceWrap}>
-                  <GuidanceRow label="Training" value={phase.trainingGuidance} />
-                  <GuidanceRow label="Intensity" value={phase.intensityGuidance} />
-                  <GuidanceRow label="Recovery" value={phase.recoveryGuidance} />
-                </View>
+                {data?.guidanceLocked ? (
+                  <UpsellCard
+                    icon="fitness-outline"
+                    title="Training tips for each phase"
+                    body="Training, intensity and recovery guidance for each phase of your cycle. Part of the App Subscription."
+                  />
+                ) : (
+                  <View style={styles.guidanceWrap}>
+                    <GuidanceRow label="Training" value={phase.trainingGuidance} />
+                    <GuidanceRow label="Intensity" value={phase.intensityGuidance} />
+                    <GuidanceRow label="Recovery" value={phase.recoveryGuidance} />
+                  </View>
+                )}
                 <Text style={styles.disclaimer}>
                   Educational guidance only — not medical advice. This estimate is based on the cycle
                   information you have entered and may not reflect your individual experience.

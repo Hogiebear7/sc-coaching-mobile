@@ -102,6 +102,8 @@ export interface CycleData {
   settings: CycleSettings | null;
   privacy: CyclePrivacy | null;
   phaseEstimate: PhaseEstimate;
+  /** The phase-aware guidance is part of the App Subscription; when true its fields are empty. Older servers don't send it. */
+  guidanceLocked?: boolean;
 }
 
 interface CycleResponse {

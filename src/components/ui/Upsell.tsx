@@ -21,8 +21,8 @@ import { CAN_SELL_DIGITAL_PLAN, DIGITAL_PLAN_ROUTE } from "@/lib/upsell-config";
 // walls. Defaults to the original copy so every existing call site is
 // unaffected.
 const UPGRADE_COPY: Record<"appSubscription" | "membership", string> = {
-  appSubscription: "Available on App Subscription and above",
-  membership: "Available on the Membership tier",
+  appSubscription: "Part of the App Subscription",
+  membership: "Part of a gym membership",
 };
 
 // Store builds never promote a purchase (see src/lib/upsell-config.ts): the

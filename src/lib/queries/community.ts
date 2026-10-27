@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { apiFetch } from "@/lib/api-client";
 import type { WorkoutExerciseEntry, WorkoutRunEntry } from "@/lib/queries/workouts";
+import { useHasFeature } from "@/lib/queries/profile";
 
 // Mirrors gym-app's lib/leaderboard.ts.
 export type LeaderboardMetric = "volume" | "squat" | "bench" | "deadlift";
@@ -24,6 +25,7 @@ export function useLeaderboard(
   customStartISO?: string | null,
   customEndISO?: string | null
 ) {
+  const allowed = useHasFeature("communityLeaderboards");
   return useQuery({
     queryKey: ["community-leaderboard", metric, range, customStartISO, customEndISO],
     queryFn: () => {
@@ -39,7 +41,7 @@ export function useLeaderboard(
     // A custom range with neither bound picked yet isn't a meaningful query
     // — avoid firing it (and showing a misleading "no entries" flash) until
     // at least one bound is set.
-    enabled: range !== "custom" || !!customStartISO || !!customEndISO,
+    enabled: allowed && (range !== "custom" || !!customStartISO || !!customEndISO),
   });
 }
 
@@ -121,7 +123,9 @@ export interface CommunityHighlight {
 }
 
 export function useCommunityHighlight() {
+  const enabled = useHasFeature("communityLeaderboards");
   return useQuery({
+    enabled,
     queryKey: ["community-highlight"],
     queryFn: () =>
       apiFetch<{ success: true; data: CommunityHighlight }>("/api/mobile/community/highlight").then((r) => r.data),

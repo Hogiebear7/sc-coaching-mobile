@@ -29,7 +29,7 @@ import {
   type ActivityLevel,
   type CalorieDistribution,
 } from "@/lib/queries/nutrition-diary";
-import { useMemberAccess, useMemberTier, useProfile } from "@/lib/queries/profile";
+import { useMemberAccess, useMemberTier, useProfile, useHasFeature } from "@/lib/queries/profile";
 import { setTabChoice } from "@/lib/tab-choice";
 import { canChooseTabs, MAIN_USE_TABS, type MainUse } from "@/lib/tab-config";
 import { makeStyles, useAppTheme } from "@/lib/theme";
@@ -66,6 +66,7 @@ export default function OnboardingScreen() {
   const { data: profile } = useProfile();
   const { data: timeline, refetch: refetchTimeline } = useGoalTimeline();
   const { data: target } = useMyNutritionTarget();
+  const canTargets = useHasFeature("calorieTargets");
   const saveGoal = useSaveGoal();
   const logWeight = useLogBodyWeight();
   const { data: prefs } = useNutritionPreferences();
@@ -492,7 +493,9 @@ export default function OnboardingScreen() {
           {
             t: "Calories",
             v: target?.calories != null ? `${target.calories.toLocaleString()} kcal` : "—",
-            b: v2
+            b: !canTargets
+              ? "A daily calorie target that adapts to your training is part of the App Subscription. Logging food is free."
+              : v2
               ? `Your share of a weekly budget, spread ${split === "training" ? "to match your training" : "evenly across the week"}. It's reviewed every Monday as the app learns your real burn.`
               : "Your daily starting target. It adjusts as your weight and training change.",
           },

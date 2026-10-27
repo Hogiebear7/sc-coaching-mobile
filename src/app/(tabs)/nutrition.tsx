@@ -34,7 +34,7 @@ import { ApiError } from "@/lib/auth-context";
 import { selectionFeedback, successFeedback, tapFeedback, warningFeedback } from "@/lib/haptics";
 import { hasAccess } from "@/lib/member-access";
 import { useFoodFavorites, useRemoveFoodFavorite, type FoodFavorite } from "@/lib/queries/food-favorites";
-import { useMemberAccess } from "@/lib/queries/profile";
+import { useMemberAccess, useHasFeature } from "@/lib/queries/profile";
 import { useReduceMotionPref } from "@/lib/use-reduce-motion";
 import {
   MEAL_TYPE_OPTIONS,
@@ -59,7 +59,7 @@ import { calorieExplanation } from "@/lib/calorie-explanation";
 import { classifyLoad, LOAD_BAND_LABEL } from "@/lib/nutrition-calc";
 import { todayDateString } from "@/lib/workout-formatters";
 import { makeStyles, useAppTheme } from "@/lib/theme";
-import { notInPlanCopy } from "@/lib/upsell-config";
+import { notInPlanCopy, CAN_SELL_DIGITAL_PLAN, DIGITAL_PLAN_ROUTE } from "@/lib/upsell-config";
 
 function shiftDate(dateISO: string, days: number): string {
   const [y, m, d] = dateISO.split("-").map(Number);
@@ -500,6 +500,8 @@ export default function NutritionScreen() {
 
   const { data, isLoading, isError, refetch, isRefetching } = useNutrition();
   const { data: target } = useMyNutritionTarget();
+  // Daily calorie and macro targets are part of the App Subscription; Free still logs and sees what it has eaten.
+  const canTargets = useHasFeature("calorieTargets");
   const { data: diary } = useNutritionDiary(selectedDate);
   const { data: recentFoods } = useRecentFoods();
   const { data: favorites } = useFoodFavorites();
@@ -637,11 +639,15 @@ export default function NutritionScreen() {
             </Pressable>
           </View>
 
-          <Pressable onPress={() => router.push("/nutrition-targets")} accessibilityRole="button" accessibilityLabel="Calories and targets">
+          <Pressable
+            onPress={() => (canTargets ? router.push("/nutrition-targets") : CAN_SELL_DIGITAL_PLAN ? router.push(DIGITAL_PLAN_ROUTE as never) : undefined)}
+            accessibilityRole="button"
+            accessibilityLabel={canTargets ? "Calories and targets" : "Calories. Daily targets are part of the App Subscription"}
+          >
             <View style={styles.calHead}>
               <Text style={styles.calLabel}>{hasTarget && target?.fuelDayLabel ? target.fuelDayLabel : "Calories"}</Text>
               <View style={styles.calLink}>
-                <Text style={styles.calLinkText}>Day · Week</Text>
+                <Text style={styles.calLinkText}>{canTargets ? "Day · Week" : "Targets"}</Text>
                 <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
               </View>
             </View>
@@ -673,9 +679,11 @@ export default function NutritionScreen() {
               </>
             ) : (
               <Text style={styles.calRemaining}>
-                {target?.mode === "disabled"
-                  ? "Your coach has turned off daily targets for now — logging still works."
-                  : "Setting up your target — add your weight in Profile so we can calculate it."}
+                {!canTargets
+                  ? "A daily calorie and macro target that adapts to your training is part of the App Subscription."
+                  : target?.mode === "disabled"
+                    ? "Your coach has turned off daily targets for now — logging still works."
+                    : "Setting up your target — add your weight in Profile so we can calculate it."}
               </Text>
             )}
           </Pressable>

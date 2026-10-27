@@ -11,6 +11,7 @@ import { AppRadius, AppSpace, appTitle, figure, Radius, readinessColor, Spacing 
 import { useAuth } from "@/lib/auth-context";
 import { POST_SIGNUP_SETUP_KEY_PREFIX } from "@/lib/post-signup-setup";
 import { useBodyWeightLogs } from "@/lib/queries/body-weight";
+import { compareWeightLogs } from "@/lib/weight-logs";
 import { useCommunityHighlight } from "@/lib/queries/community";
 import { useDashboard } from "@/lib/queries/dashboard";
 import { useNotifications } from "@/lib/queries/notifications";
@@ -151,7 +152,7 @@ export default function DashboardScreen() {
 
   const readiness = data.readiness;
   const week = lastSevenDays(data.todayISO, readiness.trend);
-  const recentWeights = [...(weights ?? [])].sort((a, b) => a.date.localeCompare(b.date)).slice(-7);
+  const recentWeights = [...(weights ?? [])].sort(compareWeightLogs).slice(-7);
   const latestWeight = recentWeights[recentWeights.length - 1]?.weightKg ?? null;
 
   const todayAction =

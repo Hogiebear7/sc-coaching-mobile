@@ -8,6 +8,7 @@ import { WeightTrendChart } from "@/components/ui/WeightTrendChart";
 import { Radius, Spacing } from "@/constants/theme";
 import { tapFeedback } from "@/lib/haptics";
 import { useBodyWeightLogs, useLogBodyWeight, type BodyWeightLog } from "@/lib/queries/body-weight";
+import { compareWeightLogs } from "@/lib/weight-logs";
 import { todayDateString } from "@/lib/workout-formatters";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
@@ -22,7 +23,7 @@ const RANGE_LABELS: { value: RangeFilter; label: string }[] = [
 ];
 
 function applyRangeFilter(logs: BodyWeightLog[], filter: RangeFilter): BodyWeightLog[] {
-  const sorted = [...logs].sort((a, b) => a.date.localeCompare(b.date));
+  const sorted = [...logs].sort(compareWeightLogs);
   if (filter === "all") return sorted;
   const cutoff = new Date();
   if (filter === "month") cutoff.setMonth(cutoff.getMonth() - 1);
@@ -38,7 +39,7 @@ function applyRangeFilter(logs: BodyWeightLog[], filter: RangeFilter): BodyWeigh
 // "since you started tracking" rather than "since the start of this window".
 function changeSummary(logs: BodyWeightLog[]): string | null {
   if (logs.length < 2) return null;
-  const sorted = [...logs].sort((a, b) => a.date.localeCompare(b.date));
+  const sorted = [...logs].sort(compareWeightLogs);
   const first = sorted[0];
   const latest = sorted[sorted.length - 1];
   const delta = Math.round((latest.weightKg - first.weightKg) * 10) / 10;
@@ -66,7 +67,7 @@ export function BodyWeightCard({ compact = false }: { compact?: boolean }) {
   const [range, setRange] = useState<RangeFilter>("3months");
 
   const latest = useMemo(
-    () => (weightLogs && weightLogs.length > 0 ? [...weightLogs].sort((a, b) => b.date.localeCompare(a.date))[0] : null),
+    () => (weightLogs && weightLogs.length > 0 ? [...weightLogs].sort((a, b) => compareWeightLogs(b, a))[0] : null),
     [weightLogs],
   );
   const filtered = useMemo(() => applyRangeFilter(weightLogs ?? [], range), [weightLogs, range]);

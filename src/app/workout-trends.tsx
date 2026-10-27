@@ -12,6 +12,7 @@ import { WeightChangeInsights } from "@/components/ui/WeightChangeInsights";
 import { WeightTrendChart } from "@/components/ui/WeightTrendChart";
 import { Radius, Spacing } from "@/constants/theme";
 import { useBodyWeightLogs } from "@/lib/queries/body-weight";
+import { compareWeightLogs } from "@/lib/weight-logs";
 import { useWorkouts } from "@/lib/queries/workouts";
 import {
   TREND_RANGES,
@@ -44,7 +45,7 @@ export default function WorkoutTrendsScreen() {
   const weeklyTrend = useMemo(() => (data ? getWeeklyTrend(data.sessions) : []), [data]);
 
   const sortedWeightLogs = useMemo(
-    () => (weightLogs ? [...weightLogs].sort((a, b) => a.date.localeCompare(b.date)) : []),
+    () => (weightLogs ? [...weightLogs].sort(compareWeightLogs) : []),
     [weightLogs]
   );
   const filteredWeightLogs = useMemo(

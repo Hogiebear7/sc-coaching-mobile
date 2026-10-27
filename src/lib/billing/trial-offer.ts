@@ -10,7 +10,7 @@ import type { BillingSnapshot } from "./controller";
 export interface TrialOfferPlanLine {
   billingOptionId: string;
   title: string;
-  /** e.g. "7 days free, then €12.99 per month", all three values the store's. */
+  /** e.g. "7 days free, then <the store's price> per month": the length, price and period are all the store's. */
   line: string;
 }
 

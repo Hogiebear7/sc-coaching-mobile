@@ -111,14 +111,17 @@ describe("it never blocks, never buys, never pressures", () => {
     expect(signup).not.toMatch(/buy\(|trial:|startTrial/);
     const home = code(homeSource);
     expect(home).toContain("AsyncStorage.removeItem(POST_SIGNUP_TRIAL_OFFER_KEY_PREFIX");
-    expect(home).toContain("trialOfferHandled.current");
-    expect(home).toMatch(/offerWillShow = CAN_SELL_DIGITAL_PLAN && !!profile && profile\.accessSupported && !profile\.memberAccess\.digital/);
+    expect(home).toContain("handled.current = true");
+    expect(home).toMatch(/if \(!CAN_SELL_DIGITAL_PLAN \|\| !user \|\| !profile/);
+    expect(home).toMatch(/if \(profile\.accessSupported && !profile\.memberAccess\.digital\) router\.push\("\/trial-offer"/);
   });
 
-  it("the training-setup card waits for the offer rather than stacking on it, and is never delayed when there is nothing to offer", () => {
+  it("the offer waits for the onboarding steps rather than stacking on them (App v2: onboarding is its own screen)", () => {
     const home = code(homeSource);
-    expect(home).toMatch(/waitingForTrialOffer = trialOfferPending && \(!profile \|\| offerWillShow\)/);
-    expect(home).toMatch(/visible = pending && !waitingForTrialOffer && focused/);
+    // Read together with the onboarding flag; while that is still set, nothing is shown and the offer is checked again on the next visit to Home.
+    expect(home).toContain("AsyncStorage.getItem(POST_SIGNUP_SETUP_KEY_PREFIX");
+    expect(home).toMatch(/if \(cancelled \|\| !offer \|\| setupStillPending \|\| handled\.current\) return;/);
+    expect(home).toContain("useFocusEffect(");
   });
 
   it("the offer screen leaves quietly when the store shows no trial, and the offer stays reachable later from Settings > App Subscription", () => {

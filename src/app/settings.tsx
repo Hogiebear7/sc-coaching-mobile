@@ -36,7 +36,7 @@ import {
   useSetUnits,
   type MeasurementUnits,
 } from "@/lib/queries/profile";
-import { CAN_LINK_GYM_MEMBERSHIP } from "@/lib/upsell-config";
+import { CAN_LINK_GYM_MEMBERSHIP, CAN_SELL_DIGITAL_PLAN, DIGITAL_PLAN_ROUTE } from "@/lib/upsell-config";
 
 const REMINDER_PRESETS = [
   { label: "24 hours before", mins: 1440 },
@@ -288,10 +288,18 @@ export default function SettingsScreen() {
           <Card style={styles.settingsCard}>
             <Row
               icon="card-outline"
-              title="Manage membership"
-              sub={CAN_LINK_GYM_MEMBERSHIP ? "Plan, billing, and payment method" : "Your current plan and status"}
+              title="Gym membership"
+              sub={CAN_LINK_GYM_MEMBERSHIP ? "Classes and coach messaging, billed by the gym" : "Your gym membership and status"}
               onPress={() => router.push("/membership")}
             />
+            {CAN_SELL_DIGITAL_PLAN || access.digital ? (
+              <Row
+                icon="sparkles-outline"
+                title="App Subscription"
+                sub={access.digital ? "Your plan: manage or restore" : "AI coaching, calorie targets, programmes and more"}
+                onPress={() => router.push(DIGITAL_PLAN_ROUTE as never)}
+              />
+            ) : null}
           </Card>
 
           <SectionLabel>AI features</SectionLabel>

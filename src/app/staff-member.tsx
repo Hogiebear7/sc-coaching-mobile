@@ -11,6 +11,7 @@ import { Radius, Spacing } from "@/constants/theme";
 import { tapFeedback } from "@/lib/haptics";
 import { useStaffNutritionTarget } from "@/lib/queries/nutrition-diary";
 import { useStaffPrograms } from "@/lib/queries/programs";
+import { StaffAccessCard } from "@/components/staff/StaffAccessCard";
 import { useSaveCoachNotes, useStaffMemberDetail } from "@/lib/queries/staff";
 import type { TrainingDayOfWeek } from "@/lib/queries/weekly-training";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
@@ -110,6 +111,8 @@ export default function StaffMemberScreen() {
               <Text style={styles.rowValue}>{formatDate(data.currentPeriodEnd)}</Text>
             </View>
           </Card>
+
+          <StaffAccessCard userId={userId} />
 
           <Card style={styles.card}>
             <Text style={styles.sectionLabel}>Contact</Text>

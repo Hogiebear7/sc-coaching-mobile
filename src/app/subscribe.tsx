@@ -9,7 +9,7 @@ import { Card } from "@/components/ui/Card";
 import { API_BASE_URL } from "@/constants/config";
 import { Color, FontSize, Radius, Spacing } from "@/constants/theme";
 import { useBillingController, useBillingSnapshot } from "@/lib/billing/billing-context";
-import { AI_ALLOWANCE_NOTE, TRIALS_UNAVAILABLE_MESSAGE, withoutTrialLabel, autoRenewDisclosure, describePlanEnd, DIGITAL_PLAN_FEATURES, manageSubscriptionLabel, RESTORE_LABEL, SEPARATE_FROM_MEMBERSHIP, trialHeadline } from "@/lib/billing/copy";
+import { AI_FAIR_USE_NOTE, TRIALS_UNAVAILABLE_MESSAGE, withoutTrialLabel, autoRenewDisclosure, describePlanEnd, DIGITAL_PLAN_FEATURES, manageSubscriptionLabel, RESTORE_LABEL, SEPARATE_FROM_MEMBERSHIP, trialHeadline } from "@/lib/billing/copy";
 import type { StorePlan } from "@/lib/billing/types";
 import { OUT_OF_DATE_SERVER_MESSAGE } from "@/lib/profile-access";
 import { useProfile } from "@/lib/queries/profile";
@@ -95,7 +95,7 @@ export default function SubscribeScreen() {
                   <Text style={styles.body}>{line}</Text>
                 </View>
               ))}
-              <Text style={styles.small}>{AI_ALLOWANCE_NOTE}</Text>
+              <Text style={styles.small}>{AI_FAIR_USE_NOTE}</Text>
             </Card>
 
             {snapshot.phase === "idle" || snapshot.phase === "loading" ? (

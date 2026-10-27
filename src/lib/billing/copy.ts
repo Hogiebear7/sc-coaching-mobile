@@ -97,19 +97,21 @@ export function manageSubscriptionLabel(platform: StorePlatform): string {
 export const RESTORE_LABEL = "Restore purchases";
 
 /** What the digital plan includes, in the words the paywall uses. Mirrors the features gated in src/lib/member-access.ts. */
+// What the App Subscription adds to Free (owner decisions 2026-10-27; server: gym-app lib/member-access.ts).
 export const DIGITAL_PLAN_FEATURES: readonly string[] = [
-  "AI coach and AI nutrition coach chat",
-  "Programme generation and workout reviews",
-  "Food search and unlimited saved foods",
-  "Tracker import, gym profiles and reminders",
+  "AI coach, AI nutrition coach, and food logging from a photo or a description",
+  "Daily calorie and macro targets that adapt to your training",
+  "Programmes, the weekly planner and workout reviews",
+  "Full history, trends, personal bests and leaderboards",
+  "Unlimited saved workouts and meals",
 ];
 
 /**
- * AI use has a limit, and the paywall says what is limited, when it resets and what happens at the limit. Nothing in the app advertises unlimited AI.
- * It is separate from subscription status: reaching the allowance pauses AI features only. (The server sends its own message when a limit is hit.)
+ * Owner decision 2026-10-27: the app never shows that AI has a limit (no allowance, amounts or counters), for a premium feel. The limit is disclosed
+ * once, here, in the subscription's small print, as fair use. Nothing in the app advertises unlimited AI. (When a pause happens, the server's own
+ * message says when AI is ready again.)
  */
-export const AI_ALLOWANCE_NOTE =
-  "AI features have an allowance, measured over a rolling 30 days. A free trial has one allowance for the whole trial, and your paid allowance starts when the trial becomes a paid plan. If you reach it, only the AI features pause until more frees up. Your subscription and the rest of the app are unaffected.";
+export const AI_FAIR_USE_NOTE = "AI features are subject to fair use.";
 
 /** Shown instead of a trial offer when the server cannot honour one. The Free tier stays usable; nothing is bought. */
 export const TRIALS_UNAVAILABLE_MESSAGE = "Free trials are temporarily unavailable. Please try again later.";

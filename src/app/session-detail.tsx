@@ -6,7 +6,9 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { MUSCLE_GROUP_LABEL, MuscleMap } from "@/components/ui/MuscleMap";
+import { MUSCLE_GROUP_LABEL } from "@/components/ui/MuscleMap";
+import { MuscleThumb } from "@/components/ui/MuscleThumb";
+import { muscleFocusFor } from "@/lib/exercise-muscles";
 import { StatCard } from "@/components/ui/StatCard";
 import { headline, Radius, Spacing } from "@/constants/theme";
 import { tapFeedback } from "@/lib/haptics";
@@ -206,8 +208,8 @@ export default function SessionDetailScreen() {
                     >
                       <View style={styles.exerciseHead}>
                         <View style={styles.exerciseIcon}>
-                          {section ? (
-                            <MuscleMap section={section} size={34} />
+                          {muscleFocusFor(ex.name, section) ? (
+                            <MuscleThumb focus={muscleFocusFor(ex.name, section)!} size={44} />
                           ) : (
                             <Text style={styles.exerciseIndex}>{idx + 1}</Text>
                           )}

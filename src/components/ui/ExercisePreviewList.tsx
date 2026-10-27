@@ -1,7 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { StyleSheet, Text, View } from "react-native";
 
-import { MuscleMap } from "@/components/ui/MuscleMap";
+import { MuscleThumb } from "@/components/ui/MuscleThumb";
+import { muscleFocusFor } from "@/lib/exercise-muscles";
 import type { ExerciseSection, WorkoutExerciseEntry, WorkoutRunEntry } from "@/lib/queries/workouts";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 import { exerciseSetSummary, formatRun } from "@/lib/workout-formatters";
@@ -31,10 +32,11 @@ export function ExercisePreviewList({
     <View style={styles.list}>
       {shownExercises.map((ex, i) => {
         const section = ex.exerciseId ? sectionByExerciseId?.get(ex.exerciseId) : undefined;
+        const focus = muscleFocusFor(ex.name, section);
         return (
           <View key={`ex-${i}`} style={styles.row}>
             <View style={styles.icon}>
-              {section ? <MuscleMap section={section} size={28} /> : <Ionicons name="barbell-outline" size={16} color={Color.textMuted} />}
+              {focus ? <MuscleThumb focus={focus} size={44} /> : <Ionicons name="barbell-outline" size={16} color={Color.textMuted} />}
             </View>
             <View style={styles.text}>
               <Text style={styles.name} numberOfLines={1}>
@@ -73,7 +75,7 @@ const useStyles = makeLegacyStyles((Color) =>
   StyleSheet.create({
     list: { gap: 10 },
     row: { flexDirection: "row", alignItems: "center", gap: 12 },
-    icon: { width: 36, height: 36, borderRadius: 18, backgroundColor: Color.bg0, alignItems: "center", justifyContent: "center" },
+    icon: { width: 44, height: 44, borderRadius: 22, backgroundColor: Color.bg0, alignItems: "center", justifyContent: "center" },
     text: { flex: 1 },
     name: { fontSize: 15, fontWeight: "500", color: Color.textPrimary },
     summary: { fontSize: 14, color: Color.textMuted, marginTop: 1, fontVariant: ["tabular-nums"] },

@@ -114,6 +114,15 @@ export default function StaffMemberScreen() {
 
           <StaffAccessCard userId={userId} />
 
+          {data.walled ? (
+            <Card style={styles.card}>
+              <Text style={styles.sectionLabel}>Member details</Text>
+              <Text style={styles.walledNote}>
+                Their training, nutrition, recovery and contact details stay private until they hold a gym Membership.
+              </Text>
+            </Card>
+          ) : (
+          <>
           <Card style={styles.card}>
             <Text style={styles.sectionLabel}>Contact</Text>
             <View style={styles.rowLine}>
@@ -379,6 +388,8 @@ export default function StaffMemberScreen() {
               style={{ marginTop: Spacing.sm }}
             />
           </Card>
+          </>
+          )}
         </ScrollView>
       )}
     </SafeAreaView>
@@ -403,6 +414,7 @@ const useStyles = makeLegacyStyles((Color) =>
     name: { fontSize: 20, fontWeight: "700", color: Color.textPrimary },
     email: { fontSize: 14, color: Color.textMuted, marginTop: 2, marginBottom: Spacing.lg },
     card: { padding: Spacing.md, marginBottom: Spacing.md },
+    walledNote: { fontSize: 15, lineHeight: 21, color: Color.textSecondary },
     sectionLabel: { fontSize: 19, fontWeight: "600", color: Color.textPrimary, marginBottom: Spacing.sm },
     rowLine: {
       flexDirection: "row",

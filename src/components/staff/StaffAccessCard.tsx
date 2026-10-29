@@ -1,38 +1,51 @@
 import { useState } from "react";
-import { StyleSheet, Text, TextInput, View } from "react-native";
+import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 
 import { PillButton } from "@/components/app/primitives";
 import { Card } from "@/components/ui/Card";
-import { AppRadius } from "@/constants/theme";
+import { AppRadius, Spacing } from "@/constants/theme";
 import { useAuth } from "@/lib/auth-context";
 import { ApiError } from "@/lib/api-client";
-import { useGrantAppAccess, useRevokeAppAccess, useSetMemberAiPaused, useStaffMemberAiStatus } from "@/lib/queries/staff-access";
+import {
+  useEndGymMembership,
+  useGrantAppAccess,
+  useGrantGymMembership,
+  useRevokeAppAccess,
+  useSetMemberAiPaused,
+  useStaffMemberAiStatus,
+} from "@/lib/queries/staff-access";
 import { makeStyles, useAppTheme } from "@/lib/theme";
 
 const eur = (n: number | null | undefined) => (n == null ? "—" : `€${n.toFixed(2)}`);
 const ymd = /^\d{4}-\d{2}-\d{2}$/;
+const shortDate = (iso: string) => new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
 
 function planLine(plan: { source: string; currentPeriodEnd: string | null; trial: boolean } | null): string {
   if (!plan) return "Free (no App Subscription)";
-  const until = plan.currentPeriodEnd ? ` until ${new Date(plan.currentPeriodEnd).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })}` : "";
+  const until = plan.currentPeriodEnd ? ` until ${shortDate(plan.currentPeriodEnd)}` : "";
   if (plan.source === "staff_grant") return `Complimentary${until || ", no end date"}`;
   const store = plan.source === "google_play" ? "Google Play" : plan.source === "app_store" ? "App Store" : "store";
   return `${plan.trial ? "Free trial" : "Paid"} through ${store}${until}`;
 }
 
-// Staff view of one member's App Subscription and AI use (members.view), with the controls for staff who manage access (admins: grant or
-// withdraw complimentary access with an optional end date and a note, and pause AI). Never touches store billing.
+// Staff view of one member's access (members.view): the gym Membership, the App Subscription and AI use. Staff who manage access (the server's
+// canManage, members.grantTier) also get the controls the website's "Membership & access" panel has: grant a gym Membership on a chosen package
+// with an optional end date, or end it; give or withdraw complimentary app access with an optional end date and a note; pause AI. Store billing
+// is never touched: a paid store subscription can only be changed by the member.
 export function StaffAccessCard({ userId }: { userId: string }) {
   const styles = useStyles();
   const { colors } = useAppTheme();
   const { user } = useAuth();
-  const canManage = user?.role === "admin" || user?.role === "admin_manager";
   const { data, error } = useStaffMemberAiStatus(userId);
   const grant = useGrantAppAccess(userId);
   const revoke = useRevokeAppAccess(userId);
   const pause = useSetMemberAiPaused(userId);
+  const grantGym = useGrantGymMembership(userId);
+  const endGym = useEndGymMembership(userId);
   const [endsOn, setEndsOn] = useState("");
   const [note, setNote] = useState("");
+  const [gymPackageId, setGymPackageId] = useState<string | null>(null);
+  const [gymEndsOn, setGymEndsOn] = useState("");
   const [message, setMessage] = useState<string | null>(null);
 
   if (error) {
@@ -41,8 +54,13 @@ export function StaffAccessCard({ userId }: { userId: string }) {
   }
   if (!data) return null;
   const a = data.allowance;
+  // The server decides (members.grantTier). An older server doesn't say, so fall back to the roles that had it then.
+  const canManage = data.canManage ?? (user?.role === "admin" || user?.role === "admin_manager");
+  const gym = data.gymMembership ?? null;
+  const packages = data.gymPackages ?? [];
+  const chosenPackage = gymPackageId ?? packages[0]?.id ?? null;
   const complimentary = a.plan?.source === "staff_grant";
-  const busy = grant.isPending || revoke.isPending || pause.isPending;
+  const busy = grant.isPending || revoke.isPending || pause.isPending || grantGym.isPending || endGym.isPending;
   const run = async (fn: () => Promise<{ message: string }>) => {
     setMessage(null);
     try {
@@ -51,18 +69,82 @@ export function StaffAccessCard({ userId }: { userId: string }) {
       setMessage(e instanceof ApiError ? e.message : "That didn't work. Please try again.");
     }
   };
+  const aiLine =
+    a.budgetEur == null || a.budgetEur === 0
+      ? `${eur(a.spentEur)} used${a.kind === "free" ? " (Free has no AI allowance)" : ""}`
+      : `${eur(a.spentEur)} of ${eur(a.budgetEur)} · today ${eur(a.spentTodayEur)}${a.dailyCapEur != null ? ` of ${eur(a.dailyCapEur)}` : ""}`;
 
   return (
     <Card style={styles.card}>
+      {canManage && gym ? (
+        <View style={styles.section}>
+          <Text style={styles.label}>Gym membership</Text>
+          {gym.active ? (
+            <>
+              <Text style={styles.value}>
+                {gym.planName ?? "Active"}
+                {gym.currentPeriodEnd ? ` · until ${shortDate(gym.currentPeriodEnd)}` : ""}
+              </Text>
+              <PillButton
+                title={endGym.isPending ? "Saving…" : "End gym Membership"}
+                variant="secondary"
+                onPress={() => !busy && run(() => endGym.mutateAsync())}
+                style={{ marginTop: 10 }}
+              />
+            </>
+          ) : packages.length === 0 ? (
+            <Text style={styles.hint}>None. No gym packages exist yet: add one in Memberships & Pricing on the website.</Text>
+          ) : (
+            <>
+              <Text style={styles.value}>None</Text>
+              <Text style={[styles.hint, { marginTop: 8 }]}>Package</Text>
+              {packages.map((p) => {
+                const selected = p.id === chosenPackage;
+                return (
+                  <Pressable
+                    key={p.id}
+                    onPress={() => setGymPackageId(p.id)}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected }}
+                    style={[styles.option, selected && { borderColor: colors.brand }]}
+                  >
+                    <Text style={styles.optionTitle}>{p.name}</Text>
+                    <Text style={styles.optionHint}>{p.allowance}</Text>
+                  </Pressable>
+                );
+              })}
+              <TextInput
+                value={gymEndsOn}
+                onChangeText={setGymEndsOn}
+                placeholder="End date, YYYY-MM-DD (optional)"
+                placeholderTextColor={colors.textMuted}
+                style={styles.input}
+                autoCapitalize="none"
+                accessibilityLabel="Gym Membership end date"
+              />
+              <PillButton
+                title={grantGym.isPending ? "Saving…" : "Grant gym Membership"}
+                onPress={() => {
+                  if (busy || !chosenPackage) return;
+                  if (gymEndsOn.trim() && !ymd.test(gymEndsOn.trim())) return setMessage("Write the end date as YYYY-MM-DD, or leave it empty.");
+                  run(async () => {
+                    const r = await grantGym.mutateAsync({ packageId: chosenPackage, endsOn: gymEndsOn.trim() || null });
+                    setGymEndsOn("");
+                    return r;
+                  });
+                }}
+                style={{ marginTop: 10 }}
+              />
+            </>
+          )}
+        </View>
+      ) : null}
+
       <Text style={styles.label}>App Subscription</Text>
       <Text style={styles.value}>{planLine(a.plan)}</Text>
 
       <Text style={[styles.label, { marginTop: 14 }]}>AI this month</Text>
-      <Text style={styles.value}>
-        {eur(a.spentEur)}
-        {a.budgetEur != null ? ` of ${eur(a.budgetEur)}` : ""} · today {eur(a.spentTodayEur)}
-        {a.dailyCapEur != null ? ` of ${eur(a.dailyCapEur)}` : ""}
-      </Text>
+      <Text style={styles.value}>{aiLine}</Text>
       <Text style={styles.hint}>{data.totalCalls} AI requests in this period. Members never see these figures.</Text>
       {a.paused ? <Text style={[styles.hint, { color: colors.danger }]}>AI is paused for this member.</Text> : null}
 
@@ -90,7 +172,7 @@ export function StaffAccessCard({ userId }: { userId: string }) {
                 accessibilityLabel="Note"
               />
               <PillButton
-                title={busy ? "Saving…" : "Give free access"}
+                title={grant.isPending ? "Saving…" : "Give free access"}
                 onPress={() => {
                   if (busy) return;
                   if (endsOn.trim() && !ymd.test(endsOn.trim())) return setMessage("Write the end date as YYYY-MM-DD, or leave it empty.");
@@ -100,7 +182,7 @@ export function StaffAccessCard({ userId }: { userId: string }) {
               />
             </>
           ) : complimentary ? (
-            <PillButton title={busy ? "Saving…" : "Withdraw free access"} variant="secondary" onPress={() => !busy && run(() => revoke.mutateAsync())} />
+            <PillButton title={revoke.isPending ? "Saving…" : "Withdraw free access"} variant="secondary" onPress={() => !busy && run(() => revoke.mutateAsync())} />
           ) : (
             <Text style={styles.hint}>This member pays through the store, so only they can change or cancel it there.</Text>
           )}
@@ -119,10 +201,14 @@ export function StaffAccessCard({ userId }: { userId: string }) {
 
 const useStyles = makeStyles((c) =>
   StyleSheet.create({
-    card: { marginBottom: 12 },
+    card: { padding: Spacing.md, marginBottom: Spacing.md },
+    section: { marginBottom: 16, paddingBottom: 16, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: c.control },
     label: { fontSize: 13, color: c.textMuted, marginBottom: 4 },
     value: { fontSize: 16, color: c.text },
     hint: { fontSize: 13, lineHeight: 18, color: c.textMuted, marginTop: 6 },
     input: { minHeight: 44, borderRadius: AppRadius.inner, backgroundColor: c.control, color: c.text, paddingHorizontal: 12, fontSize: 16, marginTop: 8 },
+    option: { minHeight: 44, borderRadius: AppRadius.inner, backgroundColor: c.control, borderWidth: 1, borderColor: "transparent", paddingHorizontal: 12, paddingVertical: 8, marginTop: 8, justifyContent: "center" },
+    optionTitle: { fontSize: 15, color: c.text },
+    optionHint: { fontSize: 13, color: c.textMuted, marginTop: 2 },
   })
 );

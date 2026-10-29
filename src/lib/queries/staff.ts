@@ -345,6 +345,8 @@ export interface StaffMemberDetail extends StaffMemberSummary {
   emergencyContact2Name: string | null;
   emergencyContact2Phone: string | null;
   currentPeriodEnd: string | null;
+  /** A member without a gym Membership: only the summary is filled in, their own data stays private (gym-app lib/member-tier-wall.ts). */
+  walled?: boolean;
   totalSessionsLogged: number;
   totalBookings: number;
   lastSessionDate: string | null;

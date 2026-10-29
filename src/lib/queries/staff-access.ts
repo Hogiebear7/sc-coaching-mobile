@@ -2,8 +2,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { apiFetch } from "@/lib/api-client";
 
-// Staff controls for one member's App Subscription and AI (gym-app: /api/staff/members/[userId]/ai-usage, /tier and /ai-pause). Viewing needs
-// members.view; changing needs members.grantTier (admins). Amounts are in euros, as the owner sets them.
+// Staff controls for one member's App Subscription, gym Membership and AI (gym-app: /api/staff/members/[userId]/ai-usage, /tier and /ai-pause).
+// Viewing needs members.view; changing needs members.grantTier, which the server reports as canManage (older servers omit it). Amounts are in
+// euros, as the owner sets them.
 
 export interface StaffMemberAiStatus {
   totalCalls: number;
@@ -17,6 +18,12 @@ export interface StaffMemberAiStatus {
     dailyCapEur: number | null;
     spentTodayEur: number;
   };
+  /** Whether the signed-in staff member may change this member's access (members.grantTier, decided by the server). */
+  canManage?: boolean;
+  /** For staff who may manage access: the member's gym Membership. */
+  gymMembership?: { active: boolean; planName: string | null; packageId: string | null; status: string | null; currentPeriodEnd: string | null } | null;
+  /** For staff who may manage access: the gym packages a Membership can be granted on. */
+  gymPackages?: { id: string; name: string; allowance: string }[];
 }
 
 const key = (userId: string) => ["staff-member-ai", userId] as const;
@@ -40,6 +47,27 @@ export function useGrantAppAccess(userId: string) {
       }),
     onSuccess: () => qc.invalidateQueries({ queryKey: key(userId) }),
   });
+}
+
+// A gym Membership grant or end changes the member's whole staff view (the summary, and whether their data is walled), so both are refetched.
+function useAccessChange<TInput>(userId: string, body: (input: TInput) => Record<string, unknown>) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: TInput) => apiFetch<{ success: true; message: string }>(`/api/staff/members/${userId}/tier`, { method: "POST", body: body(input) }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: key(userId) });
+      qc.invalidateQueries({ queryKey: ["staff-member", userId] });
+      qc.invalidateQueries({ queryKey: ["staff-members"] });
+    },
+  });
+}
+
+export function useGrantGymMembership(userId: string) {
+  return useAccessChange(userId, (input: { packageId: string; endsOn: string | null }) => ({ tier: "membership", packageId: input.packageId, endsOn: input.endsOn }));
+}
+
+export function useEndGymMembership(userId: string) {
+  return useAccessChange(userId, (_: void) => ({ tier: "free" }));
 }
 
 export function useRevokeAppAccess(userId: string) {

@@ -44,6 +44,8 @@ const TYPE_LABEL: Record<NotificationType, string> = {
   workout_commented: "New comment",
   mentioned_in_comment: "Mentioned you",
   nutrition_update: "Nutrition",
+  ai_spend_alert: "AI spending",
+  monthly_report: "Monthly report",
 };
 
 const TYPE_ICON: Record<NotificationType, keyof typeof Ionicons.glyphMap> = {
@@ -68,6 +70,8 @@ const TYPE_ICON: Record<NotificationType, keyof typeof Ionicons.glyphMap> = {
   workout_commented: "chatbubble-ellipses-outline",
   mentioned_in_comment: "chatbubble-ellipses-outline",
   nutrition_update: "nutrition-outline",
+  ai_spend_alert: "warning-outline",
+  monthly_report: "document-text-outline",
 };
 
 // Mirrors the web app's urgent/routine split (dashboard/notifications/
@@ -92,6 +96,8 @@ const TYPE_IS_URGENT: Record<NotificationType, boolean> = {
   workout_commented: false,
   mentioned_in_comment: false,
   nutrition_update: false,
+  ai_spend_alert: true,
+  monthly_report: false,
 };
 
 function formatRelativeTime(iso: string): string {
@@ -133,11 +139,11 @@ function NotificationRow({
         {isUnread ? <View style={[styles.unreadBar, { backgroundColor: accentColor }]} /> : null}
         <View style={styles.rowInner}>
           <View style={[styles.iconChip, { backgroundColor: `${accentColor}26` }]}>
-            <Ionicons name={TYPE_ICON[n.type]} size={16} color={accentColor} />
+            <Ionicons name={TYPE_ICON[n.type] ?? "notifications-outline"} size={16} color={accentColor} />
           </View>
           <View style={{ flex: 1 }}>
             <View style={styles.rowTop}>
-              <Text style={[styles.typeLabel, { color: accentColor }]}>{TYPE_LABEL[n.type]}</Text>
+              <Text style={[styles.typeLabel, { color: accentColor }]}>{TYPE_LABEL[n.type] ?? "Notice"}</Text>
               <View style={styles.rowTimeWrap}>
                 {isUnread ? <View style={[styles.dot, { backgroundColor: accentColor }]} /> : null}
                 <Text style={styles.time}>{formatRelativeTime(n.createdAt)}</Text>

@@ -21,7 +21,10 @@ export type NotificationType =
   | "workout_liked"
   | "workout_commented"
   | "mentioned_in_comment"
-  | "nutrition_update";
+  | "nutrition_update"
+  // Staff (owner) only: AI spending has passed 50% / 80% of the ceiling; last month's report is ready.
+  | "ai_spend_alert"
+  | "monthly_report";
 
 export interface NotificationRecord {
   id: string;

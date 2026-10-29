@@ -320,6 +320,10 @@ export interface StaffMemberSummary {
   archivedAt: string | null;
   currentPlanName: string | null;
   currentStatus: string | null;
+  /** Which list group the member is in (gym-app lib/member-list-group.ts). Older servers omit it. */
+  membershipGroup?: "current" | "paused" | "past" | "none";
+  /** Starred by the gym's staff, to find them easily. Older servers omit it. */
+  starred?: boolean;
 }
 
 export interface StaffMemberBookingSummary {
@@ -372,6 +376,19 @@ export function useStaffMembers() {
   return useQuery({
     queryKey: ["staff-members"],
     queryFn: () => apiFetch<StaffMembersResponse>("/api/mobile/staff/members").then((r) => r.data),
+  });
+}
+
+// Stars or unstars a member (gym-app POST /api/staff/members/[userId]/star; shared by the gym's staff).
+export function useSetMemberStar() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { userId: string; starred: boolean }) =>
+      apiFetch<{ success: true; message: string }>(`/api/staff/members/${input.userId}/star`, { method: "POST", body: { starred: input.starred } }),
+    onSuccess: (_r, input) => {
+      qc.invalidateQueries({ queryKey: ["staff-members"] });
+      qc.invalidateQueries({ queryKey: ["staff-member", input.userId] });
+    },
   });
 }
 

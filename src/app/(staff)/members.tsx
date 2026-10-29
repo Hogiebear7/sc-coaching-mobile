@@ -15,19 +15,50 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
 import { Radius, Spacing, headline } from "@/constants/theme";
-import { useStaffMembers, type StaffMemberSummary } from "@/lib/queries/staff";
+import { useSetMemberStar, useStaffMembers, type StaffMemberSummary } from "@/lib/queries/staff";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
-function MemberRow({ member, onPress }: { member: StaffMemberSummary; onPress: () => void }) {
+// Which members the list shows (owner request 2026-10-29). By default the gym's own members, current and paused; the rest are a chip away, and a
+// search always looks through everyone. An older server sends no group, so everyone counts as current there.
+type GroupFilter = "current" | "past" | "none" | "starred";
+const GROUP_FILTERS: { value: GroupFilter; label: string }[] = [
+  { value: "current", label: "Current & paused" },
+  { value: "past", label: "Past" },
+  { value: "none", label: "Non-members" },
+  { value: "starred", label: "Starred" },
+];
+function inGroup(m: StaffMemberSummary, filter: GroupFilter): boolean {
+  const group = m.membershipGroup ?? "current";
+  if (filter === "starred") return !!m.starred;
+  if (filter === "current") return group === "current" || group === "paused";
+  return group === filter;
+}
+const isGymMember = (m: StaffMemberSummary) => (m.membershipGroup ?? "current") === "current" || m.membershipGroup === "paused";
+
+function MemberRow({ member, onPress, onToggleStar }: { member: StaffMemberSummary; onPress: () => void; onToggleStar: () => void }) {
   const styles = useStyles();
   const Color = useLegacyColors();
   return (
     <Pressable onPress={onPress} style={styles.row}>
+      <Pressable
+        onPress={onToggleStar}
+        hitSlop={10}
+        style={styles.star}
+        accessibilityRole="button"
+        accessibilityState={{ selected: !!member.starred }}
+        accessibilityLabel={member.starred ? `Remove the star from ${member.fullName ?? member.email}` : `Star ${member.fullName ?? member.email}`}
+      >
+        <Ionicons name={member.starred ? "star" : "star-outline"} size={18} color={member.starred ? Color.gold : Color.textFaint} />
+      </Pressable>
       <View style={{ flex: 1 }}>
         <Text style={styles.rowName}>{member.fullName ?? member.email}</Text>
         <Text style={styles.rowEmail}>{member.email}</Text>
       </View>
-      {member.currentPlanName ? (
+      {!isGymMember(member) ? (
+        <View style={[styles.planChip, styles.planChipNone]}>
+          <Text style={[styles.planChipText, styles.planChipTextNone]}>{member.membershipGroup === "past" ? "Past member" : "No gym Membership"}</Text>
+        </View>
+      ) : member.currentPlanName ? (
         <View style={styles.planChip}>
           <Text style={styles.planChipText}>{member.currentPlanName}</Text>
         </View>
@@ -48,14 +79,17 @@ export default function StaffMembersScreen() {
   const { data, isLoading, isError, refetch, isRefetching } = useStaffMembers();
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<"az" | "plan">("az");
+  const [group, setGroup] = useState<GroupFilter>("current");
+  const setStar = useSetMemberStar();
 
   const filtered = useMemo(() => {
     if (!data) return [];
     const active = data.filter((m) => !m.archivedAt);
     const q = query.trim().toLowerCase();
+    // A search looks through everyone; without one, the group chip decides.
     const matched = q
       ? active.filter((m) => m.fullName?.toLowerCase().includes(q) || m.email.toLowerCase().includes(q))
-      : active;
+      : active.filter((m) => inGroup(m, group));
 
     const sorted = [...matched];
     if (sort === "az") {
@@ -72,7 +106,7 @@ export default function StaffMembersScreen() {
       });
     }
     return sorted;
-  }, [data, query, sort]);
+  }, [data, query, sort, group]);
 
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
@@ -91,6 +125,20 @@ export default function StaffMembersScreen() {
           autoCapitalize="none"
         />
       </View>
+
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.groupRow} style={styles.groupScroll}>
+        {GROUP_FILTERS.map((f) => (
+          <Pressable
+            key={f.value}
+            onPress={() => setGroup(f.value)}
+            style={[styles.sortChip, group === f.value && styles.sortChipActive]}
+            accessibilityRole="button"
+            accessibilityState={{ selected: group === f.value }}
+          >
+            <Text style={[styles.sortChipText, group === f.value && styles.sortChipTextActive]}>{f.label}</Text>
+          </Pressable>
+        ))}
+      </ScrollView>
 
       <View style={styles.sortRow}>
         <Text style={styles.sortLabel}>Sort</Text>
@@ -117,16 +165,20 @@ export default function StaffMembersScreen() {
           refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => refetch()} tintColor={Color.gold} />}
         >
           {filtered.length === 0 ? (
-            <Text style={styles.errorText}>No members match &quot;{query}&quot;.</Text>
+            <Text style={styles.errorText}>
+              {query.trim() ? `No members match "${query}".` : "No members here. Search by name or email to find anyone."}
+            </Text>
           ) : (
             filtered.map((m) => (
               <MemberRow
                 key={m.userId}
                 member={m}
                 onPress={() => router.push({ pathname: "/staff-member", params: { userId: m.userId } })}
+                onToggleStar={() => !setStar.isPending && setStar.mutate({ userId: m.userId, starred: !m.starred })}
               />
             ))
           )}
+          {!query.trim() ? <Text style={styles.hint}>Search to find anyone, including people without a gym Membership.</Text> : null}
         </ScrollView>
       )}
     </SafeAreaView>
@@ -160,6 +212,10 @@ const useStyles = makeLegacyStyles((Color) =>
       marginBottom: Spacing.md,
     },
     sortLabel: { fontSize: 13, color: Color.textFaint, marginRight: 2 },
+    groupScroll: { flexGrow: 0, marginBottom: Spacing.sm },
+    groupRow: { gap: Spacing.xs, paddingHorizontal: Spacing.lg },
+    star: { width: 32, minHeight: 44, alignItems: "flex-start", justifyContent: "center" },
+    hint: { color: Color.textFaint, fontSize: 13, textAlign: "center", marginTop: Spacing.lg },
     sortChip: { borderRadius: Radius.pill, paddingHorizontal: Spacing.sm, paddingVertical: 6, backgroundColor: Color.surface2, minHeight: 40, justifyContent: "center" },
     sortChipActive: { borderColor: Color.gold, backgroundColor: Color.gold },
     sortChipText: { fontSize: 13, fontWeight: "600", color: Color.textMuted },

@@ -1,3 +1,8 @@
+"use no memo";
+
+// The React Compiler is on for the app (app.json experiments.reactCompiler); it rewrites components with hidden hooks, which a widget
+// renderer can't run, so it must leave this file alone. Without this line every widget stays an empty, see-through frame.
+
 import { FlexWidget, TextWidget } from "react-native-android-widget";
 
 import { describeClassTime, type ClassWidgetData, type NutritionWidgetData, type WaterWidgetData } from "@/lib/widgets/snapshot";
@@ -6,6 +11,7 @@ import type { WidgetStyle } from "@/lib/widgets/widget-style";
 // The Android home-screen widgets (App Widgets, through react-native-android-widget). Drawn from the same snapshot as the iPhone widgets and
 // the in-app previews. Android launchers can't blur the wallpaper behind a widget, so the Glass look is a see-through frosted tint here.
 // Tapping opens the matching screen; the water widget's button logs water straight away (src/widgets/android/task-handler.tsx).
+// Colours: plain #rrggbb, or rgba() for see-through. (The library reads an 8-digit hex as CSS #rrggbbaa, not Android's #aarrggbb.)
 
 export const ANDROID_WIDGET_NAMES = { water: "Water", nutrition: "Nutrition", nextClass: "NextClass" } as const;
 
@@ -20,7 +26,7 @@ function palette(look: WidgetStyle) {
   return {
     bg: glass ? ("rgba(255, 255, 255, 0.18)" as const) : NAVY,
     border: glass ? ("rgba(255, 255, 255, 0.45)" as const) : ("rgba(255, 255, 255, 0.06)" as const),
-    muted: glass ? ("#f0ffffff" as const) : ("#a6ffffff" as const),
+    muted: glass ? ("rgba(255, 255, 255, 0.94)" as const) : ("rgba(255, 255, 255, 0.65)" as const),
     accent: glass ? WHITE : GOLD,
     box: glass ? ("rgba(255, 255, 255, 0.22)" as const) : NAVY_HI,
   };

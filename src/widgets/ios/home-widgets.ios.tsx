@@ -1,3 +1,7 @@
+"use no memo";
+
+// Widget layouts run in their own runtime without React; the React Compiler (on for the app) must leave them as plain functions.
+
 import { Button, HStack, Image, ProgressView, Spacer, Text, VStack } from "@expo/ui/swift-ui";
 import { background, containerBackground, font, foregroundStyle, frame, lineLimit, minimumScaleFactor, monospacedDigit, padding, progressViewStyle, shapes, tint, widgetURL } from "@expo/ui/swift-ui/modifiers";
 import { createWidget, type WidgetEnvironment } from "expo-widgets";

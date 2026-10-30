@@ -6,18 +6,21 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { Color, FontSize, Spacing } from "@/constants/theme";
+import { FontSize, Spacing } from "@/constants/theme";
 import { useBillingController, useBillingSnapshot } from "@/lib/billing/billing-context";
 import { autoRenewDisclosure } from "@/lib/billing/copy";
 import { trialOfferView } from "@/lib/billing/trial-offer";
 import { useProfile } from "@/lib/queries/profile";
 import { DIGITAL_PLAN_ROUTE } from "@/lib/upsell-config";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 // Shown ONCE, right after a new account is created, only when the STORE says this member is eligible for a free trial. It never buys anything and never
 // blocks anything: "Not now" returns to the app in the Free tier, and the same offer stays available in Settings > App Subscription for as long as the store
 // says the member is eligible. There is no deadline, countdown or repeat. The trial starts only when the member confirms in the store's own sheet on the
 // subscription screen and the server accepts the store's confirmation. If the store has not said the member is eligible, this screen shows nothing and leaves.
 export default function TrialOfferScreen() {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const router = useRouter();
   const controller = useBillingController();
   const snapshot = useBillingSnapshot(controller);
@@ -77,17 +80,19 @@ export default function TrialOfferScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Color.bg0 },
-  scroll: { flexGrow: 1, justifyContent: "center", padding: Spacing.lg },
-  card: { padding: Spacing.lg, gap: Spacing.sm },
-  iconWrap: { marginBottom: Spacing.xs },
-  title: { fontSize: FontSize.lg, fontWeight: "700", color: Color.textPrimary },
-  body: { fontSize: FontSize.base, color: Color.textSecondary, flexShrink: 1 },
-  planLine: { flexDirection: "row", alignItems: "center", gap: Spacing.sm },
-  primary: { marginTop: Spacing.md },
-  notNow: { alignSelf: "center", paddingVertical: Spacing.sm },
-  notNowText: { fontSize: FontSize.base, color: Color.textMuted, fontWeight: "600" },
-  small: { fontSize: FontSize.xs, color: Color.textMuted, lineHeight: 16 },
-  center: { alignItems: "center", justifyContent: "center", padding: Spacing.xl },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: Color.bg0 },
+    scroll: { flexGrow: 1, justifyContent: "center", padding: Spacing.lg },
+    card: { padding: Spacing.lg, gap: Spacing.sm },
+    iconWrap: { marginBottom: Spacing.xs },
+    title: { fontSize: FontSize.lg, fontWeight: "700", color: Color.textPrimary },
+    body: { fontSize: FontSize.base, color: Color.textSecondary, flexShrink: 1 },
+    planLine: { flexDirection: "row", alignItems: "center", gap: Spacing.sm },
+    primary: { marginTop: Spacing.md },
+    notNow: { alignSelf: "center", paddingVertical: Spacing.sm },
+    notNowText: { fontSize: FontSize.base, color: Color.textMuted, fontWeight: "600" },
+    small: { fontSize: FontSize.xs, color: Color.textMuted, lineHeight: 16 },
+    center: { alignItems: "center", justifyContent: "center", padding: Spacing.xl },
+  })
+);

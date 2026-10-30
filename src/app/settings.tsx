@@ -184,9 +184,12 @@ export default function SettingsScreen() {
   const requestReset = useRequestPasswordReset();
 
   const [resetSent, setResetSent] = useState(false);
-  const [timings, setTimings] = useState<number[] | null>(null);
+  // The class-reminder timings being edited: the saved ones until the member changes them (derived, not copied into state by an effect).
+  const [editedTimings, setEditedTimings] = useState<{ value: number[] | null } | null>(null);
+  const timings = editedTimings ? editedTimings.value : (data?.reminderTimingsMins ?? null);
+  const setTimings = (next: number[] | null | ((prev: number[] | null) => number[] | null)) =>
+    setEditedTimings((e) => ({ value: typeof next === "function" ? next(e ? e.value : (data?.reminderTimingsMins ?? null)) : next }));
   const [customMins, setCustomMins] = useState("");
-  const [remindersHydrated, setRemindersHydrated] = useState(false);
   const [remindersDirty, setRemindersDirty] = useState(false);
   const [remindersSaved, setRemindersSaved] = useState(false);
   const [avatarError, setAvatarError] = useState<string | null>(null);
@@ -200,12 +203,6 @@ export default function SettingsScreen() {
     setCheckinReminder(next);
     void saveCheckinReminderPrefs(next);
   }
-
-  useEffect(() => {
-    if (!data || remindersHydrated) return;
-    setTimings(data.reminderTimingsMins);
-    setRemindersHydrated(true);
-  }, [data, remindersHydrated]);
 
   function togglePreset(mins: number) {
     setTimings((prev) => {

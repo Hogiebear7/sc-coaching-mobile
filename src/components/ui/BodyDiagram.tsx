@@ -44,8 +44,7 @@ export interface BodyDiagramProps {
 // decorative ones so they read as excluded rather than merely quiet.
 // Secondary uses the app's existing data-accent blue rather than a second
 // gold tone, so primary vs secondary reads unambiguously at a glance
-// without inventing a new brand color.
-const SECONDARY_FILL = Color.accentData;
+// without inventing a new brand color. Read from the live palette at render, so it follows light mode.
 
 export function BodyDiagram({ view, sex, zoneSelection, isZoneAvailable, onToggleZone }: BodyDiagramProps) {
   const Color = useLegacyColors();
@@ -62,7 +61,7 @@ export function BodyDiagram({ view, sex, zoneSelection, isZoneAvailable, onToggl
         state === "primary" || state === "both"
           ? Color.gold
           : state === "secondary"
-            ? SECONDARY_FILL
+            ? Color.accentData
             : available
               ? Color.surface2
               : Color.surface1;

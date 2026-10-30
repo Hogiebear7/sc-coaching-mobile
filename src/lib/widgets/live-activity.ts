@@ -106,3 +106,31 @@ export function useLiveActivityPrefs(): LiveActivityPrefs {
     () => current
   );
 }
+
+// ── From the workout being logged ─────────────────────────────────────────────────────────────────────────────────
+
+interface DraftLike {
+  title: string;
+  startedAtMs: number | null;
+  accumulatedSecs: number;
+  exerciseRows: { name: string; setRows: { completed: boolean }[] }[];
+}
+
+/**
+ * The workout Live Activity's state from the workout being logged, or null when there's no timed workout (a workout only shows once its
+ * timer has been started; logging a past workout without the timer never shows one). The current exercise is the first with a set still to
+ * do, or the last one when every set is done.
+ */
+export function workoutActivityFromDraft(draft: DraftLike, restEndsAtMs: number | null): WorkoutActivityState | null {
+  if (draft.startedAtMs === null && draft.accumulatedSecs <= 0) return null;
+  const named = draft.exerciseRows.filter((r) => r.name.trim());
+  const current = named.find((r) => r.setRows.some((s) => !s.completed)) ?? named[named.length - 1];
+  return {
+    title: draft.title.trim() || "Workout",
+    startedAtMs: draft.startedAtMs,
+    accumulatedSecs: draft.accumulatedSecs,
+    setsDone: named.reduce((n, r) => n + r.setRows.filter((s) => s.completed).length, 0),
+    currentExercise: current ? current.name.trim() : null,
+    restEndsAtMs,
+  };
+}

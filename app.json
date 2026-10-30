@@ -11,7 +11,8 @@
       "bundleIdentifier": "com.sandcperformancecoaching.app",
       "infoPlist": {
         "CFBundleDisplayName": "S&C Performance",
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSSupportsLiveActivities": true
       },
       "buildNumber": "11"
     },
@@ -26,7 +27,8 @@
       },
       "predictiveBackGestureEnabled": false,
       "permissions": [
-        "android.permission.CAMERA"
+        "android.permission.CAMERA",
+        "android.permission.POST_PROMOTED_NOTIFICATIONS"
       ],
       "blockedPermissions": [
         "android.permission.ACCESS_COARSE_LOCATION",
@@ -99,6 +101,81 @@
               "./node_modules/@expo-google-fonts/teko/700Bold/Teko_700Bold.ttf"
             ]
           }
+        }
+      ],
+      [
+        "expo-widgets",
+        {
+          "widgets": [
+            {
+              "name": "WaterWidget",
+              "displayName": "Water",
+              "description": "Today's water, and a button to add your usual amount.",
+              "ios": {
+                "supportedFamilies": [
+                  "systemSmall",
+                  "accessoryCircular"
+                ]
+              }
+            },
+            {
+              "name": "NutritionWidget",
+              "displayName": "Nutrition",
+              "description": "Calories and protein today, against your targets.",
+              "ios": {
+                "supportedFamilies": [
+                  "systemSmall"
+                ]
+              }
+            },
+            {
+              "name": "ClassWidget",
+              "displayName": "Next class",
+              "description": "Your next booked class, and classes left on your plan.",
+              "ios": {
+                "supportedFamilies": [
+                  "systemMedium"
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      [
+        "react-native-android-widget",
+        {
+          "widgets": [
+            {
+              "name": "Water",
+              "label": "Water",
+              "description": "Today's water, and a button to add your usual amount.",
+              "minWidth": "110dp",
+              "minHeight": "110dp",
+              "targetCellWidth": 2,
+              "targetCellHeight": 2,
+              "updatePeriodMillis": 1800000
+            },
+            {
+              "name": "Nutrition",
+              "label": "Nutrition",
+              "description": "Calories and protein today, against your targets.",
+              "minWidth": "110dp",
+              "minHeight": "110dp",
+              "targetCellWidth": 2,
+              "targetCellHeight": 2,
+              "updatePeriodMillis": 1800000
+            },
+            {
+              "name": "NextClass",
+              "label": "Next class",
+              "description": "Your next booked class, and classes left on your plan.",
+              "minWidth": "250dp",
+              "minHeight": "110dp",
+              "targetCellWidth": 4,
+              "targetCellHeight": 2,
+              "updatePeriodMillis": 1800000
+            }
+          ]
         }
       ]
     ],

@@ -15,6 +15,9 @@ import { AppState, Platform } from "react-native";
 
 import type { WorkoutSetType } from "@/lib/queries/workouts";
 import { useRestTimer } from "@/lib/rest-timer";
+import { getLiveActivityPrefs, useLiveActivityPrefs, workoutActivityFromDraft } from "@/lib/widgets/live-activity";
+import { nativeBridge } from "@/lib/widgets/native-bridge";
+import { useWidgetStyle } from "@/lib/widgets/widget-style";
 import { todayDateString } from "@/lib/workout-formatters";
 
 const STORAGE_KEY = "workout-draft-v1";
@@ -363,6 +366,8 @@ function rollLiveDraftDateForward(draft: WorkoutDraft): WorkoutDraft {
 
 async function scheduleLiveNotification(elapsedSecs: number): Promise<void> {
   if (Platform.OS === "web") return;
+  // The workout Live Activity (iPhone) / Live Update (Android) replaces this plain notification while the member has it on (Widgets screen).
+  if (getLiveActivityPrefs().workout) return;
   const mins = Math.floor(elapsedSecs / 60);
   const secs = elapsedSecs % 60;
   try {
@@ -482,6 +487,19 @@ export function WorkoutDraftProvider({ children }: { children: ReactNode }) {
     return () => sub.remove();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [draft.startedAtMs, draft.accumulatedSecs, restTimer.isRunning, restTimer.isPreCountingDown]);
+
+  // The workout Live Activity (iPhone) / Live Update (Android): sent when something it shows changes (start, pause, a set done, a rest
+  // starting or ending); the clocks themselves count on the device. Ended when the workout is finished, discarded or its timer reset.
+  const livePrefs = useLiveActivityPrefs();
+  const widgetLook = useWidgetStyle();
+  const setsDoneCount = draft.exerciseRows.reduce((n, r) => n + r.setRows.filter((s) => s.completed).length, 0);
+  useEffect(() => {
+    if (!hydrated) return;
+    const restEndsAtMs = restTimer.isRunning ? Date.now() + restTimer.remainingNow() * 1000 : null;
+    const state = livePrefs.workout ? workoutActivityFromDraft(draft, restEndsAtMs) : null;
+    void nativeBridge.setWorkoutActivity(state, widgetLook === "glass");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hydrated, draft.startedAtMs, draft.accumulatedSecs, draft.title, setsDoneCount, restTimer.isRunning, livePrefs.workout, widgetLook]);
 
   const update = useCallback((patch: Partial<WorkoutDraft>) => {
     setDraft((prev) => ({ ...prev, ...patch }));

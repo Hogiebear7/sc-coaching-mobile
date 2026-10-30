@@ -14,6 +14,7 @@ import { TourHost } from "@/components/ui/TourOverlay";
 import { Radius, Spacing } from "@/constants/theme";
 import { AuthProvider, useAuth } from "@/lib/auth-context";
 import { BillingProvider } from "@/lib/billing/billing-context";
+import { useNativeWidgets } from "@/lib/widgets/use-native-widgets";
 import { clearLastCrash, getLastCrash, installGlobalCrashHandler, type CrashRecord } from "@/lib/crash-log";
 import { isEmergencyContactReminderDismissed } from "@/lib/emergency-contact-reminder";
 import { hasGymMembership } from "@/lib/member-access";
@@ -165,7 +166,9 @@ function AuthGate() {
   }
 
   return (
-    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: Color.bg0 } }}>
+    <>
+      {status === "signedIn" && !wantsStaffGroup ? <NativeWidgetsSync /> : null}
+      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: Color.bg0 } }}>
       <Stack.Screen name="(auth)" />
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="(staff)" />
@@ -210,8 +213,15 @@ function AuthGate() {
       <Stack.Screen name="run-timer" options={{ presentation: "modal" }} />
       <Stack.Screen name="format-timer" options={{ presentation: "modal" }} />
       <Stack.Screen name="drink-calculator" options={{ presentation: "card" }} />
-    </Stack>
+      </Stack>
+    </>
   );
+}
+
+// Home-screen widgets and the class countdown, kept in step with the app while a member is signed in (src/lib/widgets/use-native-widgets.ts).
+function NativeWidgetsSync() {
+  useNativeWidgets();
+  return null;
 }
 
 // Diagnostic-only: shows whatever installGlobalCrashHandler() captured from

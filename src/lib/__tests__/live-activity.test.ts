@@ -32,3 +32,26 @@ describe("live activity rules", () => {
     expect(classStartMs("2026-10-31", "10:00")).toBe(START);
   });
 });
+
+import { workoutActivityFromDraft } from "../widgets/live-activity";
+
+describe("workout live activity from the draft", () => {
+  const rows = [
+    { name: "Squat", setRows: [{ completed: true }, { completed: true }] },
+    { name: "Bench press", setRows: [{ completed: true }, { completed: false }] },
+    { name: "", setRows: [{ completed: true }] },
+  ];
+  it("shows only once the workout timer has started", () => {
+    expect(workoutActivityFromDraft({ title: "Legs", startedAtMs: null, accumulatedSecs: 0, exerciseRows: rows }, null)).toBeNull();
+  });
+  it("counts completed sets on named exercises and picks the exercise still in progress", () => {
+    expect(workoutActivityFromDraft({ title: "", startedAtMs: 5, accumulatedSecs: 0, exerciseRows: rows }, 99)).toEqual({
+      title: "Workout",
+      startedAtMs: 5,
+      accumulatedSecs: 0,
+      setsDone: 3,
+      currentExercise: "Bench press",
+      restEndsAtMs: 99,
+    });
+  });
+});

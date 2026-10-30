@@ -7,12 +7,13 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { API_BASE_URL } from "@/constants/config";
-import { Color, FontSize, Radius, Spacing } from "@/constants/theme";
+import { FontSize, Radius, Spacing } from "@/constants/theme";
 import { useBillingController, useBillingSnapshot } from "@/lib/billing/billing-context";
 import { AI_FAIR_USE_NOTE, TRIALS_UNAVAILABLE_MESSAGE, withoutTrialLabel, autoRenewDisclosure, describePlanEnd, DIGITAL_PLAN_FEATURES, manageSubscriptionLabel, RESTORE_LABEL, SEPARATE_FROM_MEMBERSHIP, trialHeadline } from "@/lib/billing/copy";
 import type { StorePlan } from "@/lib/billing/types";
 import { OUT_OF_DATE_SERVER_MESSAGE } from "@/lib/profile-access";
 import { useProfile } from "@/lib/queries/profile";
+import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 import { CAN_SELL_DIGITAL_PLAN } from "@/lib/upsell-config";
 
 const formatDate = (iso: string) => new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
@@ -21,6 +22,8 @@ const formatDate = (iso: string) => new Date(iso).toLocaleDateString(undefined, 
 // identifiers, and the server alone decides whether access is granted. Required next to a subscription price by Apple 3.1.2 and Google Play: what it is, its
 // price and period, that it auto-renews, how to cancel, Terms of Use, Privacy Policy, and Restore purchases.
 export default function SubscribeScreen() {
+  const styles = useStyles();
+  const Color = useLegacyColors();
   const router = useRouter();
   const controller = useBillingController();
   const snapshot = useBillingSnapshot(controller);
@@ -59,11 +62,6 @@ export default function SubscribeScreen() {
             <Text style={styles.cardTitle}>Subscriptions are switched off</Text>
             <Text style={styles.body}>{OUT_OF_DATE_SERVER_MESSAGE}</Text>
           </Card>
-        ) : !CAN_SELL_DIGITAL_PLAN || !controller ? (
-          <Card style={styles.card}>
-            <Text style={styles.cardTitle}>Not available in this version</Text>
-            <Text style={styles.body}>The App Subscription can&apos;t be bought from this version of the app.</Text>
-          </Card>
         ) : hasDigital ? (
           <Card style={styles.card} accent>
             <View style={styles.statusRow}>
@@ -71,10 +69,15 @@ export default function SubscribeScreen() {
               <Text style={styles.cardTitle}>You have the App Subscription</Text>
             </View>
             {digitalPlan ? <Text style={styles.body}>{describePlanEnd(digitalPlan, formatDate)}</Text> : <Text style={styles.body}>Included at no charge.</Text>}
-            {manageable ? (
+            {manageable && controller ? (
               <Button title={manageSubscriptionLabel(platform)} variant="secondary" onPress={() => void controller.manage()} style={styles.gap} />
             ) : null}
             <Text style={styles.small}>{SEPARATE_FROM_MEMBERSHIP}</Text>
+          </Card>
+        ) : !CAN_SELL_DIGITAL_PLAN || !controller ? (
+          <Card style={styles.card}>
+            <Text style={styles.cardTitle}>Not available in this version</Text>
+            <Text style={styles.body}>The App Subscription can&apos;t be bought from this version of the app.</Text>
           </Card>
         ) : snapshot.phase === "success" ? (
           <Card style={styles.card} accent>
@@ -214,32 +217,34 @@ export default function SubscribeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Color.bg0 },
-  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md },
-  backButton: { padding: 4 },
-  headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
-  scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl, gap: Spacing.md },
-  card: { padding: Spacing.lg, gap: Spacing.sm },
-  cardTitle: { fontSize: FontSize.md, fontWeight: "700", color: Color.textPrimary },
-  statusRow: { flexDirection: "row", alignItems: "center", gap: Spacing.sm },
-  body: { fontSize: FontSize.base, color: Color.textSecondary, flexShrink: 1 },
-  small: { fontSize: FontSize.xs, color: Color.textMuted, lineHeight: 16 },
-  featureRow: { flexDirection: "row", alignItems: "center", gap: Spacing.sm },
-  gap: { marginTop: Spacing.sm },
-  centerFill: { alignItems: "center", justifyContent: "center", padding: Spacing.xl },
-  plans: { gap: Spacing.sm },
-  planRow: { flexDirection: "row", alignItems: "center", gap: Spacing.md, padding: Spacing.md, borderRadius: Radius.md, borderWidth: 1, borderColor: Color.borderSubtle, backgroundColor: Color.surface1 },
-  planRowActive: { borderColor: Color.goldBorder, backgroundColor: Color.goldWeak },
-  planTitle: { fontSize: FontSize.base, fontWeight: "600", color: Color.textPrimary },
-  planPeriod: { fontSize: FontSize.sm, color: Color.textMuted },
-  planPrice: { fontSize: FontSize.md, fontWeight: "700", color: Color.textPrimary },
-  planTrial: { fontSize: FontSize.sm, color: Color.gold },
-  trialChip: { paddingHorizontal: Spacing.sm, paddingVertical: 4, borderRadius: Radius.pill, backgroundColor: Color.goldWeak, borderWidth: 1, borderColor: Color.goldBorder },
-  trialChipText: { fontSize: FontSize.xs, fontWeight: "700", color: Color.gold },
-  message: { fontSize: FontSize.sm, color: Color.textSecondary },
-  messageError: { color: Color.warning },
-  footer: { gap: Spacing.sm, marginTop: Spacing.md },
-  links: { flexDirection: "row", gap: Spacing.sm, justifyContent: "center", marginTop: Spacing.xs },
-  link: { fontSize: FontSize.sm, color: Color.gold, textDecorationLine: "underline" },
-});
+const useStyles = makeLegacyStyles((Color) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: Color.bg0 },
+    header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md },
+    backButton: { padding: 4 },
+    headerTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },
+    scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl, gap: Spacing.md },
+    card: { padding: Spacing.lg, gap: Spacing.sm },
+    cardTitle: { fontSize: FontSize.md, fontWeight: "700", color: Color.textPrimary },
+    statusRow: { flexDirection: "row", alignItems: "center", gap: Spacing.sm },
+    body: { fontSize: FontSize.base, color: Color.textSecondary, flexShrink: 1 },
+    small: { fontSize: FontSize.xs, color: Color.textMuted, lineHeight: 16 },
+    featureRow: { flexDirection: "row", alignItems: "center", gap: Spacing.sm },
+    gap: { marginTop: Spacing.sm },
+    centerFill: { alignItems: "center", justifyContent: "center", padding: Spacing.xl },
+    plans: { gap: Spacing.sm },
+    planRow: { flexDirection: "row", alignItems: "center", gap: Spacing.md, padding: Spacing.md, borderRadius: Radius.md, borderWidth: 1, borderColor: Color.borderSubtle, backgroundColor: Color.surface1 },
+    planRowActive: { borderColor: Color.goldBorder, backgroundColor: Color.goldWeak },
+    planTitle: { fontSize: FontSize.base, fontWeight: "600", color: Color.textPrimary },
+    planPeriod: { fontSize: FontSize.sm, color: Color.textMuted },
+    planPrice: { fontSize: FontSize.md, fontWeight: "700", color: Color.textPrimary },
+    planTrial: { fontSize: FontSize.sm, color: Color.gold },
+    trialChip: { paddingHorizontal: Spacing.sm, paddingVertical: 4, borderRadius: Radius.pill, backgroundColor: Color.goldWeak, borderWidth: 1, borderColor: Color.goldBorder },
+    trialChipText: { fontSize: FontSize.xs, fontWeight: "700", color: Color.gold },
+    message: { fontSize: FontSize.sm, color: Color.textSecondary },
+    messageError: { color: Color.warning },
+    footer: { gap: Spacing.sm, marginTop: Spacing.md },
+    links: { flexDirection: "row", gap: Spacing.sm, justifyContent: "center", marginTop: Spacing.xs },
+    link: { fontSize: FontSize.sm, color: Color.gold, textDecorationLine: "underline" },
+  })
+);

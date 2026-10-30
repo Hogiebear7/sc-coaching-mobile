@@ -4,6 +4,7 @@ import { useRouter } from "expo-router";
 import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { LiveActivitySection } from "@/components/widgets/LiveActivitySection";
 import { ClassWidgetPreview, NutritionWidgetPreview, WaterWidgetPreview } from "@/components/widgets/WidgetPreviews";
 import { Card } from "@/components/ui/Card";
 import { Spacing } from "@/constants/theme";
@@ -109,6 +110,8 @@ export default function WidgetsScreen() {
             </View>
           ))}
         </Card>
+
+        <LiveActivitySection nextClassTitle={snapshot.classes?.next?.title ?? null} />
       </ScrollView>
     </SafeAreaView>
   );

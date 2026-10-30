@@ -24,6 +24,7 @@ import { useAiConsent, useSetAiConsent } from "@/lib/queries/ai-consent";
 import { setTabChoice, useTabChoice } from "@/lib/tab-choice";
 import { canChooseTabs, normaliseChoice, TAB_PAIR_OPTIONS } from "@/lib/tab-config";
 import { LIGHT_MODE_AVAILABLE, makeLegacyStyles, useLegacyColors } from "@/lib/theme";
+import { setWaterAmount, useWaterAmount, validWaterAmount, WATER_AMOUNT_MAX_ML, WATER_AMOUNT_MIN_ML, WATER_AMOUNT_PRESETS } from "@/lib/water-amount";
 import { useTour } from "@/lib/tour-context";
 import {
   useMemberAccess,
@@ -89,6 +90,73 @@ function Row({
       </View>
       {right ?? (onPress ? <Ionicons name="chevron-forward" size={16} color={Color.textFaint} /> : null)}
     </Wrapper>
+  );
+}
+
+// Settings > Water amount: the member's usual drink, used by the first Hydration button and the water widget (lib/water-amount.ts).
+function WaterAmountRow() {
+  const styles = useStyles();
+  const Color = useLegacyColors();
+  const amount = useWaterAmount();
+  const [custom, setCustom] = useState("");
+  const [error, setError] = useState<string | null>(null);
+
+  function saveCustom() {
+    const ml = validWaterAmount(custom);
+    if (ml === null) {
+      setError(`Enter a number of ml from ${WATER_AMOUNT_MIN_ML} to ${WATER_AMOUNT_MAX_ML}.`);
+      return;
+    }
+    setWaterAmount(ml);
+    setCustom("");
+    setError(null);
+    tapFeedback();
+  }
+
+  return (
+    <View style={[styles.row, { flexDirection: "column", alignItems: "stretch" }]}>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: Spacing.sm }}>
+        <View style={styles.rowIcon}>
+          <Ionicons name="water-outline" size={16} color={Color.gold} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.rowTitle}>Water amount</Text>
+          <Text style={styles.rowSub}>{amount} ml per tap on the Hydration card and the water widget</Text>
+        </View>
+      </View>
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: Spacing.sm, marginTop: Spacing.sm }}>
+        {WATER_AMOUNT_PRESETS.map((ml) => (
+          <Pressable
+            key={ml}
+            onPress={() => {
+              setWaterAmount(ml);
+              setError(null);
+              tapFeedback();
+            }}
+            style={[styles.chip, amount === ml && styles.chipActive]}
+            accessibilityRole="button"
+            accessibilityState={{ selected: amount === ml }}
+          >
+            <Text style={[styles.chipText, amount === ml && styles.chipTextActive]}>{ml} ml</Text>
+          </Pressable>
+        ))}
+      </View>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: Spacing.sm, marginTop: Spacing.sm }}>
+        <TextInput
+          value={custom}
+          onChangeText={setCustom}
+          placeholder={WATER_AMOUNT_PRESETS.includes(amount) ? "Your own, in ml" : `${amount}`}
+          placeholderTextColor={Color.textFaint}
+          keyboardType="number-pad"
+          returnKeyType="done"
+          onSubmitEditing={saveCustom}
+          style={[styles.customInput, { flex: 1 }]}
+          accessibilityLabel="Your own water amount in ml"
+        />
+        <Button title="Set" variant="secondary" onPress={saveCustom} disabled={!custom.trim()} />
+      </View>
+      {error ? <Text style={[styles.rowSub, { color: Color.danger }]}>{error}</Text> : null}
+    </View>
   );
 }
 
@@ -455,6 +523,8 @@ export default function SettingsScreen() {
               </View>
             </View>
             <View style={styles.divider} />
+            <WaterAmountRow />
+            <View style={styles.divider} />
             <View style={styles.row}>
               <View style={styles.rowIcon}>
                 <Ionicons name="phone-portrait-outline" size={16} color={Color.gold} />
@@ -484,6 +554,10 @@ export default function SettingsScreen() {
                 </View>
               </>
             ) : null}
+          </Card>
+
+          <Card style={styles.settingsCard}>
+            <Row icon="apps-outline" title="Home screen widgets" sub="Water, nutrition and your next class" onPress={() => router.push("/widgets" as never)} />
           </Card>
 
           <SectionLabel>Notifications</SectionLabel>

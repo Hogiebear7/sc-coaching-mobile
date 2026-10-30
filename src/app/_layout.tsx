@@ -181,6 +181,7 @@ function AuthGate() {
       <Stack.Screen name="exercise-demo" options={{ presentation: "modal" }} />
       <Stack.Screen name="profile" options={{ presentation: "card" }} />
       <Stack.Screen name="settings" options={{ presentation: "card" }} />
+      <Stack.Screen name="widgets" options={{ presentation: "card" }} />
       <Stack.Screen name="readiness" options={{ presentation: "card" }} />
       <Stack.Screen name="weight-trend" options={{ presentation: "card" }} />
       <Stack.Screen name="sleep-trend" options={{ presentation: "card" }} />

@@ -60,6 +60,7 @@ import { classifyLoad, LOAD_BAND_LABEL } from "@/lib/nutrition-calc";
 import { todayDateString } from "@/lib/workout-formatters";
 import { makeStyles, useAppTheme } from "@/lib/theme";
 import { notInPlanCopy, CAN_SELL_DIGITAL_PLAN, DIGITAL_PLAN_ROUTE } from "@/lib/upsell-config";
+import { useWaterAmount, waterQuickAdds } from "@/lib/water-amount";
 
 function shiftDate(dateISO: string, days: number): string {
   const [y, m, d] = dateISO.split("-").map(Number);
@@ -98,8 +99,6 @@ const MACRO_INFO: Record<MacroKind, { title: string; body: string }> = {
   },
 };
 
-const WATER_QUICK_ADDS = [250, 500, 750];
-const WATER_RECOMMENDED_ML = 500;
 // Generous sanity cap on manual entry — catches the realistic typo (typing
 // "15" meaning "1.5") rather than trying to guess a "real" hydration max.
 const MANUAL_MAX_ML = 15_000;
@@ -156,6 +155,7 @@ const HYDRATION_INFO_BODY =
   "60–90% water, so a good chunk of today's target is already covered before you've had a sip.";
 
 function HydrationCard({ date }: { date: string }) {
+  const waterAmount = useWaterAmount();
   const styles = useStyles();
   const { colors } = useAppTheme();
   const { data: hydration } = useHydration(date);
@@ -231,8 +231,9 @@ function HydrationCard({ date }: { date: string }) {
       </View>
 
       <View style={styles.hydrationQuickAddRow}>
-        {WATER_QUICK_ADDS.map((ml) => {
-          const isRecommended = ml === WATER_RECOMMENDED_ML;
+        {waterQuickAdds(waterAmount).map((ml) => {
+          // The member's own usual amount (Settings > Water) comes first and is the highlighted one.
+          const isRecommended = ml === waterAmount;
           return (
             <Pressable
               key={ml}

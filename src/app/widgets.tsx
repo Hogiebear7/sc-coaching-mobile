@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -6,13 +7,20 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { ClassWidgetPreview, NutritionWidgetPreview, WaterWidgetPreview } from "@/components/widgets/WidgetPreviews";
 import { Card } from "@/components/ui/Card";
 import { Spacing } from "@/constants/theme";
-import { successFeedback } from "@/lib/haptics";
+import { successFeedback, tapFeedback } from "@/lib/haptics";
 import { useLogWater } from "@/lib/queries/nutrition-diary";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 import { useWidgetSnapshot } from "@/lib/widgets/use-widget-snapshot";
+import { setWidgetStyle, useWidgetStyle, type WidgetStyle } from "@/lib/widgets/widget-style";
 
 // Settings > Home screen widgets: the three widgets with the member's own numbers, and how to add them. The water preview's button really
 // logs water, the same as the widget's will.
+
+const LOOKS: { value: WidgetStyle; label: string }[] = [
+  { value: "navy", label: "Navy" },
+  { value: "glass", label: "Glass" },
+];
+const WALLPAPER = ["#3a6186", "#89253e", "#d98a4a"] as const;
 
 const STEPS = {
   ios: [
@@ -34,6 +42,7 @@ export default function WidgetsScreen() {
   const snapshot = useWidgetSnapshot();
   const logWater = useLogWater();
   const steps = Platform.OS === "android" ? STEPS.android : STEPS.ios;
+  const look = useWidgetStyle();
 
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
@@ -48,21 +57,47 @@ export default function WidgetsScreen() {
       <ScrollView contentContainerStyle={styles.scroll}>
         <Text style={styles.intro}>Your water, food and next class on your home screen, without opening the app. They update whenever the app does.</Text>
 
-        <View style={styles.previews}>
-          {snapshot.water ? (
-            <WaterWidgetPreview
-              data={snapshot.water}
-              onAdd={() => {
-                successFeedback();
-                logWater.mutate({ date: snapshot.water!.date, deltaMl: snapshot.water!.amountMl });
+        <View style={styles.styleRow} accessibilityRole="radiogroup" accessibilityLabel="Widget style">
+          {LOOKS.map((l) => (
+            <Pressable
+              key={l.value}
+              onPress={() => {
+                tapFeedback();
+                setWidgetStyle(l.value);
               }}
-            />
-          ) : null}
-          {snapshot.nutrition ? <NutritionWidgetPreview data={snapshot.nutrition} /> : null}
-          {snapshot.classes ? <ClassWidgetPreview data={snapshot.classes} /> : null}
+              style={[styles.styleChip, look === l.value && styles.styleChipActive]}
+              accessibilityRole="radio"
+              accessibilityState={{ selected: look === l.value }}
+            >
+              <Text style={[styles.styleChipText, look === l.value && styles.styleChipTextActive]}>{l.label}</Text>
+            </Pressable>
+          ))}
         </View>
+
+        {/* A stand-in wallpaper, so the glass look shows what it does on a real home screen. */}
+        <LinearGradient colors={WALLPAPER} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.wallpaper}>
+          <View style={styles.previews}>
+            {snapshot.water ? (
+              <WaterWidgetPreview
+                look={look}
+                data={snapshot.water}
+                onAdd={() => {
+                  successFeedback();
+                  logWater.mutate({ date: snapshot.water!.date, deltaMl: snapshot.water!.amountMl });
+                }}
+              />
+            ) : null}
+            {snapshot.nutrition ? <NutritionWidgetPreview look={look} data={snapshot.nutrition} /> : null}
+            {snapshot.classes ? <ClassWidgetPreview look={look} data={snapshot.classes} /> : null}
+          </View>
+        </LinearGradient>
         <Text style={styles.note}>
-          The water button adds your usual amount ({snapshot.water?.amountMl ?? 250} ml). Change it in Settings under Water amount.
+          {look === "glass"
+            ? Platform.OS === "android"
+              ? "Glass lets your wallpaper show through. Android doesn't let widgets blur the wallpaper, so it's see-through without the blur."
+              : "Glass lets your wallpaper show through, frosted."
+            : "Navy is the S&C look, the same on any wallpaper."}{" "}
+          The water button adds your usual amount ({snapshot.water?.amountMl ?? 250} ml); change it in Settings under Water amount.
         </Text>
 
         <Card style={styles.card}>
@@ -87,6 +122,12 @@ const useStyles = makeLegacyStyles((Color) =>
     scroll: { padding: Spacing.lg, gap: Spacing.lg, paddingBottom: Spacing.xl * 2 },
     intro: { fontSize: 15, lineHeight: 22, color: Color.textSecondary },
     previews: { flexDirection: "row", flexWrap: "wrap", gap: 16, justifyContent: "center" },
+    wallpaper: { borderRadius: 24, paddingVertical: 24, paddingHorizontal: 8 },
+    styleRow: { flexDirection: "row", gap: Spacing.sm, alignSelf: "center" },
+    styleChip: { paddingHorizontal: 18, paddingVertical: 9, borderRadius: 999, borderWidth: 1, borderColor: Color.borderSubtle, minHeight: 40, justifyContent: "center" },
+    styleChipActive: { backgroundColor: Color.gold, borderColor: Color.gold },
+    styleChipText: { fontSize: 14, fontWeight: "600", color: Color.textSecondary },
+    styleChipTextActive: { color: Color.goldForeground },
     note: { fontSize: 13, color: Color.textMuted, textAlign: "center" },
     card: { padding: Spacing.lg, gap: Spacing.md },
     cardTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary },

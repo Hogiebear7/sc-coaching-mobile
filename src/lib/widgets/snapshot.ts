@@ -30,6 +30,8 @@ export interface ClassWidgetData {
 
 export interface WidgetSnapshot {
   updatedAt: string;
+  /** The look the member chose on the Widgets screen (lib/widgets/widget-style.ts). */
+  style: "navy" | "glass";
   water: WaterWidgetData | null;
   nutrition: NutritionWidgetData | null;
   classes: ClassWidgetData | null;

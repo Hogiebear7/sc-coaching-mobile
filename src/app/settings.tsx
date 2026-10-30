@@ -15,6 +15,7 @@ import { ThemePicker } from "@/components/ui/ThemePicker";
 import { UpsellCard, UpsellRow } from "@/components/ui/Upsell";
 import { Radius, Spacing } from "@/constants/theme";
 import { ApiError } from "@/lib/api-client";
+import { DEFAULT_CHECKIN_REMINDER, formatReminderTime, loadCheckinReminderPrefs, saveCheckinReminderPrefs, type CheckinReminderPrefs } from "@/lib/checkin-reminder";
 import { useAuth } from "@/lib/auth-context";
 import { isBatteryOptimizationRelevant, openBatteryOptimizationSettings } from "@/lib/battery-optimization";
 import { hapticsEnabled, setHapticsEnabled, tapFeedback } from "@/lib/haptics";
@@ -48,6 +49,13 @@ const REMINDER_PRESETS = [
 // Mirrors rest-timer.tsx's own PRESETS — the manual timer and this default
 // should offer the same set of choices.
 const REST_TIMER_PRESETS = [30, 60, 90, 120, 180, 300];
+
+// Morning check-in reminder: one tap moves the time by 15 minutes.
+const REMINDER_STEP_MINS = 15;
+function shiftReminder(p: CheckinReminderPrefs, by: number): CheckinReminderPrefs {
+  const total = (((p.hour * 60 + p.minute + by) % 1440) + 1440) % 1440;
+  return { ...p, hour: Math.floor(total / 60), minute: total % 60 };
+}
 
 function SectionLabel({ children }: { children: string }) {
   const styles = useStyles();
@@ -114,6 +122,16 @@ export default function SettingsScreen() {
   const [remindersDirty, setRemindersDirty] = useState(false);
   const [remindersSaved, setRemindersSaved] = useState(false);
   const [avatarError, setAvatarError] = useState<string | null>(null);
+  const [checkinReminder, setCheckinReminder] = useState<CheckinReminderPrefs>(DEFAULT_CHECKIN_REMINDER);
+
+  useEffect(() => {
+    void loadCheckinReminderPrefs().then(setCheckinReminder);
+  }, []);
+
+  function updateCheckinReminder(next: CheckinReminderPrefs) {
+    setCheckinReminder(next);
+    void saveCheckinReminderPrefs(next);
+  }
 
   useEffect(() => {
     if (!data || remindersHydrated) return;
@@ -505,6 +523,45 @@ export default function SettingsScreen() {
                 <UpsellRow icon="mail-outline" title="Email notifications" />
               </>
             )}
+            <View style={styles.divider} />
+            <View style={styles.row}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.rowTitle}>Morning check-in reminder</Text>
+                <Text style={styles.rowSub}>
+                  {checkinReminder.enabled ? `Every morning at ${formatReminderTime(checkinReminder)}, unless you've already checked in` : "Off"}
+                </Text>
+              </View>
+              <Switch
+                value={checkinReminder.enabled}
+                onValueChange={(v) => updateCheckinReminder({ ...checkinReminder, enabled: v })}
+                trackColor={{ false: Color.surface3, true: Color.success }}
+                thumbColor="#ffffff"
+                accessibilityLabel="Morning check-in reminder"
+              />
+            </View>
+            {checkinReminder.enabled ? (
+              <View style={[styles.row, { paddingTop: 0 }]}>
+                <Pressable
+                  onPress={() => updateCheckinReminder(shiftReminder(checkinReminder, -REMINDER_STEP_MINS))}
+                  style={styles.chip}
+                  accessibilityRole="button"
+                  accessibilityLabel="15 minutes earlier"
+                  hitSlop={8}
+                >
+                  <Ionicons name="remove" size={16} color={Color.textPrimary} />
+                </Pressable>
+                <Text style={[styles.rowTitle, { flex: 1, textAlign: "center" }]}>{formatReminderTime(checkinReminder)}</Text>
+                <Pressable
+                  onPress={() => updateCheckinReminder(shiftReminder(checkinReminder, REMINDER_STEP_MINS))}
+                  style={styles.chip}
+                  accessibilityRole="button"
+                  accessibilityLabel="15 minutes later"
+                  hitSlop={8}
+                >
+                  <Ionicons name="add" size={16} color={Color.textPrimary} />
+                </Pressable>
+              </View>
+            ) : null}
             {isBatteryOptimizationRelevant() ? (
               <>
                 <View style={styles.divider} />

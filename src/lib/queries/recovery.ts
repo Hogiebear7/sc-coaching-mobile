@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { apiFetch } from "@/lib/api-client";
+import { noteCheckinSaved } from "@/lib/checkin-reminder";
 
 // Mirrors RecoveryData in the main repo's lib/recovery-data.ts.
 export interface RecoveryLogSummary {
@@ -64,7 +65,8 @@ export function useLogRecovery() {
       if (input.rpe !== undefined) body.rpe = String(input.rpe);
       return apiFetch<{ success: boolean; message: string }>("/api/recovery/log", { method: "POST", body });
     },
-    onSuccess: () => {
+    onSuccess: (_res, input) => {
+      void noteCheckinSaved(input.date);
       qc.invalidateQueries({ queryKey: ["recovery"] });
       qc.invalidateQueries({ queryKey: ["dashboard"] });
       // A same-date Recovery check-in overrides the weekly plan as the

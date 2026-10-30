@@ -102,6 +102,8 @@ const LINK_HREF_ROUTES: Record<string, string> = {
   // linkHref to an already-valid native route rather than a web dashboard
   // path — passed through as-is instead of falling back to Home.
   "/log-workout": "/log-workout",
+  // The morning check-in reminder, scheduled on the phone (checkin-reminder.ts).
+  "/recovery": "/(tabs)/recovery",
 };
 
 export function mapLinkHrefToRoute(linkHref: string): string {

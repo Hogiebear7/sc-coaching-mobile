@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 
 import { apiFetch, ApiError, registerUnauthorizedHandler } from "./api-client";
+import { cancelCheckinReminder, syncCheckinReminder } from "./checkin-reminder";
 import { registerForPushNotificationsAsync, unregisterPushToken } from "./push-notifications";
 import { clearToken, getToken, setToken as persistToken } from "./token-store";
 
@@ -59,7 +60,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const me = await apiFetch<{ user: AuthUser }>("/api/mobile/auth/me");
         setUser(me.user);
         setStatus("signedIn");
-        void registerForPushNotificationsAsync();
+        void registerForPushNotificationsAsync().then(() => syncCheckinReminder());
       } catch {
         await clearToken();
         setStatus("signedOut");
@@ -76,18 +77,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await persistToken(res.token);
     setUser(res.user);
     setStatus("signedIn");
-    void registerForPushNotificationsAsync();
+    void registerForPushNotificationsAsync().then(() => syncCheckinReminder());
   }
 
   async function setSession(token: string, sessionUser: AuthUser) {
     await persistToken(token);
     setUser(sessionUser);
     setStatus("signedIn");
-    void registerForPushNotificationsAsync();
+    void registerForPushNotificationsAsync().then(() => syncCheckinReminder());
   }
 
   async function logout() {
     await unregisterPushToken();
+    await cancelCheckinReminder();
     await clearToken();
     setUser(null);
     setStatus("signedOut");

@@ -1,7 +1,8 @@
 import { focusManager, QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Stack, useRouter, useSegments } from "expo-router";
+import * as Linking from "expo-linking";
+import { Stack, usePathname, useRouter, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AppState, Image, ScrollView, StatusBar, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import type { AppStateStatus } from "react-native";
 import { KeyboardProvider } from "react-native-keyboard-controller";
@@ -14,6 +15,7 @@ import { TourHost } from "@/components/ui/TourOverlay";
 import { Radius, Spacing } from "@/constants/theme";
 import { AuthProvider, useAuth } from "@/lib/auth-context";
 import { BillingProvider } from "@/lib/billing/billing-context";
+import { routeFromAppLink } from "@/lib/widgets/app-links";
 import { useNativeWidgets } from "@/lib/widgets/use-native-widgets";
 import { clearLastCrash, getLastCrash, installGlobalCrashHandler, type CrashRecord } from "@/lib/crash-log";
 import { isEmergencyContactReminderDismissed } from "@/lib/emergency-contact-reminder";
@@ -151,6 +153,20 @@ function AuthGate() {
       router.replace("/complete-membership" as never);
     }
   }, [status, segments, router, wantsStaffGroup, needsEmergencyContact]);
+
+  // Opened from a widget or Live Activity link (sccoachingmobile://nutrition, ://schedule …) while the app was closed: the splash above
+  // holds the screens back until sign-in is known, which can lose the link's screen, so it's opened here once the member is signed in.
+  const pathname = usePathname();
+  const openedLink = useRef(false);
+  useEffect(() => {
+    if (status !== "signedIn" || openedLink.current) return;
+    openedLink.current = true;
+    void Linking.getInitialURL().then((url) => {
+      const path = url ? routeFromAppLink(url) : null;
+      if (path && path !== pathname) router.push(path as never);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status, router]);
 
   // Tapping a delivered notification (app backgrounded/killed) navigates
   // straight to the relevant screen, mirroring the web app's push linkHref.

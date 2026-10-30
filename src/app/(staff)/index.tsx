@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { StaffTodayCard } from "@/components/staff/StaffTodayCard";
 import { BrandMark } from "@/components/ui/BrandMark";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -402,6 +403,7 @@ export default function StaffOperationsScreen() {
           contentContainerStyle={styles.scroll}
           refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => refetch()} tintColor={Color.gold} />}
         >
+          {view === "list" ? <StaffTodayCard /> : null}
           {view === "calendar" ? (
             <StaffClassesCalendar classesByDate={classesByDate} />
           ) : grouped.length === 0 ? (

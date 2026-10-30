@@ -528,3 +528,36 @@ export function useStaffBusiness() {
     queryFn: () => apiFetch<StaffBusinessResponse>("/api/mobile/staff/business").then((r) => r.data),
   });
 }
+
+// ── Staff Today (admin revamp S4) ─────────────────────────────────────────────
+// Mirrors StaffToday in the main repo's lib/staff-today.ts.
+export interface StaffMonthFigure {
+  label: string;
+  value: number | null;
+  previous: number | null;
+  better: "up" | "down" | "none";
+  unit?: "percent";
+  note: string;
+}
+export interface StaffAtRiskMember {
+  userId: string;
+  name: string;
+  plan: string | null;
+  lastSeen: string | null;
+  daysSince: number | null;
+}
+export interface StaffToday {
+  monthLabel: string;
+  figures: StaffMonthFigure[];
+  atRisk: StaffAtRiskMember[];
+}
+
+/** This month's figures and the At-risk list. A 403 (a coach) means "not for this role": the card hides rather than erroring. */
+export function useStaffToday() {
+  return useQuery({
+    queryKey: ["staff", "today"],
+    queryFn: () => apiFetch<{ success: true; data: StaffToday }>("/api/mobile/staff/today").then((r) => r.data),
+    retry: false,
+    staleTime: 5 * 60 * 1000,
+  });
+}

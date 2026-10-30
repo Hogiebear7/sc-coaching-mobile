@@ -1,8 +1,10 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { AppState } from "react-native";
 
 import { apiFetch, ApiError, registerUnauthorizedHandler } from "./api-client";
 import { cancelCheckinReminder, syncCheckinReminder } from "./checkin-reminder";
 import { registerForPushNotificationsAsync, unregisterPushToken } from "./push-notifications";
+import { cacheUser, forgetCachedUser, readCachedUser, signInCheckFailure } from "./session-keeper";
 import { clearToken, getToken, setToken as persistToken } from "./token-store";
 
 export interface AuthUser {
@@ -36,6 +38,14 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+/** Checks the saved sign-in with the server, saves the renewed one it hands back, and returns the account. Throws when it can't. */
+async function checkIn(): Promise<AuthUser> {
+  const me = await apiFetch<{ user: AuthUser; token?: string }>("/api/mobile/auth/me");
+  if (me.token) await persistToken(me.token);
+  await cacheUser(me.user);
+  return me.user;
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<AuthContextValue["status"]>("loading");
   const [user, setUser] = useState<AuthUser | null>(null);
@@ -43,6 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     registerUnauthorizedHandler(() => {
+      void forgetCachedUser();
       setUser(null);
       setStatus("signedOut");
     });
@@ -57,16 +68,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
       try {
-        const me = await apiFetch<{ user: AuthUser }>("/api/mobile/auth/me");
-        setUser(me.user);
+        const me = await checkIn();
+        setUser(me);
         setStatus("signedIn");
         void registerForPushNotificationsAsync().then(() => syncCheckinReminder());
-      } catch {
-        await clearToken();
-        setStatus("signedOut");
+      } catch (error) {
+        // Only a rejected sign-in signs out (apiFetch has already removed the token). No signal or a server hiccup keeps the member signed in
+        // as the account they last had; the next check (on returning to the app) renews it. See session-keeper.ts.
+        const cached = signInCheckFailure(error) === "keep" ? await readCachedUser() : null;
+        if (cached) {
+          setUser(cached);
+          setStatus("signedIn");
+        } else {
+          setStatus("signedOut");
+        }
       }
     })();
   }, []);
+
+  // Each return to the app renews the 7-day sign-in, so it lasts as long as the app is used. A rejected one signs out (via apiFetch's 401).
+  useEffect(() => {
+    if (status !== "signedIn") return;
+    const sub = AppState.addEventListener("change", (s) => {
+      if (s === "active") void checkIn().then(setUser, () => {});
+    });
+    return () => sub.remove();
+  }, [status]);
 
   async function login(email: string, password: string) {
     const res = await apiFetch<LoginResponse>("/api/mobile/auth/login", {
@@ -75,6 +102,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       skipAuth: true,
     });
     await persistToken(res.token);
+    await cacheUser(res.user);
     setUser(res.user);
     setStatus("signedIn");
     void registerForPushNotificationsAsync().then(() => syncCheckinReminder());
@@ -82,6 +110,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function setSession(token: string, sessionUser: AuthUser) {
     await persistToken(token);
+    await cacheUser(sessionUser);
     setUser(sessionUser);
     setStatus("signedIn");
     void registerForPushNotificationsAsync().then(() => syncCheckinReminder());
@@ -91,6 +120,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await unregisterPushToken();
     await cancelCheckinReminder();
     await clearToken();
+    await forgetCachedUser();
     setUser(null);
     setStatus("signedOut");
     setViewMode("coach");

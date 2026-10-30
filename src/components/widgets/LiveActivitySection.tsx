@@ -1,3 +1,4 @@
+import { LinearGradient } from "expo-linear-gradient";
 import { useEffect, useMemo, useState } from "react";
 import { Platform, Pressable, StyleSheet, Switch, Text, View } from "react-native";
 
@@ -6,6 +7,7 @@ import { Spacing } from "@/constants/theme";
 import { tapFeedback } from "@/lib/haptics";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 import { CLASS_LEAD_MINS, setLiveActivityPrefs, useLiveActivityPrefs, type LiveActivityPrefs } from "@/lib/widgets/live-activity";
+import { useWidgetStyle } from "@/lib/widgets/widget-style";
 
 import { AndroidLiveUpdate, IslandCompact, IslandExpanded, IslandMinimal, LockScreenActivity, type LiveKind } from "./LiveActivityPreviews";
 
@@ -19,6 +21,8 @@ export function LiveActivitySection({ nextClassTitle }: { nextClassTitle: string
   const styles = useStyles();
   const Color = useLegacyColors();
   const prefs = useLiveActivityPrefs();
+  // The Lock Screen banner follows the widgets' Navy / Glass choice (the Dynamic Island is always black: Apple doesn't allow another background).
+  const look = useWidgetStyle();
   const [which, setWhich] = useState<Which>("workout");
   const [phone, setPhone] = useState<Phone>(Platform.OS === "android" ? "android" : "iphone");
   const [showRest, setShowRest] = useState(false);
@@ -90,8 +94,15 @@ export function LiveActivitySection({ nextClassTitle }: { nextClassTitle: string
             </View>
             <Text style={styles.caption}>Touch and hold</Text>
             <IslandExpanded live={live} nowMs={nowMs} />
-            <Text style={styles.caption}>Lock Screen</Text>
-            <LockScreenActivity live={live} nowMs={nowMs} />
+            <Text style={styles.caption}>Lock Screen{look === "glass" ? " (Glass, over your wallpaper)" : ""}</Text>
+            {look === "glass" ? (
+              <LinearGradient colors={["#3a6186", "#89253e", "#d98a4a"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.wallpaper}>
+                <LockScreenActivity live={live} nowMs={nowMs} look="glass" />
+              </LinearGradient>
+            ) : (
+              <LockScreenActivity live={live} nowMs={nowMs} />
+            )}
+            <Text style={styles.note}>The Dynamic Island is always black on every iPhone; the Lock Screen follows your Navy or Glass choice above.</Text>
           </>
         ) : (
           <>
@@ -146,6 +157,8 @@ const useStyles = makeLegacyStyles((Color) =>
     stage: { backgroundColor: "#1c2433", borderRadius: 24, padding: 16, gap: 10 },
     caption: { fontSize: 12, fontWeight: "600", color: "rgba(255,255,255,0.6)", marginTop: 4 },
     captionInline: { fontSize: 12, color: "rgba(255,255,255,0.6)", flex: 1 },
+    wallpaper: { borderRadius: 26, padding: 10 },
+    note: { fontSize: 12, color: "rgba(255,255,255,0.6)", lineHeight: 17 },
     minimalRow: { flexDirection: "row", alignItems: "center", gap: 12, alignSelf: "center" },
     card: { padding: Spacing.lg, gap: Spacing.md },
     row: { flexDirection: "row", alignItems: "center", gap: Spacing.md },

@@ -1,12 +1,16 @@
 import { Ionicons } from "@expo/vector-icons";
-import { StyleSheet, Text, View } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import { Platform, StyleSheet, Text, View, type ViewStyle } from "react-native";
 
 import { classChipText, clock, workoutElapsedSecs, type ClassActivityState, type WorkoutActivityState } from "@/lib/widgets/live-activity";
+import type { WidgetStyle } from "@/lib/widgets/widget-style";
 
 // Pictures of the Live Activity (iPhone) and Live Update (Android) presentations, for the Widgets screen. Sizes follow Apple's specifications
 // for a 393pt-wide iPhone (compact 52x37, minimal 37, expanded and Lock Screen 371 wide, Lock Screen margin 14) and Android's status chip
 // (at most 96dp, always an icon). Dynamic Island backgrounds are always black (Apple doesn't allow a custom one); the Lock Screen uses the
-// brand navy, which Apple allows there, with gold as the key colour and white text for legibility.
+// brand navy, which Apple allows there, with gold as the key colour and white text for legibility, or frosted glass when the member chose the
+// Glass look for their widgets (Apple allows a custom, translucent Lock Screen background; used sparingly and kept legible: white accents with a
+// soft shadow instead of gold, which loses contrast over a bright wallpaper).
 
 const BLACK = "#000000";
 const NAVY = "#0a1526";
@@ -111,23 +115,35 @@ export function IslandExpanded({ live, nowMs }: { live: LiveKind; nowMs: number 
 }
 
 /** Lock Screen banner: the expanded layout's information, with the S&C mark (no container) and the 14pt standard margin. */
-export function LockScreenActivity({ live, nowMs }: { live: LiveKind; nowMs: number }) {
+export function LockScreenActivity({ live, nowMs, look = "navy" }: { live: LiveKind; nowMs: number; look?: WidgetStyle }) {
   const workout = live.kind === "workout" ? live.state : null;
   const rest = workout ? resting(workout, nowMs) : null;
+  const g = look === "glass";
+  const blur = g && Platform.OS === "web" ? ({ backdropFilter: "blur(22px) saturate(170%)" } as unknown as ViewStyle) : null;
   return (
-    <View style={styles.lock}>
+    <View style={[styles.lock, g && styles.lockGlass, blur]}>
+      {g ? (
+        <LinearGradient
+          colors={["rgba(255,255,255,0.32)", "rgba(255,255,255,0.08)", "rgba(255,255,255,0.16)"]}
+          locations={[0, 0.55, 1]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={StyleSheet.absoluteFill}
+          pointerEvents="none"
+        />
+      ) : null}
       <View style={styles.expandedTop}>
         <View style={styles.row}>
-          <Text style={styles.mark}>S&amp;C</Text>
-          <Text style={styles.lockTitle} numberOfLines={1}>
+          <Text style={[styles.mark, g && styles.glassAccent]}>S&amp;C</Text>
+          <Text style={[styles.lockTitle, g && styles.glassShadow]} numberOfLines={1}>
             {workout ? workout.title : live.state.title}
           </Text>
         </View>
-        <Text style={[styles.lockTimer, rest !== null && { color: WATER }]}>
+        <Text style={[styles.lockTimer, g && styles.glassAccent, rest !== null && { color: g ? "#d6efff" : WATER }]}>
           {workout ? (rest !== null ? clock(rest) : clock(workoutElapsedSecs(workout, nowMs))) : classChipText(live.state as ClassActivityState, nowMs)}
         </Text>
       </View>
-      <Text style={styles.lockSub} numberOfLines={1}>
+      <Text style={[styles.lockSub, g && styles.glassSub]} numberOfLines={1}>
         {workout
           ? rest !== null
             ? `Resting · ${clock(workoutElapsedSecs(workout, nowMs))} total · ${workout.setsDone} sets`
@@ -135,8 +151,8 @@ export function LockScreenActivity({ live, nowMs }: { live: LiveKind; nowMs: num
           : `Starts at ${classTime(live.state as ClassActivityState)} · ${(live.state as ClassActivityState).durationMins} min`}
       </Text>
       {live.kind === "class" ? (
-        <View style={styles.lockTrack}>
-          <View style={[styles.lockFill, { width: `${Math.max(0, Math.min(100, 100 - ((live.state.startsAtMs - nowMs) / 3_600_000) * 100))}%` }]} />
+        <View style={[styles.lockTrack, g && styles.glassTrack]}>
+          <View style={[styles.lockFill, g && { backgroundColor: TEXT }, { width: `${Math.max(0, Math.min(100, 100 - ((live.state.startsAtMs - nowMs) / 3_600_000) * 100))}%` }]} />
         </View>
       ) : null}
     </View>
@@ -203,6 +219,11 @@ const styles = StyleSheet.create({
   lockTitle: { color: TEXT, fontSize: 16, fontWeight: "700", flexShrink: 1 },
   lockTimer: { color: GOLD, fontSize: 30, fontWeight: "800", fontVariant: ["tabular-nums"] },
   lockSub: { color: "rgba(255,255,255,0.75)", fontSize: 14, fontWeight: "500" },
+  lockGlass: { backgroundColor: "rgba(255,255,255,0.14)", borderWidth: 1, borderColor: "rgba(255,255,255,0.38)", overflow: "hidden" },
+  glassAccent: { color: TEXT, textShadowColor: "rgba(0,0,0,0.3)", textShadowRadius: 4 },
+  glassShadow: { textShadowColor: "rgba(0,0,0,0.25)", textShadowRadius: 4 },
+  glassSub: { color: "rgba(255,255,255,0.9)", textShadowColor: "rgba(0,0,0,0.25)", textShadowRadius: 4 },
+  glassTrack: { backgroundColor: "rgba(255,255,255,0.3)" },
   lockTrack: { height: 6, borderRadius: 3, backgroundColor: "rgba(255,255,255,0.15)", overflow: "hidden", marginTop: 2 },
   lockFill: { height: 6, borderRadius: 3, backgroundColor: GOLD },
   statusBar: { height: 28, borderRadius: 14, backgroundColor: "#1b1b1f", flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 8 },

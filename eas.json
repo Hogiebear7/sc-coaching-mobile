@@ -44,6 +44,13 @@
     "production": {
       "autoIncrement": true,
       "env": {
+        "EAS_ACCOUNT_TARGET": "hogiebear777",
+        "EXPO_PUBLIC_UPSELL_MODE": "store_purchase"
+      }
+    },
+    "production-ios": {
+      "extends": "production",
+      "env": {
         "EAS_ACCOUNT_TARGET": "sandcmails-team",
         "EXPO_PUBLIC_UPSELL_MODE": "store_purchase"
       }
@@ -53,6 +60,9 @@
     "production": {
       "ios": {
         "ascAppId": "6808795468"
+      },
+      "android": {
+        "track": "internal"
       }
     }
   }

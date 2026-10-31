@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "185007400405",
+    "project_id": "sandc-coaching",
+    "storage_bucket": "sandc-coaching.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:185007400405:android:85dff5e5439e2cd839895c",
+        "android_client_info": {
+          "package_name": "com.sandcperformancecoaching.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCoyYvGkFhkspjeS8QqqJth2XoSmAfZiXY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

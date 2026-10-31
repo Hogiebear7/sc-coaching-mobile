@@ -21,7 +21,7 @@ import { clearLastCrash, getLastCrash, installGlobalCrashHandler, type CrashReco
 import { isEmergencyContactReminderDismissed } from "@/lib/emergency-contact-reminder";
 import { hasGymMembership } from "@/lib/member-access";
 import { addNotificationTapListener, mapLinkHrefToRoute } from "@/lib/push-notifications";
-import { useProfile } from "@/lib/queries/profile";
+import { useProfile, useProvisionMemberProfile } from "@/lib/queries/profile";
 import { RestTimerProvider } from "@/lib/rest-timer";
 import { ThemeProvider, useAppTheme, makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 import { TourProvider } from "@/lib/tour-context";
@@ -93,7 +93,7 @@ function CustomSplashScreen() {
 // here since there's no server-rendering equivalent on native.
 function AuthGate() {
   const Color = useLegacyColors();
-  const { status, user, viewMode } = useAuth();
+  const { status, user, viewMode, setViewMode } = useAuth();
   const router = useRouter();
   const segments = useSegments();
   const isStaffRole = !!user && user.role !== "member";
@@ -154,19 +154,45 @@ function AuthGate() {
     }
   }, [status, segments, router, wantsStaffGroup, needsEmergencyContact]);
 
-  // Opened from a widget or Live Activity link (sccoachingmobile://nutrition, ://schedule …) while the app was closed: the splash above
-  // holds the screens back until sign-in is known, which can lose the link's screen, so it's opened here once the member is signed in.
+  // Opened from a widget or Live Activity link (sccoachingmobile://nutrition, ://schedule …), with the app closed or open (the router leaves
+  // these to this, app/+native-intent.tsx). They're member screens, so a staff account viewing as coach is switched to the member view first
+  // (as the staff Home's own switch does); the screen then opens on top of the member Home once it's showing, so Back returns there.
   const pathname = usePathname();
-  const openedLink = useRef(false);
+  const provisionMemberProfile = useProvisionMemberProfile();
+  const [linkPath, setLinkPath] = useState<{ path: string; switching: boolean } | null>(null);
+  const openedLink = useRef<{ path: string; switching: boolean } | null>(null);
+  const checkedInitialLink = useRef(false);
   useEffect(() => {
-    if (status !== "signedIn" || openedLink.current) return;
-    openedLink.current = true;
-    void Linking.getInitialURL().then((url) => {
+    if (status !== "signedIn" || !splashHoldElapsed) return;
+    function open(url: string | null) {
       const path = url ? routeFromAppLink(url) : null;
-      if (path && path !== pathname) router.push(path as never);
-    });
+      if (!path) return;
+      const link = { path, switching: wantsStaffGroup };
+      if (wantsStaffGroup) {
+        // If the member view can't be set up (no signal), the screen still opens, from the coach side.
+        void provisionMemberProfile.mutateAsync().then(
+          () => setViewMode("member"),
+          () => setLinkPath((current) => (current === link ? { path, switching: false } : current))
+        );
+      }
+      setLinkPath(link);
+    }
+    if (!checkedInitialLink.current) {
+      checkedInitialLink.current = true;
+      void Linking.getInitialURL().then(open);
+    }
+    const sub = Linking.addEventListener("url", ({ url }) => open(url));
+    return () => sub.remove();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [status, router]);
+  }, [status, splashHoldElapsed, wantsStaffGroup]);
+  useEffect(() => {
+    if (!linkPath || openedLink.current === linkPath) return;
+    // Still switching to the member view: wait for its Home, or the switch would replace the screen opened now.
+    if (linkPath.switching && (wantsStaffGroup || segments[0] === "(staff)")) return;
+    openedLink.current = linkPath;
+    if (linkPath.path !== pathname) router.push(linkPath.path as never);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [linkPath, segments, wantsStaffGroup]);
 
   // Tapping a delivered notification (app backgrounded/killed) navigates
   // straight to the relevant screen, mirroring the web app's push linkHref.

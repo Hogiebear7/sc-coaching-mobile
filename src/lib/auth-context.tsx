@@ -38,6 +38,8 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+const START_CHECK_LIMIT_MS = 6000;
+
 /** Checks the saved sign-in with the server, saves the renewed one it hands back, and returns the account. Throws when it can't. */
 async function checkIn(): Promise<AuthUser> {
   const me = await apiFetch<{ user: AuthUser; token?: string }>("/api/mobile/auth/me");
@@ -67,8 +69,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setStatus("signedOut");
         return;
       }
+      // The splash waits on this, so a server that never answers (a weak signal, or the phone slow to give a widget-opened app its network)
+      // counts as no signal after a few seconds: the member carries on as their saved account while the check finishes behind.
+      const check = checkIn();
+      let timedOut = false;
       try {
-        const me = await checkIn();
+        const me = await Promise.race([
+          check,
+          new Promise<never>((_, reject) =>
+            setTimeout(() => {
+              timedOut = true;
+              reject(new ApiError(0, "Sign-in check timed out"));
+            }, START_CHECK_LIMIT_MS)
+          ),
+        ]);
         setUser(me);
         setStatus("signedIn");
         void registerForPushNotificationsAsync().then(() => syncCheckinReminder());
@@ -81,6 +95,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setStatus("signedIn");
         } else {
           setStatus("signedOut");
+        }
+        if (timedOut) {
+          // A late answer still counts (a rejected one signs out through apiFetch's 401 handler).
+          check.then(
+            (me) => {
+              setUser(me);
+              setStatus("signedIn");
+            },
+            () => {}
+          );
         }
       }
     })();

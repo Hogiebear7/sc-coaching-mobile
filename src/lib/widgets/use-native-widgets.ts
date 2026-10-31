@@ -92,11 +92,15 @@ export function useNativeWidgets() {
   useEffect(() => {
     const id = setInterval(() => setTick((t) => t + 1), 60_000);
     const sub = AppState.addEventListener("change", (s) => {
-      if (s === "active") setTick((t) => t + 1);
+      if (s !== "active") return;
+      // Water may have been added from the widget while the app was away (sent straight to the server), so today's total is re-read now,
+      // not only once the copy here is over 30 seconds old.
+      void qc.invalidateQueries({ queryKey: ["hydration", localDate(new Date())] });
+      setTick((t) => t + 1);
     });
     return () => {
       clearInterval(id);
       sub.remove();
     };
-  }, []);
+  }, [qc]);
 }

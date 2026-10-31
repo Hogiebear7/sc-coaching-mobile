@@ -1,0 +1,16 @@
+diff --git a/node_modules/react-native-android-widget/android/src/main/java/com/reactnativeandroidwidget/oss/HeadlessJsTaskWorker.java b/node_modules/react-native-android-widget/android/src/main/java/com/reactnativeandroidwidget/oss/HeadlessJsTaskWorker.java
+index 269a75d..2399311 100644
+--- a/node_modules/react-native-android-widget/android/src/main/java/com/reactnativeandroidwidget/oss/HeadlessJsTaskWorker.java
++++ b/node_modules/react-native-android-widget/android/src/main/java/com/reactnativeandroidwidget/oss/HeadlessJsTaskWorker.java
+@@ -74,7 +74,10 @@ public abstract class HeadlessJsTaskWorker extends ListenableWorker implements H
+         ReactHost reactHost = this.getReactHost();
+         ReactContext reactContext = reactHost.getCurrentReactContext();
+ 
+-        if (reactContext == null) {
++        // Wait for a context that can run JavaScript, not just one that exists: with the new architecture a widget task started while the
++        // app is still starting found a context without a running instance and failed ("Cannot start headless task, CatalystInstance not
++        // available"), so widgets went undrawn and a widget button did nothing while the app was closed. (S&C patch.)
++        if (reactContext == null || !reactContext.hasActiveReactInstance()) {
+             reactHost.addReactInstanceEventListener(new ReactInstanceEventListener() {
+                 public void onReactContextInitialized(ReactContext reactContext) {
+                     HeadlessJsTaskWorker.this.invokeStartTask(reactContext, taskConfig);

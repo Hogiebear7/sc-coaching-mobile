@@ -33,6 +33,7 @@ function render(props: WidgetTaskHandlerProps, snapshot: WidgetSnapshot | null) 
 
 export async function widgetTaskHandler(props: WidgetTaskHandlerProps) {
   const snapshot = await readSnapshot();
+  console.log(`[widgets] task ${props.widgetAction} for ${props.widgetInfo.widgetName}: saved data ${snapshot ? "found" : "missing"}`);
   switch (props.widgetAction) {
     case "WIDGET_ADDED":
     case "WIDGET_UPDATE":

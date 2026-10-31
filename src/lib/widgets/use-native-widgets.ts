@@ -60,6 +60,7 @@ export function useNativeWidgets() {
             continue;
           }
           const next = mergeSnapshot(shown.current, latest.current);
+          if (!(next.water || next.nutrition || next.classes)) console.log("[widgets] nothing loaded yet; waiting");
           if (next.water || next.nutrition || next.classes) {
             shown.current = next;
             await nativeBridge.updateHomeWidgets(next, taps);

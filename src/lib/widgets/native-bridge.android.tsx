@@ -18,21 +18,31 @@ const CLASS_ID = 7102;
 
 export async function renderAndroidWidgets(snapshot: WidgetSnapshot) {
   const look = snapshot.style;
-  const tasks = [
-    requestWidgetUpdate({ widgetName: ANDROID_WIDGET_NAMES.water, renderWidget: () => <WaterWidgetAndroid data={snapshot.water} look={look} /> }),
-    requestWidgetUpdate({ widgetName: ANDROID_WIDGET_NAMES.nutrition, renderWidget: () => <NutritionWidgetAndroid data={snapshot.nutrition} look={look} /> }),
-    requestWidgetUpdate({ widgetName: ANDROID_WIDGET_NAMES.nextClass, renderWidget: () => <ClassWidgetAndroid data={snapshot.classes} look={look} /> }),
+  const tasks: [string, () => ReturnType<typeof WaterWidgetAndroid>][] = [
+    [ANDROID_WIDGET_NAMES.water, () => <WaterWidgetAndroid data={snapshot.water} look={look} />],
+    [ANDROID_WIDGET_NAMES.nutrition, () => <NutritionWidgetAndroid data={snapshot.nutrition} look={look} />],
+    [ANDROID_WIDGET_NAMES.nextClass, () => <ClassWidgetAndroid data={snapshot.classes} look={look} />],
   ];
-  await Promise.allSettled(tasks);
+  for (const [widgetName, render] of tasks) {
+    try {
+      await requestWidgetUpdate({ widgetName, renderWidget: render, widgetNotFound: () => console.log(`[widgets] ${widgetName}: none on the home screen`) });
+      console.log(`[widgets] ${widgetName}: drawn`);
+    } catch (error) {
+      // Logged (visible in the phone's log as ReactNativeJS) so a widget that doesn't update can be diagnosed.
+      console.warn(`[widgets] ${widgetName}: update failed`, String(error));
+    }
+  }
 }
 
 export const nativeBridge: NativeBridge = {
   async updateHomeWidgets(snapshot) {
+    console.log(`[widgets] update: water ${snapshot.water ? "yes" : "no"}, nutrition ${snapshot.nutrition ? "yes" : "no"}, classes ${snapshot.classes ? "yes" : "no"}`);
     try {
       await AsyncStorage.setItem(ANDROID_SNAPSHOT_KEY, JSON.stringify(snapshot));
       await renderAndroidWidgets(snapshot);
-    } catch {
-      // Widgets are never a reason for anything else to fail.
+    } catch (error) {
+      // Widgets are never a reason for anything else to fail, but say why for diagnosis.
+      console.warn("[widgets] update failed", String(error));
     }
   },
 

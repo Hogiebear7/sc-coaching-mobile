@@ -5,7 +5,7 @@ import { AppState } from "react-native";
 import { useSchedule } from "@/lib/queries/schedule";
 import { classActivityActive, classStartMs, useLiveActivityPrefs, type ClassActivityState } from "@/lib/widgets/live-activity";
 import { nativeBridge } from "@/lib/widgets/native-bridge";
-import { localDate } from "@/lib/widgets/snapshot";
+import { localDate, mergeSnapshot, type WidgetSnapshot } from "@/lib/widgets/snapshot";
 import { useWidgetSnapshot } from "@/lib/widgets/use-widget-snapshot";
 import { sendWidgetWater } from "@/lib/widgets/widget-water";
 
@@ -33,20 +33,38 @@ export function useNativeWidgets() {
   const [tick, setTick] = useState(0);
   const busy = useRef(false);
 
-  // Widgets: send widget water first (so the server's total includes it), then hand every widget the latest snapshot.
+  // Widgets: send widget water first (so the server's total includes it), then hand every widget the latest snapshot. The data loads a
+  // moment after the app opens, so a change that arrives while an update is still running is never dropped: it runs again with the newest
+  // snapshot once the current one finishes (otherwise the widgets kept the empty, "Open S&C to set up" version from before the data loaded).
+  const latest = useRef(snapshot);
   useEffect(() => {
-    if (busy.current) return;
+    latest.current = snapshot;
+  }, [snapshot]);
+  const again = useRef(false);
+  const shown = useRef<WidgetSnapshot | null>(null);
+  useEffect(() => {
+    if (busy.current) {
+      again.current = true;
+      return;
+    }
     busy.current = true;
     void (async () => {
       try {
-        const taps = await nativeBridge.readWidgetWaterTaps();
-        const sent = await sendWidgetWater(taps);
-        if (sent > 0) {
-          // The refreshed total comes back through the hydration query and runs this again with the right numbers.
-          await qc.invalidateQueries({ queryKey: ["hydration", localDate(new Date())] });
-          return;
-        }
-        await nativeBridge.updateHomeWidgets(snapshot, taps);
+        do {
+          again.current = false;
+          const taps = await nativeBridge.readWidgetWaterTaps();
+          const sent = await sendWidgetWater(taps);
+          if (sent > 0) {
+            // The refreshed total comes back through the hydration query and runs this again with the right numbers.
+            await qc.invalidateQueries({ queryKey: ["hydration", localDate(new Date())] });
+            continue;
+          }
+          const next = mergeSnapshot(shown.current, latest.current);
+          if (next.water || next.nutrition || next.classes) {
+            shown.current = next;
+            await nativeBridge.updateHomeWidgets(next, taps);
+          }
+        } while (again.current);
       } finally {
         busy.current = false;
       }

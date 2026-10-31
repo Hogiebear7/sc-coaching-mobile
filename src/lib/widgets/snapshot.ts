@@ -99,6 +99,18 @@ export function progress(value: number, target: number | null): number {
 /** "1.2 L" from ml, one decimal. */
 export const litres = (ml: number) => `${(ml / 1000).toFixed(1)} L`;
 
+
+/** The snapshot to show: the new one, except that a section still loading (null) keeps what the widget last showed. */
+export function mergeSnapshot(previous: WidgetSnapshot | null, next: WidgetSnapshot): WidgetSnapshot {
+  if (!previous) return next;
+  return {
+    ...next,
+    water: next.water ?? previous.water,
+    nutrition: next.nutrition ?? previous.nutrition,
+    classes: next.classes ?? previous.classes,
+  };
+}
+
 // ── Water added from the widget ─────────────────────────────────────────────────────────────────────────────────────
 // An iPhone widget button can't reach the server, so the widget keeps a running total of what its button added today (widgetAddedMl) and
 // the app sends the difference when it next runs. The app remembers how much of that day's total it has already sent (syncedMl), so sending

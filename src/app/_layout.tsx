@@ -183,7 +183,7 @@ function AuthGate() {
 
   return (
     <>
-      {status === "signedIn" && !wantsStaffGroup ? <NativeWidgetsSync /> : null}
+      {status === "signedIn" ? <NativeWidgetsSync /> : null}
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: Color.bg0 } }}>
       <Stack.Screen name="(auth)" />
       <Stack.Screen name="(tabs)" />
@@ -234,7 +234,8 @@ function AuthGate() {
   );
 }
 
-// Home-screen widgets and the class countdown, kept in step with the app while a member is signed in (src/lib/widgets/use-native-widgets.ts).
+// Home-screen widgets and the class countdown, kept in step with the app while anyone is signed in, in the member or staff view (owners and
+// the platform operator hold member features too; src/lib/widgets/use-native-widgets.ts).
 function NativeWidgetsSync() {
   useNativeWidgets();
   return null;

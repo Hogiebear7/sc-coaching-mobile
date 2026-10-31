@@ -72,3 +72,15 @@ describe("water amount", () => {
     expect(waterQuickAdds(500)).toEqual([500, 250, 750]);
   });
 });
+
+import { mergeSnapshot } from "../widgets/snapshot";
+
+describe("widget updates never blank real numbers", () => {
+  it("keeps a section the widget already shows while the new data for it is still loading", () => {
+    const water = { date: "2026-10-31", loggedMl: 500, targetMl: 2800, amountMl: 250 };
+    const prev = { updatedAt: "a", style: "navy" as const, water, nutrition: null, classes: null };
+    const next = { updatedAt: "b", style: "glass" as const, water: null, nutrition: null, classes: { next: null, classesLeft: null, canBook: true } };
+    expect(mergeSnapshot(prev, next)).toEqual({ ...next, water });
+    expect(mergeSnapshot(null, next)).toBe(next);
+  });
+});

@@ -25,6 +25,29 @@ export function activeClass(bookings: { title: string; date: string; startTime: 
   return null;
 }
 
+// A widget step that waits on the phone (its storage, the widget service) gets a few seconds at most: one that never answers would
+// otherwise hold up every later update, leaving the widgets on old numbers. Logged, so a slow step shows in the phone's log.
+const STEP_LIMIT_MS = 4000;
+function within<T>(work: Promise<T>, fallback: T, step: string): Promise<T> {
+  return new Promise<T>((resolve) => {
+    const timer = setTimeout(() => {
+      console.warn(`[widgets] ${step}: no answer after ${STEP_LIMIT_MS / 1000}s, carrying on`);
+      resolve(fallback);
+    }, STEP_LIMIT_MS);
+    work.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (error) => {
+        clearTimeout(timer);
+        console.warn(`[widgets] ${step} failed`, String(error));
+        resolve(fallback);
+      }
+    );
+  });
+}
+
 export function useNativeWidgets() {
   const qc = useQueryClient();
   const snapshot = useWidgetSnapshot();
@@ -41,8 +64,9 @@ export function useNativeWidgets() {
     const snap = snapshot;
     queue.current = queue.current
       .then(async () => {
-        const taps = await nativeBridge.readWidgetWaterTaps();
-        if ((await sendWidgetWater(taps)) > 0) {
+        console.log("[widgets] update: start");
+        const taps = await within(nativeBridge.readWidgetWaterTaps(), null, "read widget water");
+        if ((await within(sendWidgetWater(taps), 0, "send widget water")) > 0) {
           // The server's new total arrives through the hydration query, which queues another update with it.
           void qc.invalidateQueries({ queryKey: ["hydration", localDate(new Date())] });
         }
@@ -52,7 +76,7 @@ export function useNativeWidgets() {
           return;
         }
         shown.current = next;
-        await nativeBridge.updateHomeWidgets(next, taps);
+        await within(nativeBridge.updateHomeWidgets(next, taps), undefined, "draw widgets");
       })
       .catch((error) => console.warn("[widgets] update failed", String(error)));
     // eslint-disable-next-line react-hooks/exhaustive-deps

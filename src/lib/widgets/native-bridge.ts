@@ -16,7 +16,10 @@ export interface NativeBridge {
 }
 
 export const nativeBridge: NativeBridge = {
-  async updateHomeWidgets() {},
+  async updateHomeWidgets(snapshot) {
+    // No widgets here (web, tests); say what they would have got, so the update path can be checked in the browser preview.
+    console.log(`[widgets] (no widgets on this platform) update: water ${snapshot.water ? "yes" : "no"}, nutrition ${snapshot.nutrition ? "yes" : "no"}, classes ${snapshot.classes ? "yes" : "no"}`);
+  },
   async readWidgetWaterTaps() {
     return null;
   },

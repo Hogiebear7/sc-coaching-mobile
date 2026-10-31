@@ -18,7 +18,7 @@
     },
     "android": {
       "package": "com.sandcperformancecoaching.app",
-      "versionCode": 96,
+      "versionCode": 97,
       "adaptiveIcon": {
         "backgroundColor": "#0a1526",
         "foregroundImage": "./assets/images/android-icon-foreground.png",

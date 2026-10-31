@@ -27,3 +27,14 @@ export function useWidgetSnapshot(): WidgetSnapshot {
     [today, hydration, amountMl, style, diary, target, schedule]
   );
 }
+
+/** Where each widget data request stands ("hydration loaded, diary error 401: …"), for the diagnostic log when the widgets have nothing. */
+export function useWidgetDataStatus(): string {
+  const today = localDate(new Date());
+  const parts: [string, { status: string; error: unknown; fetchStatus: string }][] = [
+    ["hydration", useHydration(today)],
+    ["diary", useNutritionDiary(today)],
+    ["schedule", useSchedule()],
+  ];
+  return parts.map(([name, q]) => `${name} ${q.status}/${q.fetchStatus}${q.error ? `: ${String(q.error)}` : ""}`).join(", ");
+}

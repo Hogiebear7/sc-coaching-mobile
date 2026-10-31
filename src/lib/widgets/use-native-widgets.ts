@@ -6,7 +6,7 @@ import { useSchedule } from "@/lib/queries/schedule";
 import { classActivityActive, classStartMs, useLiveActivityPrefs, type ClassActivityState } from "@/lib/widgets/live-activity";
 import { nativeBridge } from "@/lib/widgets/native-bridge";
 import { localDate, mergeSnapshot, type WidgetSnapshot } from "@/lib/widgets/snapshot";
-import { useWidgetSnapshot } from "@/lib/widgets/use-widget-snapshot";
+import { useWidgetDataStatus, useWidgetSnapshot } from "@/lib/widgets/use-widget-snapshot";
 import { sendWidgetWater } from "@/lib/widgets/widget-water";
 
 // Keeps the home-screen widgets and the class countdown in step with the app, for a signed-in member (mounted once, in the root layout):
@@ -31,45 +31,31 @@ export function useNativeWidgets() {
   const prefs = useLiveActivityPrefs();
   const { data: schedule } = useSchedule();
   const [tick, setTick] = useState(0);
-  const busy = useRef(false);
-
-  // Widgets: send widget water first (so the server's total includes it), then hand every widget the latest snapshot. The data loads a
-  // moment after the app opens, so a change that arrives while an update is still running is never dropped: it runs again with the newest
-  // snapshot once the current one finishes (otherwise the widgets kept the empty, "Open S&C to set up" version from before the data loaded).
-  const latest = useRef(snapshot);
-  useEffect(() => {
-    latest.current = snapshot;
-  }, [snapshot]);
-  const again = useRef(false);
+  // Widgets: each change (new data, the minute tick, a return to the app) queues one update, run strictly in order, so none is dropped and
+  // none can get stuck behind another. An update sends any water added from a widget first (so the server's total includes it), then gives
+  // every widget the newest numbers; a section still loading keeps what the widget last showed.
+  const queue = useRef<Promise<void>>(Promise.resolve());
   const shown = useRef<WidgetSnapshot | null>(null);
+  const status = useWidgetDataStatus();
   useEffect(() => {
-    if (busy.current) {
-      again.current = true;
-      return;
-    }
-    busy.current = true;
-    void (async () => {
-      try {
-        do {
-          again.current = false;
-          const taps = await nativeBridge.readWidgetWaterTaps();
-          const sent = await sendWidgetWater(taps);
-          if (sent > 0) {
-            // The refreshed total comes back through the hydration query and runs this again with the right numbers.
-            await qc.invalidateQueries({ queryKey: ["hydration", localDate(new Date())] });
-            continue;
-          }
-          const next = mergeSnapshot(shown.current, latest.current);
-          if (!(next.water || next.nutrition || next.classes)) console.log("[widgets] nothing loaded yet; waiting");
-          if (next.water || next.nutrition || next.classes) {
-            shown.current = next;
-            await nativeBridge.updateHomeWidgets(next, taps);
-          }
-        } while (again.current);
-      } finally {
-        busy.current = false;
-      }
-    })();
+    const snap = snapshot;
+    queue.current = queue.current
+      .then(async () => {
+        const taps = await nativeBridge.readWidgetWaterTaps();
+        if ((await sendWidgetWater(taps)) > 0) {
+          // The server's new total arrives through the hydration query, which queues another update with it.
+          void qc.invalidateQueries({ queryKey: ["hydration", localDate(new Date())] });
+        }
+        const next = mergeSnapshot(shown.current, snap);
+        if (!(next.water || next.nutrition || next.classes)) {
+          console.log(`[widgets] nothing loaded yet (${status})`);
+          return;
+        }
+        shown.current = next;
+        await nativeBridge.updateHomeWidgets(next, taps);
+      })
+      .catch((error) => console.warn("[widgets] update failed", String(error)));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [snapshot, tick, qc]);
 
   // Class countdown.

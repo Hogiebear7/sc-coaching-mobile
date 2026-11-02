@@ -16,6 +16,8 @@ Notifications.setNotificationHandler({
   }),
 });
 
+const ALERTS_CHANNEL = "alerts";
+
 let lastRegisteredToken: string | null = null;
 
 function getProjectId(): string | null {
@@ -41,6 +43,17 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
       name: "default",
       importance: Notifications.AndroidImportance.DEFAULT,
     });
+    // Coach messages and class reminders: pop-up, sound and vibration. A channel's importance can't be raised once created, hence a new one
+    // rather than changing "default". The server names it only for installs that report it below (gym-app lib/push.ts).
+    await Notifications.setNotificationChannelAsync(ALERTS_CHANNEL, {
+      name: "Alerts",
+      description: "Coach messages, class reminders and other alerts",
+      importance: Notifications.AndroidImportance.HIGH,
+      sound: "default",
+      vibrationPattern: [0, 250, 150, 250],
+      enableVibrate: true,
+      lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+    });
   }
 
   const { status: existingStatus } = await Notifications.getPermissionsAsync();
@@ -63,7 +76,11 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
 
     await apiFetch("/api/mobile/push", {
       method: "POST",
-      body: { token, deviceInfo: `${Device.modelName ?? Platform.OS} · ${Platform.OS} ${Platform.Version}` },
+      body: {
+        token,
+        deviceInfo: `${Device.modelName ?? Platform.OS} · ${Platform.OS} ${Platform.Version}`,
+        ...(Platform.OS === "android" ? { androidChannel: ALERTS_CHANNEL } : {}),
+      },
     });
     lastRegisteredToken = token;
     return token;

@@ -5,7 +5,7 @@ import * as ImagePicker from "expo-image-picker";
 import { Image, type ImageStyle } from "expo-image";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from "react-native";
+import { Alert, Linking, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
@@ -573,6 +573,17 @@ export default function SettingsScreen() {
                     thumbColor="#ffffff"
                   />
                 </View>
+                <View style={styles.divider} />
+                <Row
+                  icon="alert-circle-outline"
+                  title="Not getting alerts?"
+                  sub={
+                    Platform.OS === "android"
+                      ? "Open your phone's settings for this app. Allow notifications and pop-ups (banners or floating notifications), and let it run in the background."
+                      : "Open your phone's settings for this app and allow notifications."
+                  }
+                  onPress={() => void Linking.openSettings()}
+                />
                 <View style={styles.divider} />
                 <View style={styles.row}>
                   <View style={{ flex: 1 }}>

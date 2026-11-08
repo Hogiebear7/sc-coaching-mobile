@@ -17,6 +17,7 @@ import { BodyFatCard } from "@/components/ui/BodyFatCard";
 import { BodyWeightCard } from "@/components/ui/BodyWeightCard";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { PregnancySummaryRow } from "@/components/pregnancy/PregnancyCards";
 import { CountryPicker } from "@/components/ui/CountryPicker";
 import { CyclePhaseChart } from "@/components/ui/CyclePhaseChart";
 import { DateField } from "@/components/ui/DateField";
@@ -25,6 +26,8 @@ import { TextField } from "@/components/ui/TextField";
 import { Radius, Spacing } from "@/constants/theme";
 import { ApiError, useAuth } from "@/lib/auth-context";
 import { useCycleData } from "@/lib/queries/cycle";
+import { usePregnancyData } from "@/lib/queries/pregnancy";
+import { todayDateString } from "@/lib/workout-formatters";
 import { COUNTRIES } from "@/lib/country-options";
 import { ALLERGENS, DIETARY_PREFERENCES, INTOLERANCES, optionLabel } from "@/lib/dietary-options";
 import {
@@ -125,6 +128,8 @@ export default function ProfileScreen() {
   const { data, isLoading, isError, refetch } = useProfile();
   const update = useUpdateProfile();
   const { data: cycleData } = useCycleData(!!data?.cycleTrackingEligible);
+  const { data: pregnancy } = usePregnancyData(!!data?.cycleTrackingEligible);
+  const pregnantNow = pregnancy?.isPregnant === true;
   const requestEmailChange = useRequestEmailChange();
 
   const [isChangingEmail, setIsChangingEmail] = useState(false);
@@ -640,13 +645,20 @@ export default function ProfileScreen() {
                     <Ionicons name="moon-outline" size={18} color={Color.gold} />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.settingTitle}>Cycle Tracking</Text>
-                    <Text style={styles.settingSub}>Private cycle info, phase estimate, and coach sharing</Text>
+                    <Text style={styles.settingTitle}>{pregnantNow ? "Pregnancy guide" : "Cycle Tracking"}</Text>
+                    <Text style={styles.settingSub}>
+                      {pregnantNow ? "Your stage, tips for eating and training, and coach sharing" : "Private cycle info, phase estimate, and coach sharing"}
+                    </Text>
                   </View>
                   <Ionicons name="chevron-forward" size={18} color={Color.textFaint} />
                 </Pressable>
 
-                {cycleData?.enabled &&
+                {pregnantNow && pregnancy ? (
+                  <PregnancySummaryRow pregnancy={pregnancy} today={todayDateString()} onPress={() => router.push("/cycle-tracking")} />
+                ) : null}
+
+                {!pregnantNow &&
+                cycleData?.enabled &&
                 cycleData.phaseEstimate.phase !== "Unknown" &&
                 cycleData.phaseEstimate.cycleDay !== null &&
                 cycleData.phaseEstimate.cycleLength !== null ? (

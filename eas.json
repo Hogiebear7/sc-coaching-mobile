@@ -31,6 +31,16 @@
         "EXPO_PUBLIC_UPSELL_MODE": "store_purchase"
       }
     },
+    "community-test": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EAS_ACCOUNT_TARGET": "sandcmails-team",
+        "EXPO_PUBLIC_UPSELL_MODE": "store_purchase"
+      }
+    },
     "apkpure": {
       "distribution": "internal",
       "autoIncrement": true,

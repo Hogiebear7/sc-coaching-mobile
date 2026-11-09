@@ -15,10 +15,14 @@ export interface RecoveryLogSummary {
   rpe: number | null;
   goal: string | null;
   notes: string | null;
+  /** The optional "injured or sick?" note (App tier or gym Membership). Absent from an older server. */
+  healthNote?: string | null;
   readinessScore: number | null;
 }
 
 export interface RecoveryData {
+  /** True when this member can write the "injured or sick?" note; the check-in shows the field only then. Absent from an older server = false. */
+  healthNoteEnabled?: boolean;
   logs: RecoveryLogSummary[];
   latestReadinessScore: number | null;
   latestGuidance: string | null;
@@ -48,6 +52,8 @@ export interface CheckInInput {
   fatigue: number;
   trainingDurationMins?: number;
   rpe?: number;
+  /** Sent only when the member can write one (healthNoteEnabled). An empty string clears the note; leaving it out keeps what is saved. */
+  healthNote?: string;
 }
 
 export function useLogRecovery() {
@@ -63,6 +69,7 @@ export function useLogRecovery() {
       };
       if (input.trainingDurationMins !== undefined) body.trainingDurationMins = String(input.trainingDurationMins);
       if (input.rpe !== undefined) body.rpe = String(input.rpe);
+      if (input.healthNote !== undefined) body.healthNote = input.healthNote;
       return apiFetch<{ success: boolean; message: string }>("/api/recovery/log", { method: "POST", body });
     },
     onSuccess: (_res, input) => {

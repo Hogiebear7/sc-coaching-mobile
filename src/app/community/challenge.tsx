@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Spacing } from "@/constants/theme";
+import { useAuth } from "@/lib/auth-context";
 import {
   buildChallengeRows,
   challengeMetricHint,
@@ -29,13 +30,15 @@ export default function ChallengeScreen() {
   const scope: ChallengeScope = params.scope === "gym" ? { type: "gym" } : { type: "group", id: groupId };
 
   const standings = useChallengeStandings(scope, challengeId);
-  // Only a group's organiser can cancel its challenge. (Gym challenges are set and canceled by coaches in the staff app.)
+  // Only a group's organiser can cancel its challenge, and only the gym's coaches and admins can cancel a gym one. (The server checks both.)
+  const { user } = useAuth();
   const group = useGroup(scope.type === "group" ? groupId : "");
   const cancel = useCancelChallenge(scope);
 
   const data = standings.data;
   const challenge = data?.challenge;
-  const canCancel = scope.type === "group" && group.data?.isOrganiser === true && (challenge?.status === "active" || challenge?.status === "upcoming");
+  const mayCancel = scope.type === "group" ? group.data?.isOrganiser === true : !!user && user.role !== "member";
+  const canCancel = mayCancel && (challenge?.status === "active" || challenge?.status === "upcoming");
 
   function confirmCancel() {
     Alert.alert("Cancel this challenge?", "It ends now for everyone. This can't be undone.", [

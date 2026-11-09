@@ -27,6 +27,7 @@ import {
   type LeaderboardMetric,
   type LeaderboardRange,
 } from "@/lib/queries/community";
+import { useGymCommunityAccess } from "@/lib/queries/community-groups";
 import { todayDateString } from "@/lib/workout-formatters";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 import { useHasFeature } from "@/lib/queries/profile";
@@ -150,7 +151,7 @@ export default function CommunityScreen() {
   const leaderboard = useLeaderboard(metric, range, customStart || null, customEnd || null);
   // Leaderboards are part of the App Subscription; the feed, likes, comments and follows are on every plan.
   const canLeaderboard = useHasFeature("communityLeaderboards");
-  const hasGymCommunity = useHasFeature("communityGym");
+  const hasGymCommunity = useGymCommunityAccess().allowed;
   const suggested = useSuggestedMembers();
   const followUser = useFollowUser();
 

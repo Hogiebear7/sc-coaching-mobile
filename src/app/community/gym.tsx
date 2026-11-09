@@ -23,13 +23,13 @@ import {
   useAdultConfirmed,
   useChallenges,
   useCreateGymPost,
+  useGymCommunityAccess,
   useGymFeed,
   useGymOlderPosts,
   useRemoveGymPost,
   useReportGymContent,
   type GymPost,
 } from "@/lib/queries/community-groups";
-import { useHasFeature } from "@/lib/queries/profile";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 // The gym's own members-only community (gym Membership). Members and the gym's coaches post and comment; coaches and admins can remove anything and
@@ -39,7 +39,7 @@ export default function CommunityGymScreen() {
   const Color = useLegacyColors();
   const router = useRouter();
   const { user } = useAuth();
-  const allowed = useHasFeature("communityGym");
+  const { allowed, isStaff } = useGymCommunityAccess();
   const adult = useAdultConfirmed();
   const feed = useGymFeed();
   const challenges = useChallenges({ type: "gym" }, allowed && feed.isSuccess);
@@ -57,7 +57,8 @@ export default function CommunityGymScreen() {
   const [olderPosts, setOlderPosts] = useState<GymPost[]>([]);
   const [olderCursor, setOlderCursor] = useState<string | null | undefined>(undefined);
 
-  const needsAdult = allowed && (adult.data === false || isAdultConfirmationRequired(feed.error));
+  // The gym's own coaches and admins are not asked to confirm their age (the server doesn't ask them either).
+  const needsAdult = allowed && !isStaff && (adult.data === false || isAdultConfirmationRequired(feed.error));
   const posts: GymPost[] = [...(feed.data?.posts ?? []), ...olderPosts.filter((p) => !(feed.data?.posts ?? []).some((f) => f.id === p.id))];
   const cursor = olderCursor === undefined ? feed.data?.nextBefore ?? null : olderCursor;
   const trimmed = text.trim();
@@ -158,7 +159,10 @@ export default function CommunityGymScreen() {
           <Text style={styles.subhead}>Only members of your gym and its coaches can see this.</Text>
 
           <View style={styles.section}>
-            <SectionHeader label="Challenges" />
+            <SectionHeader
+              label="Challenges"
+              action={isStaff ? { label: "New challenge", onPress: () => router.push({ pathname: "/community/new-challenge", params: { scope: "gym" } }) } : undefined}
+            />
             {challenges.isLoading ? (
               <ActivityIndicator color={Color.gold} style={{ marginTop: Spacing.sm }} />
             ) : (challenges.data ?? []).length === 0 ? (

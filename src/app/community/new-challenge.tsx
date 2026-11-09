@@ -17,7 +17,7 @@ import {
   challengeMetricLabel,
   validateChallengeForm,
 } from "@/lib/community-groups-format";
-import { useCreateChallenge, type ChallengeMetric } from "@/lib/queries/community-groups";
+import { useCreateChallenge, type ChallengeMetric, type ChallengeScope } from "@/lib/queries/community-groups";
 import { todayDateString } from "@/lib/workout-formatters";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
@@ -26,9 +26,10 @@ export default function NewChallengeScreen() {
   const styles = useStyles();
   const Color = useLegacyColors();
   const router = useRouter();
-  const { groupId } = useLocalSearchParams<{ groupId: string }>();
-  const id = typeof groupId === "string" ? groupId : "";
-  const create = useCreateChallenge({ type: "group", id });
+  // A group organiser sets a group challenge (groupId); a gym coach or admin sets a gym challenge (scope=gym). The server checks who may.
+  const { groupId, scope: scopeParam } = useLocalSearchParams<{ groupId?: string; scope?: string }>();
+  const scope: ChallengeScope = scopeParam === "gym" ? { type: "gym" } : { type: "group", id: typeof groupId === "string" ? groupId : "" };
+  const create = useCreateChallenge(scope);
 
   const today = todayDateString();
   const [title, setTitle] = useState("");

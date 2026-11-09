@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { ApiError, apiFetch } from "@/lib/api-client";
+import { useAuth } from "@/lib/auth-context";
 import { useHasFeature } from "@/lib/queries/profile";
 
 // Community groups, challenges and the gym community. Mirrors the server routes under gym-app's app/api/mobile/community/{groups,gym} (Community plan,
@@ -238,9 +239,20 @@ export interface GymFeedPage {
   nextBefore: string | null;
 }
 
-/** The gym's own feed is part of a gym Membership. `before` pages backwards through older posts. */
+/**
+ * Who can open the gym's community: a member with a gym Membership, or the gym's own coaches and admins (who need no Membership and are not asked to confirm their
+ * age). The server makes the same decision on every call; this only decides what to show.
+ */
+export function useGymCommunityAccess(): { allowed: boolean; isStaff: boolean } {
+  const { user } = useAuth();
+  const hasMembership = useHasFeature("communityGym");
+  const isStaff = !!user && user.role !== "member";
+  return { allowed: hasMembership || isStaff, isStaff };
+}
+
+/** The gym's own feed is part of a gym Membership (and open to the gym's staff). `before` pages backwards through older posts. */
 export function useGymFeed() {
-  const allowed = useHasFeature("communityGym");
+  const { allowed } = useGymCommunityAccess();
   return useQuery({
     queryKey: ["community-gym", "feed"],
     queryFn: () => apiFetch<{ success: true; data: GymFeedPage }>("/api/mobile/community/gym").then((r) => r.data),

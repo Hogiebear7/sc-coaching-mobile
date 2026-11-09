@@ -16,22 +16,64 @@ export const MAX_GYM_REPORT_REASON = 200;
 export const MAX_GROUPS_PER_ORGANISER = 5;
 export const MAX_MEMBERS_PER_GROUP = 50;
 
-export const CHALLENGE_METRICS: readonly ChallengeMetric[] = ["volume", "workouts", "squat", "bench", "deadlift"];
+// What a challenge can be scored on, in the groups the screens show them in. Mirrors CHALLENGE_CATEGORIES in the server's lib/challenges.ts (the server is the
+// authority and refuses anything else): Strength and the leaderboard's lifts, Consistency, Running, and Cardio of any type.
+export const CHALLENGE_CATEGORIES: readonly { id: string; label: string; metrics: readonly ChallengeMetric[] }[] = [
+  { id: "strength", label: "Strength", metrics: ["volume", "squat", "bench", "deadlift"] },
+  { id: "consistency", label: "Consistency", metrics: ["workouts", "training_time"] },
+  { id: "running", label: "Running", metrics: ["run_distance", "run_longest", "run_time"] },
+  { id: "cardio", label: "Cardio", metrics: ["cardio_time", "cardio_distance", "bike_distance", "row_distance"] },
+];
+
+export const CHALLENGE_METRICS: readonly ChallengeMetric[] = CHALLENGE_CATEGORIES.flatMap((c) => c.metrics);
+
+type MetricUnit = "kg" | "km" | "min" | "days";
+const METRIC_UNIT: Record<ChallengeMetric, MetricUnit> = {
+  volume: "kg",
+  squat: "kg",
+  bench: "kg",
+  deadlift: "kg",
+  workouts: "days",
+  training_time: "min",
+  run_distance: "km",
+  run_longest: "km",
+  run_time: "min",
+  cardio_time: "min",
+  cardio_distance: "km",
+  bike_distance: "km",
+  row_distance: "km",
+};
 
 const METRIC_LABEL: Record<ChallengeMetric, string> = {
   volume: "Total volume",
-  workouts: "Workouts logged",
   squat: "Best squat",
   bench: "Best bench",
   deadlift: "Best deadlift",
+  workouts: "Days trained",
+  training_time: "Training time",
+  run_distance: "Running distance",
+  run_longest: "Longest run",
+  run_time: "Running time",
+  cardio_time: "Cardio time",
+  cardio_distance: "Cardio distance",
+  bike_distance: "Cycling distance",
+  row_distance: "Rowing distance",
 };
 
 const METRIC_HINT: Record<ChallengeMetric, string> = {
   volume: "Weight lifted across every logged workout in the dates.",
-  workouts: "How many days someone trains.",
   squat: "Heaviest squat logged in the dates.",
   bench: "Heaviest bench press logged in the dates.",
   deadlift: "Heaviest deadlift logged in the dates.",
+  workouts: "How many different days someone trains.",
+  training_time: "Total time of the workouts they log, from the duration on each session.",
+  run_distance: "Total distance of logged runs. Walks, rides and machines don't count.",
+  run_longest: "The longest single run logged in the dates.",
+  run_time: "Total time of logged runs.",
+  cardio_time: "Total time of all cardio logged: runs, walks, rides, rowing and machines.",
+  cardio_distance: "Total distance of all cardio logged, whatever the type.",
+  bike_distance: "Total distance of logged bike rides.",
+  row_distance: "Total distance of logged rowing machine work.",
 };
 
 export function challengeMetricLabel(metric: ChallengeMetric): string {
@@ -42,10 +84,43 @@ export function challengeMetricHint(metric: ChallengeMetric): string {
   return METRIC_HINT[metric] ?? "";
 }
 
-/** One score as a short label: "12,400 kg" for weights, "9 workouts" for the count. */
+/** The category a metric sits in, for showing "Running · Longest run" style names. */
+export function challengeCategoryLabel(metric: ChallengeMetric): string | null {
+  return CHALLENGE_CATEGORIES.find((c) => c.metrics.includes(metric))?.label ?? null;
+}
+
+/** A number with up to `max` decimals and no trailing zero: 12.4, 10, 1,250. */
+function plainNumber(value: number, max = 1): string {
+  if (!Number.isFinite(value)) return "0";
+  return value.toLocaleString("en-IE", { maximumFractionDigits: max });
+}
+
+/** Minutes as "45 min", "1 h 15 min" or "2 h". */
+export function formatMinutes(totalMinutes: number): string {
+  const mins = Math.max(0, Math.round(totalMinutes));
+  if (mins < 60) return `${mins} min`;
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return m === 0 ? `${h} h` : `${h} h ${m} min`;
+}
+
+/**
+ * One score as a short label: "12,400 kg" for weights, "12.4 km" for distances, "1 h 15 min" for time, "9 days" for days trained. A metric this version doesn't
+ * know (a newer server) shows just the number rather than a wrong unit.
+ */
 export function formatChallengeValue(metric: ChallengeMetric, value: number): string {
-  if (metric === "workouts") return `${formatCount(value)} ${value === 1 ? "workout" : "workouts"}`;
-  return `${formatCount(value)} kg`;
+  switch (METRIC_UNIT[metric]) {
+    case "kg":
+      return `${formatCount(value)} kg`;
+    case "km":
+      return `${plainNumber(value, 1)} km`;
+    case "min":
+      return formatMinutes(value);
+    case "days":
+      return `${plainNumber(value, 0)} ${value === 1 ? "day" : "days"}`;
+    default:
+      return plainNumber(value, 1);
+  }
 }
 
 const STATUS_LABEL: Record<ChallengeStatus, string> = {

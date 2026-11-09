@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  CHALLENGE_CATEGORIES,
+  CHALLENGE_METRICS,
   buildChallengeRows,
+  challengeCategoryLabel,
+  challengeMetricHint,
   challengeMetricLabel,
   challengeStatusLabel,
   daysBetweenIso,
@@ -9,6 +13,7 @@ import {
   formatChallengeDates,
   formatChallengeValue,
   formatInviteCode,
+  formatMinutes,
   groupInviteMessage,
   normaliseInviteCode,
   sortChallenges,
@@ -29,16 +34,58 @@ describe("access tiers for Community groups and the gym community", () => {
 describe("challenge labels", () => {
   it("names each metric and status in plain words", () => {
     expect(challengeMetricLabel("volume")).toBe("Total volume");
-    expect(challengeMetricLabel("workouts")).toBe("Workouts logged");
+    expect(challengeMetricLabel("workouts")).toBe("Days trained");
+    expect(challengeMetricLabel("run_longest")).toBe("Longest run");
+    expect(challengeMetricLabel("bike_distance")).toBe("Cycling distance");
     expect(challengeStatusLabel("active")).toBe("Live now");
     expect(challengeStatusLabel("canceled")).toBe("Canceled");
   });
 
-  it("formats scores: kilograms for weights, a count for workouts (singular for one)", () => {
+  it("formats scores: kilograms for weights, kilometres for distances, hours and minutes for time, days for days trained", () => {
     expect(formatChallengeValue("volume", 12400)).toBe("12,400 kg");
     expect(formatChallengeValue("squat", 140)).toBe("140 kg");
-    expect(formatChallengeValue("workouts", 1)).toBe("1 workout");
-    expect(formatChallengeValue("workouts", 9)).toBe("9 workouts");
+    expect(formatChallengeValue("workouts", 1)).toBe("1 day");
+    expect(formatChallengeValue("workouts", 9)).toBe("9 days");
+    expect(formatChallengeValue("run_distance", 42.2)).toBe("42.2 km");
+    expect(formatChallengeValue("run_distance", 10)).toBe("10 km");
+    expect(formatChallengeValue("cardio_distance", 1250.5)).toBe("1,250.5 km");
+    expect(formatChallengeValue("run_time", 45)).toBe("45 min");
+    expect(formatChallengeValue("cardio_time", 75)).toBe("1 h 15 min");
+    expect(formatChallengeValue("training_time", 120)).toBe("2 h");
+  });
+
+  it("a metric this version does not know shows a plain number, never a wrong unit", () => {
+    expect(formatChallengeValue("swim_laps" as never, 12)).toBe("12");
+  });
+});
+
+describe("challenge categories", () => {
+  it("group every metric exactly once: Strength, Consistency, Running, Cardio", () => {
+    expect(CHALLENGE_CATEGORIES.map((c) => c.label)).toEqual(["Strength", "Consistency", "Running", "Cardio"]);
+    const listed = CHALLENGE_CATEGORIES.flatMap((c) => [...c.metrics]);
+    expect(new Set(listed).size).toBe(listed.length);
+    expect([...CHALLENGE_METRICS].sort()).toEqual([...listed].sort());
+    expect(CHALLENGE_METRICS).toHaveLength(13);
+  });
+
+  it("every metric has a name, a hint and a category", () => {
+    for (const m of CHALLENGE_METRICS) {
+      expect(challengeMetricLabel(m).length).toBeGreaterThan(3);
+      expect(challengeMetricHint(m).length).toBeGreaterThan(10);
+      expect(challengeCategoryLabel(m)).toBeTruthy();
+    }
+    expect(challengeCategoryLabel("run_time")).toBe("Running");
+    expect(challengeCategoryLabel("squat")).toBe("Strength");
+  });
+});
+
+describe("formatMinutes", () => {
+  it("reads naturally and never goes negative", () => {
+    expect(formatMinutes(0)).toBe("0 min");
+    expect(formatMinutes(59)).toBe("59 min");
+    expect(formatMinutes(60)).toBe("1 h");
+    expect(formatMinutes(61)).toBe("1 h 1 min");
+    expect(formatMinutes(-5)).toBe("0 min");
   });
 });
 
@@ -133,8 +180,9 @@ describe("standings rows", () => {
     const rows = buildChallengeRows(entries, "squat", "me");
     expect(rows.filter((r) => r.name === "Alex M.")).toHaveLength(2);
   });
-  it("labels a workouts challenge in workouts", () => {
-    expect(buildChallengeRows([entries[0]], "workouts", null)[0].valueLabel).toBe("120 workouts");
+  it("labels a days-trained challenge in days, and a distance one in kilometres", () => {
+    expect(buildChallengeRows([entries[0]], "workouts", null)[0].valueLabel).toBe("120 days");
+    expect(buildChallengeRows([{ ...entries[0], value: 31.4 }], "run_distance", null)[0].valueLabel).toBe("31.4 km");
   });
 });
 

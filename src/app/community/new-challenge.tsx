@@ -10,9 +10,10 @@ import { KeyboardAwareScroll } from "@/components/ui/KeyboardAwareScroll";
 import { TextField } from "@/components/ui/TextField";
 import { Spacing } from "@/constants/theme";
 import {
-  CHALLENGE_METRICS,
+  CHALLENGE_CATEGORIES,
   MAX_CHALLENGE_DAYS,
   MAX_CHALLENGE_TITLE,
+  challengeCategoryLabel,
   challengeMetricHint,
   challengeMetricLabel,
   validateChallengeForm,
@@ -71,20 +72,28 @@ export default function NewChallengeScreen() {
         />
 
         <Text style={styles.label}>What is it scored on?</Text>
-        <View style={styles.chips}>
-          {CHALLENGE_METRICS.map((m) => (
-            <Pressable
-              key={m}
-              onPress={() => setMetric(m)}
-              style={[styles.chip, metric === m && styles.chipActive]}
-              accessibilityRole="button"
-              accessibilityState={{ selected: metric === m }}
-            >
-              <Text style={[styles.chipText, metric === m && styles.chipTextActive]}>{challengeMetricLabel(m)}</Text>
-            </Pressable>
-          ))}
-        </View>
-        <Text style={styles.hint}>{challengeMetricHint(metric)} Scores come from workouts members already log.</Text>
+        {CHALLENGE_CATEGORIES.map((category) => (
+          <View key={category.id} style={styles.category} accessibilityRole="radiogroup" accessibilityLabel={category.label}>
+            <Text style={styles.categoryLabel}>{category.label}</Text>
+            <View style={styles.chips}>
+              {category.metrics.map((m) => (
+                <Pressable
+                  key={m}
+                  onPress={() => setMetric(m)}
+                  style={[styles.chip, metric === m && styles.chipActive]}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: metric === m }}
+                >
+                  <Text style={[styles.chipText, metric === m && styles.chipTextActive]}>{challengeMetricLabel(m)}</Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+        ))}
+        <Text style={styles.hint}>
+          <Text style={styles.hintStrong}>{challengeCategoryLabel(metric)}: {challengeMetricLabel(metric)}.</Text> {challengeMetricHint(metric)} Scores come from what
+          members already log.
+        </Text>
 
         <View style={styles.dates}>
           <DateField label="Starts" value={startDate} onChange={setStartDate} minDate={today} style={{ flex: 1 }} />
@@ -112,6 +121,9 @@ const useStyles = makeLegacyStyles((Color) =>
     headerTitle: { fontSize: 20, fontWeight: "600", color: Color.textPrimary },
     scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
     label: { fontSize: 14, fontWeight: "500", color: Color.textSecondary, marginBottom: 6 },
+    category: { marginBottom: Spacing.md },
+    categoryLabel: { fontSize: 12, fontWeight: "700", letterSpacing: 0.6, color: Color.textFaint, textTransform: "uppercase", marginBottom: 6 },
+    hintStrong: { fontWeight: "700", color: Color.textSecondary },
     chips: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
     chip: { borderRadius: 999, paddingHorizontal: Spacing.md, backgroundColor: Color.surface2, minHeight: 40, justifyContent: "center" },
     chipActive: { backgroundColor: Color.gold },

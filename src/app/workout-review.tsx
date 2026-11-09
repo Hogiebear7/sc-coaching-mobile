@@ -251,7 +251,8 @@ const useStyles = makeLegacyStyles((Color) =>
     loadingText: { fontSize: 13, color: Color.textMuted, marginTop: Spacing.md },
     errorText: { fontSize: 14, color: Color.textMuted, textAlign: "center" },
     scroll: { padding: Spacing.lg, paddingBottom: Spacing.xxl },
-    reviewCard: { borderColor: Color.goldBorder, backgroundColor: Color.goldWeak },
+    // The v2 Card has no padding of its own: without this the text ran to the card's edge and the rounded corners clipped its first and last lines.
+    reviewCard: { borderColor: Color.goldBorder, backgroundColor: Color.goldWeak, padding: Spacing.lg },
     reviewLabel: { fontSize: 12, fontWeight: "700", letterSpacing: 0.6, color: Color.gold },
     reviewText: { fontSize: 14, color: Color.textPrimary, lineHeight: 20, marginTop: Spacing.xs },
     sectionLabel: { fontSize: 19, fontWeight: "600", color: Color.textPrimary, marginTop: Spacing.xl, marginBottom: Spacing.sm },

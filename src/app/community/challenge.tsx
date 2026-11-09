@@ -109,8 +109,8 @@ export default function ChallengeScreen() {
               title={challenge.status === "upcoming" ? "Not started yet" : "No scores yet"}
               body={
                 challenge.status === "upcoming"
-                  ? "Workouts logged from the start date count automatically."
-                  : "Log a workout inside the dates and it counts automatically."
+                  ? "What you log from the start date counts automatically."
+                  : "Log a workout or some cardio inside the dates and it counts automatically."
               }
             />
           ) : (

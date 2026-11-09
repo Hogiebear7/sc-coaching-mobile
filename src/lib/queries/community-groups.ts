@@ -41,7 +41,21 @@ export function useConfirmAdult() {
 
 // ── Challenges (shared by groups and the gym) ────────────────────────────────────────────────────────────────────────────────────────────────
 
-export type ChallengeMetric = "volume" | "workouts" | "squat" | "bench" | "deadlift";
+// What a challenge is scored on (kg for strength, km for distances, minutes for time, days for days trained). Mirrors the server's lib/challenges.ts.
+export type ChallengeMetric =
+  | "volume"
+  | "squat"
+  | "bench"
+  | "deadlift"
+  | "workouts"
+  | "training_time"
+  | "run_distance"
+  | "run_longest"
+  | "run_time"
+  | "cardio_time"
+  | "cardio_distance"
+  | "bike_distance"
+  | "row_distance";
 export type ChallengeStatus = "upcoming" | "active" | "ended" | "canceled";
 
 export interface Challenge {

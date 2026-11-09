@@ -55,8 +55,26 @@ export type ChallengeMetric =
   | "cardio_time"
   | "cardio_distance"
   | "bike_distance"
-  | "row_distance";
+  | "row_distance"
+  // The setter names an exercise or picks an activity, and what to measure (see CustomChallenge).
+  | "custom";
 export type ChallengeStatus = "upcoming" | "active" | "ended" | "canceled";
+
+/** How a score is read. "secs" is a time to beat (shown m:ss); "reps" is a count of repetitions. */
+export type ChallengeUnit = "kg" | "km" | "min" | "days" | "reps" | "secs";
+
+export type CustomMeasure = "best_weight" | "total_volume" | "best_reps" | "total_reps" | "total_distance" | "longest_distance" | "total_time" | "fastest_time";
+export type CardioType = "run" | "walk" | "treadmill_walk" | "stair_climber" | "bike" | "rower" | "cross_trainer" | "other";
+
+/** A custom challenge's definition, as the server stores and returns it. */
+export interface CustomChallenge {
+  measure: CustomMeasure;
+  /** Strength: the exercise as typed. Cardio: a generated name such as "5 km Run". */
+  subject: string;
+  cardioType: CardioType | null;
+  /** fastest_time only. */
+  targetDistanceKm: number | null;
+}
 
 export interface Challenge {
   id: string;
@@ -66,6 +84,12 @@ export interface Challenge {
   endDate: string;
   status: ChallengeStatus;
   createdAt: string;
+  /** Present for a custom challenge. */
+  custom?: CustomChallenge | null;
+  /** The server says how to read a challenge: its name, its unit, and whether the lowest number wins. Older servers omit these (the app then works them out). */
+  label?: string;
+  unit?: ChallengeUnit;
+  lowerIsBetter?: boolean;
 }
 
 export interface ChallengeEntry {
@@ -83,9 +107,21 @@ export interface ChallengeStandings {
   iAmHidden: boolean;
 }
 
+/** What a setter sends for a custom challenge: an exercise (strength) or an activity (cardio), and what to measure. */
+export interface NewCustomChallenge {
+  measure: CustomMeasure;
+  /** Strength measures: the exercise. */
+  subject?: string;
+  /** Cardio measures: the activity. */
+  cardioType?: CardioType;
+  /** fastest_time: the distance in km. */
+  targetDistanceKm?: number;
+}
+
 export interface NewChallengeInput {
   title: string;
   metric: ChallengeMetric;
+  custom?: NewCustomChallenge;
   startDate: string;
   endDate: string;
 }

@@ -4,7 +4,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Card } from "@/components/ui/Card";
 import { Spacing } from "@/constants/theme";
 import {
-  challengeMetricLabel,
+  challengeDisplayLabel,
   challengeStatusLabel,
   formatChallengeDates,
   sortChallenges,
@@ -33,7 +33,7 @@ export function ChallengeList({ challenges, onOpen }: { challenges: readonly Cha
               {c.title}
             </Text>
             <Text style={styles.sub} numberOfLines={1}>
-              {challengeMetricLabel(c.metric)} · {formatChallengeDates(c.startDate, c.endDate)}
+              {challengeDisplayLabel(c)} · {formatChallengeDates(c.startDate, c.endDate)}
             </Text>
           </View>
           <View style={[styles.pill, c.status === "active" && styles.pillActive]}>

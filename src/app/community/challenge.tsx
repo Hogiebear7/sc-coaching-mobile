@@ -10,9 +10,10 @@ import { Spacing } from "@/constants/theme";
 import { useAuth } from "@/lib/auth-context";
 import {
   buildChallengeRows,
+  challengeDisplayLabel,
   challengeMetricHint,
-  challengeMetricLabel,
   challengeStatusLabel,
+  customChallengeHint,
   formatChallengeDates,
 } from "@/lib/community-groups-format";
 import { useCancelChallenge, useChallengeStandings, useGroup, type ChallengeScope } from "@/lib/queries/community-groups";
@@ -51,7 +52,8 @@ export default function ChallengeScreen() {
     ]);
   }
 
-  const rows = data && challenge ? buildChallengeRows(data.entries, challenge.metric, data.myUserId) : [];
+  // The challenge itself says what its numbers are (a custom one can be kg, reps, km, minutes or a time to beat), and a time to beat is won by the lowest.
+  const rows = data && challenge ? buildChallengeRows(data.entries, challenge, data.myUserId) : [];
 
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
@@ -86,9 +88,9 @@ export default function ChallengeScreen() {
             <View style={[styles.pill, challenge.status === "active" && styles.pillActive]}>
               <Text style={[styles.pillText, challenge.status === "active" && styles.pillTextActive]}>{challengeStatusLabel(challenge.status)}</Text>
             </View>
-            <Text style={styles.metric}>{challengeMetricLabel(challenge.metric)}</Text>
+            <Text style={styles.metric}>{challengeDisplayLabel(challenge)}</Text>
             <Text style={styles.dates}>{formatChallengeDates(challenge.startDate, challenge.endDate)}</Text>
-            <Text style={styles.hint}>{challengeMetricHint(challenge.metric)}</Text>
+            <Text style={styles.hint}>{challenge.metric === "custom" ? customChallengeHint(challenge.custom) : challengeMetricHint(challenge.metric)}</Text>
           </View>
 
           {data.iAmHidden ? (

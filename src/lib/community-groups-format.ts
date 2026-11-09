@@ -1,0 +1,154 @@
+import { formatCount } from "@/lib/community-formatters";
+import type { ChallengeEntry, ChallengeMetric, ChallengeStatus } from "@/lib/queries/community-groups";
+
+// Plain-text helpers for the Community groups / challenges / gym screens. Kept free of React so they can be tested directly.
+// The limits mirror the server's (gym-app lib/challenges.ts and lib/community-groups.ts), which is the authority; they are repeated here only so a form
+// can say what is allowed before the member submits.
+
+export const MAX_GROUP_NAME = 60;
+export const MAX_GROUP_DESCRIPTION = 300;
+export const MAX_CHALLENGE_TITLE = 60;
+export const MAX_CHALLENGE_DAYS = 90;
+export const MAX_START_AHEAD_DAYS = 60;
+export const MAX_GYM_POST = 1000;
+export const MAX_GYM_COMMENT = 500;
+export const MAX_GYM_REPORT_REASON = 200;
+export const MAX_GROUPS_PER_ORGANISER = 5;
+export const MAX_MEMBERS_PER_GROUP = 50;
+
+export const CHALLENGE_METRICS: readonly ChallengeMetric[] = ["volume", "workouts", "squat", "bench", "deadlift"];
+
+const METRIC_LABEL: Record<ChallengeMetric, string> = {
+  volume: "Total volume",
+  workouts: "Workouts logged",
+  squat: "Best squat",
+  bench: "Best bench",
+  deadlift: "Best deadlift",
+};
+
+const METRIC_HINT: Record<ChallengeMetric, string> = {
+  volume: "Weight lifted across every logged workout in the dates.",
+  workouts: "How many days someone trains.",
+  squat: "Heaviest squat logged in the dates.",
+  bench: "Heaviest bench press logged in the dates.",
+  deadlift: "Heaviest deadlift logged in the dates.",
+};
+
+export function challengeMetricLabel(metric: ChallengeMetric): string {
+  return METRIC_LABEL[metric] ?? "Challenge";
+}
+
+export function challengeMetricHint(metric: ChallengeMetric): string {
+  return METRIC_HINT[metric] ?? "";
+}
+
+/** One score as a short label: "12,400 kg" for weights, "9 workouts" for the count. */
+export function formatChallengeValue(metric: ChallengeMetric, value: number): string {
+  if (metric === "workouts") return `${formatCount(value)} ${value === 1 ? "workout" : "workouts"}`;
+  return `${formatCount(value)} kg`;
+}
+
+const STATUS_LABEL: Record<ChallengeStatus, string> = {
+  upcoming: "Starts soon",
+  active: "Live now",
+  ended: "Finished",
+  canceled: "Canceled",
+};
+
+export function challengeStatusLabel(status: ChallengeStatus): string {
+  return STATUS_LABEL[status] ?? status;
+}
+
+/** "3 Nov to 30 Nov", or "3 to 30 Nov" inside one month, with the year added when it is not this year. */
+export function formatChallengeDates(startISO: string, endISO: string, now: Date = new Date()): string {
+  const start = parseIso(startISO);
+  const end = parseIso(endISO);
+  if (!start || !end) return `${startISO} to ${endISO}`;
+  const month = (d: Date) => d.toLocaleDateString("en-IE", { month: "short", timeZone: "UTC" });
+  const withYear = (d: Date) => (d.getUTCFullYear() === now.getUTCFullYear() ? "" : ` ${d.getUTCFullYear()}`);
+  const sameMonth = start.getUTCMonth() === end.getUTCMonth() && start.getUTCFullYear() === end.getUTCFullYear();
+  if (startISO === endISO) return `${end.getUTCDate()} ${month(end)}${withYear(end)}`;
+  if (sameMonth) return `${start.getUTCDate()} to ${end.getUTCDate()} ${month(end)}${withYear(end)}`;
+  return `${start.getUTCDate()} ${month(start)}${withYear(start)} to ${end.getUTCDate()} ${month(end)}${withYear(end)}`;
+}
+
+function parseIso(iso: string): Date | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return null;
+  const d = new Date(`${iso}T00:00:00Z`);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+/** Whole days from one YYYY-MM-DD to another (end minus start). */
+export function daysBetweenIso(startISO: string, endISO: string): number {
+  const a = parseIso(startISO);
+  const b = parseIso(endISO);
+  if (!a || !b) return NaN;
+  return Math.round((b.getTime() - a.getTime()) / 86_400_000);
+}
+
+/**
+ * Checks a new challenge form the same way the server will, so the member sees the reason before sending. Returns an error sentence, or null when it is fine.
+ * `today` is YYYY-MM-DD.
+ */
+export function validateChallengeForm(
+  input: { title: string; startDate: string; endDate: string },
+  today: string
+): string | null {
+  const title = input.title.trim();
+  if (!title) return "Give the challenge a title.";
+  if (title.length > MAX_CHALLENGE_TITLE) return `The title can be up to ${MAX_CHALLENGE_TITLE} characters.`;
+  if (!parseIso(input.startDate) || !parseIso(input.endDate)) return "Choose a start and end date.";
+  if (input.startDate < today) return "A challenge can't start in the past.";
+  if (daysBetweenIso(today, input.startDate) > MAX_START_AHEAD_DAYS) return `A challenge can start up to ${MAX_START_AHEAD_DAYS} days from now.`;
+  if (input.endDate < input.startDate) return "The end date can't be before the start date.";
+  if (daysBetweenIso(input.startDate, input.endDate) + 1 > MAX_CHALLENGE_DAYS) return `A challenge can run for up to ${MAX_CHALLENGE_DAYS} days.`;
+  return null;
+}
+
+/** Shows an invite code as XXXX-XXXX so it is easy to read out and type. */
+export function formatInviteCode(code: string): string {
+  const clean = code.replace(/[^A-Za-z0-9]/g, "").toUpperCase();
+  return clean.length > 4 ? `${clean.slice(0, 4)}-${clean.slice(4)}` : clean;
+}
+
+/** What a person typed or pasted, reduced to the stored form (the server does the same). */
+export function normaliseInviteCode(input: string): string {
+  return input.replace(/[^A-Za-z0-9]/g, "").toUpperCase();
+}
+
+/** Pulls a code out of a pasted invite message or link, e.g. "Join my group! Code: ABCD-2345" or ".../join?code=ABCD2345". */
+export function extractInviteCode(text: string): string {
+  const labelled = text.match(/code\s*[:=]?\s*([A-Za-z0-9-]{8,12})/i);
+  if (labelled) return normaliseInviteCode(labelled[1]);
+  return normaliseInviteCode(text);
+}
+
+/** The text a member shares to invite someone. Only the organiser has the code. */
+export function groupInviteMessage(groupName: string, inviteCode: string): string {
+  return `Join my group "${groupName}" on the S&C Performance Coaching app. In Community, open Groups, tap Join with a code, and enter ${formatInviteCode(inviteCode)}.`;
+}
+
+export interface ChallengeRow {
+  userId: string;
+  rank: number;
+  name: string;
+  isMe: boolean;
+  valueLabel: string;
+}
+
+/** Standings as display rows, in the server's order (best first), with the member's own row called "You". */
+export function buildChallengeRows(entries: ChallengeEntry[], metric: ChallengeMetric, myUserId: string | null): ChallengeRow[] {
+  return entries.map((e, i) => ({
+    userId: e.userId,
+    rank: i + 1,
+    name: e.userId === myUserId ? "You" : e.displayName,
+    isMe: e.userId === myUserId,
+    valueLabel: formatChallengeValue(metric, e.value),
+  }));
+}
+
+/** Newest first: live challenges, then upcoming, then finished; canceled ones last. */
+export function sortChallenges<T extends { status: ChallengeStatus; startDate: string }>(items: readonly T[]): T[] {
+  const order: Record<ChallengeStatus, number> = { active: 0, upcoming: 1, ended: 2, canceled: 3 };
+  return [...items].sort((a, b) => order[a.status] - order[b.status] || b.startDate.localeCompare(a.startDate));
+}

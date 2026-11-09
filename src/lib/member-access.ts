@@ -44,6 +44,8 @@ export type MemberFeature =
   | "fullHistory"
   | "cyclePhaseGuidance"
   | "communityLeaderboards"
+  | "communityGroups"
+  | "communityGym"
   | "coachMessaging";
 
 // What each feature needs (owner decisions 2026-10-27). "free" = everyone: logging (with food search and custom foods) and notifications stay
@@ -68,6 +70,10 @@ const FEATURE_REQUIRES: Record<MemberFeature, "free" | "digital" | "gymMembershi
   fullHistory: "digital",
   cyclePhaseGuidance: "digital",
   communityLeaderboards: "digital",
+  // Community groups (private, join by invite code) need the App tier; the gym's own members-only community needs a live gym Membership.
+  // Mirrors the server's lib/member-access.ts (Community plan, 2026-11). The server checks both on every call; this only decides what to show.
+  communityGroups: "digital",
+  communityGym: "gymMembership",
   coachMessaging: "gymMembership",
 };
 

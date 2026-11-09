@@ -150,6 +150,7 @@ export default function CommunityScreen() {
   const leaderboard = useLeaderboard(metric, range, customStart || null, customEnd || null);
   // Leaderboards are part of the App Subscription; the feed, likes, comments and follows are on every plan.
   const canLeaderboard = useHasFeature("communityLeaderboards");
+  const hasGymCommunity = useHasFeature("communityGym");
   const suggested = useSuggestedMembers();
   const followUser = useFollowUser();
 
@@ -213,6 +214,33 @@ export default function CommunityScreen() {
           <RefreshControl refreshing={feed.isRefetching} onRefresh={() => feed.refetch()} tintColor={Color.gold} />
         }
       >
+        {/* Private groups (App tier) and the gym's own community (gym Membership). The gym entry is shown only to members who have it: the
+            gym Membership is never sold or linked to from inside the app. */}
+        <View style={styles.entryRow}>
+          <Pressable
+            onPress={() => router.push("/community/groups")}
+            style={styles.entryCard}
+            accessibilityRole="button"
+            accessibilityLabel="Groups. Private groups with invite codes and challenges."
+          >
+            <Ionicons name="people-circle-outline" size={26} color={Color.gold} />
+            <Text style={styles.entryTitle}>Groups</Text>
+            <Text style={styles.entrySub}>Private, with challenges</Text>
+          </Pressable>
+          {hasGymCommunity ? (
+            <Pressable
+              onPress={() => router.push("/community/gym")}
+              style={styles.entryCard}
+              accessibilityRole="button"
+              accessibilityLabel="Your gym. Your gym's members-only community."
+            >
+              <Ionicons name="barbell-outline" size={26} color={Color.gold} />
+              <Text style={styles.entryTitle}>Your gym</Text>
+              <Text style={styles.entrySub}>Members only</Text>
+            </Pressable>
+          ) : null}
+        </View>
+
         {winsPreview.length > 0 ? (
           <View style={styles.section}>
             <SectionHeader
@@ -483,6 +511,10 @@ const useStyles = makeLegacyStyles((Color) =>
     noticeSecondaryText: { fontSize: 14, fontWeight: "500", color: Color.textFaint, textDecorationLine: "underline" },
     scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
     section: { marginBottom: Spacing.xl },
+    entryRow: { flexDirection: "row", gap: Spacing.sm, marginBottom: Spacing.xl },
+    entryCard: { flex: 1, borderRadius: Radius.lg, backgroundColor: Color.surface1, padding: Spacing.md, minHeight: 88 },
+    entryTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary, marginTop: Spacing.xs },
+    entrySub: { fontSize: 13, color: Color.textMuted, marginTop: 2 },
     winsCard: { padding: 0, overflow: "hidden" },
     metricRow: {
       flexDirection: "row",

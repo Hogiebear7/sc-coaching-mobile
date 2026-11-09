@@ -21,6 +21,11 @@ export type NotificationType =
   | "workout_liked"
   | "workout_commented"
   | "mentioned_in_comment"
+  // Community groups and the gym community: a coach's post in the member's gym, a comment on their gym post, a challenge starting or finishing.
+  | "gym_post"
+  | "gym_comment"
+  | "challenge_started"
+  | "challenge_ended"
   | "nutrition_update"
   // Staff (owner) only: AI spending has passed 50% / 80% of the ceiling; last month's report is ready.
   | "ai_spend_alert"

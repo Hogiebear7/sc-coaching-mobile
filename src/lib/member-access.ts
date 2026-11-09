@@ -69,7 +69,8 @@ const FEATURE_REQUIRES: Record<MemberFeature, "free" | "digital" | "gymMembershi
   calorieTargets: "digital",
   fullHistory: "digital",
   cyclePhaseGuidance: "digital",
-  communityLeaderboards: "digital",
+  // Free for everyone (owner decision 2026-11-08), like the server's copy: the leaderboard and the highlight card.
+  communityLeaderboards: "free",
   // Community groups (private, join by invite code) need the App tier; the gym's own members-only community needs a live gym Membership.
   // Mirrors the server's lib/member-access.ts (Community plan, 2026-11). The server checks both on every call; this only decides what to show.
   communityGroups: "digital",

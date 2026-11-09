@@ -24,13 +24,18 @@ function ReportCard({ report }: { report: GymReport }) {
   function act(action: "resolve" | "dismiss") {
     tapFeedback();
     const remove = action === "resolve";
+    const isGroup = report.targetType === "group";
     Alert.alert(
-      remove ? `Remove this ${report.targetType}?` : "Dismiss this report?",
-      remove ? "It will be removed for everyone and the report closed." : "The report is closed and nothing is removed.",
+      remove ? (isGroup ? "Close this group?" : `Remove this ${report.targetType}?`) : "Dismiss this report?",
+      remove
+        ? isGroup
+          ? "The group is closed for everyone, its members lose access, and the report is closed."
+          : "It will be removed for everyone and the report closed."
+        : "The report is closed and nothing is removed.",
       [
         { text: "Cancel", style: "cancel" },
         {
-          text: remove ? "Remove" : "Dismiss",
+          text: remove ? (isGroup ? "Close group" : "Remove") : "Dismiss",
           style: remove ? "destructive" : "default",
           onPress: () => resolve.mutate({ id: report.id, action }, { onError: (e) => Alert.alert("Couldn't update the report", e.message) }),
         },
@@ -41,7 +46,7 @@ function ReportCard({ report }: { report: GymReport }) {
   return (
     <Card style={styles.report}>
       <View style={styles.reportHead}>
-        <Text style={styles.reportKind}>{report.targetType === "post" ? "Post" : "Comment"}</Text>
+        <Text style={styles.reportKind}>{report.targetType === "post" ? "Post" : report.targetType === "group" ? "Group" : "Comment"}</Text>
         <Text style={styles.when}>{formatCommunityDate(report.createdAt, "short")}</Text>
       </View>
       {report.text ? (
@@ -50,13 +55,13 @@ function ReportCard({ report }: { report: GymReport }) {
         <Text style={styles.muted}>The text is no longer available.</Text>
       )}
       <Text style={styles.meta}>
-        By {report.author ? report.author.displayName : "unknown"} · reported by {report.reporterName}
+        {report.targetType === "group" ? "Organised by" : "By"} {report.author ? report.author.displayName : "unknown"} · reported by {report.reporterName}
       </Text>
       <Text style={styles.reason}>Reason: {report.reason}</Text>
       {report.alreadyRemoved ? <Text style={styles.muted}>Already removed.</Text> : null}
       <View style={styles.actions}>
         {report.alreadyRemoved ? null : (
-          <Button title="Remove" onPress={() => act("resolve")} loading={resolve.isPending} style={styles.actionButton} />
+          <Button title={report.targetType === "group" ? "Close group" : "Remove"} onPress={() => act("resolve")} loading={resolve.isPending} style={styles.actionButton} />
         )}
         <Button title={report.alreadyRemoved ? "Close report" : "Dismiss"} variant="secondary" onPress={() => act("dismiss")} disabled={resolve.isPending} style={styles.actionButton} />
       </View>

@@ -143,12 +143,13 @@ export type GymReportStatus = "open" | "resolved" | "dismissed";
 
 export interface GymReport {
   id: string;
-  targetType: "post" | "comment";
+  /** A "group" report is of a Community group's name and description; the staff action is to close the group. */
+  targetType: "post" | "comment" | "group";
   targetId: string;
   reason: string;
   status: GymReportStatus;
   createdAt: string;
-  /** The reported text; null when it can no longer be found. */
+  /** The reported text (for a group, its name and description); null when it can no longer be found. */
   text: string | null;
   alreadyRemoved: boolean;
   author: { userId: string; displayName: string; isStaff: boolean } | null;

@@ -2,7 +2,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { apiFetch } from "@/lib/api-client";
 import type { WorkoutExerciseEntry, WorkoutRunEntry } from "@/lib/queries/workouts";
-import { useHasFeature } from "@/lib/queries/profile";
 
 // Mirrors gym-app's lib/leaderboard.ts.
 export type LeaderboardMetric = "volume" | "squat" | "bench" | "deadlift";
@@ -19,29 +18,42 @@ export interface LeaderboardEntry {
   bodyweightPct: number | null;
 }
 
+/**
+ * Who is ranked: "friends" (the people the member follows, plus the member), "global" (everyone in the gym who has not switched the leaderboard off), or
+ * "auto" (the server picks friends when the member follows anyone it can show, otherwise global). The leaderboard is free for every member.
+ */
+export type LeaderboardScope = "auto" | "friends" | "global";
+
+export interface LeaderboardData {
+  entries: LeaderboardEntry[];
+  myUserId: string;
+  /** The scope the server actually used (never "auto"). Older servers omit it, in which case the board is the whole gym. */
+  scope?: "friends" | "global";
+  /** How many followed members could be shown. Older servers omit it. */
+  followingCount?: number;
+}
+
 export function useLeaderboard(
   metric: LeaderboardMetric,
   range: LeaderboardRange = "all",
   customStartISO?: string | null,
-  customEndISO?: string | null
+  customEndISO?: string | null,
+  scope: LeaderboardScope = "auto"
 ) {
-  const allowed = useHasFeature("communityLeaderboards");
   return useQuery({
-    queryKey: ["community-leaderboard", metric, range, customStartISO, customEndISO],
+    queryKey: ["community-leaderboard", metric, range, customStartISO, customEndISO, scope],
     queryFn: () => {
-      const params = new URLSearchParams({ metric, range });
+      const params = new URLSearchParams({ metric, range, scope });
       if (range === "custom") {
         if (customStartISO) params.set("start", customStartISO);
         if (customEndISO) params.set("end", customEndISO);
       }
-      return apiFetch<{ success: true; data: { entries: LeaderboardEntry[]; myUserId: string } }>(
-        `/api/mobile/community/leaderboard?${params.toString()}`
-      ).then((r) => r.data);
+      return apiFetch<{ success: true; data: LeaderboardData }>(`/api/mobile/community/leaderboard?${params.toString()}`).then((r) => r.data);
     },
     // A custom range with neither bound picked yet isn't a meaningful query
     // — avoid firing it (and showing a misleading "no entries" flash) until
     // at least one bound is set.
-    enabled: allowed && (range !== "custom" || !!customStartISO || !!customEndISO),
+    enabled: range !== "custom" || !!customStartISO || !!customEndISO,
   });
 }
 
@@ -122,10 +134,9 @@ export interface CommunityHighlight {
   href: string;
 }
 
+// Free for every member (owner decision 2026-11-08), so it is no longer held back by plan.
 export function useCommunityHighlight() {
-  const enabled = useHasFeature("communityLeaderboards");
   return useQuery({
-    enabled,
     queryKey: ["community-highlight"],
     queryFn: () =>
       apiFetch<{ success: true; data: CommunityHighlight }>("/api/mobile/community/highlight").then((r) => r.data),

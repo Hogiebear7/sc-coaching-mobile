@@ -198,6 +198,14 @@ export function useCloseGroup() {
   });
 }
 
+/** A member reports a group's name or description; the gym's staff review it and can close the group. The organiser cannot report their own group. */
+export function useReportGroup(groupId: string) {
+  return useMutation({
+    mutationFn: (reason: string) =>
+      apiFetch<{ success: true; message: string }>(`/api/mobile/community/groups/${groupId}/report`, { method: "POST", body: { reason } }),
+  });
+}
+
 export function useRemoveGroupMember(groupId: string) {
   const qc = useQueryClient();
   return useMutation({

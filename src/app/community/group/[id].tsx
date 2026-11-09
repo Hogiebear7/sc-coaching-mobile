@@ -9,12 +9,13 @@ import { Card } from "@/components/ui/Card";
 import { ChallengeList } from "@/components/ui/ChallengeList";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { MemberSafetySheet } from "@/components/ui/MemberSafetySheet";
+import { ReportReasonSheet } from "@/components/ui/ReportReasonSheet";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Spacing } from "@/constants/theme";
 import { useAuth } from "@/lib/auth-context";
 import { MAX_MEMBERS_PER_GROUP, formatInviteCode, groupInviteMessage } from "@/lib/community-groups-format";
 import { tapFeedback } from "@/lib/haptics";
-import { useChallenges, useCloseGroup, useGroup, useLeaveGroup, useRemoveGroupMember } from "@/lib/queries/community-groups";
+import { useChallenges, useCloseGroup, useGroup, useLeaveGroup, useRemoveGroupMember, useReportGroup } from "@/lib/queries/community-groups";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 // One group: its invite code (organiser only), challenges, members, and leave / close.
@@ -32,8 +33,20 @@ export default function CommunityGroupScreen() {
   const close = useCloseGroup();
   const removeMember = useRemoveGroupMember(groupId);
   const [safetyTarget, setSafetyTarget] = useState<{ userId: string; name: string } | null>(null);
+  const [reportOpen, setReportOpen] = useState(false);
+  const reportGroup = useReportGroup(groupId);
 
   const g = group.data;
+
+  function sendReport(reason: string) {
+    reportGroup.mutate(reason, {
+      onSuccess: (r) => {
+        setReportOpen(false);
+        Alert.alert("Reported", r.message);
+      },
+      onError: (e) => Alert.alert("Couldn't send the report", e.message),
+    });
+  }
 
   function confirmLeave() {
     Alert.alert("Leave this group?", "You can rejoin later with the invite code.", [
@@ -212,11 +225,24 @@ export default function CommunityGroupScreen() {
             {g.isOrganiser ? (
               <Button title="Close group" variant="secondary" onPress={confirmClose} loading={close.isPending} />
             ) : (
-              <Button title="Leave group" variant="secondary" onPress={confirmLeave} loading={leave.isPending} />
+              <>
+                <Button title="Leave group" variant="secondary" onPress={confirmLeave} loading={leave.isPending} />
+                <Pressable onPress={() => setReportOpen(true)} hitSlop={8} style={styles.reportLink} accessibilityRole="button">
+                  <Text style={styles.reportLinkText}>Report this group</Text>
+                </Pressable>
+              </>
             )}
           </View>
         </ScrollView>
       )}
+
+      <ReportReasonSheet
+        visible={reportOpen}
+        onClose={() => setReportOpen(false)}
+        onSubmit={sendReport}
+        submitting={reportGroup.isPending}
+        heading="Report this group"
+      />
 
       {safetyTarget ? (
         <MemberSafetySheet
@@ -252,5 +278,7 @@ const useStyles = makeLegacyStyles((Color) =>
     memberAction: { minHeight: 40, minWidth: 40, alignItems: "center", justifyContent: "center" },
     removeText: { fontSize: 14, fontWeight: "600", color: Color.gold },
     dangerZone: { marginTop: Spacing.sm },
+    reportLink: { alignSelf: "center", minHeight: 44, justifyContent: "center", marginTop: Spacing.xs },
+    reportLinkText: { fontSize: 14, fontWeight: "500", color: Color.textFaint, textDecorationLine: "underline" },
   })
 );

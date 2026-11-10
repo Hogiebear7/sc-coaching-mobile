@@ -12,8 +12,10 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { KeyboardAwareScroll } from "@/components/ui/KeyboardAwareScroll";
 
+import { PregnancyGuide, PregnancyHero } from "@/components/pregnancy/PregnancyCards";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { Collapsible } from "@/components/ui/Collapsible";
 import { CyclePhaseChart } from "@/components/ui/CyclePhaseChart";
 import { DateField } from "@/components/ui/DateField";
 import { TextField } from "@/components/ui/TextField";
@@ -28,6 +30,7 @@ import {
   useSaveCycleSettings,
   useSaveMenopausePreferences,
   useSetMenopauseSupport,
+  type CycleData,
   type MenopausePoint,
   type MenopauseStage,
   type CycleRegularity,
@@ -72,22 +75,6 @@ function GuidanceRow({ label, value }: { label: string; value: string }) {
     <View style={styles.guidanceRow}>
       <Text style={styles.guidanceLabel}>{label}</Text>
       <Text style={styles.guidanceValue}>{value}</Text>
-    </View>
-  );
-}
-
-function BulletList({ label, items }: { label: string; items: string[] }) {
-  const styles = useStyles();
-  if (items.length === 0) return null;
-  return (
-    <View style={{ marginTop: Spacing.sm }}>
-      <Text style={styles.bulletLabel}>{label}</Text>
-      {items.map((item, i) => (
-        <View key={i} style={styles.bulletRow}>
-          <View style={styles.bulletDot} />
-          <Text style={styles.bulletText}>{item}</Text>
-        </View>
-      ))}
     </View>
   );
 }
@@ -320,32 +307,10 @@ export default function CycleTrackingScreen() {
   }
 
   const phase = data?.phaseEstimate;
+  const pregnantNow = pregnancy?.isPregnant === true;
 
-  return (
-    <SafeAreaView style={styles.safe} edges={["top"]}>
-        <View style={styles.header}>
-          <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backButton} accessibilityRole="button" accessibilityLabel="Back">
-            <Ionicons name="chevron-back" size={26} color={Color.textPrimary} />
-          </Pressable>
-          <Text style={styles.headerTitle}>Cycle tracking</Text>
-          <View style={{ width: 36 }} />
-        </View>
-
-        {!eligible ? (
-          <View style={styles.centerFill}>
-            <Text style={styles.emptyText}>Cycle tracking is not available for this account.</Text>
-          </View>
-        ) : isLoading ? (
-          <View style={styles.centerFill}>
-            <ActivityIndicator color={Color.gold} size="large" />
-          </View>
-        ) : isError || !data ? (
-          <View style={styles.centerFill}>
-            <Text style={styles.emptyText}>Couldn&apos;t load your cycle information.</Text>
-            <Button title="Retry" onPress={() => refetch()} variant="secondary" style={{ marginTop: Spacing.md }} />
-          </View>
-        ) : (
-          <KeyboardAwareScroll contentContainerStyle={styles.scroll}>
+  const renderPhaseCard = (data: CycleData) => (
+    <>
             {phase && phase.phase !== "Unknown" ? (
               <Card style={[styles.phaseCard, { marginTop: 0 }]}>
                 <View style={styles.phaseHeaderRow}>
@@ -402,6 +367,11 @@ export default function CycleTrackingScreen() {
               </Card>
             )}
 
+    </>
+  );
+
+  const renderCycleBlock = (data: CycleData) => (
+    <>
             <Text style={styles.intro}>
               Add your cycle information below. Everything is private by default — you choose what,
               if anything, to share with your coach.
@@ -586,7 +556,12 @@ export default function CycleTrackingScreen() {
               <Button title="Save sharing preferences" onPress={handleSavePrivacy} loading={savePrivacy.isPending} style={{ marginTop: Spacing.sm }} />
             </Card>
 
-            <Text style={styles.sectionLabel}>Pregnancy</Text>
+    </>
+  );
+
+  const renderPregnancyBlock = () => (
+    <>
+            <Text style={styles.sectionLabel}>{pregnantNow ? "Pregnancy settings" : "Pregnancy"}</Text>
             <Card style={styles.formCard}>
               <View style={styles.settingRow}>
                 <View style={{ flex: 1 }}>
@@ -664,36 +639,6 @@ export default function CycleTrackingScreen() {
                     </View>
                   ) : null}
 
-                  {pregnancy?.isPregnant && pregnancy.estimate.content ? (
-                    <View style={styles.pregnancyGuidanceBox}>
-                      <View style={styles.phaseHeaderRow}>
-                        <Text style={styles.phaseTitle}>{pregnancy.estimate.content.label}</Text>
-                        {pregnancy.estimate.weeksPregnant !== null ? (
-                          <Text style={styles.phaseDayText}>Week {pregnancy.estimate.weeksPregnant}</Text>
-                        ) : null}
-                      </View>
-                      <Text style={styles.phaseExplanation}>{pregnancy.estimate.content.summary}</Text>
-
-                      <BulletList label="Eat and take" items={pregnancy.estimate.content.nutritionDo} />
-                      <BulletList label="Avoid" items={pregnancy.estimate.content.nutritionAvoid} />
-                      {pregnancy.training ? (
-                        <>
-                          <Text style={styles.phaseTitle}>{pregnancy.training.headline}</Text>
-                          <Text style={styles.phaseExplanation}>{pregnancy.training.effort}</Text>
-                          <BulletList label="Training" items={pregnancy.training.points} />
-                        </>
-                      ) : (
-                        <>
-                          <BulletList label="Training: generally fine" items={pregnancy.estimate.content.trainingDo} />
-                          <BulletList label="Training: avoid" items={pregnancy.estimate.content.trainingAvoid} />
-                        </>
-                      )}
-                      <BulletList label="Recovery" items={pregnancy.estimate.content.recoveryDo} />
-
-                      <Text style={styles.disclaimer}>{pregnancy.estimate.disclaimer}</Text>
-                    </View>
-                  ) : null}
-
                   {pregnancy?.isPregnant ? (
                     <View style={[styles.settingRow, { paddingHorizontal: 0, marginTop: Spacing.lg }]}>
                       <View style={{ flex: 1 }}>
@@ -716,6 +661,54 @@ export default function CycleTrackingScreen() {
                 </View>
               ) : null}
             </Card>
+
+    </>
+  );
+
+
+  return (
+    <SafeAreaView style={styles.safe} edges={["top"]}>
+        <View style={styles.header}>
+          <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backButton} accessibilityRole="button" accessibilityLabel="Back">
+            <Ionicons name="chevron-back" size={26} color={Color.textPrimary} />
+          </Pressable>
+          <Text style={styles.headerTitle}>Cycle tracking</Text>
+          <View style={{ width: 36 }} />
+        </View>
+
+        {!eligible ? (
+          <View style={styles.centerFill}>
+            <Text style={styles.emptyText}>Cycle tracking is not available for this account.</Text>
+          </View>
+        ) : isLoading ? (
+          <View style={styles.centerFill}>
+            <ActivityIndicator color={Color.gold} size="large" />
+          </View>
+        ) : isError || !data ? (
+          <View style={styles.centerFill}>
+            <Text style={styles.emptyText}>Couldn&apos;t load your cycle information.</Text>
+            <Button title="Retry" onPress={() => refetch()} variant="secondary" style={{ marginTop: Spacing.md }} />
+          </View>
+        ) : (
+          <KeyboardAwareScroll contentContainerStyle={styles.scroll}>
+            {pregnantNow && pregnancy ? (
+              <>
+                <PregnancyHero pregnancy={pregnancy} today={todayDateString()} />
+                <PregnancyGuide pregnancy={pregnancy} />
+                {renderPregnancyBlock()}
+                <View style={{ marginTop: Spacing.lg }}>
+                  <Collapsible title="Cycle settings" summary="Cycle tracking is paused while you're pregnant and after the birth">
+                    {renderCycleBlock(data)}
+                  </Collapsible>
+                </View>
+              </>
+            ) : (
+              <>
+                {renderPhaseCard(data)}
+                {renderCycleBlock(data)}
+                {renderPregnancyBlock()}
+              </>
+            )}
 
             <Text style={styles.sectionLabel}>Preferences</Text>
             <Card style={styles.settingsCard}>
@@ -820,15 +813,5 @@ const useStyles = makeLegacyStyles((Color) =>
     settingRow: { flexDirection: "row", alignItems: "center", padding: Spacing.md, gap: Spacing.sm },
     settingTitle: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
     settingSub: { fontSize: 13, color: Color.textMuted, marginTop: 2, lineHeight: 18 },
-    pregnancyGuidanceBox: {
-      marginTop: Spacing.lg,
-      borderTopWidth: 1,
-      borderTopColor: Color.borderSubtle,
-      paddingTop: Spacing.md,
-    },
-    bulletLabel: { fontSize: 12, fontWeight: "700", letterSpacing: 0.5, color: Color.textMuted },
-    bulletRow: { flexDirection: "row", alignItems: "flex-start", gap: 6, marginTop: 4 },
-    bulletDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: Color.gold, marginTop: 7 },
-    bulletText: { flex: 1, fontSize: 14, color: Color.textSecondary, lineHeight: 20 },
   })
 );

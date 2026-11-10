@@ -14,11 +14,11 @@
         "ITSAppUsesNonExemptEncryption": false,
         "NSSupportsLiveActivities": true
       },
-      "buildNumber": "15"
+      "buildNumber": "16"
     },
     "android": {
       "package": "com.sandcperformancecoaching.app",
-      "versionCode": 103,
+      "versionCode": 104,
       "adaptiveIcon": {
         "backgroundColor": "#0a1526",
         "foregroundImage": "./assets/images/android-icon-foreground.png",

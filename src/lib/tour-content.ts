@@ -199,7 +199,7 @@ export const TOUR_PAGES: TourPage[] = [
         id: "hydration",
         target: "nutrition.hydration",
         title: "Water",
-        body: "Use the quick-add buttons, or type a total.",
+        body: "Pick what you're drinking, then use the quick-add buttons, or type a total. The bottle moves with your phone, so give it a tilt.",
       },
     ],
   },

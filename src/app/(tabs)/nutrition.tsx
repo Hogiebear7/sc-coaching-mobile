@@ -59,6 +59,7 @@ import { todayDateString } from "@/lib/workout-formatters";
 import { makeStyles, useAppTheme } from "@/lib/theme";
 import { tourTarget, useTourScroll } from "@/lib/tour-registry";
 import { notInPlanCopy, CAN_SELL_DIGITAL_PLAN, DIGITAL_PLAN_ROUTE } from "@/lib/upsell-config";
+import { DEFAULT_DRINK, DRINK_TYPES, drinkNote, waterEquivalentMl, type DrinkId } from "@/lib/drink-types";
 import { useWaterAmount, waterQuickAdds } from "@/lib/water-amount";
 
 function shiftDate(dateISO: string, days: number): string {
@@ -126,6 +127,10 @@ function HydrationCard({ date }: { date: string }) {
   const [manualEntry, setManualEntry] = useState("");
   const [manualError, setManualError] = useState<string | null>(null);
   const [showInfo, setShowInfo] = useState(false);
+  // What the quick-add buttons log. The server keeps one water-equivalent total,
+  // so a drink is converted before it is sent (see lib/drink-types.ts).
+  const [drink, setDrink] = useState<DrinkId>(DEFAULT_DRINK);
+  const drinkLine = drinkNote(drink);
 
   const target = hydration?.targetMl ?? null;
   const logged = hydration?.loggedMl ?? 0;
@@ -192,6 +197,35 @@ function HydrationCard({ date }: { date: string }) {
         </View>
       </View>
 
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.hydrationDrinkScroll}
+        contentContainerStyle={styles.hydrationDrinkRow}
+        keyboardShouldPersistTaps="handled"
+      >
+        {DRINK_TYPES.map((d) => {
+          const active = d.id === drink;
+          return (
+            <Pressable
+              key={d.id}
+              onPress={() => {
+                selectionFeedback();
+                setDrink(d.id);
+              }}
+              accessibilityRole="button"
+              accessibilityState={{ selected: active }}
+              accessibilityLabel={d.label}
+              style={[styles.hydrationDrinkChip, active && { borderColor: colors.textSecondary }]}
+            >
+              <View style={[styles.hydrationDrinkDot, { backgroundColor: d.color }]} />
+              <Text style={[styles.hydrationDrinkText, active && styles.hydrationDrinkTextActive]}>{d.label}</Text>
+            </Pressable>
+          );
+        })}
+      </ScrollView>
+      {drinkLine ? <Text style={styles.hydrationDrinkNote}>{drinkLine}</Text> : null}
+
       <View style={styles.hydrationQuickAddRow}>
         {waterQuickAdds(waterAmount).map((ml) => {
           // The member's own usual amount (Settings > Water) comes first and is the highlighted one.
@@ -201,7 +235,7 @@ function HydrationCard({ date }: { date: string }) {
               key={ml}
               onPress={() => {
                 successFeedback();
-                logWater.mutate({ date, deltaMl: ml });
+                logWater.mutate({ date, deltaMl: waterEquivalentMl(ml, drink) });
               }}
               style={({ pressed }) => [
                 styles.hydrationChip,
@@ -1035,7 +1069,24 @@ const useStyles = makeStyles((c, dc) =>
     hydrationBodyRow: { flexDirection: "row", alignItems: "center", gap: 16 },
     hydrationSideCol: { flex: 1 },
     hydrationSideText: { fontSize: 16, fontWeight: "500", color: c.textSecondary, lineHeight: 22 },
-    hydrationQuickAddRow: { flexDirection: "row", gap: 8, marginTop: 16 },
+    hydrationDrinkScroll: { marginTop: 16, marginHorizontal: -16 },
+    hydrationDrinkRow: { gap: 8, paddingHorizontal: 16 },
+    hydrationDrinkChip: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      minHeight: 38,
+      paddingHorizontal: 14,
+      borderRadius: 19,
+      borderWidth: 1.5,
+      borderColor: "transparent",
+      backgroundColor: c.control,
+    },
+    hydrationDrinkDot: { width: 10, height: 10, borderRadius: 5 },
+    hydrationDrinkText: { fontSize: 14, color: c.textMuted },
+    hydrationDrinkTextActive: { color: c.text, fontWeight: "600" },
+    hydrationDrinkNote: { fontSize: 13, color: c.textMuted, marginTop: 8 },
+    hydrationQuickAddRow: { flexDirection: "row", gap: 8, marginTop: 12 },
     hydrationChip: { flex: 1, alignItems: "center", justifyContent: "center", minHeight: 44, borderRadius: AppRadius.control, backgroundColor: c.control },
     // The recommended +500ml is the one solid pill.
     hydrationChipPrimary: { backgroundColor: c.primary },

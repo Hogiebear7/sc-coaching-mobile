@@ -128,8 +128,9 @@ describe("copy", () => {
     expect(everything).not.toMatch(/unlimited AI|unlimited chat|unlimited coaching/i);
   });
 
-  it("states that the plan is separate from a gym Membership and lists what it includes", () => {
-    expect(SEPARATE_FROM_MEMBERSHIP).toMatch(/separate from a gym Membership/);
+  it("says no Membership is needed (and nothing about buying one, or about the two excluding each other), and lists what the plan includes", () => {
+    expect(SEPARATE_FROM_MEMBERSHIP).toMatch(/don't need a gym Membership/);
+    expect(SEPARATE_FROM_MEMBERSHIP).not.toMatch(/separate|doesn't include|buy|join|sign up/i);
     expect(DIGITAL_PLAN_FEATURES.length).toBeGreaterThanOrEqual(3);
   });
 

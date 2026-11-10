@@ -122,9 +122,12 @@ export const withoutTrialLabel = (displayPrice: string, period: string) => `Subs
 /** The server's code when a member has used their AI allowance (HTTP 429). It is not a subscription problem and must never be shown as one. */
 export const AI_ALLOWANCE_REACHED_CODE = "ai_allowance_reached";
 
-/** A gym Membership is a separate product. This sentence appears on the paywall so nobody is surprised either way. */
-export const SEPARATE_FROM_MEMBERSHIP =
-  "The App Subscription is separate from a gym Membership. A gym Membership doesn't include it, and it doesn't include a gym Membership.";
+/**
+ * Shown on the paywall to someone who does not have the App features yet. Owner decision 2026-11-08: a gym Membership now includes the App features, so
+ * the old "separate, and neither includes the other" wording is gone. This line is true whether or not the Membership bundle switch is on, and says nothing
+ * about buying a Membership (nothing in the app may sell or link to one). The constant keeps its name so the screen and tests are unchanged.
+ */
+export const SEPARATE_FROM_MEMBERSHIP = "You don't need a gym Membership to subscribe. This subscription is billed by the app store.";
 
 export function describePlanEnd(plan: { currentPeriodEnd: string | null; autoRenewing: boolean; status: string; source: string; trial?: boolean }, format: (iso: string) => string): string {
   if (plan.source === "staff_grant") {

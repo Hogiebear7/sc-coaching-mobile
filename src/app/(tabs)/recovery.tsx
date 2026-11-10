@@ -11,6 +11,7 @@ import { ContinueWorkoutPill } from "@/components/ui/ContinueWorkoutPill";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { InfoModal } from "@/components/ui/InfoModal";
 import { Stepper } from "@/components/ui/Stepper";
+import { TextField } from "@/components/ui/TextField";
 import { AppRadius, AppSpace, appTitle, readinessColor } from "@/constants/theme";
 import { ApiError } from "@/lib/auth-context";
 import { successFeedback, tapFeedback } from "@/lib/haptics";
@@ -49,11 +50,14 @@ function CheckInForm({
   existingLog,
   isToday,
   initialSleepHours,
+  healthNoteEnabled,
   onDone,
 }: {
   date: string;
   existingLog: RecoveryLogSummary | null;
   isToday: boolean;
+  /** App tier or gym Membership: shows the optional "injured or sick?" note at the bottom. */
+  healthNoteEnabled: boolean;
   /** From Import from Tracker (tracker-import.tsx) — a sleep-hours reading
    *  pulled from a photo of the member's own tracker app, offered as a
    *  starting point they can still adjust before saving. */
@@ -65,6 +69,7 @@ function CheckInForm({
   const [sleepQuality, setSleepQuality] = useState(existingLog?.sleepQuality ?? 5);
   const [soreness, setSoreness] = useState(existingLog?.soreness ?? 5);
   const [fatigue, setFatigue] = useState(existingLog?.fatigue ?? 3);
+  const [healthNote, setHealthNote] = useState(existingLog?.healthNote ?? "");
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const logRecovery = useLogRecovery();
@@ -79,6 +84,7 @@ function CheckInForm({
         sleepQuality,
         soreness,
         fatigue,
+        ...(healthNoteEnabled ? { healthNote: healthNote.trim() } : {}),
       });
       if (!res.success) setError(res.message);
       else {
@@ -105,6 +111,21 @@ function CheckInForm({
       <Stepper label="Sleep quality" caption="1 = poor · 10 = excellent" value={sleepQuality} onChange={setSleepQuality} min={1} max={10} />
       <Stepper label="Soreness" caption="1 = none · 10 = very sore" value={soreness} onChange={setSoreness} min={1} max={10} />
       <Stepper label="Fatigue" caption="1 = fresh · 5 = exhausted" value={fatigue} onChange={setFatigue} min={1} max={5} />
+      {healthNoteEnabled ? (
+        <View style={{ marginTop: 8 }}>
+          <TextField
+            label="Anything we should know? (optional)"
+            value={healthNote}
+            onChangeText={setHealthNote}
+            placeholder="Injured or feeling unwell? Tell us here."
+            multiline
+            maxLength={300}
+            style={{ minHeight: 72, textAlignVertical: "top" }}
+            accessibilityHint="Your coach and the AI will take this into account. Leave it empty if you are fine."
+          />
+          <Text style={styles.noteCaption}>Your coach and the AI take this into account for a few days. Clear it when you are better.</Text>
+        </View>
+      ) : null}
       {error ? <Text style={styles.error}>{error}</Text> : null}
       {saved && !error ? <Text style={styles.saved}>Saved.</Text> : null}
       <Button title={existingLog ? "Update check-in" : "Save check-in"} onPress={submit} loading={logRecovery.isPending} style={{ marginTop: 12 }} />
@@ -286,6 +307,7 @@ export default function RecoveryScreen() {
                 date={data.todayISO}
                 existingLog={todayLog}
                 isToday
+                healthNoteEnabled={!!data.healthNoteEnabled}
                 initialSleepHours={Number.isFinite(parsedPrefillSleepHours) ? parsedPrefillSleepHours : undefined}
               />
             ) : (
@@ -293,6 +315,7 @@ export default function RecoveryScreen() {
                 date={editingDate}
                 existingLog={editingLog}
                 isToday={editingDate === data.todayISO}
+                healthNoteEnabled={!!data.healthNoteEnabled}
                 onDone={() => setEditingDate(null)}
               />
             )}
@@ -406,6 +429,7 @@ const useStyles = makeStyles((c, dc) =>
     linkText: { fontSize: 15, color: c.textSecondary, textDecorationLine: "underline" },
     error: { fontSize: 14, color: c.danger, marginTop: 8 },
     saved: { fontSize: 14, color: c.success, marginTop: 8 },
+    noteCaption: { fontSize: 13, color: c.textMuted, marginTop: 6 },
 
     list: { backgroundColor: c.surface, borderRadius: AppRadius.card, overflow: "hidden" },
     row: { flexDirection: "row", alignItems: "center", gap: 12, minHeight: 62, paddingHorizontal: 16, paddingVertical: 10 },

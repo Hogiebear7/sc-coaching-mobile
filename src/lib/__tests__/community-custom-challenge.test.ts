@@ -46,12 +46,14 @@ describe("custom measures", () => {
 });
 
 describe("formatSeconds and the values a custom challenge shows", () => {
-  it("a time to beat reads as m:ss, or h:mm:ss past an hour", () => {
-    expect(formatSeconds(1258)).toBe("20:58");
-    expect(formatSeconds(59)).toBe("0:59");
-    expect(formatSeconds(3600)).toBe("1:00:00");
-    expect(formatSeconds(3930)).toBe("1:05:30");
-    expect(formatSeconds(-4)).toBe("0:00");
+  it("a time to beat always reads as hh:mm:ss, so a 5 km run and a very long one look the same", () => {
+    expect(formatSeconds(1258)).toBe("00:20:58");
+    expect(formatSeconds(59)).toBe("00:00:59");
+    expect(formatSeconds(3600)).toBe("01:00:00");
+    expect(formatSeconds(3930)).toBe("01:05:30");
+    expect(formatSeconds(15150)).toBe("04:12:30"); // a marathon-length effort
+    expect(formatSeconds(360000)).toBe("100:00:00"); // never cut off, even at 100 hours
+    expect(formatSeconds(-4)).toBe("00:00:00");
   });
 
   it("the unit the server sends decides how a custom score reads", () => {
@@ -60,7 +62,7 @@ describe("formatSeconds and the values a custom challenge shows", () => {
     expect(formatChallengeValue("custom", 24, "reps")).toBe("24 reps");
     expect(formatChallengeValue("custom", 5.2, "km")).toBe("5.2 km");
     expect(formatChallengeValue("custom", 75, "min")).toBe("1 h 15 min");
-    expect(formatChallengeValue("custom", 1258, "secs")).toBe("20:58");
+    expect(formatChallengeValue("custom", 1258, "secs")).toBe("00:20:58");
   });
 
   it("a custom challenge with no unit shows a plain number, never a wrong unit; ready-made kinds keep their own", () => {
@@ -69,7 +71,7 @@ describe("formatSeconds and the values a custom challenge shows", () => {
     expect(formatChallengeValue("squat", 100)).toBe("100 kg");
   });
 
-  it("standings use the challenge's unit, so a 5 km time shows as m:ss and the order is the server's (lowest first)", () => {
+  it("standings use the challenge's unit, so a 5 km time shows as hh:mm:ss and the order is the server's (lowest first)", () => {
     const rows = buildChallengeRows(
       [
         { userId: "a", displayName: "Rae", value: 1258, bodyweightPct: null },
@@ -78,7 +80,7 @@ describe("formatSeconds and the values a custom challenge shows", () => {
       { metric: "custom", unit: "secs" },
       "me"
     );
-    expect(rows.map((r) => [r.rank, r.name, r.valueLabel])).toEqual([[1, "Rae", "20:58"], [2, "You", "25:00"]]);
+    expect(rows.map((r) => [r.rank, r.name, r.valueLabel])).toEqual([[1, "Rae", "00:20:58"], [2, "You", "00:25:00"]]);
   });
 });
 

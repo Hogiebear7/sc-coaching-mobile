@@ -60,7 +60,7 @@ export type ChallengeMetric =
   | "custom";
 export type ChallengeStatus = "upcoming" | "active" | "ended" | "canceled";
 
-/** How a score is read. "secs" is a time to beat (shown m:ss); "reps" is a count of repetitions. */
+/** How a score is read. "secs" is a time to beat (shown hh:mm:ss); "reps" is a count of repetitions. */
 export type ChallengeUnit = "kg" | "km" | "min" | "days" | "reps" | "secs";
 
 export type CustomMeasure = "best_weight" | "total_volume" | "best_reps" | "total_reps" | "total_distance" | "longest_distance" | "total_time" | "fastest_time";

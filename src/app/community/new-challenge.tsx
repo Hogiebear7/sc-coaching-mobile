@@ -35,8 +35,8 @@ import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 const EMPTY_CUSTOM: CustomForm = { measure: null, exercise: "", cardioType: null, distanceText: "" };
 
 // Someone sets a challenge: a title, what it is scored on, and the dates. Scoring is automatic from the workouts and cardio members already log.
-// "What is it scored on?" is either a ready-made kind (grouped by Strength, Consistency, Running and Cardio) or a custom one: name an exercise or pick an
-// activity, then choose what to measure. The scoring unit follows from what is measured, so it can't be mismatched.
+// "What is it scored on?" starts on "Build your own" (name an exercise or pick an activity, then choose what to measure; the scoring unit follows from what is
+// measured, so it can't be mismatched). The ready-made kinds, grouped by Strength, Consistency, Running and Cardio, are below it for a quick pick.
 export default function NewChallengeScreen() {
   const styles = useStyles();
   const Color = useLegacyColors();
@@ -48,7 +48,7 @@ export default function NewChallengeScreen() {
 
   const today = todayDateString();
   const [title, setTitle] = useState("");
-  const [mode, setMode] = useState<"ready" | "custom">("ready");
+  const [mode, setMode] = useState<"ready" | "custom">("custom");
   const [metric, setMetric] = useState<ReadyMetric>("volume");
   const [custom, setCustom] = useState<CustomForm>(EMPTY_CUSTOM);
   const [startDate, setStartDate] = useState(today);
@@ -110,33 +110,8 @@ export default function NewChallengeScreen() {
         />
 
         <Text style={styles.label}>What is it scored on?</Text>
-        {CHALLENGE_CATEGORIES.map((category) => (
-          <View key={category.id} style={styles.category} accessibilityRole="radiogroup" accessibilityLabel={category.label}>
-            <Text style={styles.categoryLabel}>{category.label}</Text>
-            <View style={styles.chips}>
-              {category.metrics.map((m) => {
-                const selected = !isCustom && metric === m;
-                return (
-                  <Pressable
-                    key={m}
-                    onPress={() => {
-                      setMode("ready");
-                      setMetric(m);
-                    }}
-                    style={[styles.chip, selected && styles.chipActive]}
-                    accessibilityRole="radio"
-                    accessibilityState={{ selected }}
-                  >
-                    <Text style={[styles.chipText, selected && styles.chipTextActive]}>{challengeMetricLabel(m)}</Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-          </View>
-        ))}
 
         <View style={styles.category}>
-          <Text style={styles.categoryLabel}>Custom</Text>
           <View style={styles.chips}>
             <Pressable
               onPress={() => setMode("custom")}
@@ -150,14 +125,7 @@ export default function NewChallengeScreen() {
           </View>
         </View>
 
-        {!isCustom ? (
-          <Text style={styles.hint}>
-            <Text style={styles.hintStrong}>
-              {challengeCategoryLabel(metric)}: {challengeMetricLabel(metric)}.
-            </Text>{" "}
-            {challengeMetricHint(metric)} Scores come from what members already log.
-          </Text>
-        ) : (
+        {isCustom ? (
           <View style={styles.builder}>
             <Text style={styles.builderTitle}>Build your own</Text>
 
@@ -235,9 +203,46 @@ export default function NewChallengeScreen() {
                 </Text>
                 <Text style={styles.hint}>{customPreview(custom)}</Text>
               </>
-            ) : null}
+            ) : (
+              <Text style={styles.hint}>Pick what to measure, then name the exercise or choose the activity.</Text>
+            )}
           </View>
-        )}
+        ) : null}
+
+        <Text style={styles.orLabel}>Or pick a ready-made one</Text>
+        {CHALLENGE_CATEGORIES.map((category) => (
+          <View key={category.id} style={styles.category} accessibilityRole="radiogroup" accessibilityLabel={category.label}>
+            <Text style={styles.categoryLabel}>{category.label}</Text>
+            <View style={styles.chips}>
+              {category.metrics.map((m) => {
+                const selected = !isCustom && metric === m;
+                return (
+                  <Pressable
+                    key={m}
+                    onPress={() => {
+                      setMode("ready");
+                      setMetric(m);
+                    }}
+                    style={[styles.chip, selected && styles.chipActive]}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected }}
+                  >
+                    <Text style={[styles.chipText, selected && styles.chipTextActive]}>{challengeMetricLabel(m)}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+        ))}
+
+        {!isCustom ? (
+          <Text style={styles.hint}>
+            <Text style={styles.hintStrong}>
+              {challengeCategoryLabel(metric)}: {challengeMetricLabel(metric)}.
+            </Text>{" "}
+            {challengeMetricHint(metric)} Scores come from what members already log.
+          </Text>
+        ) : null}
 
         <View style={styles.dates}>
           <DateField label="Starts" value={startDate} onChange={setStartDate} minDate={today} style={{ flex: 1 }} />
@@ -265,6 +270,7 @@ const useStyles = makeLegacyStyles((Color) =>
     headerTitle: { fontSize: 20, fontWeight: "600", color: Color.textPrimary },
     scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
     label: { fontSize: 14, fontWeight: "500", color: Color.textSecondary, marginBottom: 6 },
+    orLabel: { fontSize: 14, fontWeight: "500", color: Color.textSecondary, marginTop: Spacing.sm, marginBottom: 6 },
     category: { marginBottom: Spacing.md },
     categoryLabel: { fontSize: 12, fontWeight: "700", letterSpacing: 0.6, color: Color.textFaint, textTransform: "uppercase", marginBottom: 6 },
     hintStrong: { fontWeight: "700", color: Color.textSecondary },

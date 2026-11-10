@@ -2043,11 +2043,11 @@ export default function LogWorkoutScreen() {
                   </View>
                 </View>
                 <View style={styles.numberField}>
-                  <Text style={styles.fieldLabel}>Time (mm:ss, optional)</Text>
+                  <Text style={styles.fieldLabel}>Time (hh:mm:ss, optional)</Text>
                   <TextInput
                     value={row.duration}
                     onChangeText={(v) => updateRunRow(row.key, { duration: v })}
-                    placeholder="e.g. 30:00"
+                    placeholder="e.g. 00:30:00"
                     placeholderTextColor={Color.textFaint}
                     style={styles.smallInput}
                   />

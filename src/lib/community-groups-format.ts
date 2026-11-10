@@ -121,14 +121,14 @@ export function formatMinutes(totalMinutes: number): string {
   return m === 0 ? `${h} h` : `${h} h ${m} min`;
 }
 
-/** A time to beat as "20:58" or, past an hour, "1:05:30". */
+/** A time to beat as hh:mm:ss, always three parts so a 5 km run and a long ultra read the same way: "00:20:58", "04:12:30". */
 export function formatSeconds(totalSeconds: number): string {
   const s = Math.max(0, Math.round(totalSeconds));
   const h = Math.floor(s / 3600);
   const m = Math.floor((s % 3600) / 60);
   const sec = s % 60;
   const two = (n: number) => String(n).padStart(2, "0");
-  return h > 0 ? `${h}:${two(m)}:${two(sec)}` : `${m}:${two(sec)}`;
+  return `${two(h)}:${two(m)}:${two(sec)}`;
 }
 
 /**
@@ -177,7 +177,7 @@ export const CUSTOM_MEASURES: readonly CustomMeasureInfo[] = [
   { id: "total_distance", kind: "cardio", label: "Total distance", unit: "km", scoring: "Kilometres (km). Furthest wins.", hint: "All the distance logged for the activity." },
   { id: "longest_distance", kind: "cardio", label: "Longest single go", unit: "km", scoring: "Kilometres (km). Furthest wins.", hint: "The longest single entry logged for the activity." },
   { id: "total_time", kind: "cardio", label: "Total time", unit: "min", scoring: "Time (hours and minutes). Longest wins.", hint: "All the time logged for the activity." },
-  { id: "fastest_time", kind: "cardio", label: "Fastest time over a distance", unit: "secs", scoring: "Time (m:ss). Lowest time wins.", hint: "The quickest time over a distance you set, such as a 5 km run." },
+  { id: "fastest_time", kind: "cardio", label: "Fastest time over a distance", unit: "secs", scoring: "Time (hh:mm:ss). Lowest time wins.", hint: "The quickest time over a distance you set, such as a 5 km run." },
 ];
 
 export const CARDIO_TYPE_OPTIONS: readonly { id: CardioType; label: string }[] = [

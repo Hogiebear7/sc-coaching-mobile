@@ -9,8 +9,22 @@ import {
   formatPbExerciseName,
   formatPbHeadline,
   formatWorkoutTitle,
+  leaderboardScopeLabel,
 } from "@/lib/community-formatters";
+import { hasAccess } from "@/lib/member-access";
 import type { WorkoutExerciseEntry, WorkoutRunEntry } from "@/lib/queries/workouts";
+
+describe("the leaderboard is free for everyone", () => {
+  it("no plan is needed for it (mirrors the server), while groups and the gym community still are", () => {
+    expect(hasAccess({ digital: false, gymMembership: false }, "communityLeaderboards")).toBe(true);
+    expect(hasAccess({ digital: false, gymMembership: false }, "communityGroups")).toBe(false);
+    expect(hasAccess({ digital: false, gymMembership: false }, "communityGym")).toBe(false);
+  });
+  it("says which board is showing", () => {
+    expect(leaderboardScopeLabel("friends")).toBe("Friends");
+    expect(leaderboardScopeLabel("global")).toBe("Everyone at your gym");
+  });
+});
 
 function exercise(overrides: Partial<WorkoutExerciseEntry> = {}): WorkoutExerciseEntry {
   return {

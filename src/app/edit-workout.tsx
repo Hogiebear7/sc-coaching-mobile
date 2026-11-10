@@ -504,10 +504,10 @@ export default function EditWorkoutScreen() {
                     style={styles.gridInput}
                   />
                   <TextField
-                    label="Time (mm:ss, opt.)"
+                    label="Time (hh:mm:ss, opt.)"
                     value={row.duration}
                     onChangeText={(v) => updateRunRow(row.key, { duration: v })}
-                    placeholder="e.g. 30:00"
+                    placeholder="e.g. 00:30:00"
                     style={styles.gridInput}
                   />
                 </View>

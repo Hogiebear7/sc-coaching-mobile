@@ -16,7 +16,7 @@ import { MemberSearchSheet } from "@/components/ui/MemberSearchSheet";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Radius, Spacing } from "@/constants/theme";
 import { useAuth } from "@/lib/auth-context";
-import { buildLeaderboardRows, formatLeaderboardContextLabel } from "@/lib/community-formatters";
+import { buildLeaderboardRows, formatLeaderboardContextLabel, leaderboardScopeLabel } from "@/lib/community-formatters";
 import { tapFeedback } from "@/lib/haptics";
 import {
   useCommunityFeed,
@@ -26,11 +26,11 @@ import {
   useSuggestedMembers,
   type LeaderboardMetric,
   type LeaderboardRange,
+  type LeaderboardScope,
 } from "@/lib/queries/community";
+import { useGymCommunityAccess } from "@/lib/queries/community-groups";
 import { todayDateString } from "@/lib/workout-formatters";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
-import { useHasFeature } from "@/lib/queries/profile";
-import { UpsellCard } from "@/components/ui/Upsell";
 
 // Emphasis order, top to bottom: wins/milestones, leaderboards, supporting
 // feed activity — comments/likes/mentions stay a tap away (the per-item
@@ -147,9 +147,13 @@ export default function CommunityScreen() {
   // sessions still shows up here instead of Community Wins going quiet
   // just because nobody's most recent activity happens to include one.
   const wins = useCommunityWins(20);
-  const leaderboard = useLeaderboard(metric, range, customStart || null, customEnd || null);
-  // Leaderboards are part of the App Subscription; the feed, likes, comments and follows are on every plan.
-  const canLeaderboard = useHasFeature("communityLeaderboards");
+  // The leaderboard is free for everyone. "auto" lets the server choose: the Friends board when the member follows anyone it can show, otherwise the
+  // whole gym. The member can switch either way once they follow someone.
+  const [scope, setScope] = useState<LeaderboardScope>("auto");
+  const leaderboard = useLeaderboard(metric, range, customStart || null, customEnd || null, scope);
+  const shownScope = leaderboard.data?.scope ?? "global";
+  const followingCount = leaderboard.data?.followingCount ?? 0;
+  const hasGymCommunity = useGymCommunityAccess().allowed;
   const suggested = useSuggestedMembers();
   const followUser = useFollowUser();
 
@@ -213,6 +217,33 @@ export default function CommunityScreen() {
           <RefreshControl refreshing={feed.isRefetching} onRefresh={() => feed.refetch()} tintColor={Color.gold} />
         }
       >
+        {/* Private groups (App tier) and the gym's own community (gym Membership). The gym entry is shown only to members who have it: the
+            gym Membership is never sold or linked to from inside the app. */}
+        <View style={styles.entryRow}>
+          <Pressable
+            onPress={() => router.push("/community/groups")}
+            style={styles.entryCard}
+            accessibilityRole="button"
+            accessibilityLabel="Groups. Private groups with invite codes and challenges."
+          >
+            <Ionicons name="people-circle-outline" size={26} color={Color.gold} />
+            <Text style={styles.entryTitle}>Groups</Text>
+            <Text style={styles.entrySub}>Private, with challenges</Text>
+          </Pressable>
+          {hasGymCommunity ? (
+            <Pressable
+              onPress={() => router.push("/community/gym")}
+              style={styles.entryCard}
+              accessibilityRole="button"
+              accessibilityLabel="Your gym. Your gym's members-only community."
+            >
+              <Ionicons name="barbell-outline" size={26} color={Color.gold} />
+              <Text style={styles.entryTitle}>Your gym</Text>
+              <Text style={styles.entrySub}>Members only</Text>
+            </Pressable>
+          ) : null}
+        </View>
+
         {winsPreview.length > 0 ? (
           <View style={styles.section}>
             <SectionHeader
@@ -240,8 +271,23 @@ export default function CommunityScreen() {
           }}
         >
           <SectionHeader label="Leaderboard" />
-          {canLeaderboard ? (
           <>
+          {/* Only offered once the member follows someone, because until then Friends would just be themselves. */}
+          {followingCount > 0 ? (
+            <View style={styles.metricRow} accessibilityRole="tablist">
+              {(["friends", "global"] as const).map((s) => (
+                <Pressable
+                  key={s}
+                  onPress={() => setScope(s)}
+                  style={[styles.metricChip, shownScope === s && styles.metricChipActive]}
+                  accessibilityRole="tab"
+                  accessibilityState={{ selected: shownScope === s }}
+                >
+                  <Text style={[styles.metricChipText, shownScope === s && styles.metricChipTextActive]}>{s === "friends" ? "Friends" : "Everyone"}</Text>
+                </Pressable>
+              ))}
+            </View>
+          ) : null}
           <View style={styles.metricRow}>
             {LEADERBOARD_METRICS.map((m) => (
               <Pressable
@@ -303,8 +349,11 @@ export default function CommunityScreen() {
                   them; this makes "what am I looking at" unambiguous next
                   to the actual numbers. */}
               <Text style={styles.leaderboardContextLabel}>
-                {formatLeaderboardContextLabel(metric, range, customStart || null, customEnd || null)}
+                {leaderboardScopeLabel(shownScope)} · {formatLeaderboardContextLabel(metric, range, customStart || null, customEnd || null)}
               </Text>
+              {followingCount === 0 ? (
+                <Text style={styles.followHint}>Follow people from Find people above to get a Friends board.</Text>
+              ) : null}
               {leaderboard.isLoading ? (
                 <ActivityIndicator color={Color.gold} style={{ marginTop: Spacing.md }} />
               ) : !leaderboard.data || leaderboard.data.entries.length === 0 ? (
@@ -340,9 +389,6 @@ export default function CommunityScreen() {
             </>
           )}
           </>
-          ) : (
-            <UpsellCard icon="trophy-outline" title="Leaderboards" body="See where you rank on volume, squat, bench and deadlift. Part of the App Subscription." />
-          )}
         </View>
 
         <View style={styles.section}>
@@ -483,6 +529,10 @@ const useStyles = makeLegacyStyles((Color) =>
     noticeSecondaryText: { fontSize: 14, fontWeight: "500", color: Color.textFaint, textDecorationLine: "underline" },
     scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
     section: { marginBottom: Spacing.xl },
+    entryRow: { flexDirection: "row", gap: Spacing.sm, marginBottom: Spacing.xl },
+    entryCard: { flex: 1, borderRadius: Radius.lg, backgroundColor: Color.surface1, padding: Spacing.md, minHeight: 88 },
+    entryTitle: { fontSize: 16, fontWeight: "700", color: Color.textPrimary, marginTop: Spacing.xs },
+    entrySub: { fontSize: 13, color: Color.textMuted, marginTop: 2 },
     winsCard: { padding: 0, overflow: "hidden" },
     metricRow: {
       flexDirection: "row",
@@ -516,6 +566,7 @@ const useStyles = makeLegacyStyles((Color) =>
       color: Color.textFaint,
       marginBottom: Spacing.xs,
     },
+    followHint: { fontSize: 13, color: Color.textMuted, marginBottom: Spacing.xs },
     leaderboardCard: { padding: 0, overflow: "hidden" },
     leaderboardRow: {
       flexDirection: "row",

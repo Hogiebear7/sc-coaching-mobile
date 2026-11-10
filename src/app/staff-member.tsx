@@ -11,6 +11,7 @@ import { Radius, Spacing } from "@/constants/theme";
 import { tapFeedback } from "@/lib/haptics";
 import { useStaffNutritionTarget } from "@/lib/queries/nutrition-diary";
 import { useStaffPrograms } from "@/lib/queries/programs";
+import { MemberSummarySection } from "@/components/staff/MemberSummaryCard";
 import { StaffAccessCard } from "@/components/staff/StaffAccessCard";
 import { useSaveCoachNotes, useStaffMemberDetail } from "@/lib/queries/staff";
 import type { TrainingDayOfWeek } from "@/lib/queries/weekly-training";
@@ -123,6 +124,7 @@ export default function StaffMemberScreen() {
             </Card>
           ) : (
           <>
+          <MemberSummarySection userId={userId} />
           <Card style={styles.card}>
             <Text style={styles.sectionLabel}>Contact</Text>
             <View style={styles.rowLine}>

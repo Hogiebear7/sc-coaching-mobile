@@ -13,6 +13,8 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { AddMemberToClassSheet } from "@/components/staff/AddMemberToClassSheet";
+import { ClassMemberBrief } from "@/components/staff/ClassMemberBrief";
 import { StaffTodayCard } from "@/components/staff/StaffTodayCard";
 import { BrandMark } from "@/components/ui/BrandMark";
 import { Button } from "@/components/ui/Button";
@@ -71,6 +73,7 @@ function RosterRow({ classId, entry }: { classId: string; entry: StaffClassSumma
   }
 
   return (
+    <View>
     <View style={styles.rosterRow}>
       <Pressable
         onPress={() => {
@@ -98,6 +101,9 @@ function RosterRow({ classId, entry }: { classId: string; entry: StaffClassSumma
         )}
       </Pressable>
     </View>
+    {/* Coach's compact brief on this member (Membership members only; the server answers "walled" for anyone else). */}
+    <ClassMemberBrief userId={entry.userId} />
+    </View>
   );
 }
 
@@ -106,6 +112,7 @@ function ClassCard({ classItem }: { classItem: StaffClassSummary }) {
   const Color = useLegacyColors();
   const router = useRouter();
   const [expanded, setExpanded] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
   const full = classItem.bookedCount >= classItem.capacity;
 
   return (
@@ -147,6 +154,18 @@ function ClassCard({ classItem }: { classItem: StaffClassSummary }) {
             ))
           )}
           <Pressable
+            onPress={() => {
+              tapFeedback();
+              setAddOpen(true);
+            }}
+            style={styles.workoutButton}
+            accessibilityRole="button"
+            accessibilityLabel={full ? "Add a member to the waitlist" : "Book a member in"}
+          >
+            <Ionicons name="person-add-outline" size={14} color={Color.gold} />
+            <Text style={styles.workoutButtonText}>{full ? "Add to waitlist" : "Book a member in"}</Text>
+          </Pressable>
+          <Pressable
             onPress={() =>
               router.push({
                 pathname: "/class-workout-builder",
@@ -165,6 +184,7 @@ function ClassCard({ classItem }: { classItem: StaffClassSummary }) {
           </Pressable>
         </View>
       ) : null}
+      <AddMemberToClassSheet visible={addOpen} onClose={() => setAddOpen(false)} classItem={classItem} />
     </Card>
   );
 }
@@ -359,6 +379,9 @@ export default function StaffOperationsScreen() {
         <View style={styles.headerActions}>
           <Pressable onPress={() => router.push("/class-editor")} hitSlop={4} style={styles.roundBtn} accessibilityRole="button" accessibilityLabel="Add a class">
             <Ionicons name="add" size={24} color={Color.textPrimary} />
+          </Pressable>
+          <Pressable onPress={() => router.push("/staff-community")} hitSlop={4} style={styles.roundBtn} accessibilityRole="button" accessibilityLabel="Gym community">
+            <Ionicons name="chatbubbles-outline" size={22} color={Color.textPrimary} />
           </Pressable>
           <Pressable
             onPress={handleSwitchToMemberView}

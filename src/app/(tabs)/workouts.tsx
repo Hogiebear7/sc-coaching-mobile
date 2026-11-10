@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect, useRouter } from "expo-router";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Alert, Modal, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -21,6 +21,7 @@ import { hasAccess } from "@/lib/member-access";
 import { useAdvanceProgram, useMyProgram, useSetProgramStatus, type PrescribedExercise } from "@/lib/queries/programs";
 import { useMemberAccess } from "@/lib/queries/profile";
 import { useRestTimer } from "@/lib/rest-timer";
+import { tourTarget, useTourScroll } from "@/lib/tour-registry";
 import { useWorkoutDraft } from "@/lib/workout-draft";
 import { type PersonalBest, useWorkouts } from "@/lib/queries/workouts";
 import {
@@ -299,6 +300,9 @@ export default function WorkoutsScreen() {
       .filter((pb): pb is PersonalBest => pb != null);
   }, [data]);
 
+  const scrollRef = useRef<ScrollView>(null);
+  useTourScroll("workouts", scrollRef);
+
   if (isLoading) {
     return (
       <SafeAreaView style={styles.safe}>
@@ -325,14 +329,15 @@ export default function WorkoutsScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
       <ScrollView
+        ref={scrollRef}
         contentContainerStyle={styles.scroll}
         refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => refetch()} tintColor={colors.text} />}
       >
         {/* Header band: title, quick buttons, this week at a glance, day strip */}
-        <View style={styles.band}>
+        <View style={styles.band} {...tourTarget("train.week")}>
           <View style={styles.headerRow}>
             <Text style={appTitle(34, colors.text)}>Train</Text>
-            <View style={styles.headerActions}>
+            <View style={styles.headerActions} {...tourTarget("train.actions")}>
               <RoundIconButton icon="time-outline" label="Workout history" onPress={() => router.push("/workout-history")} />
               <RoundIconButton
                 icon={hasActiveWorkout ? "play" : "add"}
@@ -391,7 +396,7 @@ export default function WorkoutsScreen() {
 
           {/* Programme */}
           {program && program.status === "paused" ? (
-            <View style={styles.section}>
+            <View style={styles.section} {...tourTarget("train.programme")}>
               <SectionTitle title="Your programme" />
               <View style={styles.card}>
                 <View style={styles.programHeaderRow}>
@@ -406,7 +411,7 @@ export default function WorkoutsScreen() {
               </View>
             </View>
           ) : program && currentDay ? (
-            <View style={styles.section}>
+            <View style={styles.section} {...tourTarget("train.programme")}>
               <SectionTitle title="Your programme" />
               <View style={styles.card}>
                 <View style={styles.programHeaderRow}>
@@ -503,7 +508,7 @@ export default function WorkoutsScreen() {
           ) : null}
 
           {/* Tools */}
-          <View style={styles.section}>
+          <View style={styles.section} {...tourTarget("train.tools")}>
             <SectionTitle title="Tools" />
             <View style={styles.toolsRow}>
               <ToolButton icon="barbell-outline" label="Plates" onPress={() => router.push("/plate-calculator")} />

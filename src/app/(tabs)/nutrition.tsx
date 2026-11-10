@@ -59,6 +59,7 @@ import { calorieExplanation } from "@/lib/calorie-explanation";
 import { classifyLoad, LOAD_BAND_LABEL } from "@/lib/nutrition-calc";
 import { todayDateString } from "@/lib/workout-formatters";
 import { makeStyles, useAppTheme } from "@/lib/theme";
+import { tourTarget, useTourScroll } from "@/lib/tour-registry";
 import { notInPlanCopy, CAN_SELL_DIGITAL_PLAN, DIGITAL_PLAN_ROUTE } from "@/lib/upsell-config";
 import { useWaterAmount, waterQuickAdds } from "@/lib/water-amount";
 
@@ -550,6 +551,9 @@ export default function NutritionScreen() {
     router.push({ pathname: "/log-food", params: mealType ? { date: selectedDate, mealType } : { date: selectedDate } });
   }
 
+  const scrollRef = useRef<ScrollView>(null);
+  useTourScroll("nutrition", scrollRef);
+
   if (isLoading) {
     return (
       <SafeAreaView style={styles.safe}>
@@ -598,9 +602,11 @@ export default function NutritionScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
       <KeyboardAwareScroll
+        ref={scrollRef as never}
         contentContainerStyle={styles.scroll}
         refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => refetch()} tintColor={colors.text} />}
       >
+        <View {...tourTarget("nutrition.top")} />
         <View style={styles.band}>
           <View style={styles.headerRow}>
             <Text style={appTitle(34, colors.text)}>Nutrition</Text>
@@ -641,6 +647,7 @@ export default function NutritionScreen() {
           </View>
 
           <Pressable
+            {...tourTarget("nutrition.calories")}
             onPress={() => (canTargets ? router.push("/nutrition-targets") : CAN_SELL_DIGITAL_PLAN ? router.push(DIGITAL_PLAN_ROUTE as never) : undefined)}
             accessibilityRole="button"
             accessibilityLabel={canTargets ? "Calories and targets" : "Calories. Daily targets are part of the App Subscription"}
@@ -690,21 +697,23 @@ export default function NutritionScreen() {
           </Pressable>
 
           {hasTarget ? (
-            <View style={styles.macroRow}>
+            <View style={styles.macroRow} {...tourTarget("nutrition.macros")}>
               <MacroBar label="Protein" consumed={diary?.totals.proteinG ?? 0} target={target!.proteinG} color={dc.protein} onPress={() => setMacroInfo("protein")} />
               <MacroBar label="Carbs" consumed={diary?.totals.carbsG ?? 0} target={target!.carbsG} color={dc.carbs} onPress={() => setMacroInfo("carbs")} />
               <MacroBar label="Fat" consumed={diary?.totals.fatG ?? 0} target={target!.fatG} color={dc.fat} onPress={() => setMacroInfo("fat")} />
             </View>
           ) : null}
 
-          <PillButton title="Log food" onPress={() => addFood()} style={{ marginTop: 18 }} />
+          <View style={{ marginTop: 18 }} {...tourTarget("nutrition.log")}>
+            <PillButton title="Log food" onPress={() => addFood()} />
+          </View>
         </View>
 
         <View style={styles.body}>
           <TrainingTipCard target={target} />
 
           {/* Diary */}
-          <View style={styles.section}>
+          <View style={styles.section} {...tourTarget("nutrition.diary")}>
             <SectionTitle title="Diary" action="Add food" onAction={() => addFood()} />
             <View style={styles.list}>
               {MEAL_TYPE_OPTIONS.map((meal, mealIdx) => {
@@ -848,7 +857,7 @@ export default function NutritionScreen() {
           ) : null}
 
           {/* Hydration */}
-          <View style={styles.section}>
+          <View style={styles.section} {...tourTarget("nutrition.hydration")}>
             <SectionTitle title="Hydration" />
             <HydrationCard date={selectedDate} />
           </View>

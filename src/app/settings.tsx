@@ -4,7 +4,7 @@ import { manipulateAsync, SaveFormat } from "expo-image-manipulator";
 import * as ImagePicker from "expo-image-picker";
 import { Image, type ImageStyle } from "expo-image";
 import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Alert, Linking, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -26,6 +26,7 @@ import { canChooseTabs, normaliseChoice, TAB_PAIR_OPTIONS } from "@/lib/tab-conf
 import { LIGHT_MODE_AVAILABLE, makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 import { setWaterAmount, useWaterAmount, validWaterAmount, WATER_AMOUNT_MAX_ML, WATER_AMOUNT_MIN_ML, WATER_AMOUNT_PRESETS } from "@/lib/water-amount";
 import { useTour } from "@/lib/tour-context";
+import { tourTarget, useTourScroll } from "@/lib/tour-registry";
 import {
   useMemberAccess,
   useProfile,
@@ -166,6 +167,8 @@ export default function SettingsScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const { restartTour } = useTour();
+  const scrollRef = useRef<ScrollView>(null);
+  useTourScroll("settings", scrollRef);
   const [haptics, setHaptics] = useState(hapticsEnabled());
   const access = useMemberAccess();
   const aiConsent = useAiConsent();
@@ -309,7 +312,7 @@ export default function SettingsScreen() {
       {isLoading || !data ? (
         <View style={styles.centerFill} />
       ) : (
-        <ScrollView contentContainerStyle={styles.scroll}>
+        <ScrollView ref={scrollRef} contentContainerStyle={styles.scroll}>
           <View style={styles.identityRow}>
             {data.avatarDataUrl ? (
               <Image source={{ uri: data.avatarDataUrl }} style={styles.avatar as ImageStyle} contentFit="cover" />
@@ -409,28 +412,32 @@ export default function SettingsScreen() {
             {setAiConsent.isError ? <Text style={styles.rowSub}>Couldn&apos;t save that. Check your connection and try again.</Text> : null}
           </Card>
 
-          <SectionLabel>Community</SectionLabel>
-          <Card style={styles.settingsCard}>
-            <Row
-              icon="people-outline"
-              title="Community privacy"
-              sub="Who can find you, leaderboards, and your display name"
-              onPress={() => router.push("/community-privacy")}
-            />
-          </Card>
+          <View {...tourTarget("settings.privacy")}>
+            <SectionLabel>Community</SectionLabel>
+            <Card style={styles.settingsCard}>
+              <Row
+                icon="people-outline"
+                title="Community privacy"
+                sub="Who can find you, leaderboards, and your display name"
+                onPress={() => router.push("/community-privacy")}
+              />
+            </Card>
+          </View>
 
-          <SectionLabel>Nutrition</SectionLabel>
-          <Card style={styles.settingsCard}>
-            <Row
-              icon="flame-outline"
-              title="Calorie targets"
-              sub="Weekly pace, activity, and same-every-day or match-my-training"
-              onPress={() => router.push("/nutrition-targets")}
-            />
-          </Card>
+          <View {...tourTarget("settings.calories")}>
+            <SectionLabel>Nutrition</SectionLabel>
+            <Card style={styles.settingsCard}>
+              <Row
+                icon="flame-outline"
+                title="Calorie targets"
+                sub="Weekly pace, activity, and same-every-day or match-my-training"
+                onPress={() => router.push("/nutrition-targets")}
+              />
+            </Card>
+          </View>
 
           {canChooseTabs(tier) ? (
-            <>
+            <View {...tourTarget("settings.tabbar")}>
               <SectionLabel>Tab bar</SectionLabel>
               <Card style={styles.settingsCard}>
                 <Text style={styles.tabBarIntro}>Pick the two tabs either side of the + button. You can also long-press one of them to swap it.</Text>
@@ -454,11 +461,11 @@ export default function SettingsScreen() {
                   );
                 })}
               </Card>
-            </>
+            </View>
           ) : null}
 
           {canUseGymProfiles ? (
-            <>
+            <View {...tourTarget("settings.training")}>
               <SectionLabel>Training</SectionLabel>
               <Card style={styles.settingsCard}>
                 <Row
@@ -468,7 +475,7 @@ export default function SettingsScreen() {
                   onPress={() => router.push("/gym-profiles")}
                 />
               </Card>
-            </>
+            </View>
           ) : null}
 
           <SectionLabel>Preferences</SectionLabel>
@@ -727,17 +734,17 @@ export default function SettingsScreen() {
           )}
 
           {user?.role === "member" ? (
-            <>
+            <View {...tourTarget("settings.tour")}>
               <SectionLabel>Help</SectionLabel>
               <Card style={styles.settingsCard} tier="quiet">
                 <Row
                   icon="compass-outline"
                   title="Take app tour"
-                  sub="Revisit the walkthrough for each tab"
+                  sub="Replay the walkthrough, page by page"
                   onPress={restartTour}
                 />
               </Card>
-            </>
+            </View>
           ) : null}
 
           {/* Lets a build be identified from a screenshot alone — critical

@@ -22,6 +22,7 @@ import {
 } from "@/lib/queries/schedule";
 import { selectionFeedback } from "@/lib/haptics";
 import { makeStyles, useAppTheme } from "@/lib/theme";
+import { tourTarget } from "@/lib/tour-registry";
 
 type Tab = "browse" | "calendar" | "bookings";
 
@@ -259,7 +260,7 @@ function ScheduleCalendarTab({ classesByDate }: { classesByDate: Record<string, 
   const today = todayISO();
 
   return (
-    <View>
+    <View {...tourTarget("schedule.body")}>
       <Card style={styles.calendarCard}>
         <View style={styles.calHeader}>
           <Pressable onPress={prevMonth} hitSlop={8} style={styles.calNavButton} accessibilityRole="button" accessibilityLabel="Previous month">
@@ -369,7 +370,7 @@ export default function ScheduleScreen() {
         <ContinueWorkoutPill />
       </View>
 
-      <View style={styles.tabBar}>
+      <View style={styles.tabBar} {...tourTarget("schedule.views")}>
         <Segmented
           options={["browse", "calendar", "bookings"] as const}
           value={tab}
@@ -405,8 +406,8 @@ export default function ScheduleScreen() {
                 <Text style={styles.emptyText}>No upcoming classes scheduled.</Text>
               </Card>
             ) : (
-              sortedDates.map((date) => (
-                <View key={date} style={styles.section}>
+              sortedDates.map((date, dateIndex) => (
+                <View key={date} style={styles.section} {...(dateIndex === 0 ? tourTarget("schedule.body") : {})}>
                   <SectionTitle title={formatDateLabel(date)} />
                   {classesByDate[date].map((c) => (
                     <ClassRow key={c.id} item={c} />

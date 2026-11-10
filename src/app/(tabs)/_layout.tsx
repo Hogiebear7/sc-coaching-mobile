@@ -20,6 +20,7 @@ import {
   type TabRoute,
 } from "@/lib/tab-config";
 import { setTabChoice, useSyncTabChoiceWithAccount, useTabChoice } from "@/lib/tab-choice";
+import { tourTarget } from "@/lib/tour-registry";
 import { makeStyles, useAppTheme } from "@/lib/theme";
 
 // App v2 tab bar (docs/design-inspiration-macrofactor-2026-10.md). The two
@@ -120,6 +121,8 @@ export default function TabsLayout() {
             paddingTop: 8,
             paddingBottom: insets.bottom + 4,
           },
+          // Fills the bar exactly; the app tour spotlights this to point at the tab bar.
+          tabBarBackground: () => <View pointerEvents="none" style={StyleSheet.absoluteFill} {...tourTarget("tabs.bar")} />,
           tabBarLabelStyle: { fontSize: 12, fontWeight: "600", marginTop: 2 },
           tabBarIcon: ({ color, focused }) => {
             const pair = ICONS[route.name];
@@ -149,6 +152,7 @@ export default function TabsLayout() {
                       }}
                       accessibilityRole="button"
                       accessibilityLabel="Log something"
+                      {...tourTarget("tabs.add")}
                       style={({ pressed }) => [styles.addBtn, pressed && { transform: [{ scale: 0.96 }] }]}
                     >
                       <Ionicons name="add" size={30} color={colors.onPrimary} />

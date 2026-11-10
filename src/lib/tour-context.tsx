@@ -11,26 +11,18 @@ import {
 } from "react";
 
 import { useAuth } from "./auth-context";
-import { TOUR_PAGES, type TourPage } from "./tour-content";
+import { TOUR_PAGE_KEYS, TOUR_STORAGE_VERSION, findTourPage, pageKeyFromSegments, type TourPage } from "./tour-content";
+import { applyDismiss, parseTourState, type PersistedTourState } from "./tour-state";
 
-// Member-only, first-login product tour. Two parts:
-//   1. A one-time prompt ("take a tour?") the very first time a member's
-//      account is ever signed in on this device — covers signup, an
-//      explicit login, and a cold-launch session restore alike, since none
-//      of those are meaningfully different from the member's point of view.
-//   2. If they opt in, a short per-tab card the first time they open each
-//      of the 5 tabs (home/schedule/workouts/recovery/nutrition) — "view
-//      each page tour as you click into it," not one long modal up front.
-// State is persisted per-user (not per-device) so switching accounts on a
-// shared device doesn't skip a genuinely new member's first-run prompt.
-const STORAGE_PREFIX = "tour-state-v1-";
-const ALL_PAGE_KEYS: string[] = TOUR_PAGES.map((p) => p.key);
-
-interface PersistedTourState {
-  promptResolved: boolean;
-  active: boolean;
-  seenPages: string[];
-}
+// Member-only app tour. Two parts:
+//   1. A one-time prompt ("want a quick tour?") the first time a member's
+//      account is signed in on this device (and once more after a tour
+//      version bump, so everyone sees a redesigned tour).
+//   2. If they opt in, a short spotlight tour the first time they open each
+//      of the tour pages (see tour-content.ts). Settings can restart it.
+// State is persisted per user, not per device, so switching accounts on a
+// shared device does not skip a genuinely new member's first-run prompt.
+const STORAGE_PREFIX = `tour-state-${TOUR_STORAGE_VERSION}-`;
 
 function defaultState(): PersistedTourState {
   return { promptResolved: false, active: false, seenPages: [] };
@@ -39,13 +31,7 @@ function defaultState(): PersistedTourState {
 async function loadState(userId: string): Promise<PersistedTourState> {
   try {
     const raw = await AsyncStorage.getItem(STORAGE_PREFIX + userId);
-    if (!raw) return defaultState();
-    const parsed = JSON.parse(raw);
-    return {
-      promptResolved: !!parsed.promptResolved,
-      active: !!parsed.active,
-      seenPages: Array.isArray(parsed.seenPages) ? parsed.seenPages.filter((k: unknown) => typeof k === "string") : [],
-    };
+    return raw ? parseTourState(raw) : defaultState();
   } catch {
     return defaultState();
   }
@@ -56,28 +42,21 @@ function saveState(userId: string, state: PersistedTourState): void {
 }
 
 interface TourContextValue {
-  /** The initial "take a tour?" prompt — at most once per account, ever. */
+  /** The initial "take a tour?" prompt — at most once per account per tour version. */
   showPrompt: boolean;
-  /** The per-tab card due for the tab currently on screen, if any. */
+  /** The tour due for the page currently on screen, if any. */
   activePage: TourPage | null;
   startTour: () => void;
   deferTour: () => void;
+  /** The current page's tour is finished: do not show it again. */
   dismissPage: () => void;
+  /** Stop the whole tour (it can still be restarted from Settings). */
   skipTour: () => void;
-  /** Settings → "Take app tour": resets progress and jumps to the first tab. */
+  /** Settings → "Take app tour": resets progress and jumps to Home. */
   restartTour: () => void;
 }
 
 const TourContext = createContext<TourContextValue | null>(null);
-
-function tabKeyFromSegments(segments: string[]): string | null {
-  // Mirrors (tabs)/_layout.tsx's own currentTabIndex logic — the tour only
-  // ever cares about the 5 tab screens, not stack-presented modals/cards
-  // pushed on top of them.
-  if (segments[0] !== "(tabs)") return null;
-  const leaf = segments[segments.length - 1];
-  return ALL_PAGE_KEYS.includes(leaf) ? leaf : leaf === "(tabs)" ? "index" : null;
-}
 
 export function TourProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
@@ -108,12 +87,12 @@ export function TourProvider({ children }: { children: ReactNode }) {
 
   const showPrompt = !!(userId && state && !state.promptResolved);
 
-  const currentTabKey = tabKeyFromSegments(segments as string[]);
+  const currentKey = pageKeyFromSegments(segments as string[]);
   const activePage = useMemo(() => {
-    if (!userId || !state || showPrompt || !state.active || !currentTabKey) return null;
-    if (state.seenPages.includes(currentTabKey)) return null;
-    return TOUR_PAGES.find((p) => p.key === currentTabKey) ?? null;
-  }, [userId, state, showPrompt, currentTabKey]);
+    if (!userId || !state || showPrompt || !state.active || !currentKey) return null;
+    if (state.seenPages.includes(currentKey)) return null;
+    return findTourPage(currentKey);
+  }, [userId, state, showPrompt, currentKey]);
 
   const startTour = useCallback(() => {
     if (!userId) return;
@@ -128,12 +107,10 @@ export function TourProvider({ children }: { children: ReactNode }) {
   }, [userId]);
 
   const dismissPage = useCallback(() => {
-    if (!userId || !state || !currentTabKey) return;
-    const seenPages = state.seenPages.includes(currentTabKey) ? state.seenPages : [...state.seenPages, currentTabKey];
-    const complete = ALL_PAGE_KEYS.every((k) => seenPages.includes(k));
-    persist({ ...state, seenPages, active: complete ? false : state.active });
+    if (!userId || !state || !currentKey) return;
+    persist(applyDismiss(state, currentKey, TOUR_PAGE_KEYS));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId, state, currentTabKey]);
+  }, [userId, state, currentKey]);
 
   const skipTour = useCallback(() => {
     if (!userId || !state) return;

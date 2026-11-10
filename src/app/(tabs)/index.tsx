@@ -17,6 +17,7 @@ import { useDashboard } from "@/lib/queries/dashboard";
 import { useNotifications } from "@/lib/queries/notifications";
 import { useProfile } from "@/lib/queries/profile";
 import { useTour } from "@/lib/tour-context";
+import { tourTarget, useTourScroll } from "@/lib/tour-registry";
 import { makeStyles, useAppTheme, useLegacyColors } from "@/lib/theme";
 import { NO_ACCESS } from "@/lib/member-access";
 import { CAN_SELL_DIGITAL_PLAN } from "@/lib/upsell-config";
@@ -160,6 +161,8 @@ export default function DashboardScreen() {
   const unreadCount = notifications?.filter((n) => n.readAt === null).length ?? 0;
   const { data: profile } = useProfile();
   const access = profile?.memberAccess ?? NO_ACCESS;
+  const scrollRef = useRef<ScrollView>(null);
+  useTourScroll("index", scrollRef);
 
   const onRefresh = useCallback(() => {
     refetch();
@@ -199,6 +202,7 @@ export default function DashboardScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
       <ScrollView
+        ref={scrollRef}
         contentContainerStyle={styles.scroll}
         refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={onRefresh} tintColor={colors.text} />}
       >
@@ -227,6 +231,7 @@ export default function DashboardScreen() {
 
           <WeekStrip days={week} />
 
+          <View style={{ gap: 16 }} {...tourTarget("home.today")}>
           <View style={styles.todayRow}>
             <View style={{ flex: 1 }}>
               <Text style={styles.todayLabel}>Readiness today</Text>
@@ -249,10 +254,11 @@ export default function DashboardScreen() {
             </View>
           </View>
           <PillButton title={todayAction.label} onPress={() => router.push(todayAction.href as never)} />
+          </View>
         </View>
 
         {/* Up next — tier-aware, same job logic as before */}
-        <View style={styles.section}>
+        <View style={styles.section} {...tourTarget("home.next")}>
           <SectionTitle
             title="Up next"
             action={access.gymMembership ? "Schedule" : undefined}
@@ -309,7 +315,7 @@ export default function DashboardScreen() {
         </View>
 
         {/* Recovery tiles */}
-        <View style={styles.section}>
+        <View style={styles.section} {...tourTarget("home.recovery")}>
           <SectionTitle title="Recovery" action="See all" onAction={() => router.push("/(tabs)/recovery")} />
           <TileGrid>
             <MetricTile
@@ -382,7 +388,7 @@ export default function DashboardScreen() {
         </View>
 
         {/* Club */}
-        <View style={styles.section}>
+        <View style={styles.section} {...tourTarget("home.club")}>
           <SectionTitle title="Club" />
           <View style={styles.list}>
             <ListRow

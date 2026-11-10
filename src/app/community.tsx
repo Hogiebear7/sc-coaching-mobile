@@ -31,6 +31,7 @@ import {
 import { useGymCommunityAccess } from "@/lib/queries/community-groups";
 import { todayDateString } from "@/lib/workout-formatters";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
+import { tourTarget, useTourScroll } from "@/lib/tour-registry";
 
 // Emphasis order, top to bottom: wins/milestones, leaderboards, supporting
 // feed activity — comments/likes/mentions stay a tap away (the per-item
@@ -138,6 +139,7 @@ export default function CommunityScreen() {
   // hand back a full CommunityFeedItem just to identify which one it was.
   const [activeCommentId, setActiveCommentId] = useState<string | null>(null);
   const scrollRef = useRef<ScrollView>(null);
+  useTourScroll("community", scrollRef);
   const leaderboardY = useRef(0);
   const hasScrolledToLeaderboard = useRef(false);
 
@@ -203,6 +205,7 @@ export default function CommunityScreen() {
           hitSlop={12}
           style={styles.followButton}
           accessibilityLabel="Find people to follow"
+          {...tourTarget("community.find")}
         >
           <Ionicons name="person-add-outline" size={15} color={Color.gold} />
           <Text style={styles.followButtonText}>Find people</Text>
@@ -225,6 +228,7 @@ export default function CommunityScreen() {
             style={styles.entryCard}
             accessibilityRole="button"
             accessibilityLabel="Groups. Private groups with invite codes and challenges."
+            {...tourTarget("community.groups")}
           >
             <Ionicons name="people-circle-outline" size={26} color={Color.gold} />
             <Text style={styles.entryTitle}>Groups</Text>
@@ -236,6 +240,7 @@ export default function CommunityScreen() {
               style={styles.entryCard}
               accessibilityRole="button"
               accessibilityLabel="Your gym. Your gym's members-only community."
+              {...tourTarget("community.gym")}
             >
               <Ionicons name="barbell-outline" size={26} color={Color.gold} />
               <Text style={styles.entryTitle}>Your gym</Text>
@@ -265,6 +270,7 @@ export default function CommunityScreen() {
 
         <View
           style={styles.section}
+          {...tourTarget("community.leaderboard")}
           onLayout={(e) => {
             leaderboardY.current = e.nativeEvent.layout.y;
             scrollToLeaderboardIfRequested();

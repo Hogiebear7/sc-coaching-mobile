@@ -1,11 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Image, type ImageStyle } from "expo-image";
 import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import {
   ActivityIndicator,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -39,6 +40,7 @@ import {
   type PrimaryGoal,
 } from "@/lib/queries/profile";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
+import { tourTarget, useTourScroll } from "@/lib/tour-registry";
 
 const GENDERS: Gender[] = ["Male", "Female", "Other"];
 const GOALS: PrimaryGoal[] = [
@@ -131,6 +133,8 @@ export default function ProfileScreen() {
   const { data: pregnancy } = usePregnancyData(!!data?.cycleTrackingEligible);
   const pregnantNow = pregnancy?.isPregnant === true;
   const requestEmailChange = useRequestEmailChange();
+  const scrollRef = useRef<ScrollView>(null);
+  useTourScroll("profile", scrollRef);
 
   const [isChangingEmail, setIsChangingEmail] = useState(false);
   const [newEmailInput, setNewEmailInput] = useState("");
@@ -291,7 +295,8 @@ export default function ProfileScreen() {
             <Button title="Retry" onPress={() => refetch()} variant="secondary" style={{ marginTop: Spacing.md }} />
           </View>
         ) : (
-          <KeyboardAwareScroll contentContainerStyle={styles.scroll}>
+          <KeyboardAwareScroll ref={scrollRef as never} contentContainerStyle={styles.scroll}>
+            <View {...tourTarget("profile.top")} />
             <View style={styles.identityRow}>
               {data.avatarDataUrl ? (
                 <Image source={{ uri: data.avatarDataUrl }} style={styles.avatar as ImageStyle} contentFit="cover" />
@@ -419,6 +424,7 @@ export default function ProfileScreen() {
               )}
             </Card>
 
+            <View {...tourTarget("profile.goals")}>
             <Text style={[styles.sectionLabel, styles.sectionLabelSpaced]}>Coaching goals</Text>
             <Card style={styles.detailsCard}>
               <Text style={styles.label}>Primary goal</Text>
@@ -467,6 +473,7 @@ export default function ProfileScreen() {
                 </CollapsibleSection>
               </View>
             </Card>
+            </View>
 
             <Text style={[styles.sectionLabel, styles.sectionLabelSpaced]}>Dietary requirements</Text>
             <Card style={styles.dietaryCard}>
@@ -616,18 +623,22 @@ export default function ProfileScreen() {
                 on from Save with only a section-label's worth of spacing. */}
             <View style={styles.closingDivider} />
 
-            <Text style={styles.sectionLabel}>Body metrics</Text>
-            <Text style={styles.label}>Body weight</Text>
-            <BodyWeightCard />
+            <View {...tourTarget("profile.body")}>
+              <Text style={styles.sectionLabel}>Body metrics</Text>
+              <Text style={styles.label}>Body weight</Text>
+              <BodyWeightCard />
 
-            <Text style={[styles.label, styles.labelSpaced]}>Body fat %</Text>
-            <BodyFatCard />
+              <Text style={[styles.label, styles.labelSpaced]}>Body fat %</Text>
+              <BodyFatCard />
+            </View>
 
-            <Text style={[styles.label, styles.labelSpaced]}>Goal timeline</Text>
-            <GoalTimelineCard />
+            <View {...tourTarget("profile.timeline")}>
+              <Text style={[styles.label, styles.labelSpaced]}>Goal timeline</Text>
+              <GoalTimelineCard />
+            </View>
 
             <Text style={[styles.sectionLabel, styles.sectionLabelSpaced]}>Account</Text>
-            <Pressable onPress={() => router.push("/settings")} style={styles.cycleRow}>
+            <Pressable onPress={() => router.push("/settings")} style={styles.cycleRow} {...tourTarget("profile.settings")}>
               <View style={styles.cycleRowIcon}>
                 <Ionicons name="settings-outline" size={18} color={Color.gold} />
               </View>
@@ -640,7 +651,7 @@ export default function ProfileScreen() {
 
             {data.cycleTrackingEligible ? (
               <>
-                <Pressable onPress={() => router.push("/cycle-tracking")} style={[styles.cycleRow, { marginTop: Spacing.sm }]}>
+                <Pressable onPress={() => router.push("/cycle-tracking")} style={[styles.cycleRow, { marginTop: Spacing.sm }]} {...tourTarget("profile.cycle")}>
                   <View style={styles.cycleRowIcon}>
                     <Ionicons name="moon-outline" size={18} color={Color.gold} />
                   </View>

@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -19,6 +19,7 @@ import { hasAccess } from "@/lib/member-access";
 import { useMemberAccess } from "@/lib/queries/profile";
 import { useLogRecovery, useRecovery, type RecoveryLogSummary } from "@/lib/queries/recovery";
 import { makeStyles, useAppTheme } from "@/lib/theme";
+import { tourTarget, useTourScroll } from "@/lib/tour-registry";
 
 const WEEK_LETTERS = ["S", "M", "T", "W", "T", "F", "S"];
 
@@ -163,6 +164,9 @@ export default function RecoveryScreen() {
     });
   }, [data]);
 
+  const scrollRef = useRef<ScrollView>(null);
+  useTourScroll("recovery", scrollRef);
+
   if (isLoading) {
     return (
       <SafeAreaView style={styles.safe}>
@@ -197,6 +201,7 @@ export default function RecoveryScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
       <ScrollView
+        ref={scrollRef}
         contentContainerStyle={styles.scroll}
         refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => refetch()} tintColor={colors.text} />}
       >
@@ -213,7 +218,7 @@ export default function RecoveryScreen() {
             <WeekStrip days={week} />
           </View>
 
-          <View style={styles.readiness}>
+          <View style={styles.readiness} {...tourTarget("recovery.readiness")}>
             <Text style={styles.readinessLabel}>Readiness today</Text>
             {todayScore !== null ? (
               <View style={styles.readinessRow}>
@@ -233,7 +238,7 @@ export default function RecoveryScreen() {
         </View>
 
         <View style={styles.body}>
-          <View style={styles.section}>
+          <View style={styles.section} {...tourTarget("recovery.week")}>
             <SectionTitle title="This week" action="Trend" onAction={() => router.push("/readiness" as never)} />
             <TileGrid>
               <MetricTile
@@ -296,7 +301,7 @@ export default function RecoveryScreen() {
             }
           />
 
-          <View style={styles.section}>
+          <View style={styles.section} {...tourTarget("recovery.checkin")}>
             <SectionTitle
               title={editingDate === null ? "Check in" : "Edit check-in"}
               action={editingDate === null && hasAccess(access, "trackerImport") ? "Import sleep" : undefined}

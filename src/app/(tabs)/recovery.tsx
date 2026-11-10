@@ -122,9 +122,9 @@ function CheckInForm({
             multiline
             maxLength={300}
             style={{ minHeight: 72, textAlignVertical: "top" }}
-            accessibilityHint="Your coach and the AI will take this into account. Leave it empty if you are fine."
+            accessibilityHint="Your coach and the app will take this into account. Leave it empty if you are fine."
           />
-          <Text style={styles.noteCaption}>Your coach and the AI take this into account for a few days. Clear it when you are better.</Text>
+          <Text style={styles.noteCaption}>Your coach and the app take this into account for a few days. Clear it when you are better.</Text>
         </View>
       ) : null}
       {error ? <Text style={styles.error}>{error}</Text> : null}

@@ -1,12 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { LinearGradient } from "expo-linear-gradient";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  Animated,
-  Easing,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -24,6 +21,7 @@ import { BodyWeightCard } from "@/components/ui/BodyWeightCard";
 import { Card } from "@/components/ui/Card";
 import { ContinueWorkoutPill } from "@/components/ui/ContinueWorkoutPill";
 import { InfoModal } from "@/components/ui/InfoModal";
+import { LiquidBottle } from "@/components/ui/LiquidBottle";
 import { KeyboardAwareScroll } from "@/components/ui/KeyboardAwareScroll";
 import type { MacroKind } from "@/components/ui/MacroPieChart";
 import { ProgressBar } from "@/components/ui/ProgressBar";
@@ -108,48 +106,11 @@ const MANUAL_MAX_ML = 15_000;
 // number, so it can't disagree) — 2805 kcal target means 2.8L. Falls back to
 // a generic "no target yet" message when the calorie target itself isn't
 // available (cold start, no weight on file, or the coach has it disabled).
-// A bottle that starts full (nothing drunk yet) and drains as the member
-// logs water — the fill represents what's LEFT to drink, not what's been
-// drunk, since "drink from a full bottle over the day" is the metaphor.
-// Past target it just reads empty; the text above is what carries the
-// "you went over" info ("2.5L / 2.2L"). The fill height eases toward the new
-// value instead of jumping — a restrained cue that a tap actually landed —
-// and skips the transition entirely when the member has reduce-motion on.
-function HydrationBottle({ remainingPct, reduceMotion }: { remainingPct: number; reduceMotion: boolean }) {
-  const styles = useStyles();
-  const [fillAnim] = useState(() => new Animated.Value(remainingPct));
-
-  useEffect(() => {
-    Animated.timing(fillAnim, {
-      toValue: remainingPct,
-      duration: reduceMotion ? 0 : 450,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: false, // animating height, not transform/opacity
-    }).start();
-  }, [remainingPct, reduceMotion, fillAnim]);
-
-  const height = fillAnim.interpolate({ inputRange: [0, 100], outputRange: ["0%", "100%"] });
-
-  return (
-    <View style={styles.bottleWrap}>
-      <View style={styles.bottleCap} />
-      <View style={styles.bottleNeck} />
-      <View style={styles.bottleBody}>
-        <Animated.View style={[styles.bottleFill, { height }]} />
-        {/* Glass-sheen highlight, purely decorative — always sits above the
-            fill so it reads at any level, not tied to hydration data. */}
-        <LinearGradient
-          colors={["rgba(255,255,255,0.16)", "rgba(255,255,255,0)"]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={styles.bottleSheen}
-          pointerEvents="none"
-        />
-      </View>
-    </View>
-  );
-}
-
+// The bottle itself (LiquidBottle) starts full (nothing drunk yet) and drains
+// as the member logs water — the fill represents what's LEFT to drink, not
+// what's been drunk, since "drink from a full bottle over the day" is the
+// metaphor. Past target it just reads empty; the text above is what carries the
+// "you went over" info ("2.5L / 2.2L"). The liquid moves with the phone.
 const HYDRATION_INFO_BODY =
   "Every calorie your body burns costs roughly 1ml of water to process — so your target tracks your energy needs, " +
   "not a flat \"drink 2 litres\" rule. Food counts toward it too: fruit, vegetables, dairy, and most cooked meals are " +
@@ -218,7 +179,7 @@ function HydrationCard({ date }: { date: string }) {
       </Text>
 
       <View style={styles.hydrationBodyRow}>
-        <HydrationBottle remainingPct={remainingPct} reduceMotion={reduceMotion} />
+        <LiquidBottle remainingPct={remainingPct} reduceMotion={reduceMotion} />
         <View style={styles.hydrationSideCol}>
           {target ? (
             <Text style={styles.hydrationSideText}>{statusText}</Text>
@@ -402,8 +363,8 @@ function CoachChat({
     return (
       <UpsellCard
         icon="chatbubble-ellipses-outline"
-        title="AI Nutrition Coach"
-        body={notInPlanCopy("Chat with the AI Nutrition Coach")}
+        title="Nutrition Coach"
+        body={notInPlanCopy("Chat with the Nutrition Coach")}
       />
     );
   }
@@ -411,14 +372,14 @@ function CoachChat({
   if (!configured) {
     return (
       <Card style={styles.chatCard}>
-        <Text style={styles.chatUnavailable}>AI Nutrition Coach isn&apos;t available right now.</Text>
+        <Text style={styles.chatUnavailable}>The Nutrition Coach isn&apos;t available right now.</Text>
       </Card>
     );
   }
 
   return (
     <Card style={styles.chatCard}>
-      <Text style={styles.chatTitle}>AI Nutrition Coach</Text>
+      <Text style={styles.chatTitle}>Nutrition Coach</Text>
       <View style={styles.chatMessages}>
         {messages.length === 0 ? (
           <Text style={styles.chatEmpty}>Ask about meal timing, fuelling for a session, or your macros — grounded in your own training and recovery data.</Text>
@@ -1074,14 +1035,6 @@ const useStyles = makeStyles((c, dc) =>
     hydrationBodyRow: { flexDirection: "row", alignItems: "center", gap: 16 },
     hydrationSideCol: { flex: 1 },
     hydrationSideText: { fontSize: 16, fontWeight: "500", color: c.textSecondary, lineHeight: 22 },
-    bottleWrap: { width: 64, alignItems: "center" },
-    bottleCap: { width: 24, height: 8, borderTopLeftRadius: 4, borderTopRightRadius: 4, backgroundColor: c.textMuted },
-    bottleNeck: { width: 28, height: 14, backgroundColor: c.control },
-    bottleBody: { width: 64, height: 136, borderRadius: 16, backgroundColor: c.control, overflow: "hidden", justifyContent: "flex-end" },
-    bottleFill: { width: "100%", backgroundColor: dc.hydration },
-    // Decorative glass-sheen highlight — purely visual, not tied to hydration
-    // data, so it's fine as a static overlay rather than anything animated.
-    bottleSheen: { position: "absolute", top: 0, left: 0, bottom: 0, width: "45%" },
     hydrationQuickAddRow: { flexDirection: "row", gap: 8, marginTop: 16 },
     hydrationChip: { flex: 1, alignItems: "center", justifyContent: "center", minHeight: 44, borderRadius: AppRadius.control, backgroundColor: c.control },
     // The recommended +500ml is the one solid pill.

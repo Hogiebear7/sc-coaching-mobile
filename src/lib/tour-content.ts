@@ -162,7 +162,7 @@ export const TOUR_PAGES: TourPage[] = [
         id: "checkin",
         target: "recovery.checkin",
         title: "Check in",
-        body: "Sleep, soreness and fatigue take a few taps. Injured or feeling unwell? Add a note at the bottom and your coach and the AI will take it into account.",
+        body: "Sleep, soreness and fatigue take a few taps. Injured or feeling unwell? Add a note at the bottom and your coach and the app will take it into account.",
       },
     ],
   },
@@ -243,7 +243,7 @@ export const TOUR_PAGES: TourPage[] = [
         id: "goals",
         target: "profile.goals",
         title: "Your goals",
-        body: "Tell me what you're working toward. Your coach and the AI shape your training and nutrition around this.",
+        body: "Tell me what you're working toward. Your coach and the app shape your training and nutrition around this.",
       },
       {
         id: "body",

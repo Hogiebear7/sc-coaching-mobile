@@ -31,6 +31,7 @@ import {
 import { useGymCommunityAccess } from "@/lib/queries/community-groups";
 import { todayDateString } from "@/lib/workout-formatters";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
+import { useTour } from "@/lib/tour-context";
 import { tourTarget, useTourScroll } from "@/lib/tour-registry";
 
 // Emphasis order, top to bottom: wins/milestones, leaderboards, supporting
@@ -128,6 +129,8 @@ export default function CommunityScreen() {
   const Color = useLegacyColors();
   const router = useRouter();
   const { user } = useAuth();
+  // The visibility notice waits until the page tour is out of the way, so it never opens on top of a tour step.
+  const { holdTips } = useTour();
   const params = useLocalSearchParams<{ tab?: string }>();
   const [metric, setMetric] = useState<LeaderboardMetric>("volume");
   const [range, setRange] = useState<LeaderboardRange>("all");
@@ -452,7 +455,7 @@ export default function CommunityScreen() {
         workoutSessionId={activeCommentId ?? ""}
       />
       <DiscoverabilityNotice
-        visible={noticeVisible}
+        visible={noticeVisible && !holdTips}
         onDismiss={dismissNotice}
         onManageSettings={() => {
           dismissNotice();

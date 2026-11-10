@@ -1053,7 +1053,7 @@ export default function WorkoutGeneratorScreen() {
 
           {mode === "programme" ? (
             <>
-              <Text style={styles.groupHeader}>Context for AI</Text>
+              <Text style={styles.groupHeader}>Context for your programme</Text>
 
               {isSportsGoal ? (
                 <>
@@ -1073,7 +1073,7 @@ export default function WorkoutGeneratorScreen() {
               ) : null}
 
               <TextField
-                label="Additional notes for your AI coach"
+                label="Additional notes for your coach"
                 value={notes}
                 onChangeText={setNotes}
                 placeholder="e.g. 10K race in 6 weeks, returning from a hamstring injury, limited to a home gym, boxing bout in 8 weeks"

@@ -46,6 +46,12 @@ interface TourContextValue {
   showPrompt: boolean;
   /** The tour due for the page currently on screen, if any. */
   activePage: TourPage | null;
+  /**
+   * True while the tour is, or is about to be, on screen (including while its
+   * saved state is still loading). A page's own one-off pop-ups wait for this
+   * to be false so they never open on top of a tour step.
+   */
+  holdTips: boolean;
   startTour: () => void;
   deferTour: () => void;
   /** The current page's tour is finished: do not show it again. */
@@ -126,9 +132,12 @@ export function TourProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, router]);
 
+  const holdTips = !!userId && (state === null || showPrompt || activePage !== null);
+
   const value: TourContextValue = {
     showPrompt,
     activePage,
+    holdTips,
     startTour,
     deferTour,
     dismissPage,

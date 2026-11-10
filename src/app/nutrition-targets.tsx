@@ -102,7 +102,7 @@ function MacroBar({ label, consumed, target, tone }: { label: string; consumed: 
 }
 
 function sourceLine(target: ResolvedNutritionTarget): string {
-  if (target.mode === "manual") return target.setByMember ? "Set by you via the AI Nutrition Coach." : "Set by your coach.";
+  if (target.mode === "manual") return target.setByMember ? "Set by you via the Nutrition Coach." : "Set by your coach.";
   if (target.source === "adaptive") return "Learned from your complete food days and weigh-ins.";
   if (target.weekBudgetKcal != null) return "Your share of this week's budget — see This week below.";
   return "Estimated from your weight and training load — sharpens as you log more.";

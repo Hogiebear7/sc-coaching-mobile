@@ -21,6 +21,7 @@ import { hasAccess } from "@/lib/member-access";
 import { useAdvanceProgram, useMyProgram, useSetProgramStatus, type PrescribedExercise } from "@/lib/queries/programs";
 import { useMemberAccess } from "@/lib/queries/profile";
 import { useRestTimer } from "@/lib/rest-timer";
+import { useTour } from "@/lib/tour-context";
 import { tourTarget, useTourScroll } from "@/lib/tour-registry";
 import { useWorkoutDraft } from "@/lib/workout-draft";
 import { type PersonalBest, useWorkouts } from "@/lib/queries/workouts";
@@ -141,6 +142,17 @@ export default function WorkoutsScreen() {
     setAiCalloutVisible(false);
     if (aiCalloutKey) AsyncStorage.setItem(aiCalloutKey, "1").catch(() => {});
   }
+  // The tour's programme step says the same thing, so a member who is being
+  // shown the tour here does not also get this pop-up: it would open on top of
+  // the tour card. Mark it seen for them and hold it back until the tour is out of the way.
+  const { holdTips, activePage: tourPage } = useTour();
+  const tourOnThisPage = tourPage?.key === "workouts";
+  useEffect(() => {
+    if (!tourOnThisPage || !aiCalloutKey) return;
+    AsyncStorage.setItem(aiCalloutKey, "1")
+      .then(() => setAiCalloutVisible(false))
+      .catch(() => {});
+  }, [tourOnThisPage, aiCalloutKey]);
 
   // This tab stays mounted in the background rather than unmounting when
   // the member navigates away to Log Workout — so the mutation-time
@@ -745,7 +757,7 @@ export default function WorkoutsScreen() {
         dayId={displayDay?.id ?? ""}
         exercise={swapTarget}
       />
-      <AiCalloutModal visible={aiCalloutVisible} onDismiss={dismissAiCallout} />
+      <AiCalloutModal visible={aiCalloutVisible && !holdTips} onDismiss={dismissAiCallout} />
     </SafeAreaView>
   );
 }

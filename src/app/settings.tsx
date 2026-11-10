@@ -382,7 +382,7 @@ export default function SettingsScreen() {
               <Row
                 icon="sparkles-outline"
                 title="App Subscription"
-                sub={access.digital ? "Your plan: manage or restore" : "AI coaching, calorie targets, programmes and more"}
+                sub={access.digital ? "Your plan: manage or restore" : "Coach chat, calorie targets, programmes and more"}
                 onPress={() => router.push(DIGITAL_PLAN_ROUTE as never)}
               />
             ) : null}

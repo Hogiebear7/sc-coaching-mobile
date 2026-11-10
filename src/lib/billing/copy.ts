@@ -99,7 +99,7 @@ export const RESTORE_LABEL = "Restore purchases";
 /** What the digital plan includes, in the words the paywall uses. Mirrors the features gated in src/lib/member-access.ts. */
 // What the App Subscription adds to Free (owner decisions 2026-10-27; server: gym-app lib/member-access.ts).
 export const DIGITAL_PLAN_FEATURES: readonly string[] = [
-  "AI coach, AI nutrition coach, and food logging from a photo or a description",
+  "Coach chat, a nutrition coach, and food logging from a photo or a description",
   "Daily calorie and macro targets that adapt to your training",
   "Programmes, the weekly planner and workout reviews",
   "Full history, trends, personal bests and leaderboards",

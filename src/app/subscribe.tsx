@@ -85,7 +85,7 @@ export default function SubscribeScreen() {
               <Ionicons name="checkmark-circle" size={22} color={Color.success} />
               <Text style={styles.cardTitle}>You&apos;re subscribed</Text>
             </View>
-            <Text style={styles.body}>Thank you. The AI coach, programme generation, food search and the rest are now unlocked on your account.</Text>
+            <Text style={styles.body}>Thank you. Coach chat, programme generation, food search and the rest are now unlocked on your account.</Text>
             <Button title="Done" onPress={() => router.back()} style={styles.gap} />
           </Card>
         ) : (

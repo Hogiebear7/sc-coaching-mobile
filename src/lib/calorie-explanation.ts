@@ -17,7 +17,7 @@ export function calorieExplanation(target: ResolvedNutritionTarget | null | unde
   if (target.mode === "manual") {
     lines.push(
       target.setByMember
-        ? `Today's target is ${kcal(target.calories)}, which you set through the AI Nutrition Coach. It stays the same every day until you or your coach change it.`
+        ? `Today's target is ${kcal(target.calories)}, which you set through the Nutrition Coach. It stays the same every day until you or your coach change it.`
         : `Today's target is ${kcal(target.calories)}, set by your coach. It stays the same every day until they change it — message them if it doesn't feel right.`
     );
     return lines.join("\n\n");

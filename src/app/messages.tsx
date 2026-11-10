@@ -75,7 +75,7 @@ function AiCoachTab({
   if (!hasAccess(access, "aiCoachChat")) {
     return (
       <View style={{ margin: Spacing.lg }}>
-        <UpsellCard icon="chatbubble-ellipses-outline" title="AI Coach" body={notInPlanCopy("Chat with the AI Coach")} />
+        <UpsellCard icon="chatbubble-ellipses-outline" title="Ask the app" body={notInPlanCopy("Chat with the app")} />
       </View>
     );
   }
@@ -104,9 +104,9 @@ function AiCoachTab({
     return (
       <Card style={styles.unavailableCard}>
         <Ionicons name="chatbubble-ellipses-outline" size={22} color={Color.textMuted} />
-        <Text style={styles.unavailableTitle}>AI coach unavailable</Text>
+        <Text style={styles.unavailableTitle}>Ask the app is unavailable</Text>
         <Text style={styles.unavailableSub}>
-          The AI assistant isn&apos;t configured on this server yet. Use the Message coach tab instead.
+          This isn&apos;t switched on for the server yet. Use the Message coach tab instead.
         </Text>
       </Card>
     );
@@ -150,7 +150,7 @@ function AiCoachTab({
             <View key={m.id} style={[styles.bubble, m.role === "user" ? styles.bubbleUser : styles.bubbleAssistant]}>
               <Text style={m.role === "user" ? styles.bubbleUserText : styles.bubbleAssistantText}>{m.content}</Text>
               <Text style={[styles.bubbleTime, m.role === "user" && styles.bubbleTimeUser]}>
-                {m.role === "user" ? "You" : "AI Coach"}
+                {m.role === "user" ? "You" : "S&C app"}
                 {formatTime(m.createdAt) ? ` · ${formatTime(m.createdAt)}` : ""}
               </Text>
             </View>
@@ -288,7 +288,7 @@ export default function MessagesScreen() {
 
         <View style={styles.tabBar}>
           <Pressable onPress={() => setTab("ai")} style={[styles.tabButton, tab === "ai" && styles.tabButtonActive]}>
-            <Text style={[styles.tabButtonText, tab === "ai" && styles.tabButtonTextActive]}>AI Coach</Text>
+            <Text style={[styles.tabButtonText, tab === "ai" && styles.tabButtonTextActive]}>Ask the app</Text>
           </Pressable>
           <Pressable onPress={() => setTab("coach")} style={[styles.tabButton, tab === "coach" && styles.tabButtonActive]}>
             <Text style={[styles.tabButtonText, tab === "coach" && styles.tabButtonTextActive]}>Message coach</Text>

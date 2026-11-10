@@ -54,7 +54,7 @@ export default function TrialOfferScreen() {
               <Ionicons name="sparkles-outline" size={24} color={Color.gold} />
             </View>
             <Text style={styles.title}>{view.headline}</Text>
-            <Text style={styles.body}>AI coach and nutrition coach, programme generation, food photo scans and more. Your Free tier stays as it is either way.</Text>
+            <Text style={styles.body}>Coach chat and nutrition coach, programme generation, food photo scans and more. Your Free tier stays as it is either way.</Text>
             {view.plans.map((plan) => (
               <View key={plan.billingOptionId} style={styles.planLine}>
                 <Ionicons name="checkmark" size={16} color={Color.gold} />

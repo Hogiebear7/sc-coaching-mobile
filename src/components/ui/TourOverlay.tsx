@@ -3,6 +3,7 @@ import { AccessibilityInfo, Animated, BackHandler, Easing, Pressable, StyleSheet
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { PillButton } from "@/components/app/primitives";
+import { BrandMark } from "@/components/ui/BrandMark";
 import { appTitle } from "@/constants/theme";
 import { selectionFeedback, tapFeedback } from "@/lib/haptics";
 import { useProfile } from "@/lib/queries/profile";
@@ -10,23 +11,25 @@ import { makeStyles, useAppTheme } from "@/lib/theme";
 import { TOUR_PROMPT, type TourPage } from "@/lib/tour-content";
 import { useTour } from "@/lib/tour-context";
 import { hasTourTarget, measureTourTarget, scrollTourTargetIntoView, type TourRect } from "@/lib/tour-registry";
-import { nextVisibleStep } from "@/lib/tour-state";
+import { nextVisibleStep, placeCard } from "@/lib/tour-state";
 
 // The tour's UI, mounted once near the app root (app/_layout.tsx). It reads
 // everything from useTour(), so screens do not know the tour exists beyond
 // marking what can be spotlighted with tourTarget() (lib/tour-registry.ts).
 //
 // It is a full-screen overlay (not a Modal): dim layers around the target
-// leave a hole that glides between steps, a gold ring marks the target, and a
-// card with a small guide talks the member through it. All spotlight motion
-// uses the JS driver (it animates layout); the card and guide use the native
-// driver (opacity/transform only). Reduce Motion turns the motion and the
-// typing effect off.
+// leave a hole, a gold ring marks the target, and a card with the club's logo
+// talks the member through it. Moving between steps is one motion: the hole
+// and the card glide to their new places together while only the words
+// cross-fade. The hole uses the JS driver (it animates layout); everything
+// else uses the native driver. Reduce Motion turns the motion and the typing
+// effect off.
 
 const DIM = "rgba(4,10,20,0.8)";
 const HOLE_PAD = 8;
 const HOLE_RADIUS = 18;
-const CARD_ROOM = 250;
+const MOVE_MS = 420;
+const MOVE_EASING = Easing.inOut(Easing.cubic);
 
 function useReduceMotion(): boolean {
   const [reduce, setReduce] = useState(false);
@@ -80,32 +83,25 @@ function TypedText({ text, instant, style }: { text: string; instant: boolean; s
   );
 }
 
-/** The guide: a gold-ringed S&C badge that breathes. Purely decorative. */
-function Guide({ size, reduceMotion }: { size: number; reduceMotion: boolean }) {
-  const styles = useStyles();
+/** The club's logo, breathing very gently so the guide feels present. */
+function Guide({ height, reduceMotion }: { height: number; reduceMotion: boolean }) {
   const [breathe] = useState(() => new Animated.Value(0));
   useEffect(() => {
     if (reduceMotion) return;
     const loop = Animated.loop(
       Animated.sequence([
-        Animated.timing(breathe, { toValue: 1, duration: 1600, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
-        Animated.timing(breathe, { toValue: 0, duration: 1600, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
+        Animated.timing(breathe, { toValue: 1, duration: 2000, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
+        Animated.timing(breathe, { toValue: 0, duration: 2000, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
       ])
     );
     loop.start();
     return () => loop.stop();
   }, [breathe, reduceMotion]);
-  const scale = breathe.interpolate({ inputRange: [0, 1], outputRange: [1, 1.22] });
-  const haloOpacity = breathe.interpolate({ inputRange: [0, 1], outputRange: [0.5, 0] });
+  const scale = breathe.interpolate({ inputRange: [0, 1], outputRange: [1, 1.05] });
   return (
-    <View style={{ width: size, height: size }} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-      <Animated.View
-        style={[styles.guideHalo, { width: size, height: size, borderRadius: size / 2, opacity: haloOpacity, transform: [{ scale }] }]}
-      />
-      <View style={[styles.guideBadge, { width: size, height: size, borderRadius: size / 2 }]}>
-        <Text style={[styles.guideText, { fontSize: size * 0.46, lineHeight: size * 0.52 }]}>S&amp;C</Text>
-      </View>
-    </View>
+    <Animated.View style={{ transform: [{ scale }] }}>
+      <BrandMark height={height} />
+    </Animated.View>
   );
 }
 
@@ -151,7 +147,7 @@ function TourPrompt({ onStart, onLater }: { onStart: () => void; onLater: () => 
   return (
     <Animated.View style={[StyleSheet.absoluteFill, styles.promptRoot, { opacity }]} accessibilityViewIsModal>
       <Animated.View style={[styles.promptCard, { transform: [{ translateY: rise }] }]}>
-        <Guide size={64} reduceMotion={reduceMotion} />
+        <Guide height={52} reduceMotion={reduceMotion} />
         <Text style={styles.promptTitle}>{first ? `Hey ${first}.` : "Hey there."}</Text>
         <Text style={styles.promptSub}>{TOUR_PROMPT.title}</Text>
         <TypedText text={TOUR_PROMPT.body} instant={reduceMotion} style={styles.promptBody} />
@@ -189,15 +185,21 @@ function PageTour({ page, onFinish, onSkip }: { page: TourPage; onFinish: () => 
   const origin = useRef({ x: 0, y: 0 });
   const [size, setSize] = useState({ w: 0, h: 0 });
 
-  // Where the spotlight is. Starts as nothing, in the middle, so the first
-  // step opens out of the dark.
+  // The spotlight. Starts as nothing, in the middle, so the first step opens
+  // out of the dark.
   const [hx] = useState(() => new Animated.Value(0));
   const [hy] = useState(() => new Animated.Value(0));
   const [hw] = useState(() => new Animated.Value(0));
   const [hh] = useState(() => new Animated.Value(0));
   const [ringOpacity] = useState(() => new Animated.Value(0));
+  // The card: one persistent view that glides (cardY), appears once
+  // (cardOpacity/cardRise), and whose words cross-fade (contentOpacity).
+  const [cardY] = useState(() => new Animated.Value(0));
   const [cardOpacity] = useState(() => new Animated.Value(0));
-  const [cardShift] = useState(() => new Animated.Value(12));
+  const [cardRise] = useState(() => new Animated.Value(14));
+  const [contentOpacity] = useState(() => new Animated.Value(1));
+  const [cardH, setCardH] = useState(0);
+  const cardPlaced = useRef(false);
 
   const [display, setDisplay] = useState<{ index: number; hole: Hole | null } | null>(null);
   const [hidden, setHidden] = useState(false);
@@ -218,31 +220,27 @@ function PageTour({ page, onFinish, onSkip }: { page: TourPage; onFinish: () => 
     });
   }, []);
 
+  // Glide the spotlight to a place (or collapse it to nothing).
+  const animateHole = useCallback((hole: Hole | null) => {
+    const to = hole ?? { x: size.w / 2, y: size.h * 0.4, w: 0, h: 0 };
+    const move = (v: Animated.Value, value: number) =>
+      Animated.timing(v, { toValue: value, duration: reduceMotion ? 0 : MOVE_MS, easing: MOVE_EASING, useNativeDriver: false });
+    Animated.parallel([
+      move(hx, to.x),
+      move(hy, to.y),
+      move(hw, to.w),
+      move(hh, to.h),
+      Animated.timing(ringOpacity, { toValue: hole ? 1 : 0, duration: reduceMotion ? 0 : 300, useNativeDriver: false }),
+    ]).start();
+  }, [size.w, size.h, reduceMotion, hx, hy, hw, hh, ringOpacity]);
+
   useEffect(() => {
     if (size.w === 0) return;
     let cancelled = false;
 
-    const animateHole = (hole: Hole | null) => {
-      const to = hole ?? { x: size.w / 2, y: size.h * 0.4, w: 0, h: 0 };
-      const spring = (v: Animated.Value, value: number) =>
-        reduceMotion
-          ? Animated.timing(v, { toValue: value, duration: 0, useNativeDriver: false })
-          : Animated.spring(v, { toValue: value, friction: 9, tension: 55, useNativeDriver: false });
-      Animated.parallel([
-        spring(hx, to.x),
-        spring(hy, to.y),
-        spring(hw, to.w),
-        spring(hh, to.h),
-        Animated.timing(ringOpacity, { toValue: hole ? 1 : 0, duration: reduceMotion ? 0 : 260, useNativeDriver: false }),
-      ]).start();
-    };
-
     const present = async (index: number, rect: TourRect | null) => {
       shownCount.current += 1;
-      await new Promise<void>((resolve) =>
-        Animated.timing(cardOpacity, { toValue: 0, duration: reduceMotion ? 0 : 100, useNativeDriver: true }).start(() => resolve())
-      );
-      if (cancelled) return;
+      const first = shownCount.current === 1;
       const hole: Hole | null = rect
         ? (() => {
             const left = Math.max(4, rect.x - origin.current.x - HOLE_PAD);
@@ -252,14 +250,19 @@ function PageTour({ page, onFinish, onSkip }: { page: TourPage; onFinish: () => 
             return { x: left, y: top, w: Math.max(0, right - left), h: Math.max(0, bottom - top) };
           })()
         : null;
+      if (!first) {
+        // The words fade out while the card and spotlight start to move, then new words fade in.
+        await new Promise<void>((resolve) =>
+          Animated.timing(contentOpacity, { toValue: 0, duration: reduceMotion ? 0 : 110, useNativeDriver: true }).start(() => resolve())
+        );
+        if (cancelled) return;
+      }
       setDisplay({ index, hole });
       animateHole(hole);
-      cardShift.setValue(reduceMotion ? 0 : 12);
       selectionFeedback();
-      Animated.parallel([
-        Animated.timing(cardOpacity, { toValue: 1, duration: reduceMotion ? 0 : 280, delay: reduceMotion ? 0 : 120, useNativeDriver: true }),
-        Animated.timing(cardShift, { toValue: 0, duration: reduceMotion ? 0 : 280, delay: reduceMotion ? 0 : 120, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
-      ]).start();
+      if (!first) {
+        Animated.timing(contentOpacity, { toValue: 1, duration: reduceMotion ? 0 : 260, delay: reduceMotion ? 0 : 120, useNativeDriver: true }).start();
+      }
     };
 
     const run = async () => {
@@ -289,7 +292,11 @@ function PageTour({ page, onFinish, onSkip }: { page: TourPage; onFinish: () => 
         if (hasTourTarget(step.target)) {
           const scrolled = await scrollTourTargetIntoView(page.key, step.target);
           if (cancelled) return;
-          if (scrolled) await sleep(reduceMotion ? 60 : 480);
+          if (scrolled) {
+            // The screen is scrolling under us: close the spotlight while it moves, then open it on the new spot.
+            animateHole(null);
+            await sleep(reduceMotion ? 60 : 520);
+          }
           if (cancelled) return;
           const rect = await measureTourTarget(step.target);
           if (cancelled) return;
@@ -309,6 +316,23 @@ function PageTour({ page, onFinish, onSkip }: { page: TourPage; onFinish: () => 
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [request, size.w, size.h]);
+
+  // Put the card where the step wants it. The first time it is placed
+  // directly and fades in; after that it glides alongside the spotlight.
+  useEffect(() => {
+    if (!display || size.h === 0 || cardH === 0) return;
+    const y = placeCard({ hole: display.hole, cardH, screenH: size.h, insetTop: insets.top, insetBottom: insets.bottom });
+    if (!cardPlaced.current) {
+      cardPlaced.current = true;
+      cardY.setValue(y);
+      Animated.parallel([
+        Animated.timing(cardOpacity, { toValue: 1, duration: reduceMotion ? 0 : 300, delay: reduceMotion ? 0 : 180, useNativeDriver: true }),
+        Animated.timing(cardRise, { toValue: 0, duration: reduceMotion ? 0 : 300, delay: reduceMotion ? 0 : 180, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+      ]).start();
+      return;
+    }
+    Animated.timing(cardY, { toValue: y, duration: reduceMotion ? 0 : MOVE_MS, easing: MOVE_EASING, useNativeDriver: true }).start();
+  }, [display, cardH, size.h, insets.top, insets.bottom, reduceMotion, cardY, cardOpacity, cardRise]);
 
   const current = display ? steps[display.index] : null;
   const visibleSteps = steps.filter((s) => !s.target || hasTourTarget(s.target));
@@ -337,18 +361,6 @@ function PageTour({ page, onFinish, onSkip }: { page: TourPage; onFinish: () => 
   }, [goBack]);
 
   if (hidden) return null;
-
-  const hole = display?.hole ?? null;
-  // Card goes below the target if there is room, else above, else pinned to the bottom.
-  const spaceBelow = hole ? size.h - (hole.y + hole.h) - insets.bottom : 0;
-  const spaceAbove = hole ? hole.y - insets.top : 0;
-  const cardPosition: object = !hole
-    ? { top: 0, bottom: 0, justifyContent: "center" }
-    : spaceBelow >= CARD_ROOM
-      ? { top: hole.y + hole.h + 14 }
-      : spaceAbove >= CARD_ROOM
-        ? { bottom: size.h - hole.y + 14 }
-        : { bottom: insets.bottom + 12 };
 
   return (
     <Animated.View ref={rootRef} onLayout={onLayout} style={[StyleSheet.absoluteFill, { opacity }]} accessibilityViewIsModal>
@@ -382,19 +394,22 @@ function PageTour({ page, onFinish, onSkip }: { page: TourPage; onFinish: () => 
       {current ? (
         <Animated.View
           pointerEvents="box-none"
-          style={[styles.cardWrap, cardPosition, { opacity: cardOpacity, transform: [{ translateY: cardShift }] }]}
+          onLayout={(e) => setCardH(Math.round(e.nativeEvent.layout.height))}
+          style={[styles.cardWrap, { opacity: cardOpacity, transform: [{ translateY: Animated.add(cardY, cardRise) }] }]}
         >
           <View style={styles.card}>
-            <View style={styles.cardTop}>
-              <Guide size={34} reduceMotion={reduceMotion} />
-              <Text style={styles.pageLabel}>{page.title}</Text>
-              <View style={{ flex: 1 }} />
-              <Dots count={visibleSteps.length} active={position} />
-            </View>
-            <Text style={styles.stepTitle} accessibilityRole="header">
-              {current.title}
-            </Text>
-            <TypedText key={`${page.key}-${current.id}`} text={current.body} instant={reduceMotion} style={styles.stepBody} />
+            <Animated.View style={{ opacity: contentOpacity }}>
+              <View style={styles.cardTop}>
+                <Guide height={24} reduceMotion={reduceMotion} />
+                <View style={{ flex: 1 }} />
+                <Text style={styles.pageLabel}>{page.title}</Text>
+                <Dots count={visibleSteps.length} active={position} />
+              </View>
+              <Text style={styles.stepTitle} accessibilityRole="header">
+                {current.title}
+              </Text>
+              <TypedText key={`${page.key}-${current.id}`} text={current.body} instant={reduceMotion} style={styles.stepBody} />
+            </Animated.View>
             <View style={styles.actions}>
               <Pressable
                 onPress={() => {
@@ -437,20 +452,21 @@ const useStyles = makeStyles((c) =>
     halo: { position: "absolute", borderRadius: HOLE_RADIUS + 5, borderWidth: 5, borderColor: "rgba(198,161,91,0.22)" },
     ring: { position: "absolute", borderRadius: HOLE_RADIUS, borderWidth: 2 },
 
-    cardWrap: { position: "absolute", left: 0, right: 0, paddingHorizontal: 16 },
+    // The card is lighter than the screens it floats over, with a gold outline and a deep shadow, so it never melts into them.
+    cardWrap: { position: "absolute", top: 0, left: 0, right: 0, paddingHorizontal: 16 },
     card: {
-      backgroundColor: c.surface,
+      backgroundColor: c.surfaceHi,
       borderRadius: 24,
       padding: 20,
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: c.hairline,
+      borderWidth: 1,
+      borderColor: `${c.brand}73`,
       shadowColor: "#000",
-      shadowOpacity: 0.35,
-      shadowRadius: 24,
-      shadowOffset: { width: 0, height: 10 },
-      elevation: 12,
+      shadowOpacity: 0.6,
+      shadowRadius: 30,
+      shadowOffset: { width: 0, height: 12 },
+      elevation: 18,
     },
-    cardTop: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 12 },
+    cardTop: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 14 },
     pageLabel: { fontSize: 13, fontWeight: "600", color: c.textMuted, letterSpacing: 0.4 },
     stepTitle: { ...appTitle(30, c.text) },
     stepBody: { marginTop: 6, fontSize: 16, lineHeight: 23, color: c.textSecondary },
@@ -462,25 +478,25 @@ const useStyles = makeStyles((c) =>
     next: { minWidth: 104 },
 
     dots: { flexDirection: "row", gap: 5 },
-    dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: c.hairline },
+    dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: "rgba(255,255,255,0.2)" },
     dotDone: { backgroundColor: c.textMuted },
     dotActive: { width: 18, backgroundColor: c.brand },
-
-    guideHalo: { position: "absolute", borderWidth: 2, borderColor: c.brand },
-    guideBadge: { alignItems: "center", justifyContent: "center", borderWidth: 1.5, borderColor: c.brand, backgroundColor: "rgba(198,161,91,0.14)" },
-    guideText: { fontFamily: "Teko", fontWeight: "600", color: c.brand, letterSpacing: 0.5 },
 
     promptRoot: { backgroundColor: DIM, alignItems: "center", justifyContent: "center", padding: 24 },
     promptCard: {
       width: "100%",
       maxWidth: 400,
-      backgroundColor: c.surface,
+      backgroundColor: c.surfaceHi,
       borderRadius: 28,
       padding: 28,
       alignItems: "center",
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: c.hairline,
-      elevation: 12,
+      borderWidth: 1,
+      borderColor: `${c.brand}73`,
+      shadowColor: "#000",
+      shadowOpacity: 0.6,
+      shadowRadius: 30,
+      shadowOffset: { width: 0, height: 12 },
+      elevation: 18,
     },
     promptTitle: { ...appTitle(40, c.text), marginTop: 18, textAlign: "center" },
     promptSub: { fontSize: 17, fontWeight: "600", color: c.brand, marginTop: 2, textAlign: "center" },

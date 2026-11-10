@@ -29,6 +29,29 @@ export function applyDismiss(state: PersistedTourState, pageKey: string, allPage
 }
 
 /**
+ * Where (top edge, in px) the tour card sits for a spotlight: just below it
+ * if it fits, else just above, else pinned to the bottom of the screen. With
+ * no spotlight the card is centred.
+ */
+export function placeCard(args: {
+  hole: { y: number; h: number } | null;
+  cardH: number;
+  screenH: number;
+  insetTop: number;
+  insetBottom: number;
+}): number {
+  const { hole, cardH, screenH, insetTop, insetBottom } = args;
+  const gap = 14;
+  const margin = 12;
+  if (!hole) return Math.round((screenH - cardH) / 2);
+  const below = hole.y + hole.h + gap;
+  if (below + cardH <= screenH - insetBottom - margin) return Math.round(below);
+  const above = hole.y - gap - cardH;
+  if (above >= insetTop + margin) return Math.round(above);
+  return Math.round(screenH - insetBottom - margin - cardH);
+}
+
+/**
  * Next step to show after `from`, skipping steps whose target is not on
  * screen. `present(i)` says whether step i can be shown. Returns -1 when
  * there are no more steps in that direction.

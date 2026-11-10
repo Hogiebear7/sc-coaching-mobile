@@ -59,12 +59,13 @@ interface TourContextValue {
 const TourContext = createContext<TourContextValue | null>(null);
 
 export function TourProvider({ children }: { children: ReactNode }) {
-  const { user } = useAuth();
+  const { user, viewMode } = useAuth();
   const router = useRouter();
   const segments = useSegments();
 
   const [state, setState] = useState<PersistedTourState | null>(null);
-  const userId = user?.role === "member" ? user.id : null;
+  // Members, and staff while they are looking at the app as a member does.
+  const userId = user && (user.role === "member" || viewMode === "member") ? user.id : null;
 
   useEffect(() => {
     if (!userId) {

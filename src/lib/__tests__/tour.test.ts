@@ -11,7 +11,7 @@ import {
   pageKeyFromSegments,
 } from "@/lib/tour-content";
 import { hasTourTarget, measureTourTarget, scrollOffsetFor, tourTarget } from "@/lib/tour-registry";
-import { applyDismiss, nextVisibleStep, parseTourState } from "@/lib/tour-state";
+import { applyDismiss, nextVisibleStep, parseTourState, placeCard } from "@/lib/tour-state";
 
 function sourceFiles(dir: string): string[] {
   return readdirSync(dir).flatMap((name) => {
@@ -129,6 +129,22 @@ describe("nextVisibleStep", () => {
     expect(nextVisibleStep(5, 4, 1, present([]))).toBe(-1);
     expect(nextVisibleStep(5, 2, 1, present([3, 4]))).toBe(-1);
     expect(nextVisibleStep(5, 0, -1, present([]))).toBe(-1);
+  });
+});
+
+describe("placeCard", () => {
+  const screen = { screenH: 800, insetTop: 40, insetBottom: 20 };
+  it("puts the card just below a spotlight that leaves room", () => {
+    expect(placeCard({ hole: { y: 100, h: 120 }, cardH: 260, ...screen })).toBe(234);
+  });
+  it("puts it just above when there is no room below (the tab bar, a low card)", () => {
+    expect(placeCard({ hole: { y: 700, h: 90 }, cardH: 260, ...screen })).toBe(426);
+  });
+  it("pins it to the bottom when it fits neither side, so a tall target is still readable", () => {
+    expect(placeCard({ hole: { y: 150, h: 560 }, cardH: 300, ...screen })).toBe(468);
+  });
+  it("centres it when there is no spotlight", () => {
+    expect(placeCard({ hole: null, cardH: 260, ...screen })).toBe(270);
   });
 });
 

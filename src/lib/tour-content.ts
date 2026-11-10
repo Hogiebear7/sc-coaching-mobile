@@ -23,6 +23,7 @@ export const TOUR_PAGES: TourPage[] = [
       "The readiness ring reflects your latest recovery check-in.",
       "Quick actions jump straight into today's workout or a recovery log.",
       "Your next booked session and any coach messages show up here first.",
+      "Community has the leaderboard, private groups, challenges (including ones you build yourself) and, for gym members, your gym's feed.",
     ],
   },
   {
@@ -55,7 +56,8 @@ export const TOUR_PAGES: TourPage[] = [
     tips: [
       "Log sleep, soreness, and stress in a few taps each day.",
       "Your readiness trend shows how recent training is landing.",
-      "Cycle tracking, if you use it, lives here too.",
+      "Cycle tracking, if you use it, lives here too. If you're pregnant, your day, week and trimester guide is in your Profile.",
+      "Injured or feeling unwell? Add an optional note at the bottom of the check-in so your coach and the AI can take it into account.",
     ],
   },
   {

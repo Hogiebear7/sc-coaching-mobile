@@ -107,11 +107,10 @@ const MANUAL_MAX_ML = 15_000;
 // number, so it can't disagree) — 2805 kcal target means 2.8L. Falls back to
 // a generic "no target yet" message when the calorie target itself isn't
 // available (cold start, no weight on file, or the coach has it disabled).
-// The bottle itself (LiquidBottle) starts full (nothing drunk yet) and drains
-// as the member logs water — the fill represents what's LEFT to drink, not
-// what's been drunk, since "drink from a full bottle over the day" is the
-// metaphor. Past target it just reads empty; the text above is what carries the
-// "you went over" info ("2.5L / 2.2L"). The liquid moves with the phone.
+// The bottle itself (LiquidBottle) starts empty and fills towards the goal as
+// the member logs drinks, and is full once the target is reached. Past target it
+// just stays full; the text above is what carries the "you went over" info
+// ("2.5L / 2.2L"). The liquid moves with the phone.
 const HYDRATION_INFO_BODY =
   "Every calorie your body burns costs roughly 1ml of water to process — so your target tracks your energy needs, " +
   "not a flat \"drink 2 litres\" rule. Food counts toward it too: fruit, vegetables, dairy, and most cooked meals are " +
@@ -184,7 +183,7 @@ function HydrationCard({ date }: { date: string }) {
       </Text>
 
       <View style={styles.hydrationBodyRow}>
-        <LiquidBottle remainingPct={remainingPct} reduceMotion={reduceMotion} />
+        <LiquidBottle fillPct={100 - remainingPct} reduceMotion={reduceMotion} />
         <View style={styles.hydrationSideCol}>
           {target ? (
             <Text style={styles.hydrationSideText}>{statusText}</Text>

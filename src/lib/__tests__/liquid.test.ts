@@ -38,31 +38,31 @@ describe("targetTilt", () => {
 
 describe("liquidSurface", () => {
   it("is flat when level and calm, with the right amount of water", () => {
-    const ys = liquidSurface({ ...base, remainingPct: 50, slope: 0 });
+    const ys = liquidSurface({ ...base, fillPct: 50, slope: 0 });
     expect(ys).toHaveLength(LIQUID_POINTS);
     expect(Math.max(...ys) - Math.min(...ys)).toBeLessThan(0.01);
     expect(waterAreaShare(ys)).toBeCloseTo(0.5 * 0.94, 1);
   });
 
   it("shows nothing for an empty bottle, even when it is tilted", () => {
-    const ys = liquidSurface({ ...base, remainingPct: 0, slope: 1.2 });
+    const ys = liquidSurface({ ...base, fillPct: 0, slope: 1.2 });
     expect(Math.min(...ys)).toBeGreaterThan(H);
   });
 
   it("raises the side that is lifted, and keeps the amount of water the same", () => {
-    const level = liquidSurface({ ...base, remainingPct: 60, slope: 0 });
-    const tilted = liquidSurface({ ...base, remainingPct: 60, slope: 0.6 });
+    const level = liquidSurface({ ...base, fillPct: 60, slope: 0 });
+    const tilted = liquidSurface({ ...base, fillPct: 60, slope: 0.6 });
     expect(tilted[tilted.length - 1]).toBeLessThan(tilted[0]); // right side higher (smaller y)
     expect(waterAreaShare(tilted)).toBeCloseTo(waterAreaShare(level), 1);
   });
 
   it("keeps a little air at the top of a full bottle", () => {
-    const ys = liquidSurface({ ...base, remainingPct: 100, slope: 0 });
+    const ys = liquidSurface({ ...base, fillPct: 100, slope: 0 });
     expect(Math.min(...ys)).toBeGreaterThan(5);
   });
 
   it("adds a wave that stays inside the bottle", () => {
-    const ys = liquidSurface({ ...base, remainingPct: 70, slope: 0.4, amp: 5, phase: 2 });
+    const ys = liquidSurface({ ...base, fillPct: 70, slope: 0.4, amp: 5, phase: 2 });
     expect(Math.max(...ys) - Math.min(...ys)).toBeGreaterThan(5);
     for (const y of ys) {
       expect(y).toBeGreaterThanOrEqual(-2);
@@ -73,7 +73,7 @@ describe("liquidSurface", () => {
 
 describe("surfacePath", () => {
   it("closes a shape under the surface", () => {
-    const d = surfacePath(W, H, liquidSurface({ ...base, remainingPct: 50, slope: 0 }));
+    const d = surfacePath(W, H, liquidSurface({ ...base, fillPct: 50, slope: 0 }));
     expect(d.startsWith("M -2 152.0 L -2 ")).toBe(true);
     expect(d.endsWith("Z")).toBe(true);
     expect(d.split("L").length).toBeGreaterThan(LIQUID_POINTS);

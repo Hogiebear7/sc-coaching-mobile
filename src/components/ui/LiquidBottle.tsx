@@ -8,11 +8,11 @@ import Svg, { Path } from "react-native-svg";
 import { gravityOnScreen, liquidSurface, surfacePath, targetTilt } from "@/lib/liquid";
 import { makeStyles, useAppTheme } from "@/lib/theme";
 
-// The hydration bottle. It starts full and drains as water is logged. The liquid
-// responds to the phone: tilt it and the surface stays level, shake it and it
-// slops about, and it settles back the way real water does. Without motion
-// sensors (or with Reduce Motion on) it is a still bottle that just changes
-// level, as it always was.
+// The hydration bottle. It starts empty and fills towards the day's goal as
+// drinks are logged. The liquid responds to the phone: tilt it and the surface
+// stays level, shake it and it slops about, and it settles back the way real
+// water does. Without motion sensors (or with Reduce Motion on) it is a still
+// bottle that just changes level.
 
 const BODY_W = 84;
 const BODY_H = 150;
@@ -40,11 +40,11 @@ function loadAccelerometer(): Accelerometer | null {
   }
 }
 
-export function LiquidBottle({ remainingPct, reduceMotion }: { remainingPct: number; reduceMotion: boolean }) {
+export function LiquidBottle({ fillPct, reduceMotion }: { fillPct: number; reduceMotion: boolean }) {
   const styles = useStyles();
   const { data: dc } = useAppTheme();
 
-  const level = useSharedValue(remainingPct);
+  const level = useSharedValue(fillPct);
   const angle = useSharedValue(0);
   const velocity = useSharedValue(0);
   const energy = useSharedValue(0);
@@ -59,8 +59,8 @@ export function LiquidBottle({ remainingPct, reduceMotion }: { remainingPct: num
   }, [reduceMotion, calm]);
 
   useEffect(() => {
-    level.value = reduceMotion ? remainingPct : withTiming(remainingPct, { duration: 650, easing: Easing.out(Easing.cubic) });
-  }, [remainingPct, reduceMotion, level]);
+    level.value = reduceMotion ? fillPct : withTiming(fillPct, { duration: 650, easing: Easing.out(Easing.cubic) });
+  }, [fillPct, reduceMotion, level]);
 
   // The physics, one step per frame.
   const frame = useFrameCallback((info) => {
@@ -115,7 +115,7 @@ export function LiquidBottle({ remainingPct, reduceMotion }: { remainingPct: num
     const ys = liquidSurface({
       width: BODY_W,
       height: BODY_H,
-      remainingPct: level.value,
+      fillPct: level.value,
       slope: Math.tan(angle.value),
       amp,
       phase: phase.value,
@@ -128,7 +128,7 @@ export function LiquidBottle({ remainingPct, reduceMotion }: { remainingPct: num
     const ys = liquidSurface({
       width: BODY_W,
       height: BODY_H,
-      remainingPct: level.value,
+      fillPct: level.value,
       slope: Math.tan(angle.value),
       amp,
       phase: phase.value + 2.1,
@@ -139,7 +139,7 @@ export function LiquidBottle({ remainingPct, reduceMotion }: { remainingPct: num
   const initial = surfacePath(
     BODY_W,
     BODY_H,
-    liquidSurface({ width: BODY_W, height: BODY_H, remainingPct, slope: 0, amp: 0, phase: 0 })
+    liquidSurface({ width: BODY_W, height: BODY_H, fillPct, slope: 0, amp: 0, phase: 0 })
   );
 
   return (

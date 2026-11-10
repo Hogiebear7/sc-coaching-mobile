@@ -14,8 +14,8 @@ describe("drink types", () => {
 
   it("converts a drink to the water it counts as", () => {
     expect(waterEquivalentMl(250, "water")).toBe(250);
-    expect(waterEquivalentMl(250, "coffee")).toBe(225);
-    expect(waterEquivalentMl(500, "soda")).toBe(425);
+    expect(waterEquivalentMl(250, "coffee")).toBe(238);
+    expect(waterEquivalentMl(500, "soda")).toBe(450);
     expect(waterEquivalentMl(250, "milk")).toBe(250);
   });
 
@@ -27,7 +27,7 @@ describe("drink types", () => {
   });
 
   it("explains a drink that counts for less, and says nothing for one that counts in full", () => {
-    expect(drinkNote("coffee")).toBe("Coffee counts as 90% towards your goal.");
+    expect(drinkNote("coffee")).toBe("Coffee counts as 95% towards your goal.");
     expect(drinkNote("water")).toBeNull();
     expect(findDrink("sports").label).toBe("Sports drink");
   });

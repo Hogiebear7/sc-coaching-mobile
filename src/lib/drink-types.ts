@@ -1,10 +1,16 @@
 // Drinks a member can log on the Hydration card. The server keeps one number
 // for the day (millilitres of water-equivalent), so a drink is converted to
-// that before it is sent: 250 ml of coffee that counts as 90% adds 225 ml.
+// that before it is sent: 250 ml of juice that counts as 90% adds 225 ml.
 //
-// The shares are a deliberate, conservative simplification, not a medical
-// claim. In normal amounts tea and coffee hydrate about as well as water; the
-// lower figures are there so the total never flatters the member. Alcohol is
+// The shares follow the one large controlled study of this (Maughan et al.,
+// Am J Clin Nutr 2016: 72 fasted men, 1 L of each drink, urine collected for
+// 4 hours). Tea, coffee, cola, juice, sports drink and sparkling water were
+// not different from still water, so each counts as roughly the water it
+// contains (cola and juice are about 89% water, a sports drink 96%). Milk
+// kept more water in the body than water did, but it is capped at 100% to stay
+// simple. Coffee is trimmed a little because the study's coffee was weak per
+// litre (about 212 mg of caffeine) and a large strong one can pass the
+// roughly 300 mg where caffeine starts to increase urine output. Alcohol is
 // left out on purpose: it is not something to count towards a goal.
 
 export type DrinkId = "water" | "tea" | "coffee" | "milk" | "juice" | "sports" | "soda";
@@ -20,12 +26,12 @@ export interface DrinkType {
 
 export const DRINK_TYPES: readonly DrinkType[] = [
   { id: "water", label: "Water", share: 1, color: "#4fd3e3" },
-  { id: "tea", label: "Tea", share: 0.95, color: "#c98a4b" },
-  { id: "coffee", label: "Coffee", share: 0.9, color: "#7a4b2a" },
+  { id: "tea", label: "Tea", share: 1, color: "#c98a4b" },
+  { id: "coffee", label: "Coffee", share: 0.95, color: "#7a4b2a" },
   { id: "milk", label: "Milk", share: 1, color: "#e8e4da" },
   { id: "juice", label: "Juice", share: 0.9, color: "#f0a43a" },
-  { id: "sports", label: "Sports drink", share: 1, color: "#5ba8f0" },
-  { id: "soda", label: "Soda", share: 0.85, color: "#c4504a" },
+  { id: "sports", label: "Sports drink", share: 0.95, color: "#5ba8f0" },
+  { id: "soda", label: "Soda", share: 0.9, color: "#c4504a" },
 ];
 
 export const DEFAULT_DRINK: DrinkId = "water";

@@ -43,15 +43,15 @@ export function targetTilt(gx: number, gy: number, maxTilt = 1.05): number {
 export function liquidSurface(args: {
   width: number;
   height: number;
-  /** How much is left to drink, 0-100. */
-  remainingPct: number;
+  /** How full the bottle is, 0-100. */
+  fillPct: number;
   slope: number;
   amp: number;
   phase: number;
 }): number[] {
   "worklet";
   const { width, height, slope, amp, phase } = args;
-  const pct = Math.max(0, Math.min(100, args.remainingPct));
+  const pct = Math.max(0, Math.min(100, args.fillPct));
   const n = LIQUID_POINTS;
   const empty = height + 3;
   const out: number[] = new Array(n);

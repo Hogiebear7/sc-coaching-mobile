@@ -327,7 +327,7 @@ const useStyles = makeLegacyStyles((Color) =>
     dayChipWeekday: { fontSize: 12, fontWeight: "600", color: Color.textMuted },
     dayChipDate: { fontSize: 13, fontWeight: "700", color: Color.textPrimary },
     dayChipCalories: { fontSize: 14, fontWeight: "700", color: Color.textPrimary, marginTop: 2, fontVariant: ["tabular-nums"] },
-    dayChipUnit: { fontSize: 11, color: Color.textMuted },
+    dayChipUnit: { fontSize: 12, color: Color.textMuted },
     dayChipTextToday: { color: Color.goldForeground },
     dayChipDot: { width: 5, height: 5, borderRadius: 3, marginTop: 2 },
   })

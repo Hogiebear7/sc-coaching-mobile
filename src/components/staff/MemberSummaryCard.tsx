@@ -194,7 +194,7 @@ const useStyles = makeLegacyStyles((Color) =>
     sectionTitle: { fontSize: 14, fontWeight: "700", color: Color.textPrimary, marginBottom: Spacing.sm },
     grid: { flexDirection: "row", flexWrap: "wrap", rowGap: Spacing.md },
     stat: { width: "50%", paddingRight: Spacing.sm },
-    statLabel: { fontSize: 11, fontWeight: "700", letterSpacing: 0.5, color: Color.textFaint, textTransform: "uppercase" },
+    statLabel: { fontSize: 12, fontWeight: "700", letterSpacing: 0.5, color: Color.textFaint, textTransform: "uppercase" },
     statValue: { fontSize: 15, fontWeight: "600", color: Color.textPrimary, marginTop: 2 },
     statHint: { fontSize: 12, color: Color.textMuted, marginTop: 1 },
     recent: { marginTop: Spacing.sm, gap: 2 },

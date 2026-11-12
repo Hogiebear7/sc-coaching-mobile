@@ -154,10 +154,27 @@ export function useExerciseLibraryDetail(slug: string) {
   });
 }
 
-// Same "prefer a mid-size render, not the largest" pick as the web app's
-// ExerciseDetailView.tsx — 720 balances clarity against a mobile data
-// connection; 1080 and then whatever's first are fallbacks for a media set
-// that's missing that exact resolution.
+// The library only holds the 180 and 360 renders (the 720 and 1080 ones come with ExerciseDB's full pack), and the server lists media smallest
+// first. The old pick fell through to "whatever is first", which was the 180 picture, stretched to the full phone width: that was the blur.
+// Order of preference for the demonstration: 720, 1080, then the biggest of what is left.
+const HERO_PREFERENCE = ["720", "1080"];
+
+function resolutionNumber(m: ExerciseMediaRecord): number {
+  const n = parseInt(m.resolution ?? "", 10);
+  return Number.isFinite(n) ? n : 0;
+}
+
 export function pickHeroMedia(media: ExerciseMediaRecord[]): ExerciseMediaRecord | null {
-  return media.find((m) => m.resolution === "720") ?? media.find((m) => m.resolution === "1080") ?? media[0] ?? null;
+  for (const wanted of HERO_PREFERENCE) {
+    const hit = media.find((m) => m.resolution === wanted);
+    if (hit) return hit;
+  }
+  return [...media].sort((a, b) => resolutionNumber(b) - resolutionNumber(a))[0] ?? null;
+}
+
+// A small thumbnail (about 50pt, so about 150px on a phone) only needs a small render: the smallest one that is at least 150 wide, else the
+// biggest available. Saves data and avoids pulling the 360 file for every row of a long workout.
+export function pickThumbMedia(media: ExerciseMediaRecord[]): ExerciseMediaRecord | null {
+  const sorted = [...media].sort((a, b) => resolutionNumber(a) - resolutionNumber(b));
+  return sorted.find((m) => resolutionNumber(m) >= 150) ?? sorted[sorted.length - 1] ?? null;
 }

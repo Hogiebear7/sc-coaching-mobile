@@ -25,7 +25,7 @@ export const Color = {
   textPrimary: "#fcfeff",
   textSecondary: "rgba(255,255,255,0.8)",
   textMuted: "rgba(255,255,255,0.55)",
-  textFaint: "rgba(255,255,255,0.35)",
+  textFaint: "rgba(255,255,255,0.5)",
 
   // Legacy "accent" slots. App v2 rule: actions are monochrome (white on
   // dark, navy on light) and gold is the brand mark only — so these keep
@@ -74,7 +74,7 @@ export const ColorLight: LegacyPalette = {
   textPrimary: "#0a1526",
   textSecondary: "rgba(10,21,38,0.78)",
   textMuted: "rgba(10,21,38,0.56)",
-  textFaint: "rgba(10,21,38,0.40)",
+  textFaint: "rgba(10,21,38,0.58)",
   gold: "#0a1526",
   goldHover: "#0a1526",
   goldForeground: "#ffffff",

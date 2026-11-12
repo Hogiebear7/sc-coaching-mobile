@@ -242,7 +242,7 @@ const useStyles = makeStyles((c) =>
 
     roundBtn: { width: 48, height: 48, borderRadius: 24, backgroundColor: c.control, alignItems: "center", justifyContent: "center" },
     badge: { position: "absolute", top: 6, right: 6, minWidth: 16, height: 16, borderRadius: 8, paddingHorizontal: 3, backgroundColor: c.brand, alignItems: "center", justifyContent: "center" },
-    badgeText: { fontSize: 10, fontWeight: "700", color: "#0a1526" },
+    badgeText: { fontSize: 11, fontWeight: "700", color: "#0a1526" },
 
     pill: { minHeight: 48, borderRadius: AppRadius.control, paddingHorizontal: 22, alignItems: "center", justifyContent: "center" },
     pillPrimary: { backgroundColor: c.primary },

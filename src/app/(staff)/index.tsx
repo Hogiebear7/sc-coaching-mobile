@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Radius, Spacing, headline } from "@/constants/theme";
 import { useAuth } from "@/lib/auth-context";
+import { useDayKey } from "@/lib/day-key";
 import { successFeedback, tapFeedback } from "@/lib/haptics";
 import { useProvisionMemberProfile } from "@/lib/queries/profile";
 import { useMarkAttendance, useRemoveBooking, useStaffClasses, type StaffClassSummary } from "@/lib/queries/staff";
@@ -324,6 +325,8 @@ function confirmLogout(logout: () => void) {
 }
 
 export default function StaffOperationsScreen() {
+  // Redraws when the day changes or the app returns to the front, so "Today" / "Tomorrow" never go stale overnight.
+  useDayKey();
   const styles = useStyles();
   const Color = useLegacyColors();
   const router = useRouter();

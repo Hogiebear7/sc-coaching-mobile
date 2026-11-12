@@ -24,7 +24,7 @@ import { ApiError } from "@/lib/api-client";
 import { useAdvanceProgram, useMyProgram, type PrescribedExercise } from "@/lib/queries/programs";
 import {
   findExerciseLibrarySlug,
-  pickHeroMedia,
+  pickThumbMedia,
   useExerciseLibraryDetail,
   useExerciseLibraryNameIndex,
 } from "@/lib/queries/exercise-library";
@@ -283,7 +283,7 @@ function ExerciseThumbnail({ slug }: { slug: string | undefined }) {
   const styles = useStyles();
   const { data } = useExerciseLibraryDetail(slug ?? "");
   if (!slug) return null;
-  const media = data ? pickHeroMedia(data.media) : null;
+  const media = data ? pickThumbMedia(data.media) : null;
   if (!media) return null;
   return <Image source={{ uri: media.url }} style={styles.exerciseThumb} resizeMode="cover" />;
 }
@@ -2299,7 +2299,7 @@ const useStyles = makeLegacyStyles((Color) =>
     setRow2: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 6, paddingVertical: 4, borderRadius: Radius.md },
     setRow2Completed: { backgroundColor: Color.successWeak },
     setNumber: { fontSize: 15, fontWeight: "600", color: Color.textPrimary, textAlign: "center", fontVariant: ["tabular-nums"] },
-    setTypeTag: { fontSize: 10, fontWeight: "700", color: Color.textSecondary, textAlign: "center", marginTop: 2 },
+    setTypeTag: { fontSize: 11, fontWeight: "700", color: Color.textSecondary, textAlign: "center", marginTop: 2 },
     setInput: {
       height: 46,
       borderRadius: Radius.md,

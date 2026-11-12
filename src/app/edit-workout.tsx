@@ -586,7 +586,7 @@ const useStyles = makeLegacyStyles((Color) =>
     setColumnLabel: { fontSize: 15, fontWeight: "600", color: Color.textSecondary },
     setEditRow: { flexDirection: "row", alignItems: "center", gap: Spacing.xs, marginTop: Spacing.xs, padding: 4 },
     setNumber: { fontSize: 13, fontWeight: "700", color: Color.textPrimary, textAlign: "center" },
-    setTypeTag: { fontSize: 7, fontWeight: "600", color: Color.gold, textAlign: "center" },
+    setTypeTag: { fontSize: 11, fontWeight: "600", color: Color.gold, textAlign: "center" },
     setInput: {
       height: 40,
       borderRadius: Radius.md,

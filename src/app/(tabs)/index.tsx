@@ -9,6 +9,7 @@ import { MetricTile, PillButton, RoundIconButton, SectionTitle, TileGrid, WeekSt
 import { ContinueWorkoutPill } from "@/components/ui/ContinueWorkoutPill";
 import { AppRadius, AppSpace, appTitle, figure, Radius, readinessColor, Spacing } from "@/constants/theme";
 import { useAuth } from "@/lib/auth-context";
+import { useDayKey } from "@/lib/day-key";
 import { POST_SIGNUP_SETUP_KEY_PREFIX, POST_SIGNUP_TRIAL_OFFER_KEY_PREFIX } from "@/lib/post-signup-setup";
 import { useBodyWeightLogs } from "@/lib/queries/body-weight";
 import { compareWeightLogs } from "@/lib/weight-logs";
@@ -167,6 +168,16 @@ export default function DashboardScreen() {
   const onRefresh = useCallback(() => {
     refetch();
   }, [refetch]);
+
+  // "Today" and "Tomorrow" are worked out while drawing, so the screen has to redraw when the day changes or the app returns to the front
+  // (an app left open overnight kept showing yesterday's date and a class booked for today as "Tomorrow"). The day's data is also reloaded.
+  const dayKey = useDayKey();
+  const lastDayKey = useRef(dayKey);
+  useEffect(() => {
+    if (lastDayKey.current === dayKey) return;
+    lastDayKey.current = dayKey;
+    refetch();
+  }, [dayKey, refetch]);
 
   if (isLoading) {
     return (

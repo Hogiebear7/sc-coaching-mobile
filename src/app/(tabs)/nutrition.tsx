@@ -22,6 +22,7 @@ import { Card } from "@/components/ui/Card";
 import { ContinueWorkoutPill } from "@/components/ui/ContinueWorkoutPill";
 import { InfoModal } from "@/components/ui/InfoModal";
 import { WaterAdjuster } from "@/components/nutrition/WaterAdjuster";
+import { OptionPicker, type PickerOption } from "@/components/ui/OptionPicker";
 import { KeyboardAwareScroll } from "@/components/ui/KeyboardAwareScroll";
 import type { MacroKind } from "@/components/ui/MacroPieChart";
 import { ProgressBar } from "@/components/ui/ProgressBar";
@@ -113,6 +114,13 @@ const HYDRATION_INFO_BODY =
   "not a flat \"drink 2 litres\" rule. Food counts toward it too: fruit, vegetables, dairy, and most cooked meals are " +
   "60–90% water, so a good chunk of today's target is already covered before you've had a sip.";
 
+const DRINK_PICKER_OPTIONS: readonly PickerOption<DrinkId>[] = DRINK_TYPES.map((d) => ({
+  value: d.id,
+  label: d.label,
+  color: d.color,
+  hint: d.share < 1 ? `Counts as ${Math.round(d.share * 100)}% towards your goal` : undefined,
+}));
+
 function HydrationCard({ date }: { date: string }) {
   const waterAmount = useWaterAmount();
   const styles = useStyles();
@@ -170,33 +178,15 @@ function HydrationCard({ date }: { date: string }) {
         onSave={(totalMl) => logWater.mutate({ date, setMl: totalMl })}
       />
 
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.hydrationDrinkScroll}
-        contentContainerStyle={styles.hydrationDrinkRow}
-        keyboardShouldPersistTaps="handled"
-      >
-        {DRINK_TYPES.map((d) => {
-          const active = d.id === drink;
-          return (
-            <Pressable
-              key={d.id}
-              onPress={() => {
-                selectionFeedback();
-                setDrink(d.id);
-              }}
-              accessibilityRole="button"
-              accessibilityState={{ selected: active }}
-              accessibilityLabel={d.label}
-              style={[styles.hydrationDrinkChip, active && { borderColor: colors.textSecondary }]}
-            >
-              <View style={[styles.hydrationDrinkDot, { backgroundColor: d.color }]} />
-              <Text style={[styles.hydrationDrinkText, active && styles.hydrationDrinkTextActive]}>{d.label}</Text>
-            </Pressable>
-          );
-        })}
-      </ScrollView>
+      <View style={styles.hydrationDrinkScroll}>
+        <OptionPicker<DrinkId>
+          label="Drink"
+          title="What are you drinking?"
+          options={DRINK_PICKER_OPTIONS}
+          value={drink}
+          onChange={setDrink}
+        />
+      </View>
       {drinkLine ? <Text style={styles.hydrationDrinkNote}>{drinkLine}</Text> : null}
 
       <View style={styles.hydrationQuickAddRow}>

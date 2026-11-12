@@ -14,6 +14,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { KeyboardAwareScroll } from "@/components/ui/KeyboardAwareScroll";
+import { OptionPicker, type PickerOption } from "@/components/ui/OptionPicker";
 import { Radius, Spacing } from "@/constants/theme";
 import { ApiError } from "@/lib/auth-context";
 import { tapFeedback } from "@/lib/haptics";
@@ -95,6 +96,15 @@ const DURATION_OPTIONS: { value: number | null; label: string }[] = [
   { value: 60, label: "60m" },
   { value: 90, label: "90m" },
 ];
+
+// The length list has "no length" (null) and numbers, and the pop-up list works on text keys.
+function durationKey(value: number | null): string {
+  return value === null ? "none" : String(value);
+}
+const DURATION_PICKER_OPTIONS: readonly PickerOption<string>[] = DURATION_OPTIONS.map((o) => ({
+  value: durationKey(o.value),
+  label: o.value === null ? "Not set" : o.label,
+}));
 
 function Chip({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
   const styles = useStyles();
@@ -269,16 +279,13 @@ export default function WeeklyTrainingScreen() {
                           <Text style={styles.syncedBadge}>Synced from your programme</Text>
                         ) : null}
 
-                        <View style={styles.chipRow}>
-                          {ACTIVITY_OPTIONS.map((opt) => (
-                            <Chip
-                              key={opt.value}
-                              label={opt.label}
-                              active={s.activityType === opt.value}
-                              onPress={() => updateSession(s.id, { activityType: opt.value })}
-                            />
-                          ))}
-                        </View>
+                        <OptionPicker<TrainingActivityType>
+                          label="Type of session"
+                          title="Type of session"
+                          options={ACTIVITY_OPTIONS}
+                          value={s.activityType}
+                          onChange={(activityType) => updateSession(s.id, { activityType })}
+                        />
                         <View style={styles.chipRow}>
                           {TIME_OPTIONS.map((opt) => (
                             <Chip
@@ -299,16 +306,13 @@ export default function WeeklyTrainingScreen() {
                             />
                           ))}
                         </View>
-                        <View style={styles.chipRow}>
-                          {DURATION_OPTIONS.map((opt) => (
-                            <Chip
-                              key={opt.label}
-                              label={opt.label}
-                              active={(s.estimatedDurationMins ?? null) === opt.value}
-                              onPress={() => updateSession(s.id, { estimatedDurationMins: opt.value })}
-                            />
-                          ))}
-                        </View>
+                        <OptionPicker<string>
+                          label="Length"
+                          title="How long?"
+                          options={DURATION_PICKER_OPTIONS}
+                          value={durationKey(s.estimatedDurationMins ?? null)}
+                          onChange={(key) => updateSession(s.id, { estimatedDurationMins: DURATION_OPTIONS.find((o) => durationKey(o.value) === key)?.value ?? null })}
+                        />
                         <View style={styles.recurringRow}>
                           <View style={styles.chipRow}>
                             <Chip label="Every week" active={s.recurring} onPress={() => updateSession(s.id, { recurring: true })} />

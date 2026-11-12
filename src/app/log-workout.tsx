@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Alert, Image, InteractionManager, Keyboard, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Alert, Image, InteractionManager, Keyboard, KeyboardAvoidingView, Modal, Platform, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import type { KeyboardAwareScrollViewRef } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -18,7 +18,8 @@ import { SupersetChips } from "@/components/ui/SupersetChips";
 import { TextField } from "@/components/ui/TextField";
 import { TimeWheelPicker } from "@/components/ui/TimeWheelPicker";
 import { figure, Radius, Spacing, type LegacyPalette } from "@/constants/theme";
-import { CARDIO_LABEL, CARDIO_TYPES, hasLevel, hasPace, parseLevel } from "@/lib/cardio";
+import { OptionPicker, type PickerOption } from "@/components/ui/OptionPicker";
+import { CARDIO_LABEL, CARDIO_TYPES, hasLevel, hasPace, parseLevel, type CardioType } from "@/lib/cardio";
 import { selectionFeedback, successFeedback, tapFeedback } from "@/lib/haptics";
 import { ApiError } from "@/lib/api-client";
 import { useAdvanceProgram, useMyProgram, type PrescribedExercise } from "@/lib/queries/programs";
@@ -89,6 +90,8 @@ const FORMAT_DESCRIPTIONS: Record<WorkoutFormat, string> = {
   emom: "Every Minute On the Minute — start a new movement at the top of each interval. Finish early and the rest of that minute is your rest.",
   tabata: "20 seconds of work, 10 seconds of rest, repeated for a set number of rounds — a short, high-intensity interval format.",
 };
+
+const CARDIO_PICKER_OPTIONS: readonly PickerOption<CardioType>[] = CARDIO_TYPES.map((t) => ({ value: t, label: CARDIO_LABEL[t] }));
 
 const FORMAT_LABELS: Record<WorkoutFormat, string> = {
   standard: "Standard",
@@ -1394,22 +1397,12 @@ export default function LogWorkoutScreen() {
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionLabel}>Workout format</Text>
           </View>
-          <View style={styles.formatRow}>
-            {FORMAT_OPTIONS.map((opt) => (
-              <Pressable
-                key={opt.value}
-                onPress={() => {
-                  tapFeedback();
-                  update({ format: opt.value, formatResultNote: "" });
-                }}
-                style={[styles.formatChip, draft.format === opt.value && styles.formatChipActive]}
-              >
-                <Text style={[styles.formatChipText, draft.format === opt.value && styles.formatChipTextActive]}>
-                  {opt.label}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
+          <OptionPicker<WorkoutFormat>
+            title="Workout format"
+            options={FORMAT_OPTIONS}
+            value={draft.format}
+            onChange={(format) => update({ format, formatResultNote: "" })}
+          />
           <Text style={styles.formatDescription}>{FORMAT_DESCRIPTIONS[draft.format]}</Text>
 
           {draft.format === "chipper" ? (
@@ -2005,22 +1998,14 @@ export default function LogWorkoutScreen() {
                 </View>
               </View>
 
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.cardioChips}>
-                {CARDIO_TYPES.map((t) => {
-                  const active = row.cardioType === t;
-                  return (
-                    <Pressable
-                      key={t}
-                      onPress={() => updateRunRow(row.key, { cardioType: t })}
-                      style={[styles.cardioChip, active && styles.cardioChipActive]}
-                      accessibilityRole="radio"
-                      accessibilityState={{ selected: active }}
-                    >
-                      <Text style={[styles.cardioChipText, active && styles.cardioChipTextActive]}>{CARDIO_LABEL[t]}</Text>
-                    </Pressable>
-                  );
-                })}
-              </ScrollView>
+              <View style={styles.cardioPicker}>
+                <OptionPicker<CardioType>
+                  title="Cardio type"
+                  options={CARDIO_PICKER_OPTIONS}
+                  value={row.cardioType}
+                  onChange={(t) => updateRunRow(row.key, { cardioType: t })}
+                />
+              </View>
 
               <View style={styles.gridRow}>
                 <View style={styles.numberField}>
@@ -2188,7 +2173,7 @@ const useStyles = makeLegacyStyles((Color) =>
     sectionLabel: { fontSize: 19, fontWeight: "600", color: Color.textPrimary },
     addChip: { flexDirection: "row", alignItems: "center", gap: 6, borderRadius: Radius.pill, backgroundColor: Color.surface1, paddingHorizontal: 16, minHeight: 46 },
     addChipText: { fontSize: 15, fontWeight: "600", color: Color.textPrimary },
-    cardioChips: { gap: 8, paddingBottom: Spacing.sm },
+    cardioPicker: { paddingBottom: Spacing.sm },
     cardioChip: { minHeight: 40, paddingHorizontal: 14, borderRadius: Radius.pill, backgroundColor: Color.surface2, justifyContent: "center" },
     cardioChipActive: { backgroundColor: Color.gold },
     cardioChipText: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },

@@ -24,6 +24,7 @@ import {
   useSaveClassWorkout,
   type ClassWorkoutExerciseEntry,
 } from "@/lib/queries/staff";
+import { OptionPicker } from "@/components/ui/OptionPicker";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 let keySeq = 0;
@@ -464,20 +465,7 @@ export default function ClassWorkoutBuilderScreen() {
             />
 
             <Text style={[styles.rowLabel, { marginTop: Spacing.md }]}>Format</Text>
-            <View style={styles.formatRow}>
-              {FORMAT_OPTIONS.map((opt) => (
-                <Pressable
-                  key={opt.value}
-                  onPress={() => {
-                    tapFeedback();
-                    setFormat(opt.value);
-                  }}
-                  style={[styles.formatChip, format === opt.value && styles.formatChipActive]}
-                >
-                  <Text style={[styles.formatChipText, format === opt.value && styles.formatChipTextActive]}>{opt.label}</Text>
-                </Pressable>
-              ))}
-            </View>
+            <OptionPicker<WorkoutFormat> title="Workout format" options={FORMAT_OPTIONS} value={format} onChange={setFormat} />
 
             {format === "chipper" ? (
               <Text style={styles.sectionHint}>List the movements above as exercises, done once for time.</Text>

@@ -47,6 +47,8 @@ export type ExerciseRow = {
   supersetGroup: string | null;
   /** Reps/weight performed per side (unilateral exercise). */
   perSide: boolean;
+  /** Place in the whole workout, exercises and cardio together (see lib/entry-order.ts). Absent on older drafts. */
+  order?: number | null;
 };
 
 export type RunRow = {
@@ -62,6 +64,10 @@ export type RunRow = {
   cardioType: import("@/lib/cardio").CardioType;
   /** Machine level or incline, as typed. */
   level: string;
+  /** Place in the whole workout, exercises and cardio together (see lib/entry-order.ts). Absent on older drafts. */
+  order?: number | null;
+  /** True once the member has picked a cardio type, so the card says "Cardio" until then and the type after. */
+  typeChosen?: boolean;
 };
 
 export type WorkoutFormat = "standard" | "circuit" | "amrap" | "emom" | "tabata" | "chipper";
@@ -313,6 +319,7 @@ function normalizeExerciseRow(raw: Partial<ExerciseRow> | null | undefined): Exe
     defaultSetType: r.defaultSetType ?? "standard",
     supersetGroup: r.supersetGroup ?? null,
     perSide: r.perSide ?? false,
+    order: typeof r.order === "number" ? r.order : null,
   };
 }
 
@@ -329,6 +336,9 @@ function normalizeRunRow(raw: Partial<RunRow> | null | undefined): RunRow {
     splits: Array.isArray(r.splits) ? r.splits : [],
     cardioType: asCardioType(r.cardioType),
     level: r.level ?? "",
+    order: typeof r.order === "number" ? r.order : null,
+    // A draft saved before this existed: a type other than the default run means it was picked.
+    typeChosen: r.typeChosen ?? asCardioType(r.cardioType) !== "run",
   };
 }
 

@@ -19,6 +19,7 @@ import { TextField } from "@/components/ui/TextField";
 import { TimeWheelPicker } from "@/components/ui/TimeWheelPicker";
 import { figure, Radius, Spacing, type LegacyPalette } from "@/constants/theme";
 import { OptionPicker, type PickerOption } from "@/components/ui/OptionPicker";
+import { entrySegments, insertEntry, orderToSave } from "@/lib/entry-order";
 import { CARDIO_LABEL, CARDIO_TYPES, hasLevel, hasPace, parseLevel, type CardioType } from "@/lib/cardio";
 import { selectionFeedback, successFeedback, tapFeedback } from "@/lib/haptics";
 import { ApiError } from "@/lib/api-client";
@@ -857,6 +858,7 @@ export default function LogWorkoutScreen() {
 
     const protocolRunRows: RunRow[] = protocolSource.map((ex) => ({
       ...newRunRow(),
+      typeChosen: true,
       reps: ex.conditioningProtocol?.reps != null ? String(ex.conditioningProtocol.reps) : "",
       distance: ex.conditioningProtocol?.distanceMeters != null ? String(ex.conditioningProtocol.distanceMeters) : "",
       distanceUnit: "m",
@@ -899,7 +901,7 @@ export default function LogWorkoutScreen() {
     if (!hydrated || runRows.length > 0) return;
     if (!prefillRunDurationMins && !prefillRunDistanceKm) return;
     update({
-      runRows: [{ ...newRunRow(), duration: prefillRunDurationMins ?? "", distance: prefillRunDistanceKm ?? "" }],
+      runRows: [{ ...newRunRow(), typeChosen: true, duration: prefillRunDurationMins ?? "", distance: prefillRunDistanceKm ?? "" }],
       title: title.trim() ? title : prefillRunTitle ?? title,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -925,9 +927,14 @@ export default function LogWorkoutScreen() {
     );
   }
 
+  // New entries go just below the one being worked on (the last one touched), not always at the end, so cardio can sit in the middle of a workout.
+  const lastTouchedKey = useRef<string | null>(null);
+
   function handleAddExercise() {
     tapFeedback();
-    update({ exerciseRows: [...exerciseRows, newExerciseRow()] });
+    const added = newExerciseRow();
+    update(insertEntry(exerciseRows, runRows, { kind: "exercise", row: added }, lastTouchedKey.current));
+    lastTouchedKey.current = added.key;
     // The new row needs a layout pass before its position can be measured —
     // same short-delay pattern already used elsewhere in this file (see the
     // set-complete auto-focus below) rather than an arbitrary guess.
@@ -936,11 +943,14 @@ export default function LogWorkoutScreen() {
 
   function handleAddRun() {
     tapFeedback();
-    update({ runRows: [...runRows, newRunRow()] });
+    const added = newRunRow();
+    update(insertEntry(exerciseRows, runRows, { kind: "run", row: added }, lastTouchedKey.current));
+    lastTouchedKey.current = added.key;
     setTimeout(scrollToAddButtons, 50);
   }
 
   function updateRow(key: string, patch: Partial<Omit<ExerciseRow, "key">>) {
+    lastTouchedKey.current = key;
     update({ exerciseRows: exerciseRows.map((r) => (r.key === key ? { ...r, ...patch } : r)) });
   }
   function removeRow(key: string) {
@@ -957,6 +967,7 @@ export default function LogWorkoutScreen() {
     ]);
   }
   function updateRunRow(key: string, patch: Partial<Omit<RunRow, "key">>) {
+    lastTouchedKey.current = key;
     update({ runRows: runRows.map((r) => (r.key === key ? { ...r, ...patch } : r)) });
   }
   function removeRunRow(key: string) {
@@ -974,6 +985,7 @@ export default function LogWorkoutScreen() {
   }
 
   function updateSetRow(rowKey: string, setKey: string, patch: Partial<Omit<SetRow, "key">>) {
+    lastTouchedKey.current = rowKey;
     update({
       exerciseRows: exerciseRows.map((r) =>
         r.key === rowKey ? { ...r, setRows: r.setRows.map((sr) => (sr.key === setKey ? { ...sr, ...patch } : sr)) } : r
@@ -984,6 +996,7 @@ export default function LogWorkoutScreen() {
   // most sets are the same or similar, and this saves retyping each one.
   // Sets the member has already typed something into are left alone.
   function updateFirstSetField(rowKey: string, setKey: string, field: "weight" | "reps" | "repsRight" | "repsLeft", value: string) {
+    lastTouchedKey.current = rowKey;
     update({
       exerciseRows: exerciseRows.map((r) => {
         if (r.key !== rowKey) return r;
@@ -1008,12 +1021,14 @@ export default function LogWorkoutScreen() {
     });
   }
   function addSetRow(rowKey: string) {
+    lastTouchedKey.current = rowKey;
     tapFeedback();
     update({
       exerciseRows: exerciseRows.map((r) => (r.key === rowKey ? { ...r, setRows: [...r.setRows, newSetRow(r.defaultSetType)] } : r)),
     });
   }
   function removeSetRow(rowKey: string, setKey: string) {
+    lastTouchedKey.current = rowKey;
     tapFeedback();
     update({
       exerciseRows: exerciseRows.map((r) => (r.key === rowKey ? { ...r, setRows: r.setRows.filter((sr) => sr.key !== setKey) } : r)),
@@ -1026,6 +1041,7 @@ export default function LogWorkoutScreen() {
   // so starting the countdown after the first or middle exercise's set
   // would cut into time that's really still work, not rest.
   function toggleSetComplete(rowKey: string, setKey: string, isLastInSupersetGroup: boolean) {
+    lastTouchedKey.current = rowKey;
     const row = exerciseRows.find((r) => r.key === rowKey);
     const setIdx = row?.setRows.findIndex((sr) => sr.key === setKey) ?? -1;
     const wasCompleted = row?.setRows[setIdx]?.completed ?? false;
@@ -1170,6 +1186,7 @@ export default function LogWorkoutScreen() {
           setType: first && first.setType !== "standard" ? first.setType : null,
           supersetGroup: r.supersetGroup,
           perSide: r.perSide,
+          order: orderToSave(r),
           notes: r.notes.trim() || null,
         };
       });
@@ -1185,6 +1202,7 @@ export default function LogWorkoutScreen() {
           notes: combinedNotes || null,
           cardioType: r.cardioType,
           level: hasLevel(r.cardioType) ? parseLevel(r.level) : null,
+          order: orderToSave(r),
         };
       });
 
@@ -1627,7 +1645,7 @@ export default function LogWorkoutScreen() {
             <Text style={styles.emptyHint}>No entries yet. Use the buttons above to log exercises or a run.</Text>
           ) : null}
 
-          {groupExerciseRowsBySuperset(exerciseRows).map((grp, gIdx) => {
+          {entrySegments(exerciseRows, runRows).map((seg) => seg.kind === "exercise" ? groupExerciseRowsBySuperset(seg.rows).map((grp, gIdx) => {
             const isGrouped = grp.rows.length > 1;
             const cards = grp.rows.map((row, memberIdx) => {
             const idx = exerciseRows.indexOf(row);
@@ -1968,12 +1986,10 @@ export default function LogWorkoutScreen() {
             ) : (
               cards
             );
-          })}
-
-          {runRows.map((row, idx) => (
+          }) : (() => { const row = seg.row; return (
             <Card key={row.key} style={styles.entryCard}>
               <View style={styles.entryHeader}>
-                <Text style={styles.entryLabel}>{CARDIO_LABEL[row.cardioType]} {idx + 1}</Text>
+                <Text style={styles.entryLabel}>{row.typeChosen ? CARDIO_LABEL[row.cardioType] : "Cardio"}</Text>
                 <View style={styles.entryHeaderActions}>
                   {row.cardioType === "run" ? (
                     <Pressable
@@ -2001,9 +2017,10 @@ export default function LogWorkoutScreen() {
               <View style={styles.cardioPicker}>
                 <OptionPicker<CardioType>
                   title="Cardio type"
+                  placeholder="Choose a type"
                   options={CARDIO_PICKER_OPTIONS}
-                  value={row.cardioType}
-                  onChange={(t) => updateRunRow(row.key, { cardioType: t })}
+                  value={row.typeChosen ? row.cardioType : null}
+                  onChange={(t) => updateRunRow(row.key, { cardioType: t, typeChosen: true })}
                 />
               </View>
 
@@ -2076,7 +2093,7 @@ export default function LogWorkoutScreen() {
                 style={styles.smallInput}
               />
             </Card>
-          ))}
+          ); })())}
 
           <View ref={addButtonsRef} style={styles.addButtonsRow}>
             <Pressable onPress={handleAddExercise} style={styles.addChip} accessibilityRole="button">

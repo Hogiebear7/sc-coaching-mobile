@@ -37,6 +37,8 @@ export interface WorkoutExerciseEntry {
   setType?: WorkoutSetType | null;
   supersetGroup?: string | null;
   perSide?: boolean | null;
+  /** Place in the whole workout, exercises and cardio together. Absent on sessions saved before ordering existed. */
+  order?: number | null;
   notes: string | null;
 }
 
@@ -50,6 +52,8 @@ export interface WorkoutRunEntry {
   /** Absent on older entries (runs) and from older servers. */
   cardioType?: import("@/lib/cardio").CardioType;
   level?: number | null;
+  /** Place in the whole workout, exercises and cardio together. Absent on sessions saved before ordering existed. */
+  order?: number | null;
 }
 
 // Mirrors WorkoutsData in the main repo's lib/workouts-data.ts.
@@ -118,6 +122,8 @@ export interface CreateWorkoutExerciseInput {
   setType: WorkoutSetType | null;
   supersetGroup: string | null;
   perSide: boolean;
+  /** Place in the whole workout, exercises and cardio together. Older servers ignore it. */
+  order?: number | null;
   notes: string | null;
 }
 
@@ -129,6 +135,8 @@ export interface CreateWorkoutRunInput {
   notes: string | null;
   cardioType?: import("@/lib/cardio").CardioType;
   level?: number | null;
+  /** Place in the whole workout, exercises and cardio together. Older servers ignore it. */
+  order?: number | null;
 }
 
 export interface CreateWorkoutInput {

@@ -17,10 +17,11 @@ import { RestTimerBar } from "@/components/ui/RestTimerBar";
 import { SupersetChips } from "@/components/ui/SupersetChips";
 import { TextField } from "@/components/ui/TextField";
 import { TimeWheelPicker } from "@/components/ui/TimeWheelPicker";
-import { figure, Radius, Spacing, type LegacyPalette } from "@/constants/theme";
+import { DataColor, figure, Radius, Spacing, type LegacyPalette } from "@/constants/theme";
 import { OptionPicker, type PickerOption } from "@/components/ui/OptionPicker";
 import { entrySegments, insertEntry, orderToSave } from "@/lib/entry-order";
-import { supersetLetter, supersetMemberLabel } from "@/lib/superset-label";
+import { distinctGroups, supersetLetter, supersetMemberLabel } from "@/lib/superset-label";
+import { groupSelected, nextSupersetLabel, ungroup } from "@/lib/superset-select";
 import { CARDIO_LABEL, CARDIO_TYPES, hasLevel, hasPace, parseLevel, type CardioType } from "@/lib/cardio";
 import { selectionFeedback, successFeedback, tapFeedback } from "@/lib/haptics";
 import { ApiError } from "@/lib/api-client";
@@ -274,6 +275,13 @@ function groupExerciseRowsBySuperset(rows: ExerciseRow[]): { group: string | nul
     }
   }
   return groups;
+}
+
+// One colour per superset, in the order they appear, from the app's data colours.
+const SUPERSET_COLOURS = [DataColor.sessions, DataColor.load, DataColor.sleep, DataColor.hydration];
+function supersetColor(group: string, allGroups: (string | null)[]): string {
+  const i = distinctGroups(allGroups).indexOf(group);
+  return SUPERSET_COLOURS[(i < 0 ? 0 : i) % SUPERSET_COLOURS.length];
 }
 
 function newRunRow(): RunRow {
@@ -1009,6 +1017,34 @@ export default function LogWorkoutScreen() {
     setTimeout(scrollToAddButtons, 50);
   }
 
+  // "Superset" button: tick two or more exercises, then Make superset. They are brought together and labelled Superset A, B ...
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
+
+  function toggleSelectMode() {
+    tapFeedback();
+    setSelectMode((on) => !on);
+    setSelectedKeys([]);
+  }
+
+  function toggleSelected(key: string) {
+    selectionFeedback();
+    setSelectedKeys((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]));
+  }
+
+  function makeSuperset() {
+    if (selectedKeys.length < 2) return;
+    successFeedback();
+    update(groupSelected(exerciseRows, runRows, new Set(selectedKeys), nextSupersetLabel(exerciseRows.map((r) => r.supersetGroup))));
+    setSelectMode(false);
+    setSelectedKeys([]);
+  }
+
+  function ungroupSuperset(label: string) {
+    tapFeedback();
+    update({ exerciseRows: ungroup(exerciseRows, label) });
+  }
+
   function updateRow(key: string, patch: Partial<Omit<ExerciseRow, "key">>) {
     lastTouchedKey.current = key;
     update({ exerciseRows: exerciseRows.map((r) => (r.key === key ? { ...r, ...patch } : r)) });
@@ -1699,7 +1735,19 @@ export default function LogWorkoutScreen() {
 
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionLabel}>Session entries</Text>
+            {exerciseRows.length >= 2 ? (
+              <Pressable
+                onPress={toggleSelectMode}
+                accessibilityRole="button"
+                accessibilityState={{ selected: selectMode }}
+                accessibilityLabel={selectMode ? "Stop choosing exercises for a superset" : "Choose exercises for a superset"}
+                style={[styles.selectToggle, selectMode && styles.selectToggleActive]}
+              >
+                <Text style={[styles.selectToggleText, selectMode && styles.selectToggleTextActive]}>{selectMode ? "Cancel" : "Superset"}</Text>
+              </Pressable>
+            ) : null}
           </View>
+          {selectMode ? <Text style={styles.formatHint}>Tick two or more exercises, then tap Make superset.</Text> : null}
 
           {exerciseRows.length === 0 && runRows.length === 0 ? (
             <Text style={styles.emptyHint}>No entries yet. Use the buttons above to log exercises or a run.</Text>
@@ -1721,6 +1769,18 @@ export default function LogWorkoutScreen() {
             >
               <View style={styles.entryHeader}>
                 <View style={styles.entryHeaderTitle}>
+                  {selectMode ? (
+                    <Pressable
+                      onPress={() => toggleSelected(row.key)}
+                      hitSlop={6}
+                      accessibilityRole="checkbox"
+                      accessibilityState={{ checked: selectedKeys.includes(row.key) }}
+                      accessibilityLabel={`Select ${row.name.trim() || "exercise"}`}
+                      style={[styles.selectBox, selectedKeys.includes(row.key) && styles.selectBoxOn]}
+                    >
+                      {selectedKeys.includes(row.key) ? <Ionicons name="checkmark" size={16} color={Color.goldForeground} /> : null}
+                    </Pressable>
+                  ) : null}
                   <View style={[styles.indexBadge, allComplete && styles.indexBadgeDone]}>
                     <Text style={[styles.indexBadgeText, allComplete && { color: Color.bg0 }]}>
                       {isGrouped && row.supersetGroup ? supersetMemberLabel(row.supersetGroup, exerciseRows.map((r) => r.supersetGroup), memberIdx) : idx + 1}
@@ -2025,11 +2085,17 @@ export default function LogWorkoutScreen() {
             );
             });
             return isGrouped ? (
-              <View key={`superset-${grp.group}-${gIdx}`} style={styles.supersetGroupWrap}>
+              <View
+                key={`superset-${grp.group}-${gIdx}`}
+                style={[styles.supersetGroupWrap, { borderColor: supersetColor(grp.group ?? "", exerciseRows.map((r) => r.supersetGroup)) }]}
+              >
                 <View style={styles.supersetGroupHeader}>
-                  <Text style={styles.supersetGroupHeaderText}>
+                  <Text style={[styles.supersetGroupHeaderText, { color: supersetColor(grp.group ?? "", exerciseRows.map((r) => r.supersetGroup)) }]}>
                     Superset {supersetLetter(grp.group ?? "", exerciseRows.map((r) => r.supersetGroup))} · {grp.rows.length} exercises
                   </Text>
+                  <Pressable onPress={() => ungroupSuperset(grp.group ?? "")} hitSlop={8} accessibilityRole="button" accessibilityLabel="Ungroup this superset">
+                    <Text style={styles.ungroupText}>Ungroup</Text>
+                  </Pressable>
                 </View>
                 {cards}
               </View>
@@ -2150,6 +2216,15 @@ export default function LogWorkoutScreen() {
               />
             </Card>
           ); })())}
+
+          {selectMode ? (
+            <Button
+              title={selectedKeys.length < 2 ? "Make superset" : `Make superset (${selectedKeys.length})`}
+              onPress={makeSuperset}
+              disabled={selectedKeys.length < 2}
+              style={{ marginTop: Spacing.sm }}
+            />
+          ) : null}
 
           <View ref={addButtonsRef} style={styles.addButtonsRow}>
             <Pressable onPress={handleAddExercise} style={styles.addChip} accessibilityRole="button">
@@ -2288,16 +2363,27 @@ const useStyles = makeLegacyStyles((Color) =>
     // station, not a stack of separate cards.
     supersetGroupWrap: {
       borderRadius: Radius.md,
+      borderWidth: 2,
       backgroundColor: Color.goldWeak,
       marginBottom: Spacing.md,
       overflow: "hidden",
     },
     supersetGroupHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
       paddingHorizontal: Spacing.md,
       paddingVertical: Spacing.sm,
       borderBottomWidth: 1,
       borderBottomColor: Color.goldBorder,
     },
+    selectToggle: { minHeight: 40, paddingHorizontal: 16, borderRadius: Radius.pill, backgroundColor: Color.surface2, justifyContent: "center" },
+    selectToggleActive: { backgroundColor: Color.gold },
+    selectToggleText: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
+    selectToggleTextActive: { color: Color.goldForeground },
+    selectBox: { width: 26, height: 26, borderRadius: 8, borderWidth: 2, borderColor: Color.textMuted, alignItems: "center", justifyContent: "center", marginRight: 8 },
+    selectBoxOn: { backgroundColor: Color.gold, borderColor: Color.gold },
+    ungroupText: { fontSize: 13, fontWeight: "600", color: Color.textMuted, textDecorationLine: "underline" },
     supersetGroupHeaderText: { fontSize: 14, fontWeight: "700", color: Color.gold, letterSpacing: 0.4 },
     entryCardGrouped: {
       padding: Spacing.md,

@@ -12,9 +12,9 @@ export interface RoundRow<S extends SetLike = SetLike> {
   setRows: S[];
 }
 
-/** The rounds view draws weight and reps only. A superset containing a timed or band exercise stays in the normal view. */
+/** A superset of two or more exercises can always be drawn in rounds (kg, timed and band exercises each get the right box). */
 export function canShowRounds(rows: RoundRow[]): boolean {
-  return rows.length >= 2 && rows.every((r) => r.unitMode === "weight");
+  return rows.length >= 2;
 }
 
 /** How many rounds there are: the most sets any exercise in the superset has. */

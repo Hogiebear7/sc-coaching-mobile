@@ -10,7 +10,7 @@ describe("rounds view", () => {
   it("is for two or more weight exercises only", () => {
     expect(canShowRounds([row("a", []), row("b", [])])).toBe(true);
     expect(canShowRounds([row("a", [])])).toBe(false);
-    expect(canShowRounds([row("a", []), row("b", [], "time")])).toBe(false);
+    expect(canShowRounds([row("a", []), row("b", [], "time")])).toBe(true);
   });
 
   it("has as many rounds as the longest exercise", () => {

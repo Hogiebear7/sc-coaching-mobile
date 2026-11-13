@@ -16,6 +16,9 @@ import type { PrescribedExercise } from "@/lib/queries/programs";
 import { useDeleteWorkoutSession, useSetWorkoutVisibility, useWorkouts, type WorkoutExerciseEntry } from "@/lib/queries/workouts";
 import { setPendingWorkoutTemplateSeed } from "@/lib/workout-template-seed";
 import { computeExerciseSetTotals, computeSessionTotals, formatExerciseSetLabels, formatRun, groupSetLabels } from "@/lib/workout-formatters";
+import { CARDIO_LABEL } from "@/lib/cardio";
+import { mergeSavedEntries } from "@/lib/entry-order";
+import { supersetLetter } from "@/lib/superset-label";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 function formatLongDate(dateISO: string): string {
@@ -184,7 +187,20 @@ export default function SessionDetailScreen() {
             <>
               <Text style={styles.sectionLabel}>Exercises</Text>
               <View style={styles.exerciseList}>
-                {session.exercises.map((ex, idx) => {
+                {mergeSavedEntries(session.exercises, session.runs).map((item, itemIdx) => {
+                  // Cardio sits where it was done in the workout (older sessions have no order: exercises first, cardio after).
+                  if (item.kind === "run") {
+                    const run = item.entry;
+                    return (
+                      <View key={`run-${itemIdx}`} style={styles.exerciseCard}>
+                        <Text style={styles.exerciseName}>{CARDIO_LABEL[run.cardioType ?? "run"]}</Text>
+                        <Text style={styles.exerciseMeta}>{formatRun(run) || "Cardio"}</Text>
+                        {run.notes ? <Text style={styles.exerciseNote}>{run.notes}</Text> : null}
+                      </View>
+                    );
+                  }
+                  const ex = item.entry;
+                  const idx = session.exercises.indexOf(ex);
                   const exTotals = computeExerciseSetTotals(ex);
                   const groups = groupSetLabels(formatExerciseSetLabels(ex));
                   const section = ex.exerciseId ? sectionByExerciseId.get(ex.exerciseId) : undefined;
@@ -219,7 +235,7 @@ export default function SessionDetailScreen() {
                           <View style={styles.exerciseMetaRow}>
                             {ex.supersetGroup ? (
                               <View style={styles.supersetBadge}>
-                                <Text style={styles.supersetBadgeText}>Superset {ex.supersetGroup.replace(/^ST/, "")}</Text>
+                                <Text style={styles.supersetBadgeText}>Superset {supersetLetter(ex.supersetGroup, session.exercises.map((e) => e.supersetGroup))}</Text>
                               </View>
                             ) : null}
                             <Text style={styles.exerciseMeta}>{meta}</Text>
@@ -247,9 +263,9 @@ export default function SessionDetailScreen() {
             </>
           ) : null}
 
-          {session.runs.length > 0 ? (
+          {session.runs.length > 0 && session.exercises.length === 0 ? (
             <>
-              <Text style={styles.sectionLabel}>Runs</Text>
+              <Text style={styles.sectionLabel}>Cardio</Text>
               <Card style={styles.list}>
                 {session.runs.map((run, idx) => (
                   <View key={idx} style={[styles.row, idx > 0 && styles.rowDivider]}>

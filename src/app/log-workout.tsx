@@ -20,6 +20,7 @@ import { TimeWheelPicker } from "@/components/ui/TimeWheelPicker";
 import { figure, Radius, Spacing, type LegacyPalette } from "@/constants/theme";
 import { OptionPicker, type PickerOption } from "@/components/ui/OptionPicker";
 import { entrySegments, insertEntry, orderToSave } from "@/lib/entry-order";
+import { supersetLetter, supersetMemberLabel } from "@/lib/superset-label";
 import { CARDIO_LABEL, CARDIO_TYPES, hasLevel, hasPace, parseLevel, type CardioType } from "@/lib/cardio";
 import { selectionFeedback, successFeedback, tapFeedback } from "@/lib/haptics";
 import { ApiError } from "@/lib/api-client";
@@ -1662,7 +1663,9 @@ export default function LogWorkoutScreen() {
               <View style={styles.entryHeader}>
                 <View style={styles.entryHeaderTitle}>
                   <View style={[styles.indexBadge, allComplete && styles.indexBadgeDone]}>
-                    <Text style={[styles.indexBadgeText, allComplete && { color: Color.bg0 }]}>{idx + 1}</Text>
+                    <Text style={[styles.indexBadgeText, allComplete && { color: Color.bg0 }]}>
+                      {isGrouped && row.supersetGroup ? supersetMemberLabel(row.supersetGroup, exerciseRows.map((r) => r.supersetGroup), memberIdx) : idx + 1}
+                    </Text>
                   </View>
                   <Text style={styles.entryLabel} numberOfLines={1}>
                     {row.name.trim() || "New exercise"}
@@ -1979,7 +1982,9 @@ export default function LogWorkoutScreen() {
             return isGrouped ? (
               <View key={`superset-${grp.group}-${gIdx}`} style={styles.supersetGroupWrap}>
                 <View style={styles.supersetGroupHeader}>
-                  <Text style={styles.supersetGroupHeaderText}>{grp.group}</Text>
+                  <Text style={styles.supersetGroupHeaderText}>
+                    Superset {supersetLetter(grp.group ?? "", exerciseRows.map((r) => r.supersetGroup))} · {grp.rows.length} exercises
+                  </Text>
                 </View>
                 {cards}
               </View>

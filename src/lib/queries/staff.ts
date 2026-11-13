@@ -54,13 +54,35 @@ export interface ClassWorkoutExerciseEntry {
   reps: number | null;
   sets: number | null;
   rpe?: number | null;
+  supersetGroup?: string | null;
+  perSide?: boolean | null;
+  /** Per-set weight and reps; for a left/right exercise each set holds repsRight and repsLeft. */
+  setDetails?: { weight: string | null; reps: number | null; repsRight?: number | null; repsLeft?: number | null }[] | null;
+  /** Place in the whole class workout, exercises and cardio together. */
+  order?: number | null;
   notes: string | null;
+}
+
+/** Cardio in a class workout (bike, row, run ...). Same shape as a member's own cardio. */
+export interface ClassWorkoutRunEntry {
+  distance: number | null;
+  durationSecs: number | null;
+  reps?: number | null;
+  sets?: number | null;
+  notes: string | null;
+  cardioType?: import("@/lib/cardio").CardioType;
+  level?: number | null;
+  order?: number | null;
 }
 
 export interface ClassWorkoutRecord {
   classId: string;
   notes: string | null;
   exercises: ClassWorkoutExerciseEntry[];
+  /** Absent on class workouts saved before cardio was added, and from older servers. */
+  runs?: ClassWorkoutRunEntry[];
+  /** When the recap was sent to the people who came; null until then. */
+  recapSentAt?: string | null;
   updatedByStaffId: string;
   createdAt: string;
   updatedAt: string;
@@ -112,8 +134,34 @@ export interface SaveClassWorkoutResult {
 export interface SaveClassWorkoutInput {
   classId: string;
   notes: string;
-  exercises: { exerciseId: string | null; name: string; weight: string; reps: number | null; sets: number | null }[];
+  exercises: {
+    exerciseId: string | null;
+    name: string;
+    weight: string;
+    reps: number | null;
+    sets: number | null;
+    supersetGroup?: string | null;
+    perSide?: boolean;
+    setDetails?: { weight: string | null; reps: number | null; repsRight?: number | null; repsLeft?: number | null }[];
+    order?: number | null;
+  }[];
+  runs?: ClassWorkoutRunEntry[];
   results: SaveClassWorkoutResult[];
+}
+
+// The coach finishes the class workout and sends the "well done today" recap to everyone who was checked in. Safe to press twice: the server
+// never notifies the same person twice for a class.
+export function useSendClassRecap() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (classId: string) =>
+      apiFetch<{ success: true; message: string; data: { sent: number; alreadySent: number } }>(`/api/staff/classes/${classId}/workout/recap`, {
+        method: "POST",
+      }),
+    onSuccess: (_data, classId) => {
+      qc.invalidateQueries({ queryKey: ["class-workout", classId] });
+    },
+  });
 }
 
 // Reuses the existing web save route (classes.manage, already Bearer-compatible).

@@ -233,6 +233,12 @@ export interface UpdateClassWorkoutInput {
   sessionId: string;
   exercises: CreateWorkoutExerciseInput[];
   notes: string;
+  /** Cardio from the class, as edited. Older servers ignore it. */
+  runs?: CreateWorkoutRunInput[];
+  /** How hard the whole session felt, 1 to 10. Older servers ignore it. */
+  sessionRpe?: number | null;
+  /** A few words on how it felt. Older servers ignore it. */
+  feelingNotes?: string;
 }
 
 // Class-synced sessions only — corrects exercises/notes on a workout that

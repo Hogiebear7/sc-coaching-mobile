@@ -3,6 +3,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Pressable,
   StyleSheet,
   Text,
@@ -18,13 +19,18 @@ import { KeyboardAwareScroll } from "@/components/ui/KeyboardAwareScroll";
 import { LiveColor as Color, Radius, Spacing } from "@/constants/theme";
 import { ApiError } from "@/lib/api-client";
 import { useExerciseLibraryNameIndex } from "@/lib/queries/exercise-library";
-import { tapFeedback } from "@/lib/haptics";
+import { successFeedback, tapFeedback } from "@/lib/haptics";
 import {
   useClassWorkout,
   useSaveClassWorkout,
+  useSendClassRecap,
   type ClassWorkoutExerciseEntry,
+  type ClassWorkoutRunEntry,
 } from "@/lib/queries/staff";
-import { OptionPicker } from "@/components/ui/OptionPicker";
+import { OptionPicker, type PickerOption } from "@/components/ui/OptionPicker";
+import { SupersetChips } from "@/components/ui/SupersetChips";
+import { CARDIO_LABEL, CARDIO_TYPES, type CardioType } from "@/lib/cardio";
+import { entrySegments, insertEntry } from "@/lib/entry-order";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 let keySeq = 0;
@@ -178,7 +184,41 @@ type TemplateRow = {
   weight: string;
   reps: string;
   sets: string;
+  /** "ST1", "ST2" ...: exercises sharing a label are done back to back. */
+  supersetGroup: string | null;
+  /** Reps differ per side: the right and left boxes are used instead of one reps box. */
+  perSide: boolean;
+  repsRight: string;
+  repsLeft: string;
+  /** Place in the whole workout, exercises and cardio together. */
+  order: number | null;
 };
+
+type CardioRow = {
+  key: string;
+  cardioType: CardioType | null;
+  minutes: string;
+  distanceKm: string;
+  notes: string;
+  order: number | null;
+};
+
+const CARDIO_PICKER_OPTIONS: readonly PickerOption<CardioType>[] = CARDIO_TYPES.map((t) => ({ value: t, label: CARDIO_LABEL[t] }));
+
+function newCardioRow(): CardioRow {
+  return { key: nextKey(), cardioType: null, minutes: "", distanceKm: "", notes: "", order: null };
+}
+
+function cardioRowsFromRuns(runs: ClassWorkoutRunEntry[] | undefined): CardioRow[] {
+  return (runs ?? []).map((r) => ({
+    key: nextKey(),
+    cardioType: r.cardioType ?? null,
+    minutes: r.durationSecs != null ? String(Math.round((r.durationSecs / 60) * 10) / 10) : "",
+    distanceKm: r.distance != null ? String(r.distance) : "",
+    notes: r.notes ?? "",
+    order: r.order ?? null,
+  }));
+}
 
 type MemberRow = {
   key: string;
@@ -190,19 +230,27 @@ type MemberRow = {
 };
 
 function newTemplateRow(): TemplateRow {
-  return { key: nextKey(), exerciseId: null, name: "", weight: "", reps: "", sets: "" };
+  return { key: nextKey(), exerciseId: null, name: "", weight: "", reps: "", sets: "", supersetGroup: null, perSide: false, repsRight: "", repsLeft: "", order: null };
 }
 
 function rowsFromEntries(entries: ClassWorkoutExerciseEntry[] | null): TemplateRow[] {
   if (!entries || entries.length === 0) return [newTemplateRow()];
-  return entries.map((e) => ({
-    key: nextKey(),
-    exerciseId: e.exerciseId,
-    name: e.name,
-    weight: e.weight ?? "",
-    reps: e.reps === null ? "" : String(e.reps),
-    sets: e.sets === null ? "" : String(e.sets),
-  }));
+  return entries.map((e) => {
+    const first = e.setDetails?.[0];
+    return {
+      key: nextKey(),
+      exerciseId: e.exerciseId,
+      name: e.name,
+      weight: e.weight ?? first?.weight ?? "",
+      reps: e.reps === null ? "" : String(e.reps),
+      sets: e.sets === null ? (e.setDetails?.length ? String(e.setDetails.length) : "") : String(e.sets),
+      supersetGroup: e.supersetGroup ?? null,
+      perSide: e.perSide === true,
+      repsRight: first?.repsRight != null ? String(first.repsRight) : "",
+      repsLeft: first?.repsLeft != null ? String(first.repsLeft) : "",
+      order: e.order ?? null,
+    };
+  });
 }
 
 function memberRowsFromTemplate(
@@ -251,6 +299,10 @@ export default function ClassWorkoutBuilderScreen() {
   const saveWorkout = useSaveClassWorkout();
 
   const [template, setTemplate] = useState<TemplateRow[]>([newTemplateRow()]);
+  const [cardio, setCardio] = useState<CardioRow[]>([]);
+  // The entry last worked on, so a new one goes just below it.
+  const [touchedKey, setTouchedKey] = useState<string | null>(null);
+  const sendRecap = useSendClassRecap();
   const [workoutNotes, setWorkoutNotes] = useState("");
   const [format, setFormat] = useState<WorkoutFormat>("standard");
   const [circuitStations, setCircuitStations] = useState<CircuitStation[]>([]);
@@ -276,13 +328,40 @@ export default function ClassWorkoutBuilderScreen() {
   useEffect(() => {
     if (hydrated || !data) return;
     setTemplate(rowsFromEntries(data.existingWorkout?.exercises ?? null));
+    setCardio(cardioRowsFromRuns(data.existingWorkout?.runs));
     setWorkoutNotes(data.existingWorkout?.notes ?? "");
     setMemberNotes(Object.fromEntries(data.checkedIn.map((m) => [m.userId, m.existingNotes ?? ""])));
     setHydrated(true);
   }, [data, hydrated]);
 
   function updateTemplate(key: string, patch: Partial<TemplateRow>) {
+    setTouchedKey(key);
     setTemplate((prev) => prev.map((r) => (r.key === key ? { ...r, ...patch } : r)));
+    setMessage(null);
+  }
+
+  function updateCardio(key: string, patch: Partial<CardioRow>) {
+    setTouchedKey(key);
+    setCardio((prev) => prev.map((r) => (r.key === key ? { ...r, ...patch } : r)));
+    setMessage(null);
+  }
+
+  // New entries go just below the one being worked on, so cardio can sit in the middle of the class.
+  function addExercise() {
+    const added = newTemplateRow();
+    const next = insertEntry(template, cardio, { kind: "exercise", row: added }, touchedKey);
+    setTemplate(next.exerciseRows);
+    setCardio(next.runRows);
+    setTouchedKey(added.key);
+    setMessage(null);
+  }
+
+  function addCardio() {
+    const added = newCardioRow();
+    const next = insertEntry(template, cardio, { kind: "run", row: added }, touchedKey);
+    setTemplate(next.exerciseRows);
+    setCardio(next.runRows);
+    setTouchedKey(added.key);
     setMessage(null);
   }
 
@@ -298,8 +377,8 @@ export default function ClassWorkoutBuilderScreen() {
     setMessage(null);
   }
 
-  async function handleSave() {
-    if (!data) return;
+  async function handleSave(): Promise<boolean> {
+    if (!data) return false;
     setError(null);
     setMessage(null);
 
@@ -337,20 +416,79 @@ export default function ClassWorkoutBuilderScreen() {
       const res = await saveWorkout.mutateAsync({
         classId,
         notes: combinedNotes,
-        exercises: template.map((r) => ({
-          exerciseId: r.exerciseId,
-          name: r.name,
-          weight: r.weight,
-          reps: r.reps.trim() ? Number(r.reps) : null,
-          sets: r.sets.trim() ? Number(r.sets) : null,
-        })),
+        exercises: template.map((r) => {
+          const sets = r.sets.trim() ? Number(r.sets) : null;
+          const weight = r.weight.trim() ? r.weight.trim() : null;
+          // A left/right exercise keeps its target per set: right reps and left reps instead of one number.
+          const sideSets =
+            r.perSide && sets && sets > 0
+              ? Array.from({ length: Math.min(sets, 20) }, () => ({
+                  weight,
+                  reps: null,
+                  repsRight: r.repsRight.trim() ? Number(r.repsRight) : null,
+                  repsLeft: r.repsLeft.trim() ? Number(r.repsLeft) : null,
+                }))
+              : undefined;
+          return {
+            exerciseId: r.exerciseId,
+            name: r.name,
+            weight: r.weight,
+            reps: r.perSide ? null : r.reps.trim() ? Number(r.reps) : null,
+            sets,
+            supersetGroup: r.supersetGroup,
+            perSide: r.perSide,
+            ...(sideSets ? { setDetails: sideSets } : {}),
+            order: r.order,
+          };
+        }),
+        runs: cardio
+          .filter((c) => c.cardioType || c.minutes.trim() || c.distanceKm.trim() || c.notes.trim())
+          .map((c) => ({
+            distance: c.distanceKm.trim() ? Number(c.distanceKm) : null,
+            durationSecs: c.minutes.trim() ? Math.round(Number(c.minutes) * 60) : null,
+            notes: c.notes.trim() || null,
+            cardioType: c.cardioType ?? "run",
+            order: c.order,
+          })),
         results,
       });
       tapFeedback();
       setMessage(res.message ?? "Class workout saved.");
+      return true;
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Could not save the class workout.");
+      return false;
     }
+  }
+
+  // Finish the class workout: save what is on screen, then tell everyone who came. Asks first because it notifies members.
+  function handleFinishAndSend() {
+    const checkedIn = data?.checkedIn.length ?? 0;
+    Alert.alert(
+      "Send the recap?",
+      checkedIn > 0
+        ? `This saves the workout and sends a thank-you notification to the ${checkedIn} member${checkedIn === 1 ? "" : "s"} checked in. They can then look at their workout, change anything, and say how it felt.`
+        : "Nobody is checked in for this class yet, so nobody would receive it. Check people in first.",
+      checkedIn > 0
+        ? [
+            { text: "Not yet", style: "cancel" },
+            {
+              text: "Save and send",
+              onPress: async () => {
+                const saved = await handleSave();
+                if (!saved) return;
+                try {
+                  const res = await sendRecap.mutateAsync(classId);
+                  successFeedback();
+                  setMessage(res.message);
+                } catch (e) {
+                  setError(e instanceof ApiError ? e.message : "Could not send the recap.");
+                }
+              },
+            },
+          ]
+        : [{ text: "OK" }]
+    );
   }
 
   const libraryExercises = (data?.libraryExercises ?? []).map((e) => ({
@@ -404,7 +542,7 @@ export default function ClassWorkoutBuilderScreen() {
             </Text>
 
             <View style={{ marginTop: Spacing.md }}>
-              {template.map((row) => (
+              {entrySegments(template, cardio).map((seg) => seg.kind === "exercise" ? seg.rows.map((row) => (
                 <View key={row.key} style={styles.templateRow}>
                   <View style={styles.entryHeader}>
                     <View style={{ flex: 1 }}>
@@ -430,14 +568,35 @@ export default function ClassWorkoutBuilderScreen() {
                       placeholderTextColor={Color.textFaint}
                       style={[inputStyleBase(), { flex: 1 }]}
                     />
-                    <TextInput
-                      value={row.reps}
-                      onChangeText={(v) => updateTemplate(row.key, { reps: v })}
-                      placeholder="Reps"
-                      placeholderTextColor={Color.textFaint}
-                      keyboardType="number-pad"
-                      style={[inputStyleBase(), { flex: 1 }]}
-                    />
+                    {row.perSide ? (
+                      <>
+                        <TextInput
+                          value={row.repsRight}
+                          onChangeText={(v) => updateTemplate(row.key, { repsRight: v })}
+                          placeholder="Right reps"
+                          placeholderTextColor={Color.textFaint}
+                          keyboardType="number-pad"
+                          style={[inputStyleBase(), { flex: 1 }]}
+                        />
+                        <TextInput
+                          value={row.repsLeft}
+                          onChangeText={(v) => updateTemplate(row.key, { repsLeft: v })}
+                          placeholder="Left reps"
+                          placeholderTextColor={Color.textFaint}
+                          keyboardType="number-pad"
+                          style={[inputStyleBase(), { flex: 1 }]}
+                        />
+                      </>
+                    ) : (
+                      <TextInput
+                        value={row.reps}
+                        onChangeText={(v) => updateTemplate(row.key, { reps: v })}
+                        placeholder="Reps"
+                        placeholderTextColor={Color.textFaint}
+                        keyboardType="number-pad"
+                        style={[inputStyleBase(), { flex: 1 }]}
+                      />
+                    )}
                     <TextInput
                       value={row.sets}
                       onChangeText={(v) => updateTemplate(row.key, { sets: v })}
@@ -447,13 +606,73 @@ export default function ClassWorkoutBuilderScreen() {
                       style={[inputStyleBase(), { flex: 1 }]}
                     />
                   </View>
+                  <View style={styles.extrasRow}>
+                    <Pressable
+                      onPress={() => updateTemplate(row.key, { perSide: !row.perSide })}
+                      accessibilityRole="switch"
+                      accessibilityState={{ checked: row.perSide }}
+                      style={[styles.sideChip, row.perSide && styles.sideChipActive]}
+                    >
+                      <Text style={[styles.sideChipText, row.perSide && styles.sideChipTextActive]}>Left / right</Text>
+                    </Pressable>
+                  </View>
+                  <Text style={styles.extrasLabel}>Superset</Text>
+                  <SupersetChips
+                    value={row.supersetGroup}
+                    allGroups={template.map((r) => r.supersetGroup)}
+                    onChange={(supersetGroup) => updateTemplate(row.key, { supersetGroup })}
+                  />
                 </View>
-              ))}
+              )) : (() => { const c = seg.row; return (
+                <View key={c.key} style={styles.templateRow}>
+                  <View style={styles.entryHeader}>
+                    <View style={{ flex: 1 }}>
+                      <OptionPicker<CardioType>
+                        label={c.cardioType ? CARDIO_LABEL[c.cardioType] : "Cardio"}
+                        title="Cardio type"
+                        placeholder="Choose a type"
+                        options={CARDIO_PICKER_OPTIONS}
+                        value={c.cardioType}
+                        onChange={(cardioType) => updateCardio(c.key, { cardioType })}
+                      />
+                    </View>
+                    <Pressable
+                      onPress={() => setCardio((prev) => prev.filter((r) => r.key !== c.key))}
+                      style={styles.removeButton}
+                    >
+                      <Text style={styles.removeText}>Remove</Text>
+                    </Pressable>
+                  </View>
+                  <View style={styles.gridRow}>
+                    <TextInput
+                      value={c.minutes}
+                      onChangeText={(v) => updateCardio(c.key, { minutes: v })}
+                      placeholder="Minutes"
+                      placeholderTextColor={Color.textFaint}
+                      keyboardType="decimal-pad"
+                      style={[inputStyleBase(), { flex: 1 }]}
+                    />
+                    <TextInput
+                      value={c.distanceKm}
+                      onChangeText={(v) => updateCardio(c.key, { distanceKm: v })}
+                      placeholder="Distance (km)"
+                      placeholderTextColor={Color.textFaint}
+                      keyboardType="decimal-pad"
+                      style={[inputStyleBase(), { flex: 1 }]}
+                    />
+                  </View>
+                </View>
+              ); })())}
             </View>
 
-            <Pressable onPress={() => setTemplate((prev) => [...prev, newTemplateRow()])} style={styles.addChip}>
-              <Text style={styles.addChipText}>+ Add exercise</Text>
-            </Pressable>
+            <View style={styles.addRow}>
+              <Pressable onPress={addExercise} style={styles.addChip}>
+                <Text style={styles.addChipText}>+ Add exercise</Text>
+              </Pressable>
+              <Pressable onPress={addCardio} style={styles.addChip}>
+                <Text style={styles.addChipText}>+ Add cardio</Text>
+              </Pressable>
+            </View>
 
             <TextInput
               value={workoutNotes}
@@ -625,6 +844,18 @@ export default function ClassWorkoutBuilderScreen() {
             loading={saveWorkout.isPending}
             style={{ marginTop: Spacing.sm }}
           />
+          <Button
+            title={sendRecap.isPending ? "Sending…" : data?.existingWorkout?.recapSentAt ? "Send the recap again to anyone new" : "Finish and send recap"}
+            variant="secondary"
+            onPress={handleFinishAndSend}
+            loading={sendRecap.isPending}
+            style={{ marginTop: Spacing.sm }}
+          />
+          <Text style={styles.recapHint}>
+            {data?.existingWorkout?.recapSentAt
+              ? "The recap has been sent. Members who were checked in already have it."
+              : "When the class is over, this saves the workout and thanks everyone who came, so they can check it and say how it felt."}
+          </Text>
         </KeyboardAwareScroll>
     </SafeAreaView>
   );
@@ -694,6 +925,14 @@ const useStyles = makeLegacyStyles((Color) =>
     memberStatus: { fontSize: 13, color: Color.textMuted },
     memberBody: { marginTop: Spacing.sm, paddingTop: Spacing.sm, borderTopWidth: 1, borderTopColor: Color.borderSubtle },
     rowLabel: { fontSize: 14, fontWeight: "600", color: Color.textPrimary, marginBottom: 6 },
+    recapHint: { fontSize: 13, color: Color.textMuted, textAlign: "center", marginTop: Spacing.sm, marginBottom: Spacing.lg },
+    addRow: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.sm },
+    extrasRow: { flexDirection: "row", gap: Spacing.xs, marginTop: Spacing.xs },
+    extrasLabel: { fontSize: 13, color: Color.textMuted, marginTop: Spacing.sm, marginBottom: 6 },
+    sideChip: { borderRadius: Radius.pill, paddingHorizontal: Spacing.sm, paddingVertical: 8, backgroundColor: Color.surface2, minHeight: 40, justifyContent: "center" },
+    sideChipActive: { backgroundColor: Color.gold },
+    sideChipText: { fontSize: 14, fontWeight: "600", color: Color.textMuted },
+    sideChipTextActive: { color: Color.goldForeground },
     formatRow: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.xs, marginTop: Spacing.xs },
     formatChip: { borderRadius: Radius.pill, paddingHorizontal: Spacing.sm, paddingVertical: 8, backgroundColor: Color.surface2, minHeight: 40, justifyContent: "center" },
     formatChipActive: { borderColor: Color.gold, backgroundColor: Color.gold },

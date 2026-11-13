@@ -1,4 +1,3 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -1141,19 +1140,11 @@ export default function LogWorkoutScreen() {
   }
 
   // Rounds view: draws each superset as Round 1, Round 2 ... with a tick per round. Off by default (the normal view is unchanged); remembered.
-  const ROUNDS_VIEW_KEY = "superset-rounds-view-v1";
-  const [roundsView, setRoundsView] = useState(false);
-  useEffect(() => {
-    AsyncStorage.getItem(ROUNDS_VIEW_KEY)
-      .then((v) => setRoundsView(v === "1"))
-      .catch(() => {});
-  }, []);
-
-  function toggleRoundsView() {
+  // A superset shows as one grouped card with its rounds. "Edit exercises" on the card opens the full per-exercise cards (names, units, left/right).
+  const [editingGroups, setEditingGroups] = useState<string[]>([]);
+  function toggleEditGroup(label: string) {
     tapFeedback();
-    const next = !roundsView;
-    setRoundsView(next);
-    AsyncStorage.setItem(ROUNDS_VIEW_KEY, next ? "1" : "0").catch(() => {});
+    setEditingGroups((prev) => (prev.includes(label) ? prev.filter((g) => g !== label) : [...prev, label]));
   }
 
   // Edits to a superset's rounds replace that group's rows in one update (several updates in one go would overwrite each other).
@@ -1952,17 +1943,6 @@ export default function LogWorkoutScreen() {
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionLabel}>Session entries</Text>
             <View style={styles.headerPills}>
-            {exerciseRows.some((r) => r.supersetGroup) ? (
-              <Pressable
-                onPress={toggleRoundsView}
-                accessibilityRole="switch"
-                accessibilityState={{ checked: roundsView }}
-                accessibilityLabel="Show supersets in rounds"
-                style={[styles.selectToggle, roundsView && styles.selectToggleActive]}
-              >
-                <Text style={[styles.selectToggleText, roundsView && styles.selectToggleTextActive]}>Rounds</Text>
-              </Pressable>
-            ) : null}
             </View>
           </View>
           {exerciseRows.length >= 2 && !exerciseRows.some((r) => r.supersetGroup) ? (
@@ -2292,11 +2272,21 @@ export default function LogWorkoutScreen() {
                   <Text style={[styles.supersetGroupHeaderText, { color: supersetColor(grp.group ?? "", exerciseRows.map((r) => r.supersetGroup)) }]}>
                     Superset {supersetLetter(grp.group ?? "", exerciseRows.map((r) => r.supersetGroup))} · {grp.rows.length} exercises
                   </Text>
-                  <Pressable onPress={() => ungroupSuperset(grp.group ?? "")} hitSlop={8} accessibilityRole="button" accessibilityLabel="Ungroup this superset">
-                    <Text style={styles.ungroupText}>Ungroup</Text>
-                  </Pressable>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: Spacing.md }}>
+                    <Pressable
+                      onPress={() => toggleEditGroup(grp.group ?? "")}
+                      hitSlop={8}
+                      accessibilityRole="button"
+                      accessibilityLabel={editingGroups.includes(grp.group ?? "") ? "Back to rounds" : "Edit the exercises in this superset"}
+                    >
+                      <Text style={styles.ungroupText}>{editingGroups.includes(grp.group ?? "") ? "Back to rounds" : "Edit exercises"}</Text>
+                    </Pressable>
+                    <Pressable onPress={() => ungroupSuperset(grp.group ?? "")} hitSlop={8} accessibilityRole="button" accessibilityLabel="Ungroup this superset">
+                      <Text style={styles.ungroupText}>Ungroup</Text>
+                    </Pressable>
+                  </View>
                 </View>
-                {roundsView && grp.group && canShowRounds(grp.rows) ? (
+                {grp.group && !editingGroups.includes(grp.group) && grp.rows.every((r) => r.name.trim()) && canShowRounds(grp.rows) ? (
                   <SupersetRounds
                     rows={grp.rows}
                     group={grp.group}
@@ -2306,6 +2296,9 @@ export default function LogWorkoutScreen() {
                     onToggleRound={(i) => toggleGroupRound(grp.group ?? "", i)}
                     onAddRound={() => addGroupRound(grp.group ?? "")}
                     onRemoveRound={() => removeGroupRound(grp.group ?? "")}
+                    weightUnit={weightUnit}
+                    onPickTime={(rowKey, setKey, secs) => setTimePickerTarget({ rowKey, setKey, secs: secs ?? 90 })}
+                    renderFooter={(row) => <RirControl value={row.rir} onChange={(v) => updateRow(row.key, { rir: v })} />}
                   />
                 ) : (
                   cards

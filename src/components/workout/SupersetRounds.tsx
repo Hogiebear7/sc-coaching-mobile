@@ -1,10 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
+import { useState, type ReactNode } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 
 import { Radius, Spacing } from "@/constants/theme";
 import { isRoundComplete, roundCount } from "@/lib/superset-rounds";
 import { supersetMemberLabel } from "@/lib/superset-label";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
+import { sanitizeWeight, stripWeightUnit, withWeightUnit, type WeightUnit } from "@/lib/weight-input";
 import type { ExerciseRow, SetRow } from "@/lib/workout-draft";
 
 // A superset drawn in rounds: Round 1 has set 1 of every exercise in the superset, Round 2 has set 2, and so on, with one tick for the whole
@@ -20,6 +22,9 @@ export function SupersetRounds({
   onToggleRound,
   onAddRound,
   onRemoveRound,
+  weightUnit,
+  onPickTime,
+  renderFooter,
 }: {
   rows: ExerciseRow[];
   group: string;
@@ -29,10 +34,20 @@ export function SupersetRounds({
   onToggleRound: (roundIndex: number) => void;
   onAddRound: () => void;
   onRemoveRound: () => void;
+  weightUnit: WeightUnit;
+  /** Opens the time wheel for a set of a timed exercise; the parent writes the result back. */
+  onPickTime: (rowKey: string, setKey: string, secs: number | null) => void;
+  /** Shown under the rounds for each exercise (reps in reserve). */
+  renderFooter?: (row: ExerciseRow, label: string) => ReactNode;
 }) {
   const styles = useStyles();
   const Color = useLegacyColors();
   const rounds = roundCount(rows);
+  const [focusedKey, setFocusedKey] = useState<string | null>(null);
+  const timeSecs = (text: string): number | null => {
+    const m = text.trim().match(/^(\d+):(\d{2})$/);
+    return m ? Number(m[1]) * 60 + Number(m[2]) : null;
+  };
 
   return (
     <View style={styles.wrap}>
@@ -77,15 +92,41 @@ export function SupersetRounds({
                       {row.name.trim() || "New exercise"}
                     </Text>
                     <View style={styles.boxes}>
-                      <TextInput
-                        value={s.weight}
-                        onChangeText={(v) => onChangeSet(row.key, s.key, { weight: v })}
-                        keyboardType="decimal-pad"
-                        placeholder="kg"
-                        placeholderTextColor={Color.textFaint}
-                        accessibilityLabel={`${label} round ${i + 1} weight`}
-                        style={styles.box}
-                      />
+                      {row.unitMode === "time" ? (
+                        <Pressable
+                          onPress={() => onPickTime(row.key, s.key, timeSecs(s.weight))}
+                          accessibilityRole="button"
+                          accessibilityLabel={`${label} round ${i + 1} time. Tap to change.`}
+                          style={[styles.box, { justifyContent: "center" }]}
+                        >
+                          <Text style={{ textAlign: "center", fontSize: 16, color: s.weight ? Color.textPrimary : Color.textFaint }}>{s.weight || "1:30"}</Text>
+                        </Pressable>
+                      ) : row.unitMode === "band" ? (
+                        <TextInput
+                          value={s.weight}
+                          onChangeText={(v) => onChangeSet(row.key, s.key, { weight: v })}
+                          placeholder="band"
+                          placeholderTextColor={Color.textFaint}
+                          accessibilityLabel={`${label} round ${i + 1} band`}
+                          style={styles.box}
+                        />
+                      ) : (
+                        <TextInput
+                          value={focusedKey === s.key ? stripWeightUnit(s.weight) : withWeightUnit(s.weight, weightUnit)}
+                          onChangeText={(v) => onChangeSet(row.key, s.key, { weight: sanitizeWeight(v) })}
+                          onFocus={() => setFocusedKey(s.key)}
+                          onBlur={() => {
+                            setFocusedKey(null);
+                            onChangeSet(row.key, s.key, { weight: withWeightUnit(s.weight, weightUnit) });
+                          }}
+                          selectTextOnFocus
+                          keyboardType="decimal-pad"
+                          placeholder={weightUnit}
+                          placeholderTextColor={Color.textFaint}
+                          accessibilityLabel={`${label} round ${i + 1} weight`}
+                          style={styles.box}
+                        />
+                      )}
                       {row.perSide ? (
                         <>
                           <TextInput
@@ -127,6 +168,22 @@ export function SupersetRounds({
         );
       })}
 
+      {renderFooter ? (
+        <View style={styles.footers}>
+          {rows.map((row, k) => (
+            <View key={row.key} style={styles.footerLine}>
+              <View style={[styles.badge, { backgroundColor: color }]}>
+                <Text style={styles.badgeText}>{supersetMemberLabel(group, allGroups, k)}</Text>
+              </View>
+              <Text style={styles.footerName} numberOfLines={1}>
+                {row.name.trim() || "Exercise"}
+              </Text>
+              {renderFooter(row, supersetMemberLabel(group, allGroups, k))}
+            </View>
+          ))}
+        </View>
+      ) : null}
+
       <View style={styles.actions}>
         <Pressable onPress={onAddRound} accessibilityRole="button" style={styles.action}>
           <Text style={styles.actionText}>+ Add round</Text>
@@ -167,6 +224,9 @@ const useStyles = makeLegacyStyles((Color) =>
       color: Color.textPrimary,
     },
     noSet: { flex: 1, fontSize: 13, color: Color.textMuted },
+    footers: { gap: 4, borderTopWidth: 1, borderTopColor: Color.borderSubtle, paddingTop: Spacing.sm },
+    footerLine: { flexDirection: "row", alignItems: "center", gap: Spacing.sm },
+    footerName: { flex: 1, fontSize: 14, fontWeight: "600", color: Color.textPrimary },
     actions: { flexDirection: "row", gap: Spacing.sm, marginTop: Spacing.xs },
     action: { minHeight: 44, paddingHorizontal: 16, borderRadius: Radius.pill, backgroundColor: Color.surface2, justifyContent: "center" },
     actionText: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },

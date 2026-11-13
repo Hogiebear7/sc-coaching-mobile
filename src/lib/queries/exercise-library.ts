@@ -164,17 +164,26 @@ function resolutionNumber(m: ExerciseMediaRecord): number {
   return Number.isFinite(n) ? n : 0;
 }
 
+// Your own uploaded clip is a video (kind "video", resolution "own"). The picture picks below only ever look at pictures, since an image view cannot
+// show a video; the clip is chosen separately by pickOwnVideo.
+const isPicture = (m: ExerciseMediaRecord) => m.kind !== "video";
+
+export function pickOwnVideo(media: ExerciseMediaRecord[]): ExerciseMediaRecord | null {
+  return media.find((m) => m.kind === "video" && !!m.url) ?? null;
+}
+
 export function pickHeroMedia(media: ExerciseMediaRecord[]): ExerciseMediaRecord | null {
+  const pictures = media.filter(isPicture);
   for (const wanted of HERO_PREFERENCE) {
-    const hit = media.find((m) => m.resolution === wanted);
+    const hit = pictures.find((m) => m.resolution === wanted);
     if (hit) return hit;
   }
-  return [...media].sort((a, b) => resolutionNumber(b) - resolutionNumber(a))[0] ?? null;
+  return [...pictures].sort((a, b) => resolutionNumber(b) - resolutionNumber(a))[0] ?? null;
 }
 
 // A small thumbnail (about 50pt, so about 150px on a phone) only needs a small render: the smallest one that is at least 150 wide, else the
 // biggest available. Saves data and avoids pulling the 360 file for every row of a long workout.
 export function pickThumbMedia(media: ExerciseMediaRecord[]): ExerciseMediaRecord | null {
-  const sorted = [...media].sort((a, b) => resolutionNumber(a) - resolutionNumber(b));
+  const sorted = media.filter(isPicture).sort((a, b) => resolutionNumber(a) - resolutionNumber(b));
   return sorted.find((m) => resolutionNumber(m) >= 150) ?? sorted[sorted.length - 1] ?? null;
 }

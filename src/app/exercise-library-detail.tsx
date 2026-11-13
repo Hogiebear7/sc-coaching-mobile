@@ -9,7 +9,8 @@ import { Card } from "@/components/ui/Card";
 import { StatCard } from "@/components/ui/StatCard";
 import { Radius, Spacing } from "@/constants/theme";
 import { exerciseMatchesEquipmentSlugs } from "@/lib/equipment-matching";
-import { pickHeroMedia, useExerciseLibraryDetail } from "@/lib/queries/exercise-library";
+import { ExerciseDemoMedia } from "@/components/ui/ExerciseDemoMedia";
+import { pickHeroMedia, pickOwnVideo, useExerciseLibraryDetail } from "@/lib/queries/exercise-library";
 import { useEquipmentCatalog, useGymProfiles } from "@/lib/queries/gym-profiles";
 import { useWorkouts } from "@/lib/queries/workouts";
 import { getExerciseStats } from "@/lib/workout-formatters";
@@ -96,7 +97,13 @@ export default function ExerciseLibraryDetailScreen() {
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.scroll}>
-          <GifSlot url={pickHeroMedia(data.media)?.url ?? null} name={data.exercise.name} />
+          {pickOwnVideo(data.media) ? (
+            <View style={styles.gifWrap}>
+              <ExerciseDemoMedia media={data.media} name={data.exercise.name} size={300} />
+            </View>
+          ) : (
+            <GifSlot url={pickHeroMedia(data.media)?.url ?? null} name={data.exercise.name} />
+          )}
 
           <Button
             title="Add to workout"

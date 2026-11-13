@@ -18,6 +18,7 @@ import { SupersetChips } from "@/components/ui/SupersetChips";
 import { TextField } from "@/components/ui/TextField";
 import { TimeWheelPicker } from "@/components/ui/TimeWheelPicker";
 import { DataColor, figure, Radius, Spacing, type LegacyPalette } from "@/constants/theme";
+import { ExerciseDemoMedia } from "@/components/ui/ExerciseDemoMedia";
 import { OptionPicker, type PickerOption } from "@/components/ui/OptionPicker";
 import { entrySegments, insertEntry, orderToSave } from "@/lib/entry-order";
 import { distinctGroups, supersetLetter, supersetMemberLabel } from "@/lib/superset-label";
@@ -29,6 +30,7 @@ import { useAdvanceProgram, useMyProgram, type PrescribedExercise } from "@/lib/
 import {
   findExerciseLibrarySlug,
   pickHeroMedia,
+  pickOwnVideo,
   pickThumbMedia,
   useExerciseLibraryDetail,
   useExerciseLibraryNameIndex,
@@ -330,7 +332,7 @@ function ExerciseDemoRow({
   const Color = useLegacyColors();
   const [expanded, setExpanded] = useState(false);
   const { data } = useExerciseLibraryDetail(slug ?? "");
-  const hero = expanded && data ? pickHeroMedia(data.media) : null;
+  const demoMedia = expanded && data && (pickOwnVideo(data.media) || pickHeroMedia(data.media)) ? data.media : null;
   return (
     <View>
       <View style={styles.exerciseInfoRow}>
@@ -349,9 +351,9 @@ function ExerciseDemoRow({
           ) : null}
         </View>
       </View>
-      {hero ? (
+      {demoMedia ? (
         <Pressable onPress={() => setExpanded(false)} accessibilityRole="button" accessibilityLabel="Hide the animation" style={styles.demoExpanded}>
-          <Image source={{ uri: hero.url }} style={styles.demoExpandedImage} resizeMode="contain" accessibilityLabel="Exercise demonstration" />
+          <ExerciseDemoMedia media={demoMedia} name="Exercise" size={240} />
         </Pressable>
       ) : null}
     </View>

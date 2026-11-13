@@ -10,6 +10,7 @@ import { figure, Radius, Spacing } from "@/constants/theme";
 import { successFeedback, tapFeedback } from "@/lib/haptics";
 import { useRestTimer } from "@/lib/rest-timer";
 import { useTickingValue } from "@/lib/use-ticker";
+import { getTimerTarget, offerTimerResult } from "@/lib/timer-result";
 import { useWorkoutDraft } from "@/lib/workout-draft";
 import { TimeWheelPicker } from "@/components/ui/TimeWheelPicker";
 import { TimerDial } from "@/components/ui/TimerDial";
@@ -218,6 +219,26 @@ export default function RestTimerScreen() {
           </View>
         ) : null}
 
+        {(() => {
+          // Started from a set on the log screen? Offer the finished time back to that set.
+          const secs = isStopwatch ? (!timer.isStopwatchRunning ? stopwatchElapsed : 0) : done ? timer.state.durationSecs : 0;
+          if (!getTimerTarget() || secs <= 0) return null;
+          return (
+            <Pressable
+              onPress={() => {
+                successFeedback();
+                offerTimerResult(secs);
+                router.back();
+              }}
+              accessibilityRole="button"
+              style={styles.addToSetButton}
+            >
+              <Ionicons name="add-circle" size={20} color={Color.goldForeground} />
+              <Text style={styles.addToSetText}>Add {formatClock(secs)} to the set</Text>
+            </Pressable>
+          );
+        })()}
+
         {timer.isPreCountingDown ? (
           <View style={styles.getReadyWrap}>
             <Text style={styles.getReadyLabel}>Get ready</Text>
@@ -338,6 +359,8 @@ const useStyles = makeLegacyStyles((Color) =>
     },
     batteryBannerTitle: { fontSize: 15, fontWeight: "600", color: Color.textPrimary },
     batteryBannerBody: { fontSize: 14, color: Color.textMuted, marginTop: 2, lineHeight: 20 },
+    addToSetButton: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, alignSelf: "center", minHeight: 48, paddingHorizontal: 24, borderRadius: 24, backgroundColor: Color.gold, marginBottom: Spacing.lg },
+    addToSetText: { fontSize: 16, fontWeight: "700", color: Color.goldForeground },
     batteryBannerActions: { flexDirection: "row", gap: Spacing.lg, marginTop: Spacing.sm },
     batteryBannerLink: { fontSize: 14, fontWeight: "600", color: Color.textPrimary, textDecorationLine: "underline" },
     batteryBannerDismiss: { fontSize: 14, fontWeight: "600", color: Color.textFaint },

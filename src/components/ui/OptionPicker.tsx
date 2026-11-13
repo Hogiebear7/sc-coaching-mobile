@@ -108,7 +108,7 @@ export function OptionPicker<T extends string>({
                       accessibilityState={{ selected: active }}
                       style={({ pressed }) => [
                         styles.row,
-                        { transform: [{ translateX: shift }], opacity: 1 - Math.abs(t) * 0.45 },
+                        { transform: [{ translateX: shift }], opacity: 1 - Math.abs(t) * 0.3 },
                         active && styles.rowActive,
                         pressed && styles.pressed,
                       ]}
@@ -118,7 +118,7 @@ export function OptionPicker<T extends string>({
                         <Text style={[styles.rowLabel, active && styles.rowLabelActive]} numberOfLines={1}>{o.label}</Text>
                         {o.hint ? <Text style={styles.rowHint} numberOfLines={1}>{o.hint}</Text> : null}
                       </View>
-                      {active ? <Ionicons name="checkmark" size={20} color={Color.gold} /> : null}
+                      {active ? <Ionicons name="checkmark" size={22} color="#0A1526" /> : null}
                     </Pressable>
                   );
                 })}
@@ -149,10 +149,10 @@ const useStyles = makeLegacyStyles((Color) =>
     placeholder: { color: Color.textFaint, fontWeight: "400" },
     disabled: { opacity: 0.5 },
     pressed: { opacity: 0.75 },
-    backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.72)", alignItems: "flex-end", justifyContent: "center" },
+    backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.82)", alignItems: "flex-end", justifyContent: "center" },
     menu: { width: "78%", justifyContent: "center", paddingLeft: Spacing.md, overflow: "hidden" },
     menuViewport: { flexShrink: 1 },
-    title: { fontSize: 14, fontWeight: "700", letterSpacing: 0.6, textTransform: "uppercase", color: Color.textMuted, marginBottom: Spacing.sm, paddingLeft: Spacing.md },
+    title: { fontSize: 14, fontWeight: "700", letterSpacing: 0.6, textTransform: "uppercase", color: "#FFFFFF", marginBottom: Spacing.sm, paddingLeft: Spacing.md },
     list: { flexGrow: 0 },
     row: {
       height: ROW_H,
@@ -163,13 +163,13 @@ const useStyles = makeLegacyStyles((Color) =>
       paddingHorizontal: Spacing.md,
       borderTopLeftRadius: 26,
       borderBottomLeftRadius: 26,
-      backgroundColor: Color.surface1,
+      backgroundColor: "#2A3B5C",
       marginBottom: 0,
     },
-    rowActive: { backgroundColor: Color.surface2 },
+    rowActive: { backgroundColor: "#F2F4F8" },
     rowText: { flex: 1, gap: 2 },
-    rowLabel: { fontSize: 16, color: Color.textSecondary },
-    rowLabelActive: { color: Color.textPrimary, fontWeight: "700" },
+    rowLabel: { fontSize: 18, fontWeight: "600", color: "#FFFFFF" },
+    rowLabelActive: { color: "#0A1526", fontWeight: "800" },
     rowHint: { fontSize: 13, color: Color.textMuted },
   })
 );

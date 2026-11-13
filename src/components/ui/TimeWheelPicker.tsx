@@ -31,6 +31,7 @@ function WheelColumn({
   const settleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const values = Array.from({ length: max + 1 }, (_, i) => i);
   // The settle timer fires later, so it must read the newest value and callback rather than the ones from the render that started it.
+  const offsetY = useRef(value * ITEM_HEIGHT);
   const latest = useRef({ value, onChange });
   useEffect(() => {
     latest.current = { value, onChange };
@@ -45,11 +46,17 @@ function WheelColumn({
       suppressNextSync.current = false;
       return;
     }
+    // Only move the list when it is not already showing this value, so a change that came from scrolling never scrolls it back.
+    if (Math.round(offsetY.current / ITEM_HEIGHT) === value) return;
+    offsetY.current = value * ITEM_HEIGHT;
     scrollRef.current?.scrollTo({ y: value * ITEM_HEIGHT, animated: false });
   }, [value]);
 
   // Opening inside a modal, the first scrollTo can run before the list has a size: place it again once it has laid out.
-  const placeAtValue = () => scrollRef.current?.scrollTo({ y: latest.current.value * ITEM_HEIGHT, animated: false });
+  const placeAtValue = () => {
+    offsetY.current = latest.current.value * ITEM_HEIGHT;
+    scrollRef.current?.scrollTo({ y: offsetY.current, animated: false });
+  };
 
   useEffect(() => {
     return () => {
@@ -96,12 +103,17 @@ function WheelColumn({
           // Harmless alongside the two handlers above — same clamped index,
           // onChange just no-ops the second time.
           onScroll={(e) => {
-            if (settleTimer.current) clearTimeout(settleTimer.current);
             const y = e.nativeEvent.contentOffset.y;
-            settleTimer.current = setTimeout(() => commitFromOffset(y), 120);
+            offsetY.current = y;
+            // Commit only once the list has been still for a moment (not mid-drag), whichever input device was used.
+            if (settleTimer.current) clearTimeout(settleTimer.current);
+            settleTimer.current = setTimeout(() => commitFromOffset(offsetY.current), 250);
           }}
+          nestedScrollEnabled
+          overScrollMode="never"
           scrollEventThrottle={16}
           onContentSizeChange={placeAtValue}
+          onLayout={placeAtValue}
         >
           {values.map((v) => (
             <View key={v} style={styles.row}>

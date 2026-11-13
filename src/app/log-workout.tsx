@@ -1,7 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Alert, Image, InteractionManager, Keyboard, KeyboardAvoidingView, Modal, Platform, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import type { KeyboardAwareScrollViewRef } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -19,6 +19,7 @@ import { TimeWheelPicker } from "@/components/ui/TimeWheelPicker";
 import { DataColor, Radius, Spacing, type LegacyPalette } from "@/constants/theme";
 import { ExerciseDemoMedia } from "@/components/ui/ExerciseDemoMedia";
 import { OptionPicker, type PickerOption } from "@/components/ui/OptionPicker";
+import { setTimerTarget, takeTimerResult } from "@/lib/timer-result";
 import { entrySegments, insertEntry, orderToSave } from "@/lib/entry-order";
 import { distinctGroups, supersetLetter, supersetMemberLabel } from "@/lib/superset-label";
 import { assignSuperset, nextSupersetInCycle, ungroup, withoutLonelySupersets } from "@/lib/superset-select";
@@ -348,6 +349,51 @@ function RirControl({ value, onChange }: { value: string; onChange: (v: string) 
       style={[styles.rirCircle, { borderColor: c }, current ? { backgroundColor: c } : null]}
     >
       <Text style={[styles.rirCircleText, current ? { color: Color.bg0 } : null]}>{current ? `RIR: ${current === "6" ? "6+" : current}` : "RIR"}</Text>
+    </Pressable>
+  );
+}
+
+// "RPE: 7" for cardio: how hard it felt out of 10. Same idea as the RIR circle: tap to open the numbers, pick one and it closes.
+function RpeControl({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const styles = useStyles();
+  const Color = useLegacyColors();
+  const [open, setOpen] = useState(false);
+  const current = value.trim();
+  if (open) {
+    return (
+      <View style={styles.rirOpen}>
+        <Text style={styles.fieldLabel}>How hard did it feel? (1 easy, 10 flat out)</Text>
+        <View style={styles.rirRow} accessibilityRole="radiogroup">
+          {["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"].map((o) => (
+            <Pressable
+              key={o}
+              onPress={() => {
+                selectionFeedback();
+                onChange(current === o ? "" : o);
+                setOpen(false);
+              }}
+              accessibilityRole="radio"
+              accessibilityState={{ selected: current === o }}
+              style={[styles.rpeChip, current === o && { backgroundColor: Color.gold, borderColor: Color.gold }]}
+            >
+              <Text style={[styles.rirCircleText, current === o && { color: Color.bg0 }]}>{o}</Text>
+            </Pressable>
+          ))}
+        </View>
+      </View>
+    );
+  }
+  return (
+    <Pressable
+      onPress={() => {
+        selectionFeedback();
+        setOpen(true);
+      }}
+      accessibilityRole="button"
+      accessibilityLabel={current ? `Effort ${current} out of 10. Tap to change.` : "Effort out of 10. Tap to set."}
+      style={[styles.rirCircle, { borderColor: current ? Color.gold : Color.borderDefault }, current ? { backgroundColor: Color.gold } : null]}
+    >
+      <Text style={[styles.rirCircleText, current ? { color: Color.bg0 } : null]}>{current ? `RPE: ${current}` : "RPE"}</Text>
     </Pressable>
   );
 }
@@ -1231,7 +1277,7 @@ export default function LogWorkoutScreen() {
     update({
       exerciseRows: exerciseRows.map((r) => {
         if (r.key !== rowKey) return r;
-        const isFirstSet = r.setRows[0]?.key === setKey;
+        const at = r.setRows.findIndex((sr) => sr.key === setKey);
         // Set 1's value *before* this keystroke — any other set still
         // exactly matching it (empty, or auto-filled from an earlier
         // keystroke) is still "following" set 1 and keeps syncing. A set
@@ -1239,18 +1285,23 @@ export default function LogWorkoutScreen() {
         // following from that point on — that's what makes this a live
         // "keep typing and it fills the rest" default rather than a one-shot
         // copy that only ever captures the first character typed.
-        const previousFirstValue = r.setRows[0]?.[field] ?? "";
-        return {
-          ...r,
-          setRows: r.setRows.map((sr, idx) => {
-            if (sr.key === setKey) return { ...sr, [field]: value };
-            if (isFirstSet && idx > 0 && sr[field] === previousFirstValue) return { ...sr, [field]: value };
-            return sr;
-          }),
-        };
+        // An edit carries down to every set below it and never to the ones above.
+        return { ...r, setRows: r.setRows.map((sr, idx) => (idx >= at && at !== -1 ? { ...sr, [field]: value } : sr)) };
       }),
     });
   }
+  // Back from the timer screen with a finished time to add to the set it was started from.
+  useFocusEffect(
+    useCallback(() => {
+      const r = takeTimerResult();
+      if (!r) return;
+      const m = Math.floor(r.secs / 60);
+      const sec = r.secs % 60;
+      updateFirstSetField(r.rowKey, r.setKey, "weight", `${m}:${String(sec).padStart(2, "0")}`);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [exerciseRows])
+  );
+
   function addSetRow(rowKey: string) {
     lastTouchedKey.current = rowKey;
     tapFeedback();
@@ -1424,7 +1475,7 @@ export default function LogWorkoutScreen() {
 
       const runs: CreateWorkoutRunInput[] = runRows.map((r) => {
         const splitsNote = r.splits.length > 0 ? `Splits: ${r.splits.join(", ")}` : "";
-        const combinedNotes = [r.notes.trim(), splitsNote].filter(Boolean).join(" — ");
+        const combinedNotes = [r.notes.trim(), splitsNote, r.rpe ? `RPE ${r.rpe}` : ""].filter(Boolean).join(" — ");
         return {
           distance: r.distance.trim() ? (r.distanceUnit === "m" ? Math.round((parseFloat(r.distance) / 1000) * 1000) / 1000 : parseFloat(r.distance)) : null,
           durationSecs: parseDuration(r.duration),
@@ -2108,6 +2159,7 @@ export default function LogWorkoutScreen() {
                       <Pressable
                         onPress={() => {
                           const targetSecs = parseDuration(set.weight) || 60;
+                          setTimerTarget({ rowKey: row.key, setKey: set.key });
                           router.push({
                             pathname: "/rest-timer",
                             params: {
@@ -2125,7 +2177,7 @@ export default function LogWorkoutScreen() {
                         style={[styles.startTimerButton, { flex: 1 }]}
                       >
                         <Ionicons name="play" size={13} color={Color.goldForeground} />
-                        <Text style={styles.startTimerButtonText}>Start timer</Text>
+                        <Text style={styles.startTimerButtonText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>Start</Text>
                       </Pressable>
                     ) : row.perSide ? (
                       <View style={{ flex: 1, flexDirection: "row", gap: 4 }}>
@@ -2329,6 +2381,8 @@ export default function LogWorkoutScreen() {
                 <Text style={styles.splitsText}>Splits: {row.splits.join(", ")}</Text>
               ) : null}
 
+              <RpeControl value={row.rpe ?? ""} onChange={(v) => updateRunRow(row.key, { rpe: v })} />
+
               {row.cardioType === "run" ? (
                 <View style={styles.gridRow}>
                   <NumberField label="Reps (opt.)" value={row.reps} onChangeText={(v) => updateRunRow(row.key, { reps: v })} placeholder="e.g. 8" />
@@ -2394,7 +2448,7 @@ export default function LogWorkoutScreen() {
 
       <Modal visible={cardioTimeTarget !== null} transparent animationType="fade" onRequestClose={() => setCardioTimeTarget(null)}>
         <Pressable style={feelStyles.backdrop} onPress={() => setCardioTimeTarget(null)}>
-          <Pressable style={styles.timePickerCard} onPress={(e) => e.stopPropagation()}>
+          <View style={styles.timePickerCard} onStartShouldSetResponder={() => true}>
             <Text style={styles.timePickerTitle}>Cardio time</Text>
             {cardioTimeTarget ? (
               <TimeWheelPicker
@@ -2413,13 +2467,13 @@ export default function LogWorkoutScreen() {
               }}
               style={{ marginTop: Spacing.lg }}
             />
-          </Pressable>
+          </View>
         </Pressable>
       </Modal>
 
       <Modal visible={timePickerTarget !== null} transparent animationType="fade" onRequestClose={() => setTimePickerTarget(null)}>
         <Pressable style={feelStyles.backdrop} onPress={() => setTimePickerTarget(null)}>
-          <Pressable style={styles.timePickerCard} onPress={(e) => e.stopPropagation()}>
+          <View style={styles.timePickerCard} onStartShouldSetResponder={() => true}>
             <Text style={styles.timePickerTitle}>Set duration</Text>
             {timePickerTarget ? (
               <TimeWheelPicker
@@ -2439,7 +2493,7 @@ export default function LogWorkoutScreen() {
               }}
               style={{ marginTop: Spacing.lg }}
             />
-          </Pressable>
+          </View>
         </Pressable>
       </Modal>
     </SafeAreaView>
@@ -2758,6 +2812,7 @@ const useStyles = makeLegacyStyles((Color) =>
     repsHeaderText: { fontSize: 13, fontWeight: "700", color: Color.gold, textDecorationLine: "underline" },
     rirCircle: { alignSelf: "flex-start", minHeight: 40, minWidth: 40, paddingHorizontal: 12, borderRadius: 20, borderWidth: 2, alignItems: "center", justifyContent: "center", marginTop: 8 },
     rirCircleText: { fontSize: 13, fontWeight: "700", color: Color.textSecondary },
+    rpeChip: { minWidth: 44, minHeight: 44, borderRadius: 22, borderWidth: 2, borderColor: Color.borderDefault, alignItems: "center", justifyContent: "center" },
     rirOpen: { marginTop: 8 },
     noteButton: { alignSelf: "flex-start", flexDirection: "row", alignItems: "center", gap: 4, minHeight: 36, marginTop: 4 },
     noteButtonText: { fontSize: 13, fontWeight: "600", color: Color.textMuted },

@@ -64,6 +64,8 @@ export type RunRow = {
   cardioType: import("@/lib/cardio").CardioType;
   /** Machine level or incline, as typed. */
   level: string;
+  /** How hard the cardio felt, 1-10, as chosen. Saved into the cardio note as "RPE 7". */
+  rpe?: string;
   /** Place in the whole workout, exercises and cardio together (see lib/entry-order.ts). Absent on older drafts. */
   order?: number | null;
   /** True once the member has picked a cardio type, so the card says "Cardio" until then and the type after. */
@@ -336,6 +338,7 @@ function normalizeRunRow(raw: Partial<RunRow> | null | undefined): RunRow {
     splits: Array.isArray(r.splits) ? r.splits : [],
     cardioType: asCardioType(r.cardioType),
     level: r.level ?? "",
+    rpe: r.rpe ?? "",
     order: typeof r.order === "number" ? r.order : null,
     // A draft saved before this existed: a type other than the default run means it was picked.
     typeChosen: r.typeChosen ?? asCardioType(r.cardioType) !== "run",

@@ -778,6 +778,8 @@ export default function LogWorkoutScreen() {
   // per row, which would mean dozens of live scroll-wheel components
   // mounted (and ticking their own scroll math) at once for a long workout.
   const [timePickerTarget, setTimePickerTarget] = useState<{ rowKey: string; setKey: string; secs: number } | null>(null);
+  // The cardio time wheel: hours, minutes and seconds to scroll to, instead of typing hh:mm:ss.
+  const [cardioTimeTarget, setCardioTimeTarget] = useState<{ rowKey: string; secs: number } | null>(null);
   const { data: libraryIndex } = useExerciseLibraryNameIndex();
   const personalExerciseNames = useMemo(
     () => getPersonalExerciseNames(data?.sessions ?? [], data?.exerciseLibrary ?? [], libraryIndex?.items ?? []),
@@ -2093,14 +2095,20 @@ export default function LogWorkoutScreen() {
                   </View>
                 </View>
                 <View style={styles.numberField}>
-                  <Text style={styles.fieldLabel}>Time (hh:mm:ss, optional)</Text>
-                  <TextInput
-                    value={row.duration}
-                    onChangeText={(v) => updateRunRow(row.key, { duration: v })}
-                    placeholder="e.g. 00:30:00"
-                    placeholderTextColor={Color.textFaint}
-                    style={styles.smallInput}
-                  />
+                  <Text style={styles.fieldLabel}>Time (optional)</Text>
+                  <Pressable
+                    onPress={() => {
+                      tapFeedback();
+                      setCardioTimeTarget({ rowKey: row.key, secs: parseDuration(row.duration) ?? 0 });
+                    }}
+                    accessibilityRole="button"
+                    accessibilityLabel={row.duration.trim() ? `Time ${row.duration}. Tap to change` : "Set the time"}
+                    style={[styles.smallInput, styles.timeButton]}
+                  >
+                    <Text style={row.duration.trim() ? styles.timeButtonText : styles.timeButtonPlaceholder}>
+                      {row.duration.trim() ? formatDuration(parseDuration(row.duration) ?? 0) : "Set time"}
+                    </Text>
+                  </Pressable>
                 </View>
               </View>
 
@@ -2188,6 +2196,31 @@ export default function LogWorkoutScreen() {
         submitting={create.isPending}
       />
 
+      <Modal visible={cardioTimeTarget !== null} transparent animationType="fade" onRequestClose={() => setCardioTimeTarget(null)}>
+        <Pressable style={feelStyles.backdrop} onPress={() => setCardioTimeTarget(null)}>
+          <Pressable style={styles.timePickerCard} onPress={(e) => e.stopPropagation()}>
+            <Text style={styles.timePickerTitle}>Cardio time</Text>
+            {cardioTimeTarget ? (
+              <TimeWheelPicker
+                totalSecs={cardioTimeTarget.secs}
+                showHours
+                onChange={(secs) => setCardioTimeTarget((prev) => (prev ? { ...prev, secs } : prev))}
+              />
+            ) : null}
+            <Button
+              title="Done"
+              onPress={() => {
+                if (cardioTimeTarget) {
+                  updateRunRow(cardioTimeTarget.rowKey, { duration: cardioTimeTarget.secs > 0 ? formatDuration(cardioTimeTarget.secs) : "" });
+                }
+                setCardioTimeTarget(null);
+              }}
+              style={{ marginTop: Spacing.lg }}
+            />
+          </Pressable>
+        </Pressable>
+      </Modal>
+
       <Modal visible={timePickerTarget !== null} transparent animationType="fade" onRequestClose={() => setTimePickerTarget(null)}>
         <Pressable style={feelStyles.backdrop} onPress={() => setTimePickerTarget(null)}>
           <Pressable style={styles.timePickerCard} onPress={(e) => e.stopPropagation()}>
@@ -2239,6 +2272,9 @@ const useStyles = makeLegacyStyles((Color) =>
     addChip: { flexDirection: "row", alignItems: "center", gap: 6, borderRadius: Radius.pill, backgroundColor: Color.surface1, paddingHorizontal: 16, minHeight: 46 },
     addChipText: { fontSize: 15, fontWeight: "600", color: Color.textPrimary },
     cardioPicker: { paddingBottom: Spacing.sm },
+    timeButton: { justifyContent: "center" },
+    timeButtonText: { fontSize: 15, color: Color.textPrimary, fontVariant: ["tabular-nums"] },
+    timeButtonPlaceholder: { fontSize: 15, color: Color.textFaint },
     cardioChip: { minHeight: 40, paddingHorizontal: 14, borderRadius: Radius.pill, backgroundColor: Color.surface2, justifyContent: "center" },
     cardioChipActive: { backgroundColor: Color.gold },
     cardioChipText: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },

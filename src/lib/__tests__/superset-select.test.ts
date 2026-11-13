@@ -146,3 +146,25 @@ describe("cardio in a superset", () => {
     expect(first.kind === "mixed" && first.entries.map((e) => e.row.key)).toEqual(["a", "bike"]);
   });
 });
+
+import { tapSuperset } from "../superset-select";
+
+describe("tapSuperset", () => {
+  const ex = (key: string, order: number, group: string | null = null) => ({ key, order, supersetGroup: group });
+
+  it("splits a superset: tapping A3 makes B1 and brings A4 along as B2", () => {
+    const rows = [ex("a1", 0, "ST1"), ex("a2", 1, "ST1"), ex("a3", 2, "ST1"), ex("a4", 3, "ST1")];
+    const r = tapSuperset(rows, [], "a3", "ST2");
+    const byKey = Object.fromEntries(r.exerciseRows.map((e) => [e.key, e.supersetGroup]));
+    expect(byKey).toEqual({ a1: "ST1", a2: "ST1", a3: "ST2", a4: "ST2" });
+    expect(r.exerciseRows.map((e) => e.key)).toEqual(["a1", "a2", "a3", "a4"]);
+  });
+
+  it("joining an existing superset moves only that entry", () => {
+    const rows = [ex("a1", 0, "ST1"), ex("a2", 1, "ST1"), ex("b1", 2, "ST2"), ex("b2", 3, "ST2")];
+    const r = tapSuperset(rows, [], "a2", "ST2");
+    const byKey = Object.fromEntries(r.exerciseRows.map((e) => [e.key, e.supersetGroup]));
+    expect(byKey.a2).toBe("ST2");
+    expect(byKey.a1).toBe("ST1");
+  });
+});

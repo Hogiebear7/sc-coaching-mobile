@@ -144,3 +144,26 @@ export function ungroupAll<E extends Row, R extends RunLike>(exerciseRows: E[], 
     runRows: runRows.map((r) => (r.supersetGroup === label ? { ...r, supersetGroup: null } : r)),
   };
 }
+
+/**
+ * One tap on an entry's label (see nextSupersetTap). When it moves the entry out of a superset into a brand new one, everything that came after it
+ * in the old superset comes along: tapping A3 of A1-A4 makes B1 and B2 of the new superset, leaving A1 and A2 where they were.
+ */
+export function tapSuperset<E extends Row, R extends RunLike>(
+  exerciseRows: E[],
+  runRows: R[],
+  key: string,
+  next: string | null
+): { exerciseRows: E[]; runRows: R[] } {
+  const entries = orderedEntries(exerciseRows, runRows);
+  const at = entries.findIndex((e) => e.row.key === key);
+  if (at === -1) return { exerciseRows, runRows };
+  const current = (entries[at].row as RunLike).supersetGroup ?? null;
+  const usedByOthers = next !== null && entries.some((e) => e.row.key !== key && (e.row as RunLike).supersetGroup === next);
+  let result = assignSuperset(exerciseRows, runRows, key, next);
+  if (next !== null && current !== null && !usedByOthers) {
+    const following = entries.slice(at + 1).filter((e) => (e.row as RunLike).supersetGroup === current).map((e) => e.row.key);
+    for (const k of following) result = assignSuperset(result.exerciseRows, result.runRows, k, next);
+  }
+  return result;
+}

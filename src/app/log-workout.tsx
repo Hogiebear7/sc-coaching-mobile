@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Alert, Image, InteractionManager, Keyboard, KeyboardAvoidingView, Modal, Platform, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import type { KeyboardAwareScrollViewRef } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -21,10 +21,10 @@ import { OptionPicker, type PickerOption } from "@/components/ui/OptionPicker";
 import { setTimerTarget, takeTimerResult } from "@/lib/timer-result";
 import { entryBlocks, orderedEntries, insertEntry, orderToSave, type EntrySegment } from "@/lib/entry-order";
 import { distinctGroups, supersetLetter, supersetMemberLabel } from "@/lib/superset-label";
-import { assignSuperset, cleanLonelySupersets, nextSupersetTap, ungroupAll } from "@/lib/superset-select";
+import { cleanLonelySupersets, nextSupersetTap, tapSuperset, ungroupAll } from "@/lib/superset-select";
 import { applyWeightFrom, normalizeWeights, sanitizeWeight, stripWeightUnit, weightUnitFor, withWeightUnit } from "@/lib/weight-input";
-import { SupersetRounds } from "@/components/workout/SupersetRounds";
-import { addRound, canShowRounds, removeLastRound } from "@/lib/superset-rounds";
+import { SupersetRounds, type RoundMember } from "@/components/workout/SupersetRounds";
+import { addRound, removeLastRound } from "@/lib/superset-rounds";
 import { CARDIO_LABEL, CARDIO_TYPES, hasLevel, hasPace, parseLevel, type CardioType } from "@/lib/cardio";
 import { selectionFeedback, successFeedback, tapFeedback, warningFeedback } from "@/lib/haptics";
 import { ApiError } from "@/lib/api-client";
@@ -1142,9 +1142,6 @@ export default function LogWorkoutScreen() {
   // Rounds view: draws each superset as Round 1, Round 2 ... with a tick per round. Off by default (the normal view is unchanged); remembered.
   // A superset shows as one grouped card with its rounds. "Edit exercises" on the card opens the full per-exercise cards (names, units, left/right).
   const [editingGroups, setEditingGroups] = useState<string[]>([]);
-  // "Set up" lays everything out to build and edit. "Doing it" shows the part you are on and the rest as Up next.
-  const [viewMode, setViewMode] = useState<"setup" | "doing">("setup");
-  const [doingActive, setDoingActive] = useState<string | null>(null);
   function toggleEditGroup(label: string) {
     tapFeedback();
     setEditingGroups((prev) => (prev.includes(label) ? prev.filter((g) => g !== label) : [...prev, label]));
@@ -1176,7 +1173,7 @@ export default function LogWorkoutScreen() {
       return;
     }
     selectionFeedback();
-    update(assignSuperset(exerciseRows, runRows, row.key, next));
+    update(tapSuperset(exerciseRows, runRows, row.key, next));
   }
 
   // kg, time and band are different kinds of value: each keeps its own typed values per set, so switching away and back loses nothing and a time never shows up as a weight.
@@ -1223,8 +1220,41 @@ export default function LogWorkoutScreen() {
   }
 
   function ungroupSuperset(label: string) {
-    tapFeedback();
-    update(ungroupAll(exerciseRows, runRows, label));
+    Alert.alert("Ungroup this superset?", "The exercises stay in your workout but are no longer done back to back.", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Ungroup",
+        style: "destructive",
+        onPress: () => {
+          tapFeedback();
+          update(ungroupAll(exerciseRows, runRows, label));
+        },
+      },
+    ]);
+  }
+
+  // Cycles an exercise between kg, time and band from the compact view (each unit keeps its own typed values).
+  function cycleUnitMode(rowKey: string) {
+    const row = exerciseRows.find((r) => r.key === rowKey);
+    if (!row) return;
+    selectionFeedback();
+    changeUnitMode(row, row.unitMode === "weight" ? "time" : row.unitMode === "time" ? "band" : "weight");
+  }
+  function toggleSplitRepsByKey(rowKey: string) {
+    const row = exerciseRows.find((r) => r.key === rowKey);
+    if (!row) return;
+    selectionFeedback();
+    updateRow(rowKey, { perSide: !row.perSide });
+  }
+  // Starts the countdown for a timed set; the finished time comes back to this set (see lib/timer-result.ts).
+  function startSetTimer(rowKey: string, setKey: string) {
+    const row = exerciseRows.find((r) => r.key === rowKey);
+    const set = row?.setRows.find((sr) => sr.key === setKey);
+    setTimerTarget({ rowKey, setKey });
+    router.push({
+      pathname: "/rest-timer",
+      params: { autostart: "1", seconds: String(parseDuration(set?.weight ?? "") || 60), label: row?.name || undefined, getReady: "1" },
+    });
   }
 
   function updateRow(key: string, patch: Partial<Omit<ExerciseRow, "key">>) {
@@ -1959,50 +1989,14 @@ export default function LogWorkoutScreen() {
             </Card>
             );
             });
-            return isGrouped && !opts?.inMixed ? (
-              <View
-                key={`superset-${grp.group}-${gIdx}`}
-                style={[styles.supersetGroupWrap, { borderColor: supersetColor(grp.group ?? "", allGroupLabels) }]}
-              >
-                <View style={styles.supersetGroupHeader}>
-                  <Text style={[styles.supersetGroupHeaderText, { color: supersetColor(grp.group ?? "", allGroupLabels) }]}>
-                    Superset {supersetLetter(grp.group ?? "", allGroupLabels)} · {grp.rows.length} exercises
-                  </Text>
-                  <View style={{ flexDirection: "row", alignItems: "center", gap: Spacing.md }}>
-                    <Pressable
-                      onPress={() => toggleEditGroup(grp.group ?? "")}
-                      hitSlop={8}
-                      accessibilityRole="button"
-                      accessibilityLabel={editingGroups.includes(grp.group ?? "") ? "Back to rounds" : "Edit the exercises in this superset"}
-                    >
-                      <Text style={styles.ungroupText}>{editingGroups.includes(grp.group ?? "") ? "Back to rounds" : "Edit exercises"}</Text>
-                    </Pressable>
-                    <Pressable onPress={() => ungroupSuperset(grp.group ?? "")} hitSlop={8} accessibilityRole="button" accessibilityLabel="Ungroup this superset">
-                      <Text style={styles.ungroupText}>Ungroup</Text>
-                    </Pressable>
-                  </View>
-                </View>
-                {grp.group && !editingGroups.includes(grp.group) && grp.rows.every((r) => r.name.trim()) && canShowRounds(grp.rows) ? (
-                  <SupersetRounds
-                    rows={grp.rows}
-                    group={grp.group}
-                    allGroups={allGroupLabels}
-                    color={supersetColor(grp.group, allGroupLabels)}
-                    onChangeSet={updateSetRow}
-                    onToggleSet={(rowKey, setKey) => toggleSetComplete(rowKey, setKey, rowKey === grp.rows[grp.rows.length - 1].key)}
-                    onAddRound={() => addGroupRound(grp.group ?? "")}
-                    onRemoveRound={() => removeGroupRound(grp.group ?? "")}
-                    weightUnit={weightUnit}
-                    onPickTime={(rowKey, setKey, secs) => setTimePickerTarget({ rowKey, setKey, secs: secs ?? 90 })}
-                    renderFooter={(row) => <RirControl value={row.rir} onChange={(v) => updateRow(row.key, { rir: v })} />}
-                  />
-                ) : (
-                  cards
-                )}
-              </View>
-            ) : (
-              cards
-            );
+            if (opts?.inMixed) return cards;
+            const isSuper = !!grp.group && grp.rows.length > 1;
+            return renderCompact({
+              blockKey: isSuper ? `g-${grp.group}` : `s-${grp.rows[0].key}`,
+              group: isSuper ? (grp.group as string) : null,
+              members: grp.rows.map((r) => ({ kind: "exercise" as const, row: r })),
+              editCards: cards,
+            });
           }) : (() => { const row = seg.row; return (
             <Card key={row.key} style={opts?.inMixed ? styles.entryCardGrouped : styles.entryCard}>
               <View style={styles.entryHeader}>
@@ -2140,127 +2134,83 @@ export default function LogWorkoutScreen() {
             </Card>
           ); })();
 
-  // A superset that has cardio in it: one box, exercises and cardio in order, no rounds view.
-  const renderMixed = (blk: { label: string; entries: ReturnType<typeof orderedEntries<ExerciseRow, RunRow>> }) => {
-    const colour = supersetColor(blk.label, allGroupLabels);
-    const lastKey = blk.entries[blk.entries.length - 1].row.key;
+  const exerciseNumber = (key: string): number =>
+    orderedEntries(exerciseRows, runRows).filter((e) => e.kind === "exercise").findIndex((e) => e.row.key === key) + 1;
+
+  // One superset (or one exercise) in the compact look, with a link to open the full cards and back. A block with an unnamed exercise opens in the
+  // full cards so there is somewhere to type the name.
+  const renderCompact = (p: { blockKey: string; group: string | null; members: RoundMember[]; editCards: ReactNode }) => {
+    const colour = p.group ? supersetColor(p.group, allGroupLabels) : "#9FB3D1";
+    const exerciseMembers = p.members.flatMap((m) => (m.kind === "exercise" ? [m.row] : []));
+    const unnamed = exerciseMembers.some((r) => !r.name.trim());
+    const editing = editingGroups.includes(p.blockKey) || unnamed;
+    const lastExerciseKey = exerciseMembers[exerciseMembers.length - 1]?.key;
+    const labels = p.members.map((m, k) => (p.group ? supersetMemberLabel(p.group, allGroupLabels, memberNumber(m.row.key)) : String(exerciseNumber(m.row.key) || k + 1)));
     return (
-      <View key={`mixed-${blk.label}-${blk.entries[0].row.key}`} style={[styles.supersetGroupWrap, { borderColor: colour }]}>
+      <View key={p.blockKey} style={[styles.supersetGroupWrap, { borderColor: colour }]}>
         <View style={styles.supersetGroupHeader}>
           <Text style={[styles.supersetGroupHeaderText, { color: colour }]}>
-            Superset {supersetLetter(blk.label, allGroupLabels)} · {blk.entries.length} entries
+            {p.group ? `Superset ${supersetLetter(p.group, allGroupLabels)} · ${p.members.length} ${p.members.some((m) => m.kind === "run") ? "entries" : "exercises"}` : `Exercise ${labels[0]}`}
           </Text>
-          <Pressable onPress={() => ungroupSuperset(blk.label)} hitSlop={8} accessibilityRole="button" accessibilityLabel="Ungroup this superset">
-            <Text style={styles.ungroupText}>Ungroup</Text>
-          </Pressable>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: Spacing.md }}>
+            {unnamed ? null : (
+              <Pressable
+                onPress={() => toggleEditGroup(p.blockKey)}
+                hitSlop={8}
+                accessibilityRole="button"
+                accessibilityLabel={editing ? "Back to the simple view" : "Edit the details"}
+              >
+                <Text style={styles.ungroupText}>{editing ? "Simple view" : p.group ? "Edit exercises" : "Edit"}</Text>
+              </Pressable>
+            )}
+            {p.group ? (
+              <Pressable onPress={() => ungroupSuperset(p.group as string)} hitSlop={8} accessibilityRole="button" accessibilityLabel="Ungroup this superset">
+                <Text style={styles.ungroupText}>Ungroup</Text>
+              </Pressable>
+            ) : null}
+          </View>
         </View>
-        {blk.entries.map((e, i) =>
-          renderSegment(e.kind === "exercise" ? { kind: "exercise", rows: [e.row] } : { kind: "run", row: e.row }, { inMixed: true, lastKey, notFirst: i > 0 })
+        {editing ? (
+          p.editCards
+        ) : (
+          <SupersetRounds
+            members={p.members}
+            labels={labels}
+            color={colour}
+            roundWord={p.group ? "Round" : "Set"}
+            weightUnit={weightUnit}
+            onChangeSet={updateSetRow}
+            onToggleSet={(rowKey, setKey) => toggleSetComplete(rowKey, setKey, !p.group || rowKey === lastExerciseKey)}
+            onAddRound={() => (p.group ? addGroupRound(p.group) : addSetRow(exerciseMembers[0].key))}
+            onRemoveRound={() => {
+              if (p.group) removeGroupRound(p.group);
+              else if (exerciseMembers[0].setRows.length > 1) removeSetRow(exerciseMembers[0].key, exerciseMembers[0].setRows[exerciseMembers[0].setRows.length - 1].key);
+            }}
+            onPickTime={(rowKey, setKey, secs) => setTimePickerTarget({ rowKey, setKey, secs: secs ?? 90 })}
+            onStartTimer={startSetTimer}
+            onCycleUnit={cycleUnitMode}
+            onToggleSplit={toggleSplitRepsByKey}
+            onCycleSuperset={(key) => cycleSuperset({ key })}
+            onChangeRun={updateRunRow}
+            onPickRunTime={(rowKey, secs) => setCardioTimeTarget({ rowKey, secs })}
+            renderFooter={(row) => <RirControl value={row.rir} onChange={(v) => updateRow(row.key, { rir: v })} />}
+          />
         )}
       </View>
     );
   };
 
-  // "Doing it": the part of the workout you are on is open, everything else is a small card under Up next (or Done).
-  const renderDoing = () => {
-    type Item = { key: string; kind: "group" | "single" | "run" | "mixed"; rows?: ExerciseRow[]; run?: RunRow; blk?: Parameters<typeof renderMixed>[0] };
-    const items: Item[] = [];
-    for (const blk of entryBlocks(exerciseRows, runRows)) {
-      if (blk.kind === "mixed") items.push({ key: `m-${blk.label}-${blk.entries[0].row.key}`, kind: "mixed", blk });
-      else if (blk.kind === "run") items.push({ key: blk.row.key, kind: "run", run: blk.row });
-      else {
-        for (const grp of groupExerciseRowsBySuperset(blk.rows)) {
-          if (grp.group && grp.rows.length > 1) items.push({ key: `g-${grp.group}-${grp.rows[0].key}`, kind: "group", rows: grp.rows });
-          else items.push({ key: grp.rows[0].key, kind: "single", rows: grp.rows });
-        }
-      }
-    }
-    const exerciseDone = (r: ExerciseRow) => r.setRows.length > 0 && r.setRows.every((sr) => sr.completed);
-    const runDone = (r: RunRow) => !!r.duration.trim() || !!r.distance.trim();
-    const isDone = (it: Item): boolean => {
-      if (it.kind === "run") return !!it.run && runDone(it.run);
-      if (it.kind === "mixed") return !!it.blk && it.blk.entries.every((e) => (e.kind === "exercise" ? exerciseDone(e.row) : runDone(e.row)));
-      return !!it.rows && it.rows.every(exerciseDone);
-    };
-    const needsName = (it: Item): boolean => !!it.rows?.some((r) => !r.name.trim());
-    const chosen = items.find((it) => it.key === doingActive);
-    const active = items.find(needsName) ?? chosen ?? items.find((it) => !isDone(it)) ?? items[items.length - 1];
-    const others = items.filter((it) => it !== active);
-    const upNext = others.filter((it) => !isDone(it));
-    const done = others.filter(isDone);
-
-    const open = (it: Item) => {
-      tapFeedback();
-      setDoingActive(it.key);
-    };
-    const summary = (it: Item, finished: boolean) => {
-      const colour = it.kind === "group" && it.rows?.[0]?.supersetGroup ? supersetColor(it.rows[0].supersetGroup as string, allGroupLabels) : null;
-      return (
-        <Pressable
-          key={it.key}
-          onPress={() => open(it)}
-          accessibilityRole="button"
-          accessibilityLabel={finished ? "Done. Tap to open." : "Up next. Tap to open."}
-          style={[styles.summaryCard, finished && { opacity: 0.6 }]}
-        >
-          {it.kind === "group" && it.rows ? (
-            <>
-              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-                <Text style={[styles.summaryKicker, colour ? { color: colour } : null]}>
-                  SUPERSET {supersetLetter(it.rows[0].supersetGroup as string, allGroupLabels)} · {Math.max(...it.rows.map((r) => r.setRows.length))} ROUNDS
-                </Text>
-                {finished ? <Ionicons name="checkmark-circle" size={18} color={Color.success} /> : null}
-              </View>
-              {it.rows.map((r, k) => (
-                <Text key={r.key} style={styles.summaryLine} numberOfLines={1}>
-                  <Text style={styles.summaryLabel}>{supersetMemberLabel(it.rows?.[0]?.supersetGroup as string, allGroupLabels, k)} </Text>
-                  {r.name.trim() || "New exercise"}
-                </Text>
-              ))}
-            </>
-          ) : it.kind === "mixed" && it.blk ? (
-            <>
-              <Text style={[styles.summaryKicker, { color: supersetColor(it.blk.label, allGroupLabels) }]}>
-                SUPERSET {supersetLetter(it.blk.label, allGroupLabels)} · {it.blk.entries.length} ENTRIES
-              </Text>
-              {it.blk.entries.map((e, k) => (
-                <Text key={e.row.key} style={styles.summaryLine} numberOfLines={1}>
-                  <Text style={styles.summaryLabel}>{supersetMemberLabel(it.blk?.label as string, allGroupLabels, k)} </Text>
-                  {e.kind === "exercise" ? e.row.name.trim() || "New exercise" : CARDIO_LABEL[e.row.cardioType]}
-                </Text>
-              ))}
-            </>
-          ) : it.kind === "run" && it.run ? (
-            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-              <Text style={styles.summaryTitle}>{it.run.typeChosen ? CARDIO_LABEL[it.run.cardioType] : "Cardio"}</Text>
-              {finished ? <Ionicons name="checkmark-circle" size={18} color={Color.success} /> : null}
-            </View>
-          ) : it.rows ? (
-            <>
-              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-                <Text style={styles.summaryMeta}>{it.rows[0].setRows.length} sets</Text>
-                {finished ? <Ionicons name="checkmark-circle" size={18} color={Color.success} /> : null}
-              </View>
-              <Text style={styles.summaryTitle} numberOfLines={1}>
-                {it.rows[0].name.trim() || "New exercise"}
-              </Text>
-            </>
-          ) : null}
-        </Pressable>
-      );
-    };
-    const expanded = (it: Item) =>
-      it.kind === "mixed" && it.blk ? renderMixed(it.blk) : it.kind === "run" && it.run ? renderSegment({ kind: "run", row: it.run }) : it.rows ? renderSegment({ kind: "exercise", rows: it.rows }) : null;
-
-    return (
-      <>
-        {active ? expanded(active) : null}
-        {upNext.length > 0 ? <Text style={styles.upNextLabel}>UP NEXT</Text> : null}
-        {upNext.map((it) => summary(it, false))}
-        {done.length > 0 ? <Text style={styles.upNextLabel}>DONE</Text> : null}
-        {done.map((it) => summary(it, true))}
-      </>
-    );
+  // A superset that has cardio in it, in the same compact look; "Edit exercises" shows each entry as a full card.
+  const renderMixed = (blk: { label: string; entries: ReturnType<typeof orderedEntries<ExerciseRow, RunRow>> }) => {
+    const lastKey = blk.entries[blk.entries.length - 1].row.key;
+    return renderCompact({
+      blockKey: `g-${blk.label}`,
+      group: blk.label,
+      members: blk.entries.map((e) => (e.kind === "exercise" ? { kind: "exercise" as const, row: e.row } : { kind: "run" as const, row: e.row })),
+      editCards: blk.entries.map((e, i) =>
+        renderSegment(e.kind === "exercise" ? { kind: "exercise", rows: [e.row] } : { kind: "run", row: e.row }, { inMixed: true, lastKey, notFirst: i > 0 })
+      ),
+    });
   };
 
   return (
@@ -2562,25 +2512,7 @@ export default function LogWorkoutScreen() {
             <View style={styles.headerPills}>
             </View>
           </View>
-          {exerciseRows.length + runRows.length >= 1 ? (
-            <View style={styles.viewTabs} accessibilityRole="tablist">
-              {(["setup", "doing"] as const).map((m) => (
-                <Pressable
-                  key={m}
-                  onPress={() => {
-                    tapFeedback();
-                    setViewMode(m);
-                  }}
-                  accessibilityRole="tab"
-                  accessibilityState={{ selected: viewMode === m }}
-                  style={[styles.viewTab, viewMode === m && styles.viewTabActive]}
-                >
-                  <Text style={[styles.viewTabText, viewMode === m && styles.viewTabTextActive]}>{m === "setup" ? "Set up" : "Doing it"}</Text>
-                </Pressable>
-              ))}
-            </View>
-          ) : null}
-          {viewMode === "setup" && exerciseRows.length >= 2 && !exerciseRows.some((r) => r.supersetGroup) ? (
+          {exerciseRows.length >= 2 && !exerciseRows.some((r) => r.supersetGroup) ? (
             <Text style={styles.formatHint}>Tip: tap an exercise&apos;s number to make a superset.</Text>
           ) : null}
 
@@ -2588,7 +2520,7 @@ export default function LogWorkoutScreen() {
             <Text style={styles.emptyHint}>No entries yet. Use the buttons above to log exercises or a run.</Text>
           ) : null}
 
-          {viewMode === "doing" ? renderDoing() : entryBlocks(exerciseRows, runRows).map((blk) => (blk.kind === "mixed" ? renderMixed(blk) : renderSegment(blk)))}
+          {entryBlocks(exerciseRows, runRows).map((blk) => (blk.kind === "mixed" ? renderMixed(blk) : renderSegment(blk)))}
 
           <View ref={addButtonsRef} style={styles.addButtonsRow}>
             <Pressable onPress={handleAddExercise} style={styles.addChip} accessibilityRole="button">

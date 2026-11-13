@@ -19,9 +19,9 @@ import { DataColor, Radius, Spacing, type LegacyPalette } from "@/constants/them
 import { ExerciseDemoMedia } from "@/components/ui/ExerciseDemoMedia";
 import { OptionPicker, type PickerOption } from "@/components/ui/OptionPicker";
 import { setTimerTarget, takeTimerResult } from "@/lib/timer-result";
-import { entrySegments, insertEntry, orderToSave } from "@/lib/entry-order";
+import { entryBlocks, orderedEntries, entrySegments, insertEntry, orderToSave, type EntrySegment } from "@/lib/entry-order";
 import { distinctGroups, supersetLetter, supersetMemberLabel } from "@/lib/superset-label";
-import { assignSuperset, nextSupersetTap, ungroup, withoutLonelySupersets } from "@/lib/superset-select";
+import { assignSuperset, cleanLonelySupersets, nextSupersetTap, ungroupAll } from "@/lib/superset-select";
 import { applyWeightFrom, normalizeWeights, sanitizeWeight, stripWeightUnit, weightUnitFor, withWeightUnit } from "@/lib/weight-input";
 import { SupersetRounds } from "@/components/workout/SupersetRounds";
 import { addRound, canShowRounds, removeLastRound, toggleRound } from "@/lib/superset-rounds";
@@ -1178,11 +1178,11 @@ export default function LogWorkoutScreen() {
   }
 
   // Tap an exercise's number to cycle it through the supersets (Superset A, B ... as far as the exercises allow), then back to none.
-  function cycleSuperset(row: ExerciseRow) {
-    const shown = entrySegments(exerciseRows, runRows).flatMap((seg) => (seg.kind === "exercise" ? seg.rows : []));
+  function cycleSuperset(row: { key: string; supersetGroup?: string | null }) {
+    const shown = orderedEntries(exerciseRows, runRows).map((e) => ({ key: e.row.key, supersetGroup: e.row.supersetGroup ?? null }));
     const next = nextSupersetTap(shown, row.key);
     if (next === undefined) {
-      // Nothing to join yet: a superset needs at least two exercises.
+      // A superset needs at least two entries (exercises or cardio).
       warningFeedback();
       return;
     }
@@ -1223,8 +1223,8 @@ export default function LogWorkoutScreen() {
 
   // A superset with only one exercise left in it is not saved as a superset.
   function savedGroup(rowKey: string): string | null {
-    const kept = withoutLonelySupersets(exerciseRows);
-    return kept.find((r) => r.key === rowKey)?.supersetGroup ?? null;
+    const kept = cleanLonelySupersets(exerciseRows, runRows);
+    return kept.exerciseRows.find((r) => r.key === rowKey)?.supersetGroup ?? kept.runRows.find((r) => r.key === rowKey)?.supersetGroup ?? null;
   }
 
   // Tap "Reps" to split it into right and left boxes (and back).
@@ -1235,7 +1235,7 @@ export default function LogWorkoutScreen() {
 
   function ungroupSuperset(label: string) {
     tapFeedback();
-    update({ exerciseRows: ungroup(exerciseRows, label) });
+    update(ungroupAll(exerciseRows, runRows, label));
   }
 
   function updateRow(key: string, patch: Partial<Omit<ExerciseRow, "key">>) {
@@ -1506,6 +1506,7 @@ export default function LogWorkoutScreen() {
           cardioType: r.cardioType,
           level: hasLevel(r.cardioType) ? parseLevel(r.level) : null,
           order: orderToSave(r),
+          supersetGroup: savedGroup(r.key),
         };
       });
 
@@ -1645,6 +1646,531 @@ export default function LogWorkoutScreen() {
 
   const timerStarted = draft.accumulatedSecs > 0 || draft.startedAtMs !== null;
   const timerRunning = draft.startedAtMs !== null;
+
+  // Letters and numbers for superset labels count exercises and cardio together, in the order shown.
+  const allGroupLabels = orderedEntries(exerciseRows, runRows).map((e) => e.row.supersetGroup ?? null);
+  const memberNumber = (key: string): number => {
+    const entries = orderedEntries(exerciseRows, runRows);
+    const me = entries.find((e) => e.row.key === key);
+    const label = me?.row.supersetGroup ?? null;
+    if (!label) return 0;
+    return Math.max(0, entries.filter((e) => e.row.supersetGroup === label).findIndex((e) => e.row.key === key));
+  };
+
+  // One piece of the workout: a run of exercises (supersets without cardio become a grouped card) or one cardio entry.
+  // `opts` is set when the piece sits inside a superset box that also holds cardio.
+  const renderSegment = (seg: EntrySegment<ExerciseRow, RunRow>, opts?: { inMixed?: boolean; lastKey?: string; notFirst?: boolean }) =>
+    seg.kind === "exercise" ? groupExerciseRowsBySuperset(seg.rows).map((grp, gIdx) => {
+            const isGrouped = grp.rows.length > 1 || !!opts?.inMixed;
+            const cards = grp.rows.map((row, memberIdx) => {
+            const idx = exerciseRows.indexOf(row);
+            const allComplete = row.setRows.length > 0 && row.setRows.every((sr) => sr.completed);
+            const last = getLastExercisePerformance(data?.sessions ?? [], row.name);
+            return (
+            <Card
+              key={row.key}
+              style={[
+                isGrouped ? styles.entryCardGrouped : styles.entryCard,
+                isGrouped && (opts?.inMixed ? opts.notFirst : memberIdx > 0) && styles.entryCardGroupedDivider,
+              ]}
+            >
+              <View style={styles.entryHeader}>
+                <View style={styles.entryHeaderTitle}>
+                  <Pressable
+                    onPress={() => cycleSuperset(row)}
+                    hitSlop={6}
+                    accessibilityRole="button"
+                    accessibilityLabel={
+                      row.supersetGroup
+                        ? `Exercise ${idx + 1}, in superset ${supersetLetter(row.supersetGroup, allGroupLabels)}. Tap to change.`
+                        : `Exercise ${idx + 1}. Tap to put it in a superset.`
+                    }
+                    style={[
+                      styles.indexBadge,
+                      styles.indexBadgeButton,
+                      allComplete && styles.indexBadgeDone,
+                      row.supersetGroup
+                        ? { backgroundColor: supersetColor(row.supersetGroup, allGroupLabels), borderColor: "transparent" }
+                        : null,
+                    ]}
+                  >
+                    <Text style={[styles.indexBadgeText, (allComplete || row.supersetGroup) && { color: Color.bg0 }]}>
+                      {row.supersetGroup ? supersetMemberLabel(row.supersetGroup, allGroupLabels, memberNumber(row.key)) : idx + 1}
+                    </Text>
+                    {!row.supersetGroup ? <Ionicons name="link" size={9} color={Color.textMuted} style={styles.indexBadgeIcon} /> : null}
+                  </Pressable>
+                  <Text style={styles.entryLabel} numberOfLines={1}>
+                    {row.name.trim() || "New exercise"}
+                  </Text>
+                  {allComplete ? (
+                    <View style={styles.exerciseDoneBadge}>
+                      <Ionicons name="checkmark" size={12} color={Color.bg0} />
+                    </View>
+                  ) : null}
+                </View>
+                <View style={styles.entryHeaderActions}>
+                  <Pressable
+                    onPress={() => router.push({ pathname: "/plate-calculator" })}
+                    hitSlop={4}
+                    style={styles.roundTool}
+                    accessibilityRole="button"
+                    accessibilityLabel="Plate calculator"
+                  >
+                    <Ionicons name="barbell-outline" size={18} color={Color.textPrimary} />
+                  </Pressable>
+                  <Pressable
+                    onPress={() => {
+                      // Don't clobber a rest that's already counting down —
+                      // only reset to this exercise's rest duration when
+                      // there's nothing actively running.
+                      if (!restTimer.isRunning) restTimer.reset(restTimerSeconds, row.name || null);
+                      router.push({ pathname: "/rest-timer" });
+                    }}
+                    hitSlop={4}
+                    style={styles.roundTool}
+                    accessibilityRole="button"
+                    accessibilityLabel="Rest timer"
+                  >
+                    <Ionicons name="timer-outline" size={18} color={Color.textPrimary} />
+                  </Pressable>
+                  <Pressable
+                    onPress={() => removeRow(row.key)}
+                    hitSlop={4}
+                    style={styles.roundTool}
+                    accessibilityRole="button"
+                    accessibilityLabel="Remove exercise"
+                  >
+                    <Ionicons name="trash-outline" size={18} color={Color.danger} />
+                  </Pressable>
+                </View>
+              </View>
+
+              <Text style={styles.fieldLabel}>Exercise name</Text>
+              <ExerciseAutocomplete
+                exercises={data?.exerciseLibrary ?? []}
+                libraryNames={libraryIndex?.items ?? []}
+                personalNames={personalExerciseNames}
+                value={row.name}
+                onChange={(name, exerciseId) => updateRow(row.key, { name, exerciseId })}
+              />
+
+              {(() => {
+                if (!row.name.trim()) return null;
+                const slug = libraryIndex ? findExerciseLibrarySlug(row.name, libraryIndex) : null;
+                if (!slug && !last) return null;
+                return (
+                  <ExerciseDemoRow
+                    slug={slug}
+                    last={last}
+                    onOpenDemo={(demoSlug) => router.push({ pathname: "/exercise-demo" as never, params: { slug: demoSlug } })}
+                  />
+                );
+              })()}
+
+              <View style={styles.unitToggleRow}>
+                <Text style={styles.fieldLabel}>{unitModeLabel(row.unitMode)}</Text>
+                <View style={{ flexDirection: "row", gap: 4 }}>
+                  <Pressable onPress={() => { selectionFeedback(); changeUnitMode(row, "weight"); }} style={[styles.unitChip, row.unitMode === "weight" && styles.unitChipActive]}>
+                    <Text style={[styles.unitChipText, row.unitMode === "weight" && styles.unitChipTextActive]}>{weightUnit}</Text>
+                  </Pressable>
+                  <Pressable onPress={() => { selectionFeedback(); changeUnitMode(row, "time"); }} style={[styles.unitChip, row.unitMode === "time" && styles.unitChipActive]}>
+                    <Text style={[styles.unitChipText, row.unitMode === "time" && styles.unitChipTextActive]}>time</Text>
+                  </Pressable>
+                  <Pressable onPress={() => { selectionFeedback(); changeUnitMode(row, "band"); }} style={[styles.unitChip, row.unitMode === "band" && styles.unitChipActive]}>
+                    <Text style={[styles.unitChipText, row.unitMode === "band" && styles.unitChipTextActive]}>band</Text>
+                  </Pressable>
+                </View>
+              </View>
+
+              <View style={styles.setColumnHeader}>
+                <Text style={[styles.setColumnLabel, { width: 36, textAlign: "center" }]}>Set</Text>
+                <Text style={[styles.setColumnLabel, { width: 66 }]}>Previous</Text>
+                <Text style={[styles.setColumnLabel, { flex: 1, textAlign: "center" }]}>{unitModeColumnLabel(row.unitMode)}</Text>
+                {row.unitMode === "time" ? (
+                  <Text style={[styles.setColumnLabel, { flex: 1, textAlign: "center" }]} />
+                ) : (
+                  <Pressable
+                    onPress={() => toggleSplitReps(row)}
+                    hitSlop={8}
+                    accessibilityRole="button"
+                    accessibilityLabel={row.perSide ? "Reps are split into right and left. Tap to use one box." : "Reps. Tap to split into right and left."}
+                    style={styles.repsHeaderButton}
+                  >
+                    <Text style={styles.repsHeaderText}>{row.perSide ? "Reps R | L" : "Reps"}</Text>
+                    <Ionicons name={row.perSide ? "remove-circle-outline" : "git-compare-outline"} size={14} color={Color.gold} />
+                  </Pressable>
+                )}
+                <View style={{ width: 40 }} />
+              </View>
+
+              {row.setRows.map((set, setIdx) => {
+                const lastSet = getLastSetForIndex(last, setIdx);
+                return (
+                  <View key={set.key} style={[styles.setRow2, set.completed && styles.setRow2Completed]}>
+                    <Pressable
+                      onPress={() => {
+                        selectionFeedback();
+                        updateSetRow(row.key, set.key, { setType: nextSetType(set.setType) });
+                      }}
+                      style={styles.setNumberWrap}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Set ${setIdx + 1}, ${SET_TYPE_OPTIONS.find((o) => o.value === set.setType)?.label ?? "standard"}. Tap to change set type.`}
+                    >
+                      <View style={[styles.setNumberBadge, set.completed && styles.setNumberBadgeDone]}>
+                        <Text style={styles.setNumber}>{setIdx + 1}</Text>
+                      </View>
+                      {set.setType !== "standard" ? (
+                        <Text style={styles.setTypeTag} numberOfLines={1}>
+                          {SET_TYPE_OPTIONS.find((o) => o.value === set.setType)?.label}
+                        </Text>
+                      ) : null}
+                    </Pressable>
+                    <Text style={styles.prevCell} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
+                      {formatPreviousSet(lastSet, row.unitMode)}
+                    </Text>
+                    {row.unitMode === "time" ? (
+                      // A wheel picker instead of a keyboard — typing "0:45"
+                      // on a phone keypad is fiddly; scrolling two columns
+                      // isn't.
+                      <Pressable
+                        onPress={() => {
+                          Keyboard.dismiss();
+                          setTimePickerTarget({ rowKey: row.key, setKey: set.key, secs: parseDuration(set.weight) ?? parseDuration(lastSet?.weight ?? "") ?? 90 });
+                        }}
+                        style={[styles.setInput, set.completed && styles.setInputCompleted, { flex: 1, justifyContent: "center" }]}
+                      >
+                        <Text style={set.weight ? styles.timePickerValue : styles.timePickerPlaceholder}>
+                          {set.weight || lastSet?.weight || "1:30"}
+                        </Text>
+                      </Pressable>
+                    ) : (
+                      row.unitMode === "weight" ? (
+                        <TextInput
+                          value={focusedWeightKey === set.key ? stripWeightUnit(set.weight) : withWeightUnit(set.weight, weightUnit)}
+                          onChangeText={(v) => typeWeight(row.key, set.key, v)}
+                          onFocus={() => setFocusedWeightKey(set.key)}
+                          onBlur={() => finishWeight(row.key)}
+                          keyboardType="decimal-pad"
+                          selectTextOnFocus
+                          placeholder={lastSet?.weight ? stripWeightUnit(lastSet.weight) : "60"}
+                          placeholderTextColor={Color.textFaint}
+                          accessibilityLabel={`Set ${setIdx + 1} weight in ${weightUnit}`}
+                          style={[styles.setInput, set.completed && styles.setInputCompleted, { flex: 1 }]}
+                        />
+                      ) : (
+                        <TextInput
+                          value={set.weight}
+                          onChangeText={(v) => updateFirstSetField(row.key, set.key, "weight", v)}
+                          placeholder="e.g. Purple"
+                          placeholderTextColor={Color.textFaint}
+                          style={[styles.setInput, set.completed && styles.setInputCompleted, { flex: 1 }]}
+                        />
+                      )
+                    )}
+                    {row.unitMode === "time" ? (
+                      // A timed hold/exercise has no rep count — this set's
+                      // own duration (the field to its left) drives a real
+                      // countdown, so the member gets an actual timer
+                      // instead of self-timing and typing in a guess after
+                      // the fact.
+                      <Pressable
+                        onPress={() => {
+                          const targetSecs = parseDuration(set.weight) || 60;
+                          setTimerTarget({ rowKey: row.key, setKey: set.key });
+                          router.push({
+                            pathname: "/rest-timer",
+                            params: {
+                              autostart: "1",
+                              seconds: String(targetSecs),
+                              label: row.name || undefined,
+                              // A timed exercise gets the 3-second get-ready
+                              // window (there's something to physically set
+                              // up for); resting between sets doesn't — see
+                              // lib/rest-timer.tsx's start().
+                              getReady: "1",
+                            },
+                          });
+                        }}
+                        style={[styles.startTimerButton, { flex: 1 }]}
+                      >
+                        <Ionicons name="play" size={13} color={Color.goldForeground} />
+                        <Text style={styles.startTimerButtonText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>Start</Text>
+                      </Pressable>
+                    ) : row.perSide ? (
+                      <View style={{ flex: 1, flexDirection: "row", gap: 4 }}>
+                        <TextInput
+                          value={set.repsRight ?? ""}
+                          onChangeText={(v) => updateFirstSetField(row.key, set.key, "repsRight", v)}
+                          keyboardType="number-pad"
+                          placeholder="R"
+                          placeholderTextColor={Color.textFaint}
+                          style={[styles.setInput, set.completed && styles.setInputCompleted, { flex: 1 }]}
+                        />
+                        <TextInput
+                          value={set.repsLeft ?? ""}
+                          onChangeText={(v) => updateFirstSetField(row.key, set.key, "repsLeft", v)}
+                          keyboardType="number-pad"
+                          placeholder="L"
+                          placeholderTextColor={Color.textFaint}
+                          style={[styles.setInput, set.completed && styles.setInputCompleted, { flex: 1 }]}
+                        />
+                      </View>
+                    ) : (
+                      <TextInput
+                        value={set.reps}
+                        onChangeText={(v) => updateFirstSetField(row.key, set.key, "reps", v)}
+                        keyboardType="number-pad"
+                        placeholder={lastSet?.reps != null ? String(lastSet.reps) : "8"}
+                        placeholderTextColor={Color.textFaint}
+                        style={[styles.setInput, set.completed && styles.setInputCompleted, { flex: 1 }]}
+                      />
+                    )}
+                    <Pressable
+                      onPress={() => toggleSetComplete(row.key, set.key, opts?.inMixed ? row.key === opts.lastKey : !isGrouped || memberIdx === grp.rows.length - 1)}
+                      hitSlop={6}
+                      style={styles.setCheckWrap}
+                      accessibilityRole="checkbox"
+                      accessibilityState={{ checked: set.completed }}
+                      accessibilityLabel={`Set ${setIdx + 1} done`}
+                    >
+                      <View style={[styles.setCheck, set.completed && styles.setCheckDone]}>
+                        {set.completed ? <Ionicons name="checkmark" size={20} color={Color.bg0} /> : null}
+                      </View>
+                    </Pressable>
+                  </View>
+                );
+              })}
+
+              <View style={styles.setRowActions}>
+                <Pressable
+                  onPress={() => {
+                    tapFeedback();
+                    addSetRow(row.key);
+                  }}
+                  style={styles.setPill}
+                  accessibilityRole="button"
+                >
+                  <Ionicons name="add" size={18} color={Color.textPrimary} />
+                  <Text style={styles.setPillText}>Add set</Text>
+                </Pressable>
+                {row.setRows.length > 1 ? (
+                  <Pressable
+                    onPress={() => removeSetRow(row.key, row.setRows[row.setRows.length - 1].key)}
+                    style={[styles.setPill, styles.setPillQuiet]}
+                    accessibilityRole="button"
+                  >
+                    <Ionicons name="remove" size={18} color={Color.textSecondary} />
+                    <Text style={[styles.setPillText, { color: Color.textSecondary }]}>Remove last</Text>
+                  </Pressable>
+                ) : null}
+              </View>
+
+              <RirControl value={row.rir} onChange={(v) => updateRow(row.key, { rir: v })} />
+              <NoteControl value={row.notes} onChange={(v) => updateRow(row.key, { notes: v })} />
+            </Card>
+            );
+            });
+            return isGrouped && !opts?.inMixed ? (
+              <View
+                key={`superset-${grp.group}-${gIdx}`}
+                style={[styles.supersetGroupWrap, { borderColor: supersetColor(grp.group ?? "", allGroupLabels) }]}
+              >
+                <View style={styles.supersetGroupHeader}>
+                  <Text style={[styles.supersetGroupHeaderText, { color: supersetColor(grp.group ?? "", allGroupLabels) }]}>
+                    Superset {supersetLetter(grp.group ?? "", allGroupLabels)} · {grp.rows.length} exercises
+                  </Text>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: Spacing.md }}>
+                    <Pressable
+                      onPress={() => toggleEditGroup(grp.group ?? "")}
+                      hitSlop={8}
+                      accessibilityRole="button"
+                      accessibilityLabel={editingGroups.includes(grp.group ?? "") ? "Back to rounds" : "Edit the exercises in this superset"}
+                    >
+                      <Text style={styles.ungroupText}>{editingGroups.includes(grp.group ?? "") ? "Back to rounds" : "Edit exercises"}</Text>
+                    </Pressable>
+                    <Pressable onPress={() => ungroupSuperset(grp.group ?? "")} hitSlop={8} accessibilityRole="button" accessibilityLabel="Ungroup this superset">
+                      <Text style={styles.ungroupText}>Ungroup</Text>
+                    </Pressable>
+                  </View>
+                </View>
+                {grp.group && !editingGroups.includes(grp.group) && grp.rows.every((r) => r.name.trim()) && canShowRounds(grp.rows) ? (
+                  <SupersetRounds
+                    rows={grp.rows}
+                    group={grp.group}
+                    allGroups={allGroupLabels}
+                    color={supersetColor(grp.group, allGroupLabels)}
+                    onChangeSet={updateSetRow}
+                    onToggleRound={(i) => toggleGroupRound(grp.group ?? "", i)}
+                    onAddRound={() => addGroupRound(grp.group ?? "")}
+                    onRemoveRound={() => removeGroupRound(grp.group ?? "")}
+                    weightUnit={weightUnit}
+                    onPickTime={(rowKey, setKey, secs) => setTimePickerTarget({ rowKey, setKey, secs: secs ?? 90 })}
+                    renderFooter={(row) => <RirControl value={row.rir} onChange={(v) => updateRow(row.key, { rir: v })} />}
+                  />
+                ) : (
+                  cards
+                )}
+              </View>
+            ) : (
+              cards
+            );
+          }) : (() => { const row = seg.row; return (
+            <Card key={row.key} style={opts?.inMixed ? styles.entryCardGrouped : styles.entryCard}>
+              <View style={styles.entryHeader}>
+                <View style={styles.entryHeaderTitle}>
+                  <Pressable
+                    onPress={() => cycleSuperset(row)}
+                    hitSlop={6}
+                    accessibilityRole="button"
+                    accessibilityLabel={row.supersetGroup ? "Cardio in a superset. Tap to change." : "Cardio. Tap to put it in a superset."}
+                    style={[
+                      styles.indexBadge,
+                      styles.indexBadgeButton,
+                      row.supersetGroup ? { backgroundColor: supersetColor(row.supersetGroup, allGroupLabels), borderColor: "transparent" } : null,
+                    ]}
+                  >
+                    {row.supersetGroup ? (
+                      <Text style={[styles.indexBadgeText, { color: Color.bg0 }]}>{supersetMemberLabel(row.supersetGroup, allGroupLabels, memberNumber(row.key))}</Text>
+                    ) : (
+                      <Ionicons name="pulse" size={16} color={Color.textPrimary} />
+                    )}
+                    {!row.supersetGroup ? <Ionicons name="link" size={9} color={Color.textMuted} style={styles.indexBadgeIcon} /> : null}
+                  </Pressable>
+                  <Text style={styles.entryLabel}>{row.typeChosen ? CARDIO_LABEL[row.cardioType] : "Cardio"}</Text>
+                </View>
+                <View style={styles.entryHeaderActions}>
+                  {row.cardioType === "run" ? (
+                    <Pressable
+                      onPress={() => router.push({ pathname: "/run-timer", params: { runKey: row.key } })}
+                      hitSlop={4}
+                      style={styles.roundTool}
+                      accessibilityRole="button"
+                      accessibilityLabel="Run timer"
+                    >
+                      <Ionicons name="stopwatch-outline" size={18} color={Color.textPrimary} />
+                    </Pressable>
+                  ) : null}
+                  <Pressable
+                    onPress={() => removeRunRow(row.key)}
+                    hitSlop={4}
+                    style={styles.roundTool}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Remove ${CARDIO_LABEL[row.cardioType].toLowerCase()}`}
+                  >
+                    <Ionicons name="trash-outline" size={18} color={Color.danger} />
+                  </Pressable>
+                </View>
+              </View>
+
+              <View style={styles.cardioPicker}>
+                <OptionPicker<CardioType>
+                  title="Cardio type"
+                  placeholder="Choose a type"
+                  options={CARDIO_PICKER_OPTIONS}
+                  value={row.typeChosen ? row.cardioType : null}
+                  onChange={(t) => updateRunRow(row.key, { cardioType: t, typeChosen: true })}
+                />
+              </View>
+
+              <View style={styles.gridRow}>
+                <View style={styles.numberField}>
+                  <Text style={styles.fieldLabel}>Distance (optional)</Text>
+                  <View style={{ flexDirection: "row", gap: Spacing.xs }}>
+                    <TextInput
+                      value={row.distance}
+                      onChangeText={(v) => updateRunRow(row.key, { distance: v })}
+                      keyboardType="decimal-pad"
+                      placeholder={row.distanceUnit === "m" ? "e.g. 400" : "e.g. 5.2"}
+                      placeholderTextColor={Color.textFaint}
+                      style={[styles.smallInput, { flex: 1 }]}
+                    />
+                    <Pressable
+                      onPress={() => updateRunRow(row.key, { distanceUnit: row.distanceUnit === "km" ? "m" : "km" })}
+                      style={styles.unitSwitch}
+                    >
+                      <Text style={styles.unitSwitchText}>{row.distanceUnit}</Text>
+                    </Pressable>
+                  </View>
+                </View>
+                <View style={styles.numberField}>
+                  <Text style={styles.fieldLabel}>Time (optional)</Text>
+                  <Pressable
+                    onPress={() => {
+                      tapFeedback();
+                      setCardioTimeTarget({ rowKey: row.key, secs: parseDuration(row.duration) ?? 0 });
+                    }}
+                    accessibilityRole="button"
+                    accessibilityLabel={row.duration.trim() ? `Time ${row.duration}. Tap to change` : "Set the time"}
+                    style={[styles.smallInput, styles.timeButton]}
+                  >
+                    <Text style={row.duration.trim() ? styles.timeButtonText : styles.timeButtonPlaceholder}>
+                      {row.duration.trim() ? formatDuration(parseDuration(row.duration) ?? 0) : "Set time"}
+                    </Text>
+                  </Pressable>
+                </View>
+              </View>
+
+              {hasLevel(row.cardioType) ? (
+                <View style={styles.gridRow}>
+                  <NumberField
+                    label={row.cardioType === "treadmill_walk" ? "Incline % (opt.)" : "Level (opt.)"}
+                    value={row.level}
+                    onChangeText={(v) => updateRunRow(row.key, { level: v })}
+                    placeholder={row.cardioType === "treadmill_walk" ? "e.g. 12" : "e.g. 8"}
+                  />
+                </View>
+              ) : null}
+
+              {hasPace(row.cardioType) && livePace(row.distance, row.distanceUnit, row.duration) ? (
+                <Text style={styles.paceText}>
+                  Pace: <Text style={{ color: Color.gold, fontWeight: "700" }}>{livePace(row.distance, row.distanceUnit, row.duration)}</Text>
+                </Text>
+              ) : null}
+
+              {row.splits.length > 0 ? (
+                <Text style={styles.splitsText}>Splits: {row.splits.join(", ")}</Text>
+              ) : null}
+
+              <RpeControl value={row.rpe ?? ""} onChange={(v) => updateRunRow(row.key, { rpe: v })} />
+
+              {row.cardioType === "run" ? (
+                <View style={styles.gridRow}>
+                  <NumberField label="Reps (opt.)" value={row.reps} onChangeText={(v) => updateRunRow(row.key, { reps: v })} placeholder="e.g. 8" />
+                  <NumberField label="Sets (opt.)" value={row.sets} onChangeText={(v) => updateRunRow(row.key, { sets: v })} placeholder="e.g. 3" />
+                </View>
+              ) : null}
+
+              <Text style={[styles.fieldLabel, { marginTop: Spacing.sm }]}>Notes (optional)</Text>
+              <TextInput
+                value={row.notes}
+                onChangeText={(v) => updateRunRow(row.key, { notes: v })}
+                placeholder="e.g. Easy pace, felt good"
+                placeholderTextColor={Color.textFaint}
+                style={styles.smallInput}
+              />
+            </Card>
+          ); })();
+
+  // A superset that has cardio in it: one box, exercises and cardio in order, no rounds view.
+  const renderMixed = (blk: { label: string; entries: ReturnType<typeof orderedEntries<ExerciseRow, RunRow>> }) => {
+    const colour = supersetColor(blk.label, allGroupLabels);
+    const lastKey = blk.entries[blk.entries.length - 1].row.key;
+    return (
+      <View key={`mixed-${blk.label}-${blk.entries[0].row.key}`} style={[styles.supersetGroupWrap, { borderColor: colour }]}>
+        <View style={styles.supersetGroupHeader}>
+          <Text style={[styles.supersetGroupHeaderText, { color: colour }]}>
+            Superset {supersetLetter(blk.label, allGroupLabels)} · {blk.entries.length} entries
+          </Text>
+          <Pressable onPress={() => ungroupSuperset(blk.label)} hitSlop={8} accessibilityRole="button" accessibilityLabel="Ungroup this superset">
+            <Text style={styles.ungroupText}>Ungroup</Text>
+          </Pressable>
+        </View>
+        {blk.entries.map((e, i) =>
+          renderSegment(e.kind === "exercise" ? { kind: "exercise", rows: [e.row] } : { kind: "run", row: e.row }, { inMixed: true, lastKey, notFirst: i > 0 })
+        )}
+      </View>
+    );
+  };
 
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
@@ -1953,476 +2479,7 @@ export default function LogWorkoutScreen() {
             <Text style={styles.emptyHint}>No entries yet. Use the buttons above to log exercises or a run.</Text>
           ) : null}
 
-          {entrySegments(exerciseRows, runRows).map((seg) => seg.kind === "exercise" ? groupExerciseRowsBySuperset(seg.rows).map((grp, gIdx) => {
-            const isGrouped = grp.rows.length > 1;
-            const cards = grp.rows.map((row, memberIdx) => {
-            const idx = exerciseRows.indexOf(row);
-            const allComplete = row.setRows.length > 0 && row.setRows.every((sr) => sr.completed);
-            const last = getLastExercisePerformance(data?.sessions ?? [], row.name);
-            return (
-            <Card
-              key={row.key}
-              style={[
-                isGrouped ? styles.entryCardGrouped : styles.entryCard,
-                isGrouped && memberIdx > 0 && styles.entryCardGroupedDivider,
-              ]}
-            >
-              <View style={styles.entryHeader}>
-                <View style={styles.entryHeaderTitle}>
-                  <Pressable
-                    onPress={() => cycleSuperset(row)}
-                    hitSlop={6}
-                    accessibilityRole="button"
-                    accessibilityLabel={
-                      row.supersetGroup
-                        ? `Exercise ${idx + 1}, in superset ${supersetLetter(row.supersetGroup, exerciseRows.map((r) => r.supersetGroup))}. Tap to change.`
-                        : `Exercise ${idx + 1}. Tap to put it in a superset.`
-                    }
-                    style={[
-                      styles.indexBadge,
-                      styles.indexBadgeButton,
-                      allComplete && styles.indexBadgeDone,
-                      row.supersetGroup
-                        ? { backgroundColor: supersetColor(row.supersetGroup, exerciseRows.map((r) => r.supersetGroup)), borderColor: "transparent" }
-                        : null,
-                    ]}
-                  >
-                    <Text style={[styles.indexBadgeText, (allComplete || row.supersetGroup) && { color: Color.bg0 }]}>
-                      {row.supersetGroup ? supersetMemberLabel(row.supersetGroup, exerciseRows.map((r) => r.supersetGroup), memberIdx) : idx + 1}
-                    </Text>
-                    {!row.supersetGroup ? <Ionicons name="link" size={9} color={Color.textMuted} style={styles.indexBadgeIcon} /> : null}
-                  </Pressable>
-                  <Text style={styles.entryLabel} numberOfLines={1}>
-                    {row.name.trim() || "New exercise"}
-                  </Text>
-                  {allComplete ? (
-                    <View style={styles.exerciseDoneBadge}>
-                      <Ionicons name="checkmark" size={12} color={Color.bg0} />
-                    </View>
-                  ) : null}
-                </View>
-                <View style={styles.entryHeaderActions}>
-                  <Pressable
-                    onPress={() => router.push({ pathname: "/plate-calculator" })}
-                    hitSlop={4}
-                    style={styles.roundTool}
-                    accessibilityRole="button"
-                    accessibilityLabel="Plate calculator"
-                  >
-                    <Ionicons name="barbell-outline" size={18} color={Color.textPrimary} />
-                  </Pressable>
-                  <Pressable
-                    onPress={() => {
-                      // Don't clobber a rest that's already counting down —
-                      // only reset to this exercise's rest duration when
-                      // there's nothing actively running.
-                      if (!restTimer.isRunning) restTimer.reset(restTimerSeconds, row.name || null);
-                      router.push({ pathname: "/rest-timer" });
-                    }}
-                    hitSlop={4}
-                    style={styles.roundTool}
-                    accessibilityRole="button"
-                    accessibilityLabel="Rest timer"
-                  >
-                    <Ionicons name="timer-outline" size={18} color={Color.textPrimary} />
-                  </Pressable>
-                  <Pressable
-                    onPress={() => removeRow(row.key)}
-                    hitSlop={4}
-                    style={styles.roundTool}
-                    accessibilityRole="button"
-                    accessibilityLabel="Remove exercise"
-                  >
-                    <Ionicons name="trash-outline" size={18} color={Color.danger} />
-                  </Pressable>
-                </View>
-              </View>
-
-              <Text style={styles.fieldLabel}>Exercise name</Text>
-              <ExerciseAutocomplete
-                exercises={data?.exerciseLibrary ?? []}
-                libraryNames={libraryIndex?.items ?? []}
-                personalNames={personalExerciseNames}
-                value={row.name}
-                onChange={(name, exerciseId) => updateRow(row.key, { name, exerciseId })}
-              />
-
-              {(() => {
-                if (!row.name.trim()) return null;
-                const slug = libraryIndex ? findExerciseLibrarySlug(row.name, libraryIndex) : null;
-                if (!slug && !last) return null;
-                return (
-                  <ExerciseDemoRow
-                    slug={slug}
-                    last={last}
-                    onOpenDemo={(demoSlug) => router.push({ pathname: "/exercise-demo" as never, params: { slug: demoSlug } })}
-                  />
-                );
-              })()}
-
-              <View style={styles.unitToggleRow}>
-                <Text style={styles.fieldLabel}>{unitModeLabel(row.unitMode)}</Text>
-                <View style={{ flexDirection: "row", gap: 4 }}>
-                  <Pressable onPress={() => { selectionFeedback(); changeUnitMode(row, "weight"); }} style={[styles.unitChip, row.unitMode === "weight" && styles.unitChipActive]}>
-                    <Text style={[styles.unitChipText, row.unitMode === "weight" && styles.unitChipTextActive]}>{weightUnit}</Text>
-                  </Pressable>
-                  <Pressable onPress={() => { selectionFeedback(); changeUnitMode(row, "time"); }} style={[styles.unitChip, row.unitMode === "time" && styles.unitChipActive]}>
-                    <Text style={[styles.unitChipText, row.unitMode === "time" && styles.unitChipTextActive]}>time</Text>
-                  </Pressable>
-                  <Pressable onPress={() => { selectionFeedback(); changeUnitMode(row, "band"); }} style={[styles.unitChip, row.unitMode === "band" && styles.unitChipActive]}>
-                    <Text style={[styles.unitChipText, row.unitMode === "band" && styles.unitChipTextActive]}>band</Text>
-                  </Pressable>
-                </View>
-              </View>
-
-              <View style={styles.setColumnHeader}>
-                <Text style={[styles.setColumnLabel, { width: 36, textAlign: "center" }]}>Set</Text>
-                <Text style={[styles.setColumnLabel, { width: 66 }]}>Previous</Text>
-                <Text style={[styles.setColumnLabel, { flex: 1, textAlign: "center" }]}>{unitModeColumnLabel(row.unitMode)}</Text>
-                {row.unitMode === "time" ? (
-                  <Text style={[styles.setColumnLabel, { flex: 1, textAlign: "center" }]} />
-                ) : (
-                  <Pressable
-                    onPress={() => toggleSplitReps(row)}
-                    hitSlop={8}
-                    accessibilityRole="button"
-                    accessibilityLabel={row.perSide ? "Reps are split into right and left. Tap to use one box." : "Reps. Tap to split into right and left."}
-                    style={styles.repsHeaderButton}
-                  >
-                    <Text style={styles.repsHeaderText}>{row.perSide ? "Reps R | L" : "Reps"}</Text>
-                    <Ionicons name={row.perSide ? "remove-circle-outline" : "git-compare-outline"} size={14} color={Color.gold} />
-                  </Pressable>
-                )}
-                <View style={{ width: 40 }} />
-              </View>
-
-              {row.setRows.map((set, setIdx) => {
-                const lastSet = getLastSetForIndex(last, setIdx);
-                return (
-                  <View key={set.key} style={[styles.setRow2, set.completed && styles.setRow2Completed]}>
-                    <Pressable
-                      onPress={() => {
-                        selectionFeedback();
-                        updateSetRow(row.key, set.key, { setType: nextSetType(set.setType) });
-                      }}
-                      style={styles.setNumberWrap}
-                      accessibilityRole="button"
-                      accessibilityLabel={`Set ${setIdx + 1}, ${SET_TYPE_OPTIONS.find((o) => o.value === set.setType)?.label ?? "standard"}. Tap to change set type.`}
-                    >
-                      <View style={[styles.setNumberBadge, set.completed && styles.setNumberBadgeDone]}>
-                        <Text style={styles.setNumber}>{setIdx + 1}</Text>
-                      </View>
-                      {set.setType !== "standard" ? (
-                        <Text style={styles.setTypeTag} numberOfLines={1}>
-                          {SET_TYPE_OPTIONS.find((o) => o.value === set.setType)?.label}
-                        </Text>
-                      ) : null}
-                    </Pressable>
-                    <Text style={styles.prevCell} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
-                      {formatPreviousSet(lastSet, row.unitMode)}
-                    </Text>
-                    {row.unitMode === "time" ? (
-                      // A wheel picker instead of a keyboard — typing "0:45"
-                      // on a phone keypad is fiddly; scrolling two columns
-                      // isn't.
-                      <Pressable
-                        onPress={() => {
-                          Keyboard.dismiss();
-                          setTimePickerTarget({ rowKey: row.key, setKey: set.key, secs: parseDuration(set.weight) ?? parseDuration(lastSet?.weight ?? "") ?? 90 });
-                        }}
-                        style={[styles.setInput, set.completed && styles.setInputCompleted, { flex: 1, justifyContent: "center" }]}
-                      >
-                        <Text style={set.weight ? styles.timePickerValue : styles.timePickerPlaceholder}>
-                          {set.weight || lastSet?.weight || "1:30"}
-                        </Text>
-                      </Pressable>
-                    ) : (
-                      row.unitMode === "weight" ? (
-                        <TextInput
-                          value={focusedWeightKey === set.key ? stripWeightUnit(set.weight) : withWeightUnit(set.weight, weightUnit)}
-                          onChangeText={(v) => typeWeight(row.key, set.key, v)}
-                          onFocus={() => setFocusedWeightKey(set.key)}
-                          onBlur={() => finishWeight(row.key)}
-                          keyboardType="decimal-pad"
-                          selectTextOnFocus
-                          placeholder={lastSet?.weight ? stripWeightUnit(lastSet.weight) : "60"}
-                          placeholderTextColor={Color.textFaint}
-                          accessibilityLabel={`Set ${setIdx + 1} weight in ${weightUnit}`}
-                          style={[styles.setInput, set.completed && styles.setInputCompleted, { flex: 1 }]}
-                        />
-                      ) : (
-                        <TextInput
-                          value={set.weight}
-                          onChangeText={(v) => updateFirstSetField(row.key, set.key, "weight", v)}
-                          placeholder="e.g. Purple"
-                          placeholderTextColor={Color.textFaint}
-                          style={[styles.setInput, set.completed && styles.setInputCompleted, { flex: 1 }]}
-                        />
-                      )
-                    )}
-                    {row.unitMode === "time" ? (
-                      // A timed hold/exercise has no rep count — this set's
-                      // own duration (the field to its left) drives a real
-                      // countdown, so the member gets an actual timer
-                      // instead of self-timing and typing in a guess after
-                      // the fact.
-                      <Pressable
-                        onPress={() => {
-                          const targetSecs = parseDuration(set.weight) || 60;
-                          setTimerTarget({ rowKey: row.key, setKey: set.key });
-                          router.push({
-                            pathname: "/rest-timer",
-                            params: {
-                              autostart: "1",
-                              seconds: String(targetSecs),
-                              label: row.name || undefined,
-                              // A timed exercise gets the 3-second get-ready
-                              // window (there's something to physically set
-                              // up for); resting between sets doesn't — see
-                              // lib/rest-timer.tsx's start().
-                              getReady: "1",
-                            },
-                          });
-                        }}
-                        style={[styles.startTimerButton, { flex: 1 }]}
-                      >
-                        <Ionicons name="play" size={13} color={Color.goldForeground} />
-                        <Text style={styles.startTimerButtonText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>Start</Text>
-                      </Pressable>
-                    ) : row.perSide ? (
-                      <View style={{ flex: 1, flexDirection: "row", gap: 4 }}>
-                        <TextInput
-                          value={set.repsRight ?? ""}
-                          onChangeText={(v) => updateFirstSetField(row.key, set.key, "repsRight", v)}
-                          keyboardType="number-pad"
-                          placeholder="R"
-                          placeholderTextColor={Color.textFaint}
-                          style={[styles.setInput, set.completed && styles.setInputCompleted, { flex: 1 }]}
-                        />
-                        <TextInput
-                          value={set.repsLeft ?? ""}
-                          onChangeText={(v) => updateFirstSetField(row.key, set.key, "repsLeft", v)}
-                          keyboardType="number-pad"
-                          placeholder="L"
-                          placeholderTextColor={Color.textFaint}
-                          style={[styles.setInput, set.completed && styles.setInputCompleted, { flex: 1 }]}
-                        />
-                      </View>
-                    ) : (
-                      <TextInput
-                        value={set.reps}
-                        onChangeText={(v) => updateFirstSetField(row.key, set.key, "reps", v)}
-                        keyboardType="number-pad"
-                        placeholder={lastSet?.reps != null ? String(lastSet.reps) : "8"}
-                        placeholderTextColor={Color.textFaint}
-                        style={[styles.setInput, set.completed && styles.setInputCompleted, { flex: 1 }]}
-                      />
-                    )}
-                    <Pressable
-                      onPress={() => toggleSetComplete(row.key, set.key, !isGrouped || memberIdx === grp.rows.length - 1)}
-                      hitSlop={6}
-                      style={styles.setCheckWrap}
-                      accessibilityRole="checkbox"
-                      accessibilityState={{ checked: set.completed }}
-                      accessibilityLabel={`Set ${setIdx + 1} done`}
-                    >
-                      <View style={[styles.setCheck, set.completed && styles.setCheckDone]}>
-                        {set.completed ? <Ionicons name="checkmark" size={20} color={Color.bg0} /> : null}
-                      </View>
-                    </Pressable>
-                  </View>
-                );
-              })}
-
-              <View style={styles.setRowActions}>
-                <Pressable
-                  onPress={() => {
-                    tapFeedback();
-                    addSetRow(row.key);
-                  }}
-                  style={styles.setPill}
-                  accessibilityRole="button"
-                >
-                  <Ionicons name="add" size={18} color={Color.textPrimary} />
-                  <Text style={styles.setPillText}>Add set</Text>
-                </Pressable>
-                {row.setRows.length > 1 ? (
-                  <Pressable
-                    onPress={() => removeSetRow(row.key, row.setRows[row.setRows.length - 1].key)}
-                    style={[styles.setPill, styles.setPillQuiet]}
-                    accessibilityRole="button"
-                  >
-                    <Ionicons name="remove" size={18} color={Color.textSecondary} />
-                    <Text style={[styles.setPillText, { color: Color.textSecondary }]}>Remove last</Text>
-                  </Pressable>
-                ) : null}
-              </View>
-
-              <RirControl value={row.rir} onChange={(v) => updateRow(row.key, { rir: v })} />
-              <NoteControl value={row.notes} onChange={(v) => updateRow(row.key, { notes: v })} />
-            </Card>
-            );
-            });
-            return isGrouped ? (
-              <View
-                key={`superset-${grp.group}-${gIdx}`}
-                style={[styles.supersetGroupWrap, { borderColor: supersetColor(grp.group ?? "", exerciseRows.map((r) => r.supersetGroup)) }]}
-              >
-                <View style={styles.supersetGroupHeader}>
-                  <Text style={[styles.supersetGroupHeaderText, { color: supersetColor(grp.group ?? "", exerciseRows.map((r) => r.supersetGroup)) }]}>
-                    Superset {supersetLetter(grp.group ?? "", exerciseRows.map((r) => r.supersetGroup))} · {grp.rows.length} exercises
-                  </Text>
-                  <View style={{ flexDirection: "row", alignItems: "center", gap: Spacing.md }}>
-                    <Pressable
-                      onPress={() => toggleEditGroup(grp.group ?? "")}
-                      hitSlop={8}
-                      accessibilityRole="button"
-                      accessibilityLabel={editingGroups.includes(grp.group ?? "") ? "Back to rounds" : "Edit the exercises in this superset"}
-                    >
-                      <Text style={styles.ungroupText}>{editingGroups.includes(grp.group ?? "") ? "Back to rounds" : "Edit exercises"}</Text>
-                    </Pressable>
-                    <Pressable onPress={() => ungroupSuperset(grp.group ?? "")} hitSlop={8} accessibilityRole="button" accessibilityLabel="Ungroup this superset">
-                      <Text style={styles.ungroupText}>Ungroup</Text>
-                    </Pressable>
-                  </View>
-                </View>
-                {grp.group && !editingGroups.includes(grp.group) && grp.rows.every((r) => r.name.trim()) && canShowRounds(grp.rows) ? (
-                  <SupersetRounds
-                    rows={grp.rows}
-                    group={grp.group}
-                    allGroups={exerciseRows.map((r) => r.supersetGroup)}
-                    color={supersetColor(grp.group, exerciseRows.map((r) => r.supersetGroup))}
-                    onChangeSet={updateSetRow}
-                    onToggleRound={(i) => toggleGroupRound(grp.group ?? "", i)}
-                    onAddRound={() => addGroupRound(grp.group ?? "")}
-                    onRemoveRound={() => removeGroupRound(grp.group ?? "")}
-                    weightUnit={weightUnit}
-                    onPickTime={(rowKey, setKey, secs) => setTimePickerTarget({ rowKey, setKey, secs: secs ?? 90 })}
-                    renderFooter={(row) => <RirControl value={row.rir} onChange={(v) => updateRow(row.key, { rir: v })} />}
-                  />
-                ) : (
-                  cards
-                )}
-              </View>
-            ) : (
-              cards
-            );
-          }) : (() => { const row = seg.row; return (
-            <Card key={row.key} style={styles.entryCard}>
-              <View style={styles.entryHeader}>
-                <Text style={styles.entryLabel}>{row.typeChosen ? CARDIO_LABEL[row.cardioType] : "Cardio"}</Text>
-                <View style={styles.entryHeaderActions}>
-                  {row.cardioType === "run" ? (
-                    <Pressable
-                      onPress={() => router.push({ pathname: "/run-timer", params: { runKey: row.key } })}
-                      hitSlop={4}
-                      style={styles.roundTool}
-                      accessibilityRole="button"
-                      accessibilityLabel="Run timer"
-                    >
-                      <Ionicons name="stopwatch-outline" size={18} color={Color.textPrimary} />
-                    </Pressable>
-                  ) : null}
-                  <Pressable
-                    onPress={() => removeRunRow(row.key)}
-                    hitSlop={4}
-                    style={styles.roundTool}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Remove ${CARDIO_LABEL[row.cardioType].toLowerCase()}`}
-                  >
-                    <Ionicons name="trash-outline" size={18} color={Color.danger} />
-                  </Pressable>
-                </View>
-              </View>
-
-              <View style={styles.cardioPicker}>
-                <OptionPicker<CardioType>
-                  title="Cardio type"
-                  placeholder="Choose a type"
-                  options={CARDIO_PICKER_OPTIONS}
-                  value={row.typeChosen ? row.cardioType : null}
-                  onChange={(t) => updateRunRow(row.key, { cardioType: t, typeChosen: true })}
-                />
-              </View>
-
-              <View style={styles.gridRow}>
-                <View style={styles.numberField}>
-                  <Text style={styles.fieldLabel}>Distance (optional)</Text>
-                  <View style={{ flexDirection: "row", gap: Spacing.xs }}>
-                    <TextInput
-                      value={row.distance}
-                      onChangeText={(v) => updateRunRow(row.key, { distance: v })}
-                      keyboardType="decimal-pad"
-                      placeholder={row.distanceUnit === "m" ? "e.g. 400" : "e.g. 5.2"}
-                      placeholderTextColor={Color.textFaint}
-                      style={[styles.smallInput, { flex: 1 }]}
-                    />
-                    <Pressable
-                      onPress={() => updateRunRow(row.key, { distanceUnit: row.distanceUnit === "km" ? "m" : "km" })}
-                      style={styles.unitSwitch}
-                    >
-                      <Text style={styles.unitSwitchText}>{row.distanceUnit}</Text>
-                    </Pressable>
-                  </View>
-                </View>
-                <View style={styles.numberField}>
-                  <Text style={styles.fieldLabel}>Time (optional)</Text>
-                  <Pressable
-                    onPress={() => {
-                      tapFeedback();
-                      setCardioTimeTarget({ rowKey: row.key, secs: parseDuration(row.duration) ?? 0 });
-                    }}
-                    accessibilityRole="button"
-                    accessibilityLabel={row.duration.trim() ? `Time ${row.duration}. Tap to change` : "Set the time"}
-                    style={[styles.smallInput, styles.timeButton]}
-                  >
-                    <Text style={row.duration.trim() ? styles.timeButtonText : styles.timeButtonPlaceholder}>
-                      {row.duration.trim() ? formatDuration(parseDuration(row.duration) ?? 0) : "Set time"}
-                    </Text>
-                  </Pressable>
-                </View>
-              </View>
-
-              {hasLevel(row.cardioType) ? (
-                <View style={styles.gridRow}>
-                  <NumberField
-                    label={row.cardioType === "treadmill_walk" ? "Incline % (opt.)" : "Level (opt.)"}
-                    value={row.level}
-                    onChangeText={(v) => updateRunRow(row.key, { level: v })}
-                    placeholder={row.cardioType === "treadmill_walk" ? "e.g. 12" : "e.g. 8"}
-                  />
-                </View>
-              ) : null}
-
-              {hasPace(row.cardioType) && livePace(row.distance, row.distanceUnit, row.duration) ? (
-                <Text style={styles.paceText}>
-                  Pace: <Text style={{ color: Color.gold, fontWeight: "700" }}>{livePace(row.distance, row.distanceUnit, row.duration)}</Text>
-                </Text>
-              ) : null}
-
-              {row.splits.length > 0 ? (
-                <Text style={styles.splitsText}>Splits: {row.splits.join(", ")}</Text>
-              ) : null}
-
-              <RpeControl value={row.rpe ?? ""} onChange={(v) => updateRunRow(row.key, { rpe: v })} />
-
-              {row.cardioType === "run" ? (
-                <View style={styles.gridRow}>
-                  <NumberField label="Reps (opt.)" value={row.reps} onChangeText={(v) => updateRunRow(row.key, { reps: v })} placeholder="e.g. 8" />
-                  <NumberField label="Sets (opt.)" value={row.sets} onChangeText={(v) => updateRunRow(row.key, { sets: v })} placeholder="e.g. 3" />
-                </View>
-              ) : null}
-
-              <Text style={[styles.fieldLabel, { marginTop: Spacing.sm }]}>Notes (optional)</Text>
-              <TextInput
-                value={row.notes}
-                onChangeText={(v) => updateRunRow(row.key, { notes: v })}
-                placeholder="e.g. Easy pace, felt good"
-                placeholderTextColor={Color.textFaint}
-                style={styles.smallInput}
-              />
-            </Card>
-          ); })())}
+          {entryBlocks(exerciseRows, runRows).map((blk) => (blk.kind === "mixed" ? renderMixed(blk) : renderSegment(blk)))}
 
           <View ref={addButtonsRef} style={styles.addButtonsRow}>
             <Pressable onPress={handleAddExercise} style={styles.addChip} accessibilityRole="button">

@@ -6,6 +6,8 @@ import { orderedEntries, renumber, type OrderableRow, type OrderedEntry } from "
 // that is left with only one member goes back to being a plain exercise.
 
 type Row = OrderableRow & { supersetGroup: string | null };
+/** Cardio can sit in a superset too, so its label is optional (older cardio has none). */
+type RunLike = OrderableRow & { supersetGroup?: string | null };
 
 /** The next free "ST<n>" label, given the labels already in the workout. */
 export function nextSupersetLabel(groups: (string | null | undefined)[]): string {
@@ -71,22 +73,22 @@ export function nextSupersetInCycle(current: string | null, exerciseCount: numbe
  * Gives one exercise a superset label (or none) and, when it joins a superset, brings it next to the other members so the saved order matches
  * what is drawn. The whole workout is numbered again.
  */
-export function assignSuperset<E extends Row, R extends OrderableRow>(
+export function assignSuperset<E extends Row, R extends RunLike>(
   exerciseRows: E[],
   runRows: R[],
   key: string,
   label: string | null
 ): { exerciseRows: E[]; runRows: R[] } {
   const entries = orderedEntries(exerciseRows, runRows);
-  const at = entries.findIndex((e) => e.kind === "exercise" && e.row.key === key);
+  const at = entries.findIndex((e) => e.row.key === key);
   if (at === -1) return { exerciseRows, runRows };
-  const moved = { kind: "exercise", row: { ...(entries[at].row as E), supersetGroup: label } } as OrderedEntry<E, R>;
+  const moved = { kind: entries[at].kind, row: { ...entries[at].row, supersetGroup: label } } as OrderedEntry<E, R>;
   const rest = entries.filter((_, i) => i !== at);
   let insertAt = at;
   if (label !== null) {
     let lastMember = -1;
     rest.forEach((e, i) => {
-      if (e.kind === "exercise" && e.row.supersetGroup === label) lastMember = i;
+      if ((e.row as RunLike).supersetGroup === label) lastMember = i;
     });
     insertAt = lastMember === -1 ? at : lastMember + 1;
   }
@@ -122,4 +124,23 @@ export function nextSupersetTap(ordered: { key: string; supersetGroup: string | 
   if (current === null) return options.length ? options[0] : undefined;
   const i = options.indexOf(current);
   return i === -1 || i === options.length - 1 ? null : options[i + 1];
+}
+
+/** Labels shared by fewer than two entries (exercises and cardio together) are cleared. What gets saved: a superset of one is not a superset. */
+export function cleanLonelySupersets<E extends Row, R extends RunLike>(exerciseRows: E[], runRows: R[]): { exerciseRows: E[]; runRows: R[] } {
+  const counts = new Map<string, number>();
+  for (const r of [...exerciseRows, ...runRows]) if (r.supersetGroup) counts.set(r.supersetGroup, (counts.get(r.supersetGroup) ?? 0) + 1);
+  const lone = (g: string | null | undefined) => !!g && (counts.get(g) ?? 0) < 2;
+  return {
+    exerciseRows: exerciseRows.map((r) => (lone(r.supersetGroup) ? { ...r, supersetGroup: null } : r)),
+    runRows: runRows.map((r) => (lone(r.supersetGroup) ? { ...r, supersetGroup: null } : r)),
+  };
+}
+
+/** Takes every exercise and every cardio entry out of one superset. */
+export function ungroupAll<E extends Row, R extends RunLike>(exerciseRows: E[], runRows: R[], label: string): { exerciseRows: E[]; runRows: R[] } {
+  return {
+    exerciseRows: exerciseRows.map((r) => (r.supersetGroup === label ? { ...r, supersetGroup: null } : r)),
+    runRows: runRows.map((r) => (r.supersetGroup === label ? { ...r, supersetGroup: null } : r)),
+  };
 }

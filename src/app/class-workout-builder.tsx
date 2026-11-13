@@ -33,11 +33,13 @@ import { OptionPicker, type PickerOption } from "@/components/ui/OptionPicker";
 import { newPlanSet, PlanExerciseCard, type PlanSet, type UnitMode } from "@/components/class/PlanExerciseCard";
 import { TimeWheelPicker } from "@/components/ui/TimeWheelPicker";
 import { useProfile } from "@/lib/queries/profile";
-import { assignSuperset, nextSupersetTap, withoutLonelySupersets } from "@/lib/superset-select";
+import { assignSuperset, cleanLonelySupersets, nextSupersetTap } from "@/lib/superset-select";
+import { distinctGroups, supersetMemberLabel } from "@/lib/superset-label";
+import { DataColor } from "@/constants/theme";
 import { weightUnitFor } from "@/lib/weight-input";
 import { CARDIO_LABEL, CARDIO_TYPES, hasLevel, type CardioType } from "@/lib/cardio";
 import { formatDuration, parseDuration } from "@/lib/workout-formatters";
-import { entrySegments, insertEntry } from "@/lib/entry-order";
+import { entrySegments, insertEntry, orderedEntries } from "@/lib/entry-order";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 let keySeq = 0;
@@ -211,12 +213,13 @@ type CardioRow = {
   level: string;
   notes: string;
   order: number | null;
+  supersetGroup: string | null;
 };
 
 const CARDIO_PICKER_OPTIONS: readonly PickerOption<CardioType>[] = CARDIO_TYPES.map((t) => ({ value: t, label: CARDIO_LABEL[t] }));
 
 function newCardioRow(): CardioRow {
-  return { key: nextKey(), cardioType: null, duration: "", distance: "", distanceUnit: "km", level: "", notes: "", order: null };
+  return { key: nextKey(), cardioType: null, duration: "", distance: "", distanceUnit: "km", level: "", notes: "", order: null, supersetGroup: null };
 }
 
 function cardioRowsFromRuns(runs: ClassWorkoutRunEntry[] | undefined): CardioRow[] {
@@ -229,6 +232,7 @@ function cardioRowsFromRuns(runs: ClassWorkoutRunEntry[] | undefined): CardioRow
     level: r.level != null ? String(r.level) : "",
     notes: r.notes ?? "",
     order: r.order ?? null,
+    supersetGroup: r.supersetGroup ?? null,
   }));
 }
 
@@ -444,7 +448,7 @@ export default function ClassWorkoutBuilderScreen() {
       const res = await saveWorkout.mutateAsync({
         classId,
         notes: combinedNotes,
-        exercises: withoutLonelySupersets(template).map((r) => {
+        exercises: cleanLonelySupersets(template, cardio).exerciseRows.map((r) => {
           const first = r.setRows[0];
           const num = (v: string) => (v.trim() ? Number(v) : null);
           return {
@@ -470,6 +474,7 @@ export default function ClassWorkoutBuilderScreen() {
             distance: c.distance.trim() ? (c.distanceUnit === "m" ? Math.round((Number(c.distance) / 1000) * 1000) / 1000 : Number(c.distance)) : null,
             durationSecs: parseDuration(c.duration),
             level: c.cardioType && hasLevel(c.cardioType) && c.level.trim() ? Number(c.level) : null,
+            supersetGroup: cleanLonelySupersets(template, cardio).runRows.find((x) => x.key === c.key)?.supersetGroup ?? null,
             notes: c.notes.trim() || null,
             cardioType: c.cardioType ?? "run",
             order: c.order,
@@ -552,8 +557,8 @@ export default function ClassWorkoutBuilderScreen() {
     AsyncStorage.setItem(`class-started-${classId}`, String(now)).catch(() => {});
   }
 
-  function cycleSuperset(row: TemplateRow) {
-    const shown = entrySegments(template, cardio).flatMap((seg) => (seg.kind === "exercise" ? seg.rows : []));
+  function cycleSuperset(row: { key: string; supersetGroup?: string | null }) {
+    const shown = orderedEntries(template, cardio).map((e) => ({ key: e.row.key, supersetGroup: e.row.supersetGroup ?? null }));
     const next = nextSupersetTap(shown, row.key);
     if (next === undefined) {
       warningFeedback();
@@ -566,6 +571,16 @@ export default function ClassWorkoutBuilderScreen() {
     setTouchedKey(row.key);
     setMessage(null);
   }
+
+  // Labels, letters and colours count exercises and cardio together, in the order shown.
+  const allGroupLabels = orderedEntries(template, cardio).map((e) => e.row.supersetGroup ?? null);
+  const memberNumber = (key: string): number => {
+    const entries = orderedEntries(template, cardio);
+    const label = entries.find((e) => e.row.key === key)?.row.supersetGroup ?? null;
+    if (!label) return 0;
+    return Math.max(0, entries.filter((e) => e.row.supersetGroup === label).findIndex((e) => e.row.key === key));
+  };
+  const cardioColours = [DataColor.sessions, DataColor.load, DataColor.sleep, DataColor.hydration];
 
   const orderedExercises = entrySegments(template, cardio).flatMap((seg) => (seg.kind === "exercise" ? seg.rows : []));
   const libraryExercises = (data?.libraryExercises ?? []).map((e) => ({
@@ -624,8 +639,8 @@ export default function ClassWorkoutBuilderScreen() {
                   key={row.key}
                   row={row}
                   number={orderedExercises.findIndex((r) => r.key === row.key) + 1}
-                  allGroups={orderedExercises.map((r) => r.supersetGroup)}
-                  memberIndex={Math.max(0, orderedExercises.filter((r) => r.supersetGroup === row.supersetGroup).findIndex((r) => r.key === row.key))}
+                  allGroups={allGroupLabels}
+                  memberIndex={memberNumber(row.key)}
                   weightUnit={weightUnit}
                   onChange={(patch) => updateTemplate(row.key, patch)}
                   onCycleSuperset={() => cycleSuperset(row)}
@@ -643,6 +658,25 @@ export default function ClassWorkoutBuilderScreen() {
               )) : (() => { const c = seg.row; return (
                 <View key={c.key} style={styles.templateRow}>
                   <View style={styles.entryHeader}>
+                    <Pressable
+                      onPress={() => cycleSuperset(c)}
+                      hitSlop={6}
+                      accessibilityRole="button"
+                      accessibilityLabel={c.supersetGroup ? "Cardio in a superset. Tap to change." : "Cardio. Tap to put it in a superset."}
+                      style={[
+                        styles.cardioBadge,
+                        c.supersetGroup
+                          ? { backgroundColor: cardioColours[Math.max(0, distinctGroups(allGroupLabels).indexOf(c.supersetGroup)) % cardioColours.length], borderColor: "transparent" }
+                          : null,
+                      ]}
+                    >
+                      {c.supersetGroup ? (
+                        <Text style={styles.cardioBadgeText}>{supersetMemberLabel(c.supersetGroup, allGroupLabels, memberNumber(c.key))}</Text>
+                      ) : (
+                        <Ionicons name="pulse" size={16} color={Color.textPrimary} />
+                      )}
+                      {!c.supersetGroup ? <Ionicons name="link" size={9} color={Color.textMuted} style={{ position: "absolute", bottom: -4, right: -4 }} /> : null}
+                    </Pressable>
                     <View style={{ flex: 1 }}>
                       <OptionPicker<CardioType>
                         label={c.cardioType ? CARDIO_LABEL[c.cardioType] : "Cardio"}
@@ -1017,6 +1051,8 @@ const useStyles = makeLegacyStyles((Color) =>
     timeTitle: { fontSize: 18, fontWeight: "700", color: Color.textPrimary, textAlign: "center", marginBottom: Spacing.md },
     unitSwitch: { minWidth: 52, minHeight: 46, paddingHorizontal: 12, borderRadius: Radius.md, backgroundColor: Color.surface2, alignItems: "center", justifyContent: "center" },
     unitSwitchText: { fontSize: 15, fontWeight: "700", color: Color.textPrimary },
+    cardioBadge: { width: 34, height: 34, borderRadius: 17, backgroundColor: Color.surface2, borderWidth: 1.5, borderColor: Color.borderDefault, alignItems: "center", justifyContent: "center" },
+    cardioBadgeText: { fontSize: 14, fontWeight: "700", color: Color.bg0 },
     templateRow: {
       backgroundColor: Color.surface2,
       borderRadius: Radius.md,

@@ -54,6 +54,8 @@ export interface WorkoutRunEntry {
   level?: number | null;
   /** Place in the whole workout, exercises and cardio together. Absent on sessions saved before ordering existed. */
   order?: number | null;
+  /** Superset label shared with the exercises it was done back to back with. */
+  supersetGroup?: string | null;
 }
 
 // Mirrors WorkoutsData in the main repo's lib/workouts-data.ts.
@@ -140,6 +142,8 @@ export interface CreateWorkoutRunInput {
   level?: number | null;
   /** Place in the whole workout, exercises and cardio together. Older servers ignore it. */
   order?: number | null;
+  /** Superset label shared with the exercises it was done back to back with. Older servers ignore it. */
+  supersetGroup?: string | null;
 }
 
 export interface CreateWorkoutInput {

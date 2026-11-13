@@ -91,3 +91,35 @@ export function mergeSavedEntries<E extends { order?: number | null }, R extends
   const ru = runs.map((entry, i) => ({ kind: "run" as const, entry, order: typeof entry.order === "number" ? entry.order : 1_000_000, tie: exercises.length + i }));
   return [...ex, ...ru].sort((a, b) => a.order - b.order || a.tie - b.tie).map(({ kind, entry }) => ({ kind, entry }) as { kind: "exercise"; entry: E } | { kind: "run"; entry: R });
 }
+
+/**
+ * Like entrySegments, but a superset that has cardio in it comes out as one "mixed" block holding all of its entries in order, so it can be
+ * drawn as one grouped box with exercises and cardio side by side. Everything else is cut up the same way as entrySegments.
+ */
+export type EntryBlock<E extends OrderableRow, R extends OrderableRow> =
+  | EntrySegment<E, R>
+  | { kind: "mixed"; label: string; entries: OrderedEntry<E, R>[] };
+
+export function entryBlocks<E extends OrderableRow & { supersetGroup?: string | null }, R extends OrderableRow & { supersetGroup?: string | null }>(
+  exerciseRows: E[],
+  runRows: R[]
+): EntryBlock<E, R>[] {
+  const mixedLabels = new Set<string>();
+  for (const r of runRows) if (r.supersetGroup) mixedLabels.add(r.supersetGroup);
+  const out: EntryBlock<E, R>[] = [];
+  for (const entry of orderedEntries(exerciseRows, runRows)) {
+    const label = entry.row.supersetGroup ?? null;
+    const last = out[out.length - 1];
+    if (label && mixedLabels.has(label)) {
+      if (last && last.kind === "mixed" && last.label === label) last.entries.push(entry);
+      else out.push({ kind: "mixed", label, entries: [entry] });
+    } else if (entry.kind === "run") {
+      out.push({ kind: "run", row: entry.row });
+    } else if (last && last.kind === "exercise") {
+      last.rows.push(entry.row);
+    } else {
+      out.push({ kind: "exercise", rows: [entry.row] });
+    }
+  }
+  return out;
+}

@@ -73,6 +73,7 @@ export interface ClassWorkoutRunEntry {
   cardioType?: import("@/lib/cardio").CardioType;
   level?: number | null;
   order?: number | null;
+  supersetGroup?: string | null;
 }
 
 export interface ClassWorkoutRecord {

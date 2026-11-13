@@ -70,6 +70,8 @@ export type RunRow = {
   rpe?: string;
   /** Place in the whole workout, exercises and cardio together (see lib/entry-order.ts). Absent on older drafts. */
   order?: number | null;
+  /** "ST1", "ST2" ...: cardio done back to back with the exercises sharing this label. */
+  supersetGroup?: string | null;
   /** True once the member has picked a cardio type, so the card says "Cardio" until then and the type after. */
   typeChosen?: boolean;
 };
@@ -343,6 +345,7 @@ function normalizeRunRow(raw: Partial<RunRow> | null | undefined): RunRow {
     level: r.level ?? "",
     rpe: r.rpe ?? "",
     order: typeof r.order === "number" ? r.order : null,
+    supersetGroup: typeof r.supersetGroup === "string" ? r.supersetGroup : null,
     // A draft saved before this existed: a type other than the default run means it was picked.
     typeChosen: r.typeChosen ?? asCardioType(r.cardioType) !== "run",
   };

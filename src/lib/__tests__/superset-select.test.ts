@@ -110,3 +110,39 @@ describe("nextSupersetTap", () => {
     expect(nextSupersetTap(rows(null), "k0")).toBeUndefined();
   });
 });
+
+import { assignSuperset as assignAll, cleanLonelySupersets, ungroupAll } from "../superset-select";
+import { entryBlocks } from "../entry-order";
+
+describe("cardio in a superset", () => {
+  const ex = (key: string, order: number, group: string | null = null) => ({ key, order, supersetGroup: group });
+  const run = (key: string, order: number, group: string | null = null) => ({ key, order, supersetGroup: group });
+
+  it("puts cardio next to the superset it joins", () => {
+    const r = assignAll([ex("a", 0, "ST1"), ex("c", 2)], [run("bike", 1)], "bike", "ST1");
+    expect(r.runRows[0].supersetGroup).toBe("ST1");
+    expect(r.runRows[0].order).toBe(1);
+    const r2 = assignAll([ex("a", 0, "ST1"), ex("b", 1), ex("c", 3)], [run("bike", 2)], "bike", "ST1");
+    expect(r2.runRows[0].order).toBe(1);
+    expect(r2.exerciseRows.find((e) => e.key === "b")?.order).toBe(2);
+  });
+
+  it("clears a label held by only one entry, counting cardio", () => {
+    const r = cleanLonelySupersets([ex("a", 0, "ST1"), ex("b", 1, "ST2")], [run("bike", 2, "ST2")]);
+    expect(r.exerciseRows[0].supersetGroup).toBeNull();
+    expect(r.exerciseRows[1].supersetGroup).toBe("ST2");
+    expect(r.runRows[0].supersetGroup).toBe("ST2");
+  });
+
+  it("ungroups cardio too", () => {
+    const r = ungroupAll([ex("a", 0, "ST1")], [run("bike", 1, "ST1")], "ST1");
+    expect(r.runRows[0].supersetGroup).toBeNull();
+  });
+
+  it("draws a superset with cardio as one block, in order", () => {
+    const blocks = entryBlocks([ex("a", 0, "ST1"), ex("c", 3), ex("d", 4)], [run("bike", 1, "ST1"), run("row", 2)]);
+    expect(blocks.map((b) => b.kind)).toEqual(["mixed", "run", "exercise"]);
+    const first = blocks[0];
+    expect(first.kind === "mixed" && first.entries.map((e) => e.row.key)).toEqual(["a", "bike"]);
+  });
+});

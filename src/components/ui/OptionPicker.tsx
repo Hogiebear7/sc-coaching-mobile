@@ -1,11 +1,16 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Modal, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Radius, Spacing } from "@/constants/theme";
 import { selectionFeedback, tapFeedback } from "@/lib/haptics";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
+
+const ROW_H = 52;
+const MAX_VISIBLE = 6.5;
+const ARC_PAD = 8;
+const ARC_DEPTH = 36;
 
 export interface PickerOption<T extends string> {
   value: T;
@@ -42,6 +47,11 @@ export function OptionPicker<T extends string>({
   const Color = useLegacyColors();
   const insets = useSafeAreaInsets();
   const [open, setOpen] = useState(false);
+  const [scrollY, setScrollY] = useState(0);
+  const { height: screenH } = useWindowDimensions();
+  // About six or seven rows show at once; a longer list scrolls inside the curve.
+  const viewportHeight = Math.min(options.length, MAX_VISIBLE) * ROW_H + ARC_PAD * 2;
+  const menuHeight = Math.min(viewportHeight + 56, screenH - 120);
   const current = options.find((o) => o.value === value);
 
   function pick(next: T) {
@@ -72,30 +82,48 @@ export function OptionPicker<T extends string>({
 
       <Modal visible={open} transparent animationType="fade" statusBarTranslucent onRequestClose={() => setOpen(false)}>
         <Pressable style={styles.backdrop} onPress={() => setOpen(false)} accessibilityLabel="Close list" accessibilityRole="button">
-          <Pressable style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, Spacing.lg) }]} onPress={(e) => e.stopPropagation()}>
-            <View style={styles.grabber} />
+          <Pressable style={[styles.menu, { height: menuHeight, marginTop: Math.max(insets.top, 16) }]} onPress={(e) => e.stopPropagation()}>
             <Text style={styles.title}>{title}</Text>
-            <ScrollView style={styles.list} bounces={false} showsVerticalScrollIndicator={false}>
-              {options.map((o) => {
-                const active = o.value === value;
-                return (
-                  <Pressable
-                    key={o.value}
-                    onPress={() => pick(o.value)}
-                    accessibilityRole="radio"
-                    accessibilityState={{ selected: active }}
-                    style={({ pressed }) => [styles.row, active && styles.rowActive, pressed && styles.pressed]}
-                  >
-                    {o.color ? <View style={[styles.dot, { backgroundColor: o.color }]} /> : null}
-                    <View style={styles.rowText}>
-                      <Text style={[styles.rowLabel, active && styles.rowLabelActive]}>{o.label}</Text>
-                      {o.hint ? <Text style={styles.rowHint}>{o.hint}</Text> : null}
-                    </View>
-                    {active ? <Ionicons name="checkmark" size={22} color={Color.textPrimary} /> : null}
-                  </Pressable>
-                );
-              })}
-            </ScrollView>
+            <View style={styles.menuViewport}>
+              <ScrollView
+                style={{ height: viewportHeight }}
+                contentContainerStyle={{ paddingVertical: ARC_PAD }}
+                bounces={false}
+                showsVerticalScrollIndicator={false}
+                scrollEventThrottle={16}
+                onScroll={(e) => setScrollY(e.nativeEvent.contentOffset.y)}
+              >
+                {options.map((o, i) => {
+                  const active = o.value === value;
+                  // Rows swing out along an arc: furthest to the left at the middle of the visible area, easing back to the right at the top and bottom.
+                  const centre = scrollY + viewportHeight / 2 - ARC_PAD;
+                  const rowMid = i * ROW_H + ROW_H / 2;
+                  const t = Math.max(-1, Math.min(1, (rowMid - centre) / (viewportHeight / 2)));
+                  const shift = ARC_DEPTH * (1 - Math.cos((t * Math.PI) / 2));
+                  return (
+                    <Pressable
+                      key={o.value}
+                      onPress={() => pick(o.value)}
+                      accessibilityRole="radio"
+                      accessibilityState={{ selected: active }}
+                      style={({ pressed }) => [
+                        styles.row,
+                        { transform: [{ translateX: shift }], opacity: 1 - Math.abs(t) * 0.45 },
+                        active && styles.rowActive,
+                        pressed && styles.pressed,
+                      ]}
+                    >
+                      {o.color ? <View style={[styles.dot, { backgroundColor: o.color }]} /> : null}
+                      <View style={styles.rowText}>
+                        <Text style={[styles.rowLabel, active && styles.rowLabelActive]} numberOfLines={1}>{o.label}</Text>
+                        {o.hint ? <Text style={styles.rowHint} numberOfLines={1}>{o.hint}</Text> : null}
+                      </View>
+                      {active ? <Ionicons name="checkmark" size={20} color={Color.gold} /> : null}
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+            </View>
           </Pressable>
         </Pressable>
       </Modal>
@@ -121,26 +149,22 @@ const useStyles = makeLegacyStyles((Color) =>
     placeholder: { color: Color.textFaint, fontWeight: "400" },
     disabled: { opacity: 0.5 },
     pressed: { opacity: 0.75 },
-    backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "flex-end" },
-    sheet: {
-      backgroundColor: Color.surface1,
-      borderTopLeftRadius: 24,
-      borderTopRightRadius: 24,
-      paddingTop: Spacing.sm,
-      paddingHorizontal: Spacing.lg,
-      maxHeight: "75%",
-    },
-    grabber: { alignSelf: "center", width: 40, height: 4, borderRadius: 2, backgroundColor: Color.borderDefault, marginBottom: Spacing.md },
-    title: { fontSize: 18, fontWeight: "700", color: Color.textPrimary, marginBottom: Spacing.sm },
+    backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.72)", alignItems: "flex-end", justifyContent: "center" },
+    menu: { width: "78%", justifyContent: "center", paddingLeft: Spacing.md, overflow: "hidden" },
+    menuViewport: { flexShrink: 1 },
+    title: { fontSize: 14, fontWeight: "700", letterSpacing: 0.6, textTransform: "uppercase", color: Color.textMuted, marginBottom: Spacing.sm, paddingLeft: Spacing.md },
     list: { flexGrow: 0 },
     row: {
-      minHeight: 56,
+      height: ROW_H,
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
       gap: Spacing.md,
       paddingHorizontal: Spacing.md,
-      borderRadius: Radius.md,
+      borderTopLeftRadius: 26,
+      borderBottomLeftRadius: 26,
+      backgroundColor: Color.surface1,
+      marginBottom: 0,
     },
     rowActive: { backgroundColor: Color.surface2 },
     rowText: { flex: 1, gap: 2 },

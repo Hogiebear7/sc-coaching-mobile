@@ -42,3 +42,45 @@ describe("ungroup", () => {
     expect(summary(ungroup([ex("a", "ST1"), ex("b", "ST1"), ex("c", "ST2")], "ST1"))).toBe("a:-:undefined b:-:undefined c:ST2:undefined");
   });
 });
+
+import { assignSuperset, availableSupersetLabels, nextSupersetInCycle, withoutLonelySupersets } from "../superset-select";
+
+describe("tapping an exercise number", () => {
+  it("offers one superset per two exercises", () => {
+    expect(availableSupersetLabels(1)).toEqual([]);
+    expect(availableSupersetLabels(3)).toEqual(["ST1"]);
+    expect(availableSupersetLabels(5)).toEqual(["ST1", "ST2"]);
+  });
+
+  it("cycles none, then A, then B, then back to none", () => {
+    expect(nextSupersetInCycle(null, 5)).toBe("ST1");
+    expect(nextSupersetInCycle("ST1", 5)).toBe("ST2");
+    expect(nextSupersetInCycle("ST2", 5)).toBeNull();
+  });
+
+  it("with room for one superset, two taps take it out again", () => {
+    expect(nextSupersetInCycle(null, 3)).toBe("ST1");
+    expect(nextSupersetInCycle("ST1", 3)).toBeNull();
+  });
+
+  it("does nothing with a single exercise, and clears a label that no longer fits", () => {
+    expect(nextSupersetInCycle(null, 1)).toBeNull();
+    expect(nextSupersetInCycle("ST7", 4)).toBeNull();
+  });
+});
+
+describe("assignSuperset", () => {
+  it("brings the exercise next to the others in its superset", () => {
+    const out = assignSuperset([ex("a", "ST1"), ex("b"), ex("c"), ex("d")], [], "d", "ST1");
+    expect(summary(out.exerciseRows)).toBe("a:ST1:0 d:ST1:1 b:-:2 c:-:3");
+  });
+
+  it("leaves the order alone for the first member, and when taking an exercise out", () => {
+    expect(summary(assignSuperset([ex("a"), ex("b")], [], "b", "ST1").exerciseRows)).toBe("a:-:0 b:ST1:1");
+    expect(summary(assignSuperset([ex("a", "ST1"), ex("b", "ST1")], [], "b", null).exerciseRows)).toBe("a:ST1:0 b:-:1");
+  });
+
+  it("clears lonely labels when saving", () => {
+    expect(summary(withoutLonelySupersets([ex("a", "ST1"), ex("b", "ST2"), ex("c", "ST2")]))).toBe("a:-:undefined b:ST2:undefined c:ST2:undefined");
+  });
+});

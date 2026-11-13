@@ -8,26 +8,25 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { Collapsible } from "@/components/ui/Collapsible";
 import { DateField } from "@/components/ui/DateField";
 import { ExerciseAutocomplete } from "@/components/ui/ExerciseAutocomplete";
 import { KeyboardAwareScroll } from "@/components/ui/KeyboardAwareScroll";
 import { LogWorkoutTour } from "@/components/ui/LogWorkoutTour";
 import { PbToast } from "@/components/ui/PbToast";
 import { RestTimerBar } from "@/components/ui/RestTimerBar";
-import { SupersetChips } from "@/components/ui/SupersetChips";
 import { TextField } from "@/components/ui/TextField";
 import { TimeWheelPicker } from "@/components/ui/TimeWheelPicker";
-import { DataColor, figure, Radius, Spacing, type LegacyPalette } from "@/constants/theme";
+import { DataColor, Radius, Spacing, type LegacyPalette } from "@/constants/theme";
 import { ExerciseDemoMedia } from "@/components/ui/ExerciseDemoMedia";
 import { OptionPicker, type PickerOption } from "@/components/ui/OptionPicker";
 import { entrySegments, insertEntry, orderToSave } from "@/lib/entry-order";
 import { distinctGroups, supersetLetter, supersetMemberLabel } from "@/lib/superset-label";
-import { groupSelected, nextSupersetLabel, ungroup } from "@/lib/superset-select";
+import { assignSuperset, nextSupersetInCycle, ungroup, withoutLonelySupersets } from "@/lib/superset-select";
+import { applyWeightFrom, normalizeWeights, sanitizeWeight, stripWeightUnit, weightUnitFor, withWeightUnit } from "@/lib/weight-input";
 import { SupersetRounds } from "@/components/workout/SupersetRounds";
 import { addRound, canShowRounds, removeLastRound, toggleRound } from "@/lib/superset-rounds";
 import { CARDIO_LABEL, CARDIO_TYPES, hasLevel, hasPace, parseLevel, type CardioType } from "@/lib/cardio";
-import { selectionFeedback, successFeedback, tapFeedback } from "@/lib/haptics";
+import { selectionFeedback, successFeedback, tapFeedback, warningFeedback } from "@/lib/haptics";
 import { ApiError } from "@/lib/api-client";
 import { useAdvanceProgram, useMyProgram, type PrescribedExercise } from "@/lib/queries/programs";
 import {
@@ -51,7 +50,6 @@ import {
   type WorkoutSetType,
 } from "@/lib/queries/workouts";
 import {
-  formatAsKg,
   formatAsMmSs,
   formatDuration,
   formatExerciseLoad,
@@ -316,6 +314,66 @@ function ExerciseThumbnail({ slug, onPress, expanded }: { slug: string | undefin
     >
       {image}
     </Pressable>
+  );
+}
+
+// "RIR: 3" as a small circle at the bottom of the exercise. Tap it and the choices open; pick one and it closes again.
+function RirControl({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const styles = useStyles();
+  const Color = useLegacyColors();
+  const [open, setOpen] = useState(false);
+  const current = value.trim();
+  if (open) {
+    return (
+      <View style={styles.rirOpen}>
+        <RirPicker
+          value={value}
+          onChange={(v) => {
+            onChange(v);
+            setOpen(false);
+          }}
+        />
+      </View>
+    );
+  }
+  const c = current ? rirColor(current, Color) : Color.borderDefault;
+  return (
+    <Pressable
+      onPress={() => {
+        selectionFeedback();
+        setOpen(true);
+      }}
+      accessibilityRole="button"
+      accessibilityLabel={current ? `Reps in reserve ${current === "6" ? "6 or more" : current}. Tap to change.` : "Reps in reserve. Tap to set."}
+      style={[styles.rirCircle, { borderColor: c }, current ? { backgroundColor: c } : null]}
+    >
+      <Text style={[styles.rirCircleText, current ? { color: Color.bg0 } : null]}>{current ? `RIR: ${current === "6" ? "6+" : current}` : "RIR"}</Text>
+    </Pressable>
+  );
+}
+
+// A note on the exercise: a small "Note" button until there is something to say.
+function NoteControl({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const styles = useStyles();
+  const Color = useLegacyColors();
+  const [open, setOpen] = useState(false);
+  if (!open && !value.trim()) {
+    return (
+      <Pressable onPress={() => setOpen(true)} accessibilityRole="button" accessibilityLabel="Add a note" hitSlop={6} style={styles.noteButton}>
+        <Ionicons name="create-outline" size={14} color={Color.textMuted} />
+        <Text style={styles.noteButtonText}>Note</Text>
+      </Pressable>
+    );
+  }
+  return (
+    <TextInput
+      value={value}
+      onChangeText={onChange}
+      autoFocus={open && !value.trim()}
+      placeholder="e.g. Felt strong, could go heavier"
+      placeholderTextColor={Color.textFaint}
+      style={styles.smallInput}
+    />
   );
 }
 
@@ -1068,27 +1126,53 @@ export default function LogWorkoutScreen() {
     replaceGroupRows(label, removeLastRound(exerciseRows.filter((r) => r.supersetGroup === label)));
   }
 
-  // "Superset" button: tick two or more exercises, then Make superset. They are brought together and labelled Superset A, B ...
-  const [selectMode, setSelectMode] = useState(false);
-  const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
-
-  function toggleSelectMode() {
-    tapFeedback();
-    setSelectMode((on) => !on);
-    setSelectedKeys([]);
-  }
-
-  function toggleSelected(key: string) {
+  // Tap an exercise's number to cycle it through the supersets (Superset A, B ... as far as the exercises allow), then back to none.
+  function cycleSuperset(row: ExerciseRow) {
+    const next = nextSupersetInCycle(row.supersetGroup, exerciseRows.length);
+    if (next === null && row.supersetGroup === null) {
+      // Nothing to join yet: a superset needs at least two exercises.
+      warningFeedback();
+      return;
+    }
     selectionFeedback();
-    setSelectedKeys((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]));
+    update(assignSuperset(exerciseRows, runRows, row.key, next));
   }
 
-  function makeSuperset() {
-    if (selectedKeys.length < 2) return;
-    successFeedback();
-    update(groupSelected(exerciseRows, runRows, new Set(selectedKeys), nextSupersetLabel(exerciseRows.map((r) => r.supersetGroup))));
-    setSelectMode(false);
-    setSelectedKeys([]);
+  // kg, time and band are different kinds of value, so changing between them clears the sets' values instead of carrying "1:30" into a weight.
+  function changeUnitMode(row: ExerciseRow, mode: ExerciseRow["unitMode"]) {
+    if (row.unitMode === mode) return;
+    updateRow(row.key, { unitMode: mode, setRows: row.setRows.map((sr) => ({ ...sr, weight: "" })) });
+  }
+
+  // Typing a weight: numbers only, carried down to the sets below this one, never the ones above. The unit is added when the field is left.
+  const [focusedWeightKey, setFocusedWeightKey] = useState<string | null>(null);
+  const weightUnit = weightUnitFor(profile?.preferredUnits);
+
+  function typeWeight(rowKey: string, setKey: string, text: string) {
+    lastTouchedKey.current = rowKey;
+    const value = sanitizeWeight(text);
+    update({
+      exerciseRows: exerciseRows.map((r) => (r.key === rowKey ? { ...r, setRows: applyWeightFrom(r.setRows, setKey, value) } : r)),
+    });
+  }
+
+  function finishWeight(rowKey: string) {
+    setFocusedWeightKey(null);
+    update({
+      exerciseRows: exerciseRows.map((r) => (r.key === rowKey && r.unitMode === "weight" ? { ...r, setRows: normalizeWeights(r.setRows, weightUnit) } : r)),
+    });
+  }
+
+  // A superset with only one exercise left in it is not saved as a superset.
+  function savedGroup(rowKey: string): string | null {
+    const kept = withoutLonelySupersets(exerciseRows);
+    return kept.find((r) => r.key === rowKey)?.supersetGroup ?? null;
+  }
+
+  // Tap "Reps" to split it into right and left boxes (and back).
+  function toggleSplitReps(row: ExerciseRow) {
+    selectionFeedback();
+    updateRow(row.key, { perSide: !row.perSide });
   }
 
   function ungroupSuperset(label: string) {
@@ -1249,7 +1333,7 @@ export default function LogWorkoutScreen() {
         targetWeight: firstFilled?.weight.trim() || null,
         setType: r.defaultSetType === "standard" ? null : r.defaultSetType,
         sets: null,
-        supersetGroup: r.supersetGroup,
+        supersetGroup: savedGroup(r.key),
         notes: r.notes.trim() || null,
       };
     });
@@ -1331,7 +1415,7 @@ export default function LogWorkoutScreen() {
             repsLeft: sr.repsLeft?.trim() ? parseInt(sr.repsLeft, 10) : null,
           })),
           setType: first && first.setType !== "standard" ? first.setType : null,
-          supersetGroup: r.supersetGroup,
+          supersetGroup: savedGroup(r.key),
           perSide: r.perSide,
           order: orderToSave(r),
           notes: r.notes.trim() || null,
@@ -1798,20 +1882,11 @@ export default function LogWorkoutScreen() {
                 <Text style={[styles.selectToggleText, roundsView && styles.selectToggleTextActive]}>Rounds</Text>
               </Pressable>
             ) : null}
-            {exerciseRows.length >= 2 ? (
-              <Pressable
-                onPress={toggleSelectMode}
-                accessibilityRole="button"
-                accessibilityState={{ selected: selectMode }}
-                accessibilityLabel={selectMode ? "Stop choosing exercises for a superset" : "Choose exercises for a superset"}
-                style={[styles.selectToggle, selectMode && styles.selectToggleActive]}
-              >
-                <Text style={[styles.selectToggleText, selectMode && styles.selectToggleTextActive]}>{selectMode ? "Cancel" : "Superset"}</Text>
-              </Pressable>
-            ) : null}
             </View>
           </View>
-          {selectMode ? <Text style={styles.formatHint}>Tick two or more exercises, then tap Make superset.</Text> : null}
+          {exerciseRows.length >= 2 && !exerciseRows.some((r) => r.supersetGroup) ? (
+            <Text style={styles.formatHint}>Tip: tap an exercise&apos;s number to make a superset.</Text>
+          ) : null}
 
           {exerciseRows.length === 0 && runRows.length === 0 ? (
             <Text style={styles.emptyHint}>No entries yet. Use the buttons above to log exercises or a run.</Text>
@@ -1833,23 +1908,29 @@ export default function LogWorkoutScreen() {
             >
               <View style={styles.entryHeader}>
                 <View style={styles.entryHeaderTitle}>
-                  {selectMode ? (
-                    <Pressable
-                      onPress={() => toggleSelected(row.key)}
-                      hitSlop={6}
-                      accessibilityRole="checkbox"
-                      accessibilityState={{ checked: selectedKeys.includes(row.key) }}
-                      accessibilityLabel={`Select ${row.name.trim() || "exercise"}`}
-                      style={[styles.selectBox, selectedKeys.includes(row.key) && styles.selectBoxOn]}
-                    >
-                      {selectedKeys.includes(row.key) ? <Ionicons name="checkmark" size={16} color={Color.goldForeground} /> : null}
-                    </Pressable>
-                  ) : null}
-                  <View style={[styles.indexBadge, allComplete && styles.indexBadgeDone]}>
-                    <Text style={[styles.indexBadgeText, allComplete && { color: Color.bg0 }]}>
-                      {isGrouped && row.supersetGroup ? supersetMemberLabel(row.supersetGroup, exerciseRows.map((r) => r.supersetGroup), memberIdx) : idx + 1}
+                  <Pressable
+                    onPress={() => cycleSuperset(row)}
+                    hitSlop={6}
+                    accessibilityRole="button"
+                    accessibilityLabel={
+                      row.supersetGroup
+                        ? `Exercise ${idx + 1}, in superset ${supersetLetter(row.supersetGroup, exerciseRows.map((r) => r.supersetGroup))}. Tap to change.`
+                        : `Exercise ${idx + 1}. Tap to put it in a superset.`
+                    }
+                    style={[
+                      styles.indexBadge,
+                      styles.indexBadgeButton,
+                      allComplete && styles.indexBadgeDone,
+                      row.supersetGroup
+                        ? { backgroundColor: supersetColor(row.supersetGroup, exerciseRows.map((r) => r.supersetGroup)), borderColor: "transparent" }
+                        : null,
+                    ]}
+                  >
+                    <Text style={[styles.indexBadgeText, (allComplete || row.supersetGroup) && { color: Color.bg0 }]}>
+                      {row.supersetGroup ? supersetMemberLabel(row.supersetGroup, exerciseRows.map((r) => r.supersetGroup), memberIdx) : idx + 1}
                     </Text>
-                  </View>
+                    {!row.supersetGroup ? <Ionicons name="link" size={9} color={Color.textMuted} style={styles.indexBadgeIcon} /> : null}
+                  </Pressable>
                   <Text style={styles.entryLabel} numberOfLines={1}>
                     {row.name.trim() || "New exercise"}
                   </Text>
@@ -1921,13 +2002,13 @@ export default function LogWorkoutScreen() {
               <View style={styles.unitToggleRow}>
                 <Text style={styles.fieldLabel}>{unitModeLabel(row.unitMode)}</Text>
                 <View style={{ flexDirection: "row", gap: 4 }}>
-                  <Pressable onPress={() => { selectionFeedback(); updateRow(row.key, { unitMode: "weight" }); }} style={[styles.unitChip, row.unitMode === "weight" && styles.unitChipActive]}>
-                    <Text style={[styles.unitChipText, row.unitMode === "weight" && styles.unitChipTextActive]}>kg</Text>
+                  <Pressable onPress={() => { selectionFeedback(); changeUnitMode(row, "weight"); }} style={[styles.unitChip, row.unitMode === "weight" && styles.unitChipActive]}>
+                    <Text style={[styles.unitChipText, row.unitMode === "weight" && styles.unitChipTextActive]}>{weightUnit}</Text>
                   </Pressable>
-                  <Pressable onPress={() => { selectionFeedback(); updateRow(row.key, { unitMode: "time" }); }} style={[styles.unitChip, row.unitMode === "time" && styles.unitChipActive]}>
+                  <Pressable onPress={() => { selectionFeedback(); changeUnitMode(row, "time"); }} style={[styles.unitChip, row.unitMode === "time" && styles.unitChipActive]}>
                     <Text style={[styles.unitChipText, row.unitMode === "time" && styles.unitChipTextActive]}>time</Text>
                   </Pressable>
-                  <Pressable onPress={() => { selectionFeedback(); updateRow(row.key, { unitMode: "band" }); }} style={[styles.unitChip, row.unitMode === "band" && styles.unitChipActive]}>
+                  <Pressable onPress={() => { selectionFeedback(); changeUnitMode(row, "band"); }} style={[styles.unitChip, row.unitMode === "band" && styles.unitChipActive]}>
                     <Text style={[styles.unitChipText, row.unitMode === "band" && styles.unitChipTextActive]}>band</Text>
                   </Pressable>
                 </View>
@@ -1937,9 +2018,20 @@ export default function LogWorkoutScreen() {
                 <Text style={[styles.setColumnLabel, { width: 36, textAlign: "center" }]}>Set</Text>
                 <Text style={[styles.setColumnLabel, { width: 66 }]}>Previous</Text>
                 <Text style={[styles.setColumnLabel, { flex: 1, textAlign: "center" }]}>{unitModeColumnLabel(row.unitMode)}</Text>
-                <Text style={[styles.setColumnLabel, { flex: 1, textAlign: "center" }]}>
-                  {row.unitMode === "time" ? "" : row.perSide ? "Reps (R/L)" : "Reps"}
-                </Text>
+                {row.unitMode === "time" ? (
+                  <Text style={[styles.setColumnLabel, { flex: 1, textAlign: "center" }]} />
+                ) : (
+                  <Pressable
+                    onPress={() => toggleSplitReps(row)}
+                    hitSlop={8}
+                    accessibilityRole="button"
+                    accessibilityLabel={row.perSide ? "Reps are split into right and left. Tap to use one box." : "Reps. Tap to split into right and left."}
+                    style={styles.repsHeaderButton}
+                  >
+                    <Text style={styles.repsHeaderText}>{row.perSide ? "Reps R | L" : "Reps"}</Text>
+                    <Ionicons name={row.perSide ? "remove-circle-outline" : "git-compare-outline"} size={14} color={Color.gold} />
+                  </Pressable>
+                )}
                 <View style={{ width: 40 }} />
               </View>
 
@@ -1975,7 +2067,7 @@ export default function LogWorkoutScreen() {
                       <Pressable
                         onPress={() => {
                           Keyboard.dismiss();
-                          setTimePickerTarget({ rowKey: row.key, setKey: set.key, secs: parseDuration(set.weight) ?? 90 });
+                          setTimePickerTarget({ rowKey: row.key, setKey: set.key, secs: parseDuration(set.weight) ?? parseDuration(lastSet?.weight ?? "") ?? 90 });
                         }}
                         style={[styles.setInput, set.completed && styles.setInputCompleted, { flex: 1, justifyContent: "center" }]}
                       >
@@ -1984,18 +2076,28 @@ export default function LogWorkoutScreen() {
                         </Text>
                       </Pressable>
                     ) : (
-                      <TextInput
-                        value={set.weight}
-                        onChangeText={(v) => updateFirstSetField(row.key, set.key, "weight", v)}
-                        onBlur={() => {
-                          if (row.unitMode === "band") return;
-                          const formatted = formatAsKg(set.weight);
-                          if (formatted !== set.weight) updateSetRow(row.key, set.key, { weight: formatted });
-                        }}
-                        placeholder={lastSet?.weight ?? (row.unitMode === "band" ? "e.g. Purple" : "60")}
-                        placeholderTextColor={Color.textFaint}
-                        style={[styles.setInput, set.completed && styles.setInputCompleted, { flex: 1 }]}
-                      />
+                      row.unitMode === "weight" ? (
+                        <TextInput
+                          value={focusedWeightKey === set.key ? stripWeightUnit(set.weight) : withWeightUnit(set.weight, weightUnit)}
+                          onChangeText={(v) => typeWeight(row.key, set.key, v)}
+                          onFocus={() => setFocusedWeightKey(set.key)}
+                          onBlur={() => finishWeight(row.key)}
+                          keyboardType="decimal-pad"
+                          selectTextOnFocus
+                          placeholder={lastSet?.weight ? stripWeightUnit(lastSet.weight) : "60"}
+                          placeholderTextColor={Color.textFaint}
+                          accessibilityLabel={`Set ${setIdx + 1} weight in ${weightUnit}`}
+                          style={[styles.setInput, set.completed && styles.setInputCompleted, { flex: 1 }]}
+                        />
+                      ) : (
+                        <TextInput
+                          value={set.weight}
+                          onChangeText={(v) => updateFirstSetField(row.key, set.key, "weight", v)}
+                          placeholder="e.g. Purple"
+                          placeholderTextColor={Color.textFaint}
+                          style={[styles.setInput, set.completed && styles.setInputCompleted, { flex: 1 }]}
+                        />
+                      )
                     )}
                     {row.unitMode === "time" ? (
                       // A timed hold/exercise has no rep count — this set's
@@ -2094,57 +2196,8 @@ export default function LogWorkoutScreen() {
                 ) : null}
               </View>
 
-              <Collapsible
-                style={styles.moreOptions}
-                title="More options"
-                summary={
-                  [
-                    row.supersetGroup ? `Superset ${row.supersetGroup}` : null,
-                    row.rir.trim() ? `RIR ${row.rir.trim()}` : null,
-                    row.perSide ? "Unilateral" : null,
-                    row.notes.trim() ? "Note added" : null,
-                  ]
-                    .filter(Boolean)
-                    .join(" · ") || undefined
-                }
-                defaultExpanded={Boolean(
-                  row.supersetGroup || row.rir.trim() || row.perSide || row.notes.trim() || row.defaultSetType !== "standard"
-                )}
-              >
-                <Text style={styles.fieldLabel}>Superset (opt.)</Text>
-                <SupersetChips
-                  value={row.supersetGroup}
-                  allGroups={exerciseRows.map((r) => r.supersetGroup)}
-                  onChange={(v) => updateRow(row.key, { supersetGroup: v })}
-                />
-
-                <View style={{ marginTop: Spacing.sm, marginBottom: Spacing.sm }}>
-                  <RirPicker value={row.rir} onChange={(v) => updateRow(row.key, { rir: v })} />
-                </View>
-
-                <Pressable
-                  onPress={() => updateRow(row.key, { perSide: !row.perSide })}
-                  style={styles.supersetRow}
-                >
-                  <Ionicons
-                    name={row.perSide ? "checkbox" : "square-outline"}
-                    size={16}
-                    color={row.perSide ? Color.gold : Color.textFaint}
-                  />
-                  <Text style={[styles.supersetText, row.perSide && styles.supersetTextActive]}>
-                    Reps are per arm/leg (unilateral)
-                  </Text>
-                </Pressable>
-
-                <Text style={[styles.fieldLabel, { marginTop: Spacing.sm }]}>Notes (optional)</Text>
-                <TextInput
-                  value={row.notes}
-                  onChangeText={(v) => updateRow(row.key, { notes: v })}
-                  placeholder="e.g. Felt strong, could go heavier"
-                  placeholderTextColor={Color.textFaint}
-                  style={styles.smallInput}
-                />
-              </Collapsible>
+              <RirControl value={row.rir} onChange={(v) => updateRow(row.key, { rir: v })} />
+              <NoteControl value={row.notes} onChange={(v) => updateRow(row.key, { notes: v })} />
             </Card>
             );
             });
@@ -2293,15 +2346,6 @@ export default function LogWorkoutScreen() {
               />
             </Card>
           ); })())}
-
-          {selectMode ? (
-            <Button
-              title={selectedKeys.length < 2 ? "Make superset" : `Make superset (${selectedKeys.length})`}
-              onPress={makeSuperset}
-              disabled={selectedKeys.length < 2}
-              style={{ marginTop: Spacing.sm }}
-            />
-          ) : null}
 
           <View ref={addButtonsRef} style={styles.addButtonsRow}>
             <Pressable onPress={handleAddExercise} style={styles.addChip} accessibilityRole="button">
@@ -2708,6 +2752,15 @@ const useStyles = makeLegacyStyles((Color) =>
     rirDotText: { fontSize: 14, fontWeight: "700", color: Color.textPrimary },
     rirScale: { flexDirection: "row", justifyContent: "space-between", marginTop: 4 },
     rirScaleText: { fontSize: 12, color: Color.textMuted },
+    indexBadgeButton: { borderWidth: 1.5, borderColor: Color.borderDefault },
+    indexBadgeIcon: { position: "absolute", bottom: -4, right: -4 },
+    repsHeaderButton: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 4, minHeight: 32 },
+    repsHeaderText: { fontSize: 13, fontWeight: "700", color: Color.gold, textDecorationLine: "underline" },
+    rirCircle: { alignSelf: "flex-start", minHeight: 40, minWidth: 40, paddingHorizontal: 12, borderRadius: 20, borderWidth: 2, alignItems: "center", justifyContent: "center", marginTop: 8 },
+    rirCircleText: { fontSize: 13, fontWeight: "700", color: Color.textSecondary },
+    rirOpen: { marginTop: 8 },
+    noteButton: { alignSelf: "flex-start", flexDirection: "row", alignItems: "center", gap: 4, minHeight: 36, marginTop: 4 },
+    noteButtonText: { fontSize: 13, fontWeight: "600", color: Color.textMuted },
   })
 );
 

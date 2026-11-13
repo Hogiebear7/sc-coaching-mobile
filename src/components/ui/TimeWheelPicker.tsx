@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { Spacing } from "@/constants/theme";
 import { tapFeedback } from "@/lib/haptics";
@@ -30,6 +30,11 @@ function WheelColumn({
   const suppressNextSync = useRef(false);
   const settleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const values = Array.from({ length: max + 1 }, (_, i) => i);
+  // The settle timer fires later, so it must read the newest value and callback rather than the ones from the render that started it.
+  const latest = useRef({ value, onChange });
+  useEffect(() => {
+    latest.current = { value, onChange };
+  });
 
   // Keep the scroll position synced when `value` changes from outside this
   // column (a reset, or the parent clamping an out-of-range value) — but
@@ -43,6 +48,9 @@ function WheelColumn({
     scrollRef.current?.scrollTo({ y: value * ITEM_HEIGHT, animated: false });
   }, [value]);
 
+  // Opening inside a modal, the first scrollTo can run before the list has a size: place it again once it has laid out.
+  const placeAtValue = () => scrollRef.current?.scrollTo({ y: latest.current.value * ITEM_HEIGHT, animated: false });
+
   useEffect(() => {
     return () => {
       if (settleTimer.current) clearTimeout(settleTimer.current);
@@ -55,10 +63,10 @@ function WheelColumn({
   function commitFromOffset(offsetY: number) {
     const index = Math.round(offsetY / ITEM_HEIGHT);
     const clamped = Math.max(0, Math.min(max, index));
-    if (clamped !== value) {
+    if (clamped !== latest.current.value) {
       suppressNextSync.current = true;
       tapFeedback();
-      onChange(clamped);
+      latest.current.onChange(clamped);
     }
   }
 
@@ -93,6 +101,7 @@ function WheelColumn({
             settleTimer.current = setTimeout(() => commitFromOffset(y), 120);
           }}
           scrollEventThrottle={16}
+          onContentSizeChange={placeAtValue}
         >
           {values.map((v) => (
             <View key={v} style={styles.row}>
@@ -133,7 +142,11 @@ export function TimeWheelPicker({
   const m = Math.floor((totalSecs % 3600) / 60);
   const s = totalSecs % 60;
 
+  const maxTotal = (showHours ? maxHours * 3600 : 0) + 59 * 60 + 59;
+  const nudge = (delta: number) => onChange(Math.max(0, Math.min(maxTotal, totalSecs + delta)));
+
   return (
+    <View>
     <View style={styles.wrap}>
       {showHours ? (
         <>
@@ -145,11 +158,31 @@ export function TimeWheelPicker({
       <Text style={styles.colon}>:</Text>
       <WheelColumn value={s} max={59} label="sec" onChange={(v) => onChange(h * 3600 + m * 60 + v)} />
     </View>
+    <View style={styles.nudgeRow}>
+      {[-60, -15, 15, 60].map((d) => (
+        <Pressable
+          key={d}
+          onPress={() => {
+            tapFeedback();
+            nudge(d);
+          }}
+          accessibilityRole="button"
+          accessibilityLabel={`${d < 0 ? "Take off" : "Add"} ${Math.abs(d)} seconds`}
+          style={styles.nudge}
+        >
+          <Text style={styles.nudgeText}>{d < 0 ? "−" : "+"}{Math.abs(d) === 60 ? "1m" : "15s"}</Text>
+        </Pressable>
+      ))}
+    </View>
+    </View>
   );
 }
 
 const useStyles = makeLegacyStyles((Color) =>
   StyleSheet.create({
+    nudgeRow: { flexDirection: "row", justifyContent: "center", gap: 8, marginTop: Spacing.md },
+    nudge: { minWidth: 56, minHeight: 40, paddingHorizontal: 10, borderRadius: 20, alignItems: "center", justifyContent: "center", backgroundColor: Color.surface2 },
+    nudgeText: { fontSize: 14, fontWeight: "700", color: Color.textPrimary },
     wrap: { flexDirection: "row", alignItems: "flex-start", justifyContent: "center" },
     column: { alignItems: "center", width: 64 },
     viewport: { height: ITEM_HEIGHT * (PADDING_ROWS * 2 + 1), width: "100%", overflow: "hidden" },

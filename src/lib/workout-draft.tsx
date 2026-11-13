@@ -31,6 +31,8 @@ export type SetRow = {
   repsLeft: string;
   setType: WorkoutSetType;
   completed: boolean;
+  /** What was typed under each unit (kg, time, band), so switching units and back never loses it. `weight` holds the current unit's value. */
+  modeValues?: Partial<Record<"weight" | "time" | "band", string>>;
 };
 
 export type ExerciseRow = {
@@ -305,6 +307,7 @@ function normalizeSetRow(raw: Partial<SetRow> | null | undefined): SetRow {
     repsLeft: r.repsLeft ?? "",
     setType: r.setType ?? "standard",
     completed: r.completed ?? false,
+    modeValues: r.modeValues && typeof r.modeValues === "object" ? r.modeValues : undefined,
   };
 }
 

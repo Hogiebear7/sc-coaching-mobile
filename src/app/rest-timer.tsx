@@ -244,7 +244,7 @@ export default function RestTimerScreen() {
             <Text style={styles.getReadyLabel}>Get ready</Text>
             <Text style={styles.getReadyNumber}>{preCountdownRemaining}</Text>
             <Text style={styles.getReadyHint}>
-              {timer.state.label ? `${timer.state.label} starts in a moment` : "Your rest starts in a moment"}
+              {getReadyParam === "1" ? (timer.state.label ? `${timer.state.label}: get ready` : "Get ready") : timer.state.label ? `${timer.state.label} starts in a moment` : "Your rest starts in a moment"}
             </Text>
           </View>
         ) : isStopwatch ? (

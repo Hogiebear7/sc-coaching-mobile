@@ -353,6 +353,14 @@ function RirControl({ value, onChange }: { value: string; onChange: (v: string) 
   );
 }
 
+// Easy to hard: green, through gold and orange, to red.
+function rpeColor(n: number): string {
+  if (n <= 3) return "#5FC08A";
+  if (n <= 6) return "#E5B84B";
+  if (n <= 8) return "#F08A3C";
+  return "#E5594F";
+}
+
 // "RPE: 7" for cardio: how hard it felt out of 10. Same idea as the RIR circle: tap to open the numbers, pick one and it closes.
 function RpeControl({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   const styles = useStyles();
@@ -363,23 +371,29 @@ function RpeControl({ value, onChange }: { value: string; onChange: (v: string) 
     return (
       <View style={styles.rirOpen}>
         <Text style={styles.fieldLabel}>How hard did it feel? (1 easy, 10 flat out)</Text>
-        <View style={styles.rirRow} accessibilityRole="radiogroup">
-          {["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"].map((o) => (
-            <Pressable
-              key={o}
-              onPress={() => {
-                selectionFeedback();
-                onChange(current === o ? "" : o);
-                setOpen(false);
-              }}
-              accessibilityRole="radio"
-              accessibilityState={{ selected: current === o }}
-              style={[styles.rpeChip, current === o && { backgroundColor: Color.gold, borderColor: Color.gold }]}
-            >
-              <Text style={[styles.rirCircleText, current === o && { color: Color.bg0 }]}>{o}</Text>
-            </Pressable>
-          ))}
-        </View>
+        {[["1", "2", "3", "4", "5"], ["6", "7", "8", "9", "10"]].map((line, li) => (
+          <View key={li} style={styles.rpeRow} accessibilityRole="radiogroup">
+            {line.map((o) => {
+              const c = rpeColor(Number(o));
+              const on = current === o;
+              return (
+                <Pressable
+                  key={o}
+                  onPress={() => {
+                    selectionFeedback();
+                    onChange(on ? "" : o);
+                    setOpen(false);
+                  }}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: on }}
+                  style={[styles.rpeChip, { borderColor: c }, on && { backgroundColor: c }]}
+                >
+                  <Text style={[styles.rirCircleText, on && { color: Color.bg0 }]}>{o}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        ))}
       </View>
     );
   }
@@ -391,7 +405,7 @@ function RpeControl({ value, onChange }: { value: string; onChange: (v: string) 
       }}
       accessibilityRole="button"
       accessibilityLabel={current ? `Effort ${current} out of 10. Tap to change.` : "Effort out of 10. Tap to set."}
-      style={[styles.rirCircle, { borderColor: current ? Color.gold : Color.borderDefault }, current ? { backgroundColor: Color.gold } : null]}
+      style={[styles.rirCircle, { borderColor: current ? rpeColor(Number(current)) : Color.borderDefault }, current ? { backgroundColor: rpeColor(Number(current)) } : null]}
     >
       <Text style={[styles.rirCircleText, current ? { color: Color.bg0 } : null]}>{current ? `RPE: ${current}` : "RPE"}</Text>
     </Pressable>
@@ -1184,10 +1198,16 @@ export default function LogWorkoutScreen() {
     update(assignSuperset(exerciseRows, runRows, row.key, next));
   }
 
-  // kg, time and band are different kinds of value, so changing between them clears the sets' values instead of carrying "1:30" into a weight.
+  // kg, time and band are different kinds of value: each keeps its own typed values per set, so switching away and back loses nothing and a time never shows up as a weight.
   function changeUnitMode(row: ExerciseRow, mode: ExerciseRow["unitMode"]) {
     if (row.unitMode === mode) return;
-    updateRow(row.key, { unitMode: mode, setRows: row.setRows.map((sr) => ({ ...sr, weight: "" })) });
+    updateRow(row.key, {
+      unitMode: mode,
+      setRows: row.setRows.map((sr) => {
+        const saved = { ...(sr.modeValues ?? {}), [row.unitMode]: sr.weight };
+        return { ...sr, modeValues: saved, weight: saved[mode] ?? "" };
+      }),
+    });
   }
 
   // Typing a weight: numbers only, carried down to the sets below this one, never the ones above. The unit is added when the field is left.
@@ -1290,6 +1310,15 @@ export default function LogWorkoutScreen() {
       }),
     });
   }
+  // Sets one field on one set only (a timer result belongs to the set it was started from, not the sets below it).
+  function setOneSetField(rowKey: string, setKey: string, field: "weight" | "reps", value: string) {
+    update({
+      exerciseRows: exerciseRows.map((r) =>
+        r.key === rowKey ? { ...r, setRows: r.setRows.map((sr) => (sr.key === setKey ? { ...sr, [field]: value } : sr)) } : r
+      ),
+    });
+  }
+
   // Back from the timer screen with a finished time to add to the set it was started from.
   useFocusEffect(
     useCallback(() => {
@@ -1297,7 +1326,7 @@ export default function LogWorkoutScreen() {
       if (!r) return;
       const m = Math.floor(r.secs / 60);
       const sec = r.secs % 60;
-      updateFirstSetField(r.rowKey, r.setKey, "weight", `${m}:${String(sec).padStart(2, "0")}`);
+      setOneSetField(r.rowKey, r.setKey, "weight", `${m}:${String(sec).padStart(2, "0")}`);
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [exerciseRows])
   );
@@ -2812,7 +2841,8 @@ const useStyles = makeLegacyStyles((Color) =>
     repsHeaderText: { fontSize: 13, fontWeight: "700", color: Color.gold, textDecorationLine: "underline" },
     rirCircle: { alignSelf: "flex-start", minHeight: 40, minWidth: 40, paddingHorizontal: 12, borderRadius: 20, borderWidth: 2, alignItems: "center", justifyContent: "center", marginTop: 8 },
     rirCircleText: { fontSize: 13, fontWeight: "700", color: Color.textSecondary },
-    rpeChip: { minWidth: 44, minHeight: 44, borderRadius: 22, borderWidth: 2, borderColor: Color.borderDefault, alignItems: "center", justifyContent: "center" },
+    rpeRow: { flexDirection: "row", gap: 8, marginTop: 8 },
+    rpeChip: { flex: 1, minHeight: 46, borderRadius: 22, borderWidth: 2, borderColor: Color.borderDefault, alignItems: "center", justifyContent: "center" },
     rirOpen: { marginTop: 8 },
     noteButton: { alignSelf: "flex-start", flexDirection: "row", alignItems: "center", gap: 4, minHeight: 36, marginTop: 4 },
     noteButtonText: { fontSize: 13, fontWeight: "600", color: Color.textMuted },

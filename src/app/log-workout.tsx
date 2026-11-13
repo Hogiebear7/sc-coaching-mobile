@@ -1,3 +1,4 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -23,6 +24,8 @@ import { OptionPicker, type PickerOption } from "@/components/ui/OptionPicker";
 import { entrySegments, insertEntry, orderToSave } from "@/lib/entry-order";
 import { distinctGroups, supersetLetter, supersetMemberLabel } from "@/lib/superset-label";
 import { groupSelected, nextSupersetLabel, ungroup } from "@/lib/superset-select";
+import { SupersetRounds } from "@/components/workout/SupersetRounds";
+import { addRound, canShowRounds, removeLastRound, toggleRound } from "@/lib/superset-rounds";
 import { CARDIO_LABEL, CARDIO_TYPES, hasLevel, hasPace, parseLevel, type CardioType } from "@/lib/cardio";
 import { selectionFeedback, successFeedback, tapFeedback } from "@/lib/haptics";
 import { ApiError } from "@/lib/api-client";
@@ -1019,6 +1022,52 @@ export default function LogWorkoutScreen() {
     setTimeout(scrollToAddButtons, 50);
   }
 
+  // Rounds view: draws each superset as Round 1, Round 2 ... with a tick per round. Off by default (the normal view is unchanged); remembered.
+  const ROUNDS_VIEW_KEY = "superset-rounds-view-v1";
+  const [roundsView, setRoundsView] = useState(false);
+  useEffect(() => {
+    AsyncStorage.getItem(ROUNDS_VIEW_KEY)
+      .then((v) => setRoundsView(v === "1"))
+      .catch(() => {});
+  }, []);
+
+  function toggleRoundsView() {
+    tapFeedback();
+    const next = !roundsView;
+    setRoundsView(next);
+    AsyncStorage.setItem(ROUNDS_VIEW_KEY, next ? "1" : "0").catch(() => {});
+  }
+
+  // Edits to a superset's rounds replace that group's rows in one update (several updates in one go would overwrite each other).
+  function replaceGroupRows(label: string, next: ExerciseRow[]) {
+    const byKey = new Map(next.map((r) => [r.key, r]));
+    update({ exerciseRows: exerciseRows.map((r) => (r.supersetGroup === label ? byKey.get(r.key) ?? r : r)) });
+  }
+
+  function toggleGroupRound(label: string, roundIndex: number) {
+    const rows = exerciseRows.filter((r) => r.supersetGroup === label);
+    const result = toggleRound(rows, roundIndex);
+    lastTouchedKey.current = rows[rows.length - 1]?.key ?? null;
+    if (result.nowComplete) {
+      successFeedback();
+      // The rest comes once the whole round is done, not between the exercises of a round.
+      restTimer.start(restTimerSeconds, rows[rows.length - 1]?.name || null, null);
+    } else {
+      tapFeedback();
+    }
+    replaceGroupRows(label, result.rows);
+  }
+
+  function addGroupRound(label: string) {
+    tapFeedback();
+    replaceGroupRows(label, addRound(exerciseRows.filter((r) => r.supersetGroup === label), (r) => newSetRow(r.defaultSetType)));
+  }
+
+  function removeGroupRound(label: string) {
+    tapFeedback();
+    replaceGroupRows(label, removeLastRound(exerciseRows.filter((r) => r.supersetGroup === label)));
+  }
+
   // "Superset" button: tick two or more exercises, then Make superset. They are brought together and labelled Superset A, B ...
   const [selectMode, setSelectMode] = useState(false);
   const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
@@ -1737,6 +1786,18 @@ export default function LogWorkoutScreen() {
 
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionLabel}>Session entries</Text>
+            <View style={styles.headerPills}>
+            {exerciseRows.some((r) => r.supersetGroup) ? (
+              <Pressable
+                onPress={toggleRoundsView}
+                accessibilityRole="switch"
+                accessibilityState={{ checked: roundsView }}
+                accessibilityLabel="Show supersets in rounds"
+                style={[styles.selectToggle, roundsView && styles.selectToggleActive]}
+              >
+                <Text style={[styles.selectToggleText, roundsView && styles.selectToggleTextActive]}>Rounds</Text>
+              </Pressable>
+            ) : null}
             {exerciseRows.length >= 2 ? (
               <Pressable
                 onPress={toggleSelectMode}
@@ -1748,6 +1809,7 @@ export default function LogWorkoutScreen() {
                 <Text style={[styles.selectToggleText, selectMode && styles.selectToggleTextActive]}>{selectMode ? "Cancel" : "Superset"}</Text>
               </Pressable>
             ) : null}
+            </View>
           </View>
           {selectMode ? <Text style={styles.formatHint}>Tick two or more exercises, then tap Make superset.</Text> : null}
 
@@ -2099,7 +2161,20 @@ export default function LogWorkoutScreen() {
                     <Text style={styles.ungroupText}>Ungroup</Text>
                   </Pressable>
                 </View>
-                {cards}
+                {roundsView && grp.group && canShowRounds(grp.rows) ? (
+                  <SupersetRounds
+                    rows={grp.rows}
+                    group={grp.group}
+                    allGroups={exerciseRows.map((r) => r.supersetGroup)}
+                    color={supersetColor(grp.group, exerciseRows.map((r) => r.supersetGroup))}
+                    onChangeSet={updateSetRow}
+                    onToggleRound={(i) => toggleGroupRound(grp.group ?? "", i)}
+                    onAddRound={() => addGroupRound(grp.group ?? "")}
+                    onRemoveRound={() => removeGroupRound(grp.group ?? "")}
+                  />
+                ) : (
+                  cards
+                )}
               </View>
             ) : (
               cards
@@ -2346,6 +2421,7 @@ const useStyles = makeLegacyStyles((Color) =>
     multiline: { height: 80, paddingTop: 12, textAlignVertical: "top" },
     sectionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: Spacing.md, marginBottom: Spacing.sm },
     sectionLabel: { fontSize: 19, fontWeight: "600", color: Color.textPrimary },
+    headerPills: { flexDirection: "row", gap: Spacing.xs },
     addChip: { flexDirection: "row", alignItems: "center", gap: 6, borderRadius: Radius.pill, backgroundColor: Color.surface1, paddingHorizontal: 16, minHeight: 46 },
     addChipText: { fontSize: 15, fontWeight: "600", color: Color.textPrimary },
     cardioPicker: { paddingBottom: Spacing.sm },

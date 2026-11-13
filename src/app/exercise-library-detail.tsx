@@ -40,7 +40,7 @@ function GifSlot({ url, name }: { url: string | null; name: string }) {
         source={{ uri: url }}
         accessibilityLabel={`${name} demonstration`}
         style={styles.gif}
-        resizeMode="cover"
+        resizeMode="contain"
         onLoad={() => setLoaded(true)}
       />
     </View>
@@ -211,8 +211,11 @@ const useStyles = makeLegacyStyles((Color) =>
     centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
     errorText: { color: Color.textMuted, fontSize: 14 },
     scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
+    // Capped at 300pt and centred: the largest render we hold is 360 pixels, so stretching it across a whole phone screen made it blurry.
     gifWrap: {
       width: "100%",
+      maxWidth: 300,
+      alignSelf: "center",
       aspectRatio: 1,
       borderRadius: Radius.md,
       overflow: "hidden",

@@ -27,6 +27,7 @@ import { ApiError } from "@/lib/api-client";
 import { useAdvanceProgram, useMyProgram, type PrescribedExercise } from "@/lib/queries/programs";
 import {
   findExerciseLibrarySlug,
+  pickHeroMedia,
   pickThumbMedia,
   useExerciseLibraryDetail,
   useExerciseLibraryNameIndex,
@@ -284,13 +285,69 @@ function newRunRow(): RunRow {
 // screen already use — no separate photo system needed. Renders nothing
 // while a name has no library match or its media hasn't loaded, so the row
 // layout doesn't jump once it resolves.
-function ExerciseThumbnail({ slug }: { slug: string | undefined }) {
+function ExerciseThumbnail({ slug, onPress, expanded }: { slug: string | undefined; onPress?: () => void; expanded?: boolean }) {
   const styles = useStyles();
   const { data } = useExerciseLibraryDetail(slug ?? "");
   if (!slug) return null;
   const media = data ? pickThumbMedia(data.media) : null;
   if (!media) return null;
-  return <Image source={{ uri: media.url }} style={styles.exerciseThumb} resizeMode="cover" />;
+  const image = <Image source={{ uri: media.url }} style={styles.exerciseThumb} resizeMode="cover" />;
+  if (!onPress) return image;
+  return (
+    <Pressable
+      onPress={onPress}
+      hitSlop={6}
+      accessibilityRole="button"
+      accessibilityState={{ expanded: !!expanded }}
+      accessibilityLabel={expanded ? "Hide the animation" : "Show the animation"}
+    >
+      {image}
+    </Pressable>
+  );
+}
+
+// The picture beside an exercise, the link to the full demonstration page and last time's numbers. Tapping the picture plays the full animation
+// inside the card (one at a time would be gentler on the battery, so it closes again on a second tap). The animation is shown at about twice
+// its real size at most: the library only holds 180 and 360 pixel renders, and stretching them further makes them blurry.
+function ExerciseDemoRow({
+  slug,
+  last,
+  onOpenDemo,
+}: {
+  slug: string | null;
+  last: { date: string; summary: string } | null | undefined;
+  onOpenDemo: (slug: string) => void;
+}) {
+  const styles = useStyles();
+  const Color = useLegacyColors();
+  const [expanded, setExpanded] = useState(false);
+  const { data } = useExerciseLibraryDetail(slug ?? "");
+  const hero = expanded && data ? pickHeroMedia(data.media) : null;
+  return (
+    <View>
+      <View style={styles.exerciseInfoRow}>
+        {slug ? <ExerciseThumbnail slug={slug} expanded={expanded} onPress={() => setExpanded((v) => !v)} /> : null}
+        <View style={styles.exerciseInfoText}>
+          {slug ? (
+            <Pressable onPress={() => onOpenDemo(slug)} style={styles.demoLink}>
+              <Ionicons name="play-circle-outline" size={13} color={Color.gold} />
+              <Text style={styles.demoLinkText}>View demonstration</Text>
+            </Pressable>
+          ) : null}
+          {last ? (
+            <Text style={styles.lastTimeText}>
+              Last time ({last.date}): <Text style={styles.lastTimeValue}>{last.summary}</Text>
+            </Text>
+          ) : null}
+        </View>
+      </View>
+      {hero ? (
+        <Pressable onPress={() => setExpanded(false)} accessibilityRole="button" accessibilityLabel="Hide the animation" style={styles.demoExpanded}>
+          <Image source={{ uri: hero.url }} style={styles.demoExpandedImage} resizeMode="contain" accessibilityLabel="Exercise demonstration" />
+        </Pressable>
+      ) : null}
+    </View>
+  );
 }
 
 
@@ -1727,25 +1784,11 @@ export default function LogWorkoutScreen() {
                 const slug = libraryIndex ? findExerciseLibrarySlug(row.name, libraryIndex) : null;
                 if (!slug && !last) return null;
                 return (
-                  <View style={styles.exerciseInfoRow}>
-                    {slug ? <ExerciseThumbnail slug={slug} /> : null}
-                    <View style={styles.exerciseInfoText}>
-                      {slug ? (
-                        <Pressable
-                          onPress={() => router.push({ pathname: "/exercise-demo" as never, params: { slug } })}
-                          style={styles.demoLink}
-                        >
-                          <Ionicons name="play-circle-outline" size={13} color={Color.gold} />
-                          <Text style={styles.demoLinkText}>View demonstration</Text>
-                        </Pressable>
-                      ) : null}
-                      {last ? (
-                        <Text style={styles.lastTimeText}>
-                          Last time ({last.date}): <Text style={styles.lastTimeValue}>{last.summary}</Text>
-                        </Text>
-                      ) : null}
-                    </View>
-                  </View>
+                  <ExerciseDemoRow
+                    slug={slug}
+                    last={last}
+                    onOpenDemo={(demoSlug) => router.push({ pathname: "/exercise-demo" as never, params: { slug: demoSlug } })}
+                  />
                 );
               })()}
 
@@ -2254,6 +2297,8 @@ const useStyles = makeLegacyStyles((Color) =>
       borderRadius: Radius.md,
       backgroundColor: Color.surface2,
     },
+    demoExpanded: { alignItems: "center", marginTop: Spacing.sm, borderRadius: Radius.md, backgroundColor: Color.surface3, paddingVertical: Spacing.sm },
+    demoExpandedImage: { width: 240, height: 240, borderRadius: Radius.md },
     exerciseThumb: { width: 52, height: 52, borderRadius: Radius.md, backgroundColor: Color.surface3 },
     exerciseInfoText: { flex: 1, gap: 4 },
     timerCard: {

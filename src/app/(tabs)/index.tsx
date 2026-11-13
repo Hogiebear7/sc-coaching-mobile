@@ -15,7 +15,8 @@ import { useBodyWeightLogs } from "@/lib/queries/body-weight";
 import { compareWeightLogs } from "@/lib/weight-logs";
 import { useCommunityHighlight } from "@/lib/queries/community";
 import { useDashboard } from "@/lib/queries/dashboard";
-import { useNotifications } from "@/lib/queries/notifications";
+import { useMarkNotificationRead, useNotifications } from "@/lib/queries/notifications";
+import { mapLinkHrefToRoute } from "@/lib/push-notifications";
 import { useProfile } from "@/lib/queries/profile";
 import { useTour } from "@/lib/tour-context";
 import { tourTarget, useTourScroll } from "@/lib/tour-registry";
@@ -160,6 +161,9 @@ export default function DashboardScreen() {
   const { data: notifications } = useNotifications();
   const { data: weights } = useBodyWeightLogs();
   const unreadCount = notifications?.filter((n) => n.readAt === null).length ?? 0;
+  // The coach has finished a class workout and thanked the people who came: show it until they have opened it.
+  const classRecap = notifications?.find((n) => n.type === "class_recap" && n.readAt === null && n.linkHref) ?? null;
+  const markNotificationRead = useMarkNotificationRead();
   const { data: profile } = useProfile();
   const access = profile?.memberAccess ?? NO_ACCESS;
   const scrollRef = useRef<ScrollView>(null);
@@ -267,6 +271,26 @@ export default function DashboardScreen() {
           <PillButton title={todayAction.label} onPress={() => router.push(todayAction.href as never)} />
           </View>
         </View>
+
+        {classRecap ? (
+          <View style={styles.section}>
+            <Pressable
+              onPress={() => {
+                markNotificationRead.mutate(classRecap.id);
+                router.push(mapLinkHrefToRoute(classRecap.linkHref ?? "") as never);
+              }}
+              style={styles.nextCard}
+              accessibilityRole="button"
+              accessibilityLabel="View your class workout"
+            >
+              <View style={{ flex: 1 }}>
+                <Text style={styles.nextTitle}>Well done today</Text>
+                <Text style={styles.nextMeta}>View your class workout and tell us how it felt.</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+            </Pressable>
+          </View>
+        ) : null}
 
         {/* Up next — tier-aware, same job logic as before */}
         <View style={styles.section} {...tourTarget("home.next")}>

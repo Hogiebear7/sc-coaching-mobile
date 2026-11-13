@@ -11,7 +11,10 @@ import { ExerciseAutocomplete } from "@/components/ui/ExerciseAutocomplete";
 import { SupersetChips } from "@/components/ui/SupersetChips";
 import { TextField } from "@/components/ui/TextField";
 import { Radius, Spacing } from "@/constants/theme";
-import { tapFeedback } from "@/lib/haptics";
+import { successFeedback, tapFeedback } from "@/lib/haptics";
+import { buildClassWorkoutSummary } from "@/lib/class-summary";
+import { setPendingWorkoutSummary } from "@/lib/workout-summary-handoff";
+import { CARDIO_LABEL } from "@/lib/cardio";
 import { ApiError } from "@/lib/api-client";
 import { useExerciseLibraryNameIndex } from "@/lib/queries/exercise-library";
 import {
@@ -42,6 +45,8 @@ type EditExerciseRow = {
   setType: WorkoutSetType | null;
   supersetGroup: string | null;
   perSide: boolean;
+  /** Place in the whole class workout, kept as the coach set it. */
+  order: number | null;
 };
 
 function newExerciseRow(): EditExerciseRow {
@@ -58,6 +63,7 @@ function newExerciseRow(): EditExerciseRow {
     setType: null,
     supersetGroup: null,
     perSide: false,
+    order: null,
   };
 }
 
@@ -78,12 +84,17 @@ export default function EditClassWorkoutScreen() {
   const session = useMemo(() => data?.sessions.find((s) => s.id === id), [data, id]);
 
   const [notes, setNotes] = useState("");
+  // How hard the whole session felt, 1 to 10, and a few words about it.
+  const [rpe, setRpe] = useState<number | null>(null);
+  const [feeling, setFeeling] = useState("");
   const [exerciseRows, setExerciseRows] = useState<EditExerciseRow[]>([]);
   const [hydrated, setHydrated] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   if (session && !hydrated) {
     setNotes(session.notes ?? "");
+    setRpe(session.sessionRpe ?? null);
+    setFeeling(session.feelingNotes ?? "");
     setExerciseRows(
       session.exercises.map((ex) => ({
         key: nextKey(),
@@ -98,6 +109,7 @@ export default function EditClassWorkoutScreen() {
         setType: ex.setType ?? null,
         supersetGroup: ex.supersetGroup ?? null,
         perSide: ex.perSide ?? false,
+        order: ex.order ?? null,
       }))
     );
     setHydrated(true);
@@ -138,6 +150,7 @@ export default function EditClassWorkoutScreen() {
         setType: row.setType,
         supersetGroup: row.supersetGroup,
         perSide: row.perSide,
+        order: row.order,
         notes: row.notes.trim() || null,
       }));
 
@@ -147,9 +160,17 @@ export default function EditClassWorkoutScreen() {
     }
 
     try {
-      await updateClassWorkout.mutateAsync({ sessionId: session.id, exercises, notes: notes.trim() });
-      tapFeedback();
-      router.back();
+      await updateClassWorkout.mutateAsync({
+        sessionId: session.id,
+        exercises,
+        notes: notes.trim(),
+        sessionRpe: rpe,
+        feelingNotes: feeling.trim(),
+      });
+      successFeedback();
+      // Finishing leads to the summary (volume, sets, any personal bests), the same screen a self-logged workout ends on.
+      setPendingWorkoutSummary(buildClassWorkoutSummary(session, exercises, data?.personalBests ?? []));
+      router.replace("/workout-summary");
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Could not save changes. Please try again.");
     }
@@ -161,7 +182,7 @@ export default function EditClassWorkoutScreen() {
           <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backButton} accessibilityRole="button" accessibilityLabel="Back">
             <Ionicons name="chevron-back" size={26} color={Color.textPrimary} />
           </Pressable>
-          <Text style={styles.headerTitle}>Correct class workout</Text>
+          <Text style={styles.headerTitle}>Your class workout</Text>
           <View style={{ width: 36 }} />
         </View>
 
@@ -180,8 +201,21 @@ export default function EditClassWorkoutScreen() {
               {session.title} — {new Date(`${session.date}T00:00:00`).toLocaleDateString(undefined, { day: "numeric", month: "short" })}
             </Text>
             <Text style={styles.hint}>
-              Fix your own weights, reps, or sets if your coach hasn&apos;t gotten to it yet.
+              Check this is what you did and change anything that was different. Then tell us how it felt and you will see your summary.
             </Text>
+
+            {session.runs.length > 0 ? (
+              <Card style={styles.entryCard}>
+                <Text style={styles.entryLabel}>Cardio in this class</Text>
+                {session.runs.map((r, i) => (
+                  <Text key={i} style={styles.hint}>
+                    {CARDIO_LABEL[r.cardioType ?? "run"]}
+                    {r.durationSecs ? ` · ${Math.round(r.durationSecs / 60)} min` : ""}
+                    {r.distance ? ` · ${r.distance} km` : ""}
+                  </Text>
+                ))}
+              </Card>
+            ) : null}
 
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionLabel}>Exercises</Text>
@@ -278,11 +312,41 @@ export default function EditClassWorkoutScreen() {
               </Card>
             ))}
 
+            <Card style={styles.entryCard}>
+              <Text style={styles.entryLabel}>How hard did that feel?</Text>
+              <Text style={styles.hint}>1 is very easy, 10 is as hard as it gets.</Text>
+              <View style={styles.rpeRow}>
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
+                  <Pressable
+                    key={n}
+                    onPress={() => {
+                      tapFeedback();
+                      setRpe((prev) => (prev === n ? null : n));
+                    }}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected: rpe === n }}
+                    accessibilityLabel={`Effort ${n} out of 10`}
+                    style={[styles.rpeChip, rpe === n && styles.rpeChipActive]}
+                  >
+                    <Text style={[styles.rpeText, rpe === n && styles.rpeTextActive]}>{n}</Text>
+                  </Pressable>
+                ))}
+              </View>
+              <TextField
+                label="A few words on how it felt (optional)"
+                value={feeling}
+                onChangeText={setFeeling}
+                placeholder="e.g. Legs were tired, shoulders felt good"
+                multiline
+                style={styles.multiline}
+              />
+            </Card>
+
             <TextField
               label="Session notes (optional)"
               value={notes}
               onChangeText={setNotes}
-              placeholder="How did the class feel overall?"
+              placeholder="Anything else about the class?"
               multiline
               style={styles.multiline}
             />
@@ -292,7 +356,7 @@ export default function EditClassWorkoutScreen() {
             <View style={styles.actionsRow}>
               <Button title="Cancel" variant="secondary" onPress={() => router.back()} style={{ flex: 1 }} />
               <Button
-                title="Save changes"
+                title="Save and see my summary"
                 onPress={handleSave}
                 loading={updateClassWorkout.isPending}
                 style={{ flex: 1 }}
@@ -337,6 +401,11 @@ const useStyles = makeLegacyStyles((Color) =>
     perSideRow: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: Spacing.sm },
     perSideText: { fontSize: 14, fontWeight: "500", color: Color.textMuted },
     perSideTextActive: { color: Color.textPrimary },
+    rpeRow: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.xs, marginTop: Spacing.sm },
+    rpeChip: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center", backgroundColor: Color.surface2 },
+    rpeChipActive: { backgroundColor: Color.gold },
+    rpeText: { fontSize: 16, fontWeight: "600", color: Color.textSecondary },
+    rpeTextActive: { color: Color.goldForeground },
     error: { fontSize: 13, color: Color.danger, marginTop: Spacing.sm },
     actionsRow: { flexDirection: "row", gap: Spacing.sm, marginTop: Spacing.lg },
   })

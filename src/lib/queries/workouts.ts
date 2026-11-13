@@ -70,6 +70,9 @@ export interface WorkoutSessionSummary {
   classId: string | null;
   /** Hides this session from the member's followers' Community feed. */
   isPrivate: boolean;
+  /** How hard the whole session felt (1 to 10) and a few words on it, when the member said. Absent from older servers. */
+  sessionRpe?: number | null;
+  feelingNotes?: string | null;
 }
 
 export interface PersonalBest {

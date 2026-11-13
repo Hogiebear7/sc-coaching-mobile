@@ -84,3 +84,29 @@ describe("assignSuperset", () => {
     expect(summary(withoutLonelySupersets([ex("a", "ST1"), ex("b", "ST2"), ex("c", "ST2")]))).toBe("a:-:undefined b:ST2:undefined c:ST2:undefined");
   });
 });
+
+import { nextSupersetTap } from "../superset-select";
+
+describe("nextSupersetTap", () => {
+  const rows = (...groups: (string | null)[]) => groups.map((g, i) => ({ key: `k${i}`, supersetGroup: g }));
+
+  it("joins the superset of the exercise directly above first", () => {
+    // A1 A2, then B1, then a new exercise: its first tap is B (ST2), never A.
+    expect(nextSupersetTap(rows("ST1", "ST1", "ST2", null), "k3")).toBe("ST2");
+  });
+
+  it("starts the first superset when nothing above is in one", () => {
+    expect(nextSupersetTap(rows(null, null), "k1")).toBe("ST1");
+  });
+
+  it("then offers the other supersets, then none", () => {
+    const r = rows("ST1", "ST1", "ST2", "ST2", "ST2", null);
+    expect(nextSupersetTap(r, "k5")).toBe("ST2");
+    const joined = rows("ST1", "ST1", "ST2", "ST2", "ST2", "ST2");
+    expect(nextSupersetTap(joined, "k5")).toBe("ST1");
+  });
+
+  it("does nothing for a single exercise", () => {
+    expect(nextSupersetTap(rows(null), "k0")).toBeUndefined();
+  });
+});

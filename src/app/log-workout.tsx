@@ -22,7 +22,7 @@ import { OptionPicker, type PickerOption } from "@/components/ui/OptionPicker";
 import { setTimerTarget, takeTimerResult } from "@/lib/timer-result";
 import { entrySegments, insertEntry, orderToSave } from "@/lib/entry-order";
 import { distinctGroups, supersetLetter, supersetMemberLabel } from "@/lib/superset-label";
-import { assignSuperset, nextSupersetInCycle, ungroup, withoutLonelySupersets } from "@/lib/superset-select";
+import { assignSuperset, nextSupersetTap, ungroup, withoutLonelySupersets } from "@/lib/superset-select";
 import { applyWeightFrom, normalizeWeights, sanitizeWeight, stripWeightUnit, weightUnitFor, withWeightUnit } from "@/lib/weight-input";
 import { SupersetRounds } from "@/components/workout/SupersetRounds";
 import { addRound, canShowRounds, removeLastRound, toggleRound } from "@/lib/superset-rounds";
@@ -1188,8 +1188,9 @@ export default function LogWorkoutScreen() {
 
   // Tap an exercise's number to cycle it through the supersets (Superset A, B ... as far as the exercises allow), then back to none.
   function cycleSuperset(row: ExerciseRow) {
-    const next = nextSupersetInCycle(row.supersetGroup, exerciseRows.length);
-    if (next === null && row.supersetGroup === null) {
+    const shown = entrySegments(exerciseRows, runRows).flatMap((seg) => (seg.kind === "exercise" ? seg.rows : []));
+    const next = nextSupersetTap(shown, row.key);
+    if (next === undefined) {
       // Nothing to join yet: a superset needs at least two exercises.
       warningFeedback();
       return;

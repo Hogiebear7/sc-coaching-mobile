@@ -33,9 +33,10 @@ import { OptionPicker, type PickerOption } from "@/components/ui/OptionPicker";
 import { newPlanSet, PlanExerciseCard, type PlanSet, type UnitMode } from "@/components/class/PlanExerciseCard";
 import { TimeWheelPicker } from "@/components/ui/TimeWheelPicker";
 import { useProfile } from "@/lib/queries/profile";
-import { assignSuperset, nextSupersetInCycle, withoutLonelySupersets } from "@/lib/superset-select";
+import { assignSuperset, nextSupersetTap, withoutLonelySupersets } from "@/lib/superset-select";
 import { weightUnitFor } from "@/lib/weight-input";
-import { CARDIO_LABEL, CARDIO_TYPES, type CardioType } from "@/lib/cardio";
+import { CARDIO_LABEL, CARDIO_TYPES, hasLevel, type CardioType } from "@/lib/cardio";
+import { formatDuration, parseDuration } from "@/lib/workout-formatters";
 import { entrySegments, insertEntry } from "@/lib/entry-order";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
@@ -202,8 +203,12 @@ type TemplateRow = {
 type CardioRow = {
   key: string;
   cardioType: CardioType | null;
-  minutes: string;
-  distanceKm: string;
+  /** The time as "h:mm:ss" or "m:ss", set with the time wheel. */
+  duration: string;
+  distance: string;
+  distanceUnit: "km" | "m";
+  /** Machine level or incline, as typed. */
+  level: string;
   notes: string;
   order: number | null;
 };
@@ -211,15 +216,17 @@ type CardioRow = {
 const CARDIO_PICKER_OPTIONS: readonly PickerOption<CardioType>[] = CARDIO_TYPES.map((t) => ({ value: t, label: CARDIO_LABEL[t] }));
 
 function newCardioRow(): CardioRow {
-  return { key: nextKey(), cardioType: null, minutes: "", distanceKm: "", notes: "", order: null };
+  return { key: nextKey(), cardioType: null, duration: "", distance: "", distanceUnit: "km", level: "", notes: "", order: null };
 }
 
 function cardioRowsFromRuns(runs: ClassWorkoutRunEntry[] | undefined): CardioRow[] {
   return (runs ?? []).map((r) => ({
     key: nextKey(),
     cardioType: r.cardioType ?? null,
-    minutes: r.durationSecs != null ? String(Math.round((r.durationSecs / 60) * 10) / 10) : "",
-    distanceKm: r.distance != null ? String(r.distance) : "",
+    duration: r.durationSecs != null ? formatDuration(r.durationSecs) : "",
+    distance: r.distance != null ? String(r.distance) : "",
+    distanceUnit: "km" as const,
+    level: r.level != null ? String(r.level) : "",
     notes: r.notes ?? "",
     order: r.order ?? null,
   }));
@@ -458,10 +465,11 @@ export default function ClassWorkoutBuilderScreen() {
           };
         }),
         runs: cardio
-          .filter((c) => c.cardioType || c.minutes.trim() || c.distanceKm.trim() || c.notes.trim())
+          .filter((c) => c.cardioType || c.duration.trim() || c.distance.trim() || c.notes.trim())
           .map((c) => ({
-            distance: c.distanceKm.trim() ? Number(c.distanceKm) : null,
-            durationSecs: c.minutes.trim() ? Math.round(Number(c.minutes) * 60) : null,
+            distance: c.distance.trim() ? (c.distanceUnit === "m" ? Math.round((Number(c.distance) / 1000) * 1000) / 1000 : Number(c.distance)) : null,
+            durationSecs: parseDuration(c.duration),
+            level: c.cardioType && hasLevel(c.cardioType) && c.level.trim() ? Number(c.level) : null,
             notes: c.notes.trim() || null,
             cardioType: c.cardioType ?? "run",
             order: c.order,
@@ -510,6 +518,7 @@ export default function ClassWorkoutBuilderScreen() {
   const { data: profile } = useProfile();
   const weightUnit = weightUnitFor(profile?.preferredUnits);
   const [timeTarget, setTimeTarget] = useState<{ rowKey: string; setKey: string; secs: number } | null>(null);
+  const [cardioTimeTarget, setCardioTimeTarget] = useState<{ rowKey: string; secs: number } | null>(null);
 
   // Start class / Finish and send recap: the recap only makes sense once the class has run.
   const [startedAt, setStartedAt] = useState<number | null>(null);
@@ -544,8 +553,9 @@ export default function ClassWorkoutBuilderScreen() {
   }
 
   function cycleSuperset(row: TemplateRow) {
-    const next = nextSupersetInCycle(row.supersetGroup, template.length);
-    if (next === null && row.supersetGroup === null) {
+    const shown = entrySegments(template, cardio).flatMap((seg) => (seg.kind === "exercise" ? seg.rows : []));
+    const next = nextSupersetTap(shown, row.key);
+    if (next === undefined) {
       warningFeedback();
       return;
     }
@@ -651,23 +661,63 @@ export default function ClassWorkoutBuilderScreen() {
                     </Pressable>
                   </View>
                   <View style={styles.gridRow}>
-                    <TextInput
-                      value={c.minutes}
-                      onChangeText={(v) => updateCardio(c.key, { minutes: v })}
-                      placeholder="Minutes"
-                      placeholderTextColor={Color.textFaint}
-                      keyboardType="decimal-pad"
-                      style={[inputStyleBase(), { flex: 1 }]}
-                    />
-                    <TextInput
-                      value={c.distanceKm}
-                      onChangeText={(v) => updateCardio(c.key, { distanceKm: v })}
-                      placeholder="Distance (km)"
-                      placeholderTextColor={Color.textFaint}
-                      keyboardType="decimal-pad"
-                      style={[inputStyleBase(), { flex: 1 }]}
-                    />
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.rowLabel}>Distance (optional)</Text>
+                      <View style={{ flexDirection: "row", gap: Spacing.xs }}>
+                        <TextInput
+                          value={c.distance}
+                          onChangeText={(v) => updateCardio(c.key, { distance: v.replace(/[^0-9.]/g, "") })}
+                          placeholder={c.distanceUnit === "m" ? "e.g. 400" : "e.g. 5.2"}
+                          placeholderTextColor={Color.textFaint}
+                          keyboardType="decimal-pad"
+                          style={[inputStyleBase(), { flex: 1 }]}
+                        />
+                        <Pressable
+                          onPress={() => updateCardio(c.key, { distanceUnit: c.distanceUnit === "km" ? "m" : "km" })}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Distance in ${c.distanceUnit}. Tap to change.`}
+                          style={styles.unitSwitch}
+                        >
+                          <Text style={styles.unitSwitchText}>{c.distanceUnit}</Text>
+                        </Pressable>
+                      </View>
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.rowLabel}>Time (optional)</Text>
+                      <Pressable
+                        onPress={() => {
+                          tapFeedback();
+                          setCardioTimeTarget({ rowKey: c.key, secs: parseDuration(c.duration) ?? 0 });
+                        }}
+                        accessibilityRole="button"
+                        style={[inputStyleBase(), { justifyContent: "center" }]}
+                      >
+                        <Text style={{ fontSize: 16, color: c.duration.trim() ? Color.textPrimary : Color.textFaint }}>
+                          {c.duration.trim() ? formatDuration(parseDuration(c.duration) ?? 0) : "Set time"}
+                        </Text>
+                      </Pressable>
+                    </View>
                   </View>
+                  {c.cardioType && hasLevel(c.cardioType) ? (
+                    <View style={{ marginTop: Spacing.sm }}>
+                      <Text style={styles.rowLabel}>{c.cardioType === "treadmill_walk" ? "Incline % (optional)" : "Level (optional)"}</Text>
+                      <TextInput
+                        value={c.level}
+                        onChangeText={(v) => updateCardio(c.key, { level: v.replace(/[^0-9.]/g, "") })}
+                        placeholder={c.cardioType === "treadmill_walk" ? "e.g. 12" : "e.g. 8"}
+                        placeholderTextColor={Color.textFaint}
+                        keyboardType="decimal-pad"
+                        style={inputStyleBase()}
+                      />
+                    </View>
+                  ) : null}
+                  <TextInput
+                    value={c.notes}
+                    onChangeText={(v) => updateCardio(c.key, { notes: v })}
+                    placeholder="Notes (optional), e.g. easy pace"
+                    placeholderTextColor={Color.textFaint}
+                    style={[inputStyleBase(), { marginTop: Spacing.sm }]}
+                  />
                 </View>
               ); })())}
             </View>
@@ -900,6 +950,30 @@ export default function ClassWorkoutBuilderScreen() {
           </View>
         </Pressable>
       </Modal>
+      <Modal visible={cardioTimeTarget !== null} transparent animationType="fade" onRequestClose={() => setCardioTimeTarget(null)}>
+        <Pressable style={styles.timeBackdrop} onPress={() => setCardioTimeTarget(null)}>
+          <View style={styles.timeCard} onStartShouldSetResponder={() => true}>
+            <Text style={styles.timeTitle}>Cardio time</Text>
+            {cardioTimeTarget ? (
+              <TimeWheelPicker
+                totalSecs={cardioTimeTarget.secs}
+                showHours
+                onChange={(secs) => setCardioTimeTarget((prev) => (prev ? { ...prev, secs } : prev))}
+              />
+            ) : null}
+            <Button
+              title="Done"
+              onPress={() => {
+                if (cardioTimeTarget) {
+                  updateCardio(cardioTimeTarget.rowKey, { duration: cardioTimeTarget.secs > 0 ? formatDuration(cardioTimeTarget.secs) : "" });
+                }
+                setCardioTimeTarget(null);
+              }}
+              style={{ marginTop: Spacing.lg }}
+            />
+          </View>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -941,6 +1015,8 @@ const useStyles = makeLegacyStyles((Color) =>
     timeBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.72)", alignItems: "center", justifyContent: "center", padding: Spacing.lg },
     timeCard: { width: "100%", maxWidth: 420, backgroundColor: Color.surface1, borderRadius: 24, padding: Spacing.lg },
     timeTitle: { fontSize: 18, fontWeight: "700", color: Color.textPrimary, textAlign: "center", marginBottom: Spacing.md },
+    unitSwitch: { minWidth: 52, minHeight: 46, paddingHorizontal: 12, borderRadius: Radius.md, backgroundColor: Color.surface2, alignItems: "center", justifyContent: "center" },
+    unitSwitchText: { fontSize: 15, fontWeight: "700", color: Color.textPrimary },
     templateRow: {
       backgroundColor: Color.surface2,
       borderRadius: Radius.md,

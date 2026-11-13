@@ -1,3 +1,4 @@
+import { distinctGroups } from "@/lib/superset-label";
 import { orderedEntries, renumber, type OrderableRow, type OrderedEntry } from "@/lib/entry-order";
 
 // "Select several, then Make superset". The chosen exercises are brought together (placed where the first one was, in their current order),
@@ -98,4 +99,27 @@ export function withoutLonelySupersets<E extends Row>(exerciseRows: E[]): E[] {
   const counts = new Map<string, number>();
   for (const r of exerciseRows) if (r.supersetGroup) counts.set(r.supersetGroup, (counts.get(r.supersetGroup) ?? 0) + 1);
   return exerciseRows.map((r) => (r.supersetGroup && (counts.get(r.supersetGroup) ?? 0) < 2 ? { ...r, supersetGroup: null } : r));
+}
+
+/**
+ * What one more tap on an exercise's number gives, given every exercise in the order shown. The first tap joins the superset of the exercise
+ * directly above (so it lands next in line there: B2 after B1), then the other supersets in the workout, then a brand new one, then none.
+ * Returns undefined when nothing is possible yet (a superset needs at least two exercises).
+ */
+export function nextSupersetTap(ordered: { key: string; supersetGroup: string | null }[], key: string): string | null | undefined {
+  const at = ordered.findIndex((r) => r.key === key);
+  if (at === -1 || ordered.length < 2) return undefined;
+  const current = ordered[at].supersetGroup;
+  const above = at > 0 ? ordered[at - 1].supersetGroup : null;
+  const groups = distinctGroups(ordered.map((r) => r.supersetGroup));
+  const options: string[] = [];
+  if (above) options.push(above);
+  for (const g of groups) if (!options.includes(g)) options.push(g);
+  const fresh = nextSupersetLabel(ordered.map((r) => r.supersetGroup));
+  if (groups.length < Math.floor(ordered.length / 2) || (current !== null && groups.length <= Math.floor(ordered.length / 2))) {
+    if (!options.includes(fresh)) options.push(fresh);
+  }
+  if (current === null) return options.length ? options[0] : undefined;
+  const i = options.indexOf(current);
+  return i === -1 || i === options.length - 1 ? null : options[i + 1];
 }

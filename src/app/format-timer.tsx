@@ -1,11 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import { Alert, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { Alert, Modal, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
 import { KeyboardAwareScroll } from "@/components/ui/KeyboardAwareScroll";
+import { TimeWheelPicker } from "@/components/ui/TimeWheelPicker";
 import { figure, headline, Radius, Spacing } from "@/constants/theme";
 import { successFeedback, tapFeedback } from "@/lib/haptics";
 import { formatDuration, parseDuration } from "@/lib/workout-formatters";
@@ -253,9 +254,12 @@ function CircularClock({
   );
 }
 
-function FiveSecondCountdown({ onDone }: { onDone: () => void }) {
+// Every format counts you in for three seconds before the clock starts.
+const GET_READY_SECS = 3;
+
+function GetReadyCountdown({ onDone }: { onDone: () => void }) {
   const styles = useStyles();
-  const [count, setCount] = useState(5);
+  const [count, setCount] = useState(GET_READY_SECS);
   useEffect(() => {
     if (count <= 0) {
       onDone();
@@ -288,7 +292,7 @@ function PhaseWorkoutCard({
   const [counting, setCounting] = useState(false);
 
   if (counting) {
-    return <FiveSecondCountdown onDone={onStart} />;
+    return <GetReadyCountdown onDone={onStart} />;
   }
 
   const workPhases = phases.filter((p) => p.kind === "work");
@@ -325,7 +329,7 @@ function PhaseWorkoutCard({
 function CircuitWorkoutCard({ config, onStart }: { config: CircuitConfig; onStart: () => void }) {
   const styles = useStyles();
   const [counting, setCounting] = useState(false);
-  if (counting) return <FiveSecondCountdown onDone={onStart} />;
+  if (counting) return <GetReadyCountdown onDone={onStart} />;
 
   const stations = config.stations.filter((s) => s.name.trim());
   const roundsLabel =
@@ -369,6 +373,8 @@ function CircuitWorkoutCard({ config, onStart }: { config: CircuitConfig; onStar
 
 function EmomWorkoutCard({ config, onStart }: { config: EmomConfig; onStart: () => void }) {
   const styles = useStyles();
+  const [counting, setCounting] = useState(false);
+  if (counting) return <GetReadyCountdown onDone={onStart} />;
   const interval = Math.max(5, parseInt(config.intervalSecs, 10) || 60);
   const totalSecs = Math.max(interval, (parseInt(config.totalMins, 10) || 10) * 60);
   const roundCount = Math.max(1, Math.round(totalSecs / interval));
@@ -390,7 +396,7 @@ function EmomWorkoutCard({ config, onStart }: { config: EmomConfig; onStart: () 
       </View>
       <Button
         title="Start EMOM timer"
-        onPress={onStart}
+        onPress={() => setCounting(true)}
         disabled={movements.length === 0}
         style={{ marginTop: Spacing.lg, alignSelf: "stretch" }}
       />
@@ -442,11 +448,17 @@ function PhaseLiveView({ phases, timeCapSecs }: { phases: Phase[]; timeCapSecs?:
       {nextPhase ? (
         <View style={styles.nextPreview}>
           <Text style={styles.nextPreviewLabel}>Up next</Text>
-          {upcoming.map((p, i) => (
-            <Text key={i} style={[styles.nextPreviewText, i > 0 && { opacity: 0.6, fontSize: 14 }]} numberOfLines={1}>
-              {p.kind === "rest" ? `Rest ${formatDuration(p.durationSecs)}` : p.label}
-            </Text>
-          ))}
+          {upcoming.map((p, i) =>
+            p.kind === "rest" ? (
+              <Text key={i} style={[styles.nextPreviewText, { opacity: 0.8 }]} numberOfLines={1}>
+                {p.label}
+              </Text>
+            ) : (
+              <Text key={i} style={upcoming.findIndex((q) => q.kind === "work") === i ? styles.nextPreviewBright : styles.nextPreviewText} numberOfLines={1}>
+                {p.label}
+              </Text>
+            )
+          )}
         </View>
       ) : null}
 
@@ -475,6 +487,8 @@ function PhaseLiveView({ phases, timeCapSecs }: { phases: Phase[]; timeCapSecs?:
 
 function AmrapWorkoutCard({ config, onStart }: { config: AmrapConfig; onStart: () => void }) {
   const styles = useStyles();
+  const [counting, setCounting] = useState(false);
+  if (counting) return <GetReadyCountdown onDone={onStart} />;
   return (
     <KeyboardAwareScroll contentContainerStyle={styles.cardBody}>
       <Text style={styles.cardHint}>
@@ -495,7 +509,7 @@ function AmrapWorkoutCard({ config, onStart }: { config: AmrapConfig; onStart: (
       </View>
       <Button
         title="Start AMRAP timer"
-        onPress={onStart}
+        onPress={() => setCounting(true)}
         disabled={config.movements.length === 0}
         style={{ marginTop: Spacing.lg, alignSelf: "stretch" }}
       />
@@ -548,6 +562,7 @@ function AmrapLiveView({ config }: { config: AmrapConfig }) {
   const { update, running, totalElapsed, setSession, togglePause, restartClock } = useSimpleTotalClock();
   const capSecs = Math.max(30, (parseInt(config.timeCapMins, 10) || 12) * 60);
   const finishedRef = useRef(false);
+  const [counting, setCounting] = useState(false);
 
   const remaining = Math.max(0, capSecs - totalElapsed);
 
@@ -599,6 +614,18 @@ function AmrapLiveView({ config }: { config: AmrapConfig }) {
     });
   }
 
+  // Landed here with the clock stopped at zero: nothing has started yet, so offer Start (with the 3-second count-in) rather than a bare clock.
+  if (!running && totalElapsed < 1) {
+    if (counting) return <GetReadyCountdown onDone={() => togglePause()} />;
+    return (
+      <View style={styles.body}>
+        <Text style={styles.phaseKind}>AMRAP</Text>
+        <Text style={styles.clock}>{formatDuration(capSecs)}</Text>
+        <Button title="Start" onPress={() => setCounting(true)} style={{ marginTop: Spacing.xl, alignSelf: "stretch" }} />
+      </View>
+    );
+  }
+
   return (
     <KeyboardAwareScroll contentContainerStyle={styles.body}>
       <Text style={styles.phaseKind}>AMRAP</Text>
@@ -647,6 +674,8 @@ function AmrapLiveView({ config }: { config: AmrapConfig }) {
 
 function ChipperWorkoutCard({ config, onStart }: { config: ChipperConfig; onStart: () => void }) {
   const styles = useStyles();
+  const [counting, setCounting] = useState(false);
+  if (counting) return <GetReadyCountdown onDone={onStart} />;
   return (
     <KeyboardAwareScroll contentContainerStyle={styles.cardBody}>
       <Text style={styles.cardHint}>
@@ -668,7 +697,7 @@ function ChipperWorkoutCard({ config, onStart }: { config: ChipperConfig; onStar
       </View>
       <Button
         title="Start chipper"
-        onPress={onStart}
+        onPress={() => setCounting(true)}
         disabled={config.movements.length === 0}
         style={{ marginTop: Spacing.lg, alignSelf: "stretch" }}
       />
@@ -684,6 +713,8 @@ function ChipperMovementLive({ movement, onChange }: { movement: ChipperMovement
   const styles = useStyles();
   const Color = useLegacyColors();
   const [addValue, setAddValue] = useState("");
+  const [wheelOpen, setWheelOpen] = useState(false);
+  const [wheelSecs, setWheelSecs] = useState(60);
   const [prepCountdown, setPrepCountdown] = useState<number | null>(null);
   const [, forceLiveTick] = useState(0);
 
@@ -727,6 +758,13 @@ function ChipperMovementLive({ movement, onChange }: { movement: ChipperMovement
     setAddValue("");
   }
 
+  // Time done on a timed movement, picked on the wheel.
+  function addSeconds(secs: number) {
+    if (secs <= 0) return;
+    tapFeedback();
+    onChange({ doneSeconds: movement.doneSeconds + secs, log: [...movement.log, { atMs: Date.now(), amount: secs }] });
+  }
+
   function togglePlay() {
     tapFeedback();
     if (movement.timerStartedAtMs) {
@@ -768,19 +806,27 @@ function ChipperMovementLive({ movement, onChange }: { movement: ChipperMovement
       ) : null}
 
       <View style={styles.chipperInputRow}>
-        <TextInput
-          value={addValue}
-          onChangeText={setAddValue}
-          keyboardType="number-pad"
-          placeholder={movement.mode === "reps" ? "Reps just done" : "Seconds just done"}
-          placeholderTextColor={Color.textFaint}
-          style={[styles.chipperInput, { flex: 1 }]}
-          onSubmitEditing={addProgress}
-          returnKeyType="done"
-        />
-        <Pressable onPress={addProgress} style={styles.chipperAddButton}>
-          <Text style={styles.chipperAddButtonText}>+ Add</Text>
-        </Pressable>
+        {movement.mode === "reps" ? (
+          <>
+            <TextInput
+              value={addValue}
+              onChangeText={setAddValue}
+              keyboardType="number-pad"
+              placeholder="Reps just done"
+              placeholderTextColor={Color.textFaint}
+              style={[styles.chipperInput, { flex: 1 }]}
+              onSubmitEditing={addProgress}
+              returnKeyType="done"
+            />
+            <Pressable onPress={addProgress} style={styles.chipperAddButton}>
+              <Text style={styles.chipperAddButtonText}>+ Add</Text>
+            </Pressable>
+          </>
+        ) : (
+          <Pressable onPress={() => setWheelOpen(true)} accessibilityRole="button" accessibilityLabel="Set the time done" style={[styles.chipperInput, { flex: 1, justifyContent: "center" }]}>
+            <Text style={{ fontSize: 14, color: Color.textPrimary }}>Add time done</Text>
+          </Pressable>
+        )}
         {movement.mode === "time" ? (
           <Pressable onPress={togglePlay} style={styles.chipperPlayButton}>
             <Ionicons
@@ -792,6 +838,23 @@ function ChipperMovementLive({ movement, onChange }: { movement: ChipperMovement
         ) : null}
       </View>
       {prepCountdown !== null ? <Text style={styles.chipperPrepText}>Get ready… {prepCountdown}</Text> : null}
+
+      <Modal visible={wheelOpen} transparent animationType="fade" onRequestClose={() => setWheelOpen(false)}>
+        <Pressable style={styles.wheelBackdrop} onPress={() => setWheelOpen(false)}>
+          <View style={styles.wheelCard} onStartShouldSetResponder={() => true}>
+            <Text style={styles.wheelTitle}>{movement.name || "Time done"}</Text>
+            <TimeWheelPicker totalSecs={wheelSecs} onChange={setWheelSecs} />
+            <Button
+              title="Add this time"
+              onPress={() => {
+                addSeconds(wheelSecs);
+                setWheelOpen(false);
+              }}
+              style={{ marginTop: Spacing.lg }}
+            />
+          </View>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -801,6 +864,7 @@ function ChipperLiveView({ config }: { config: ChipperConfig }) {
   const Color = useLegacyColors();
   const { update, running, totalElapsed, setSession, togglePause, restartClock } = useSimpleTotalClock();
   const finishedRef = useRef(false);
+  const [counting, setCounting] = useState(false);
 
   function updateMovement(key: string, patch: Partial<ChipperMovement>) {
     update({
@@ -834,6 +898,17 @@ function ChipperLiveView({ config }: { config: ChipperConfig }) {
       },
       formatResultNote: "",
     });
+  }
+
+  if (!running && totalElapsed < 1) {
+    if (counting) return <GetReadyCountdown onDone={() => togglePause()} />;
+    return (
+      <View style={styles.body}>
+        <Text style={styles.phaseKind}>Chipper</Text>
+        <Text style={styles.clock}>{formatDuration(0)}</Text>
+        <Button title="Start" onPress={() => setCounting(true)} style={{ marginTop: Spacing.xl, alignSelf: "stretch" }} />
+      </View>
+    );
   }
 
   return (
@@ -923,7 +998,7 @@ export default function FormatTimerScreen() {
     body = draft.formatSession.started ? (
       <PhaseLiveView phases={phases} />
     ) : (
-      <PhaseWorkoutCard title="Tabata" phases={phases} onStart={handleStart} />
+      <PhaseWorkoutCard title="Tabata" phases={phases} onStart={handleStart} needsCountdown />
     );
   } else if (draft.format === "emom") {
     title = "EMOM";
@@ -1030,7 +1105,8 @@ const useStyles = makeLegacyStyles((Color) =>
     ringFillRest: { backgroundColor: Color.surface3 },
     ringCenter: { ...StyleSheet.absoluteFill, alignItems: "center", justifyContent: "center" },
     totalElapsed: { fontSize: 14, color: Color.textFaint, marginTop: Spacing.md },
-    nextPreview: { alignItems: "center", marginTop: Spacing.lg, opacity: 0.8 },
+    nextPreview: { alignItems: "center", marginTop: Spacing.lg },
+    nextPreviewBright: { fontSize: 18, fontWeight: "800", color: Color.textPrimary, marginTop: 2 },
     nextPreviewLabel: { fontSize: 12, fontWeight: "700", letterSpacing: 0.6, color: Color.textFaint },
     nextPreviewText: { fontSize: 14, fontWeight: "600", color: Color.textSecondary, marginTop: 2 },
     controlsRow: { flexDirection: "row", alignItems: "center", gap: Spacing.xl, marginTop: Spacing.xl },
@@ -1101,6 +1177,9 @@ const useStyles = makeLegacyStyles((Color) =>
       paddingVertical: 8,
       backgroundColor: Color.surface2,
     },
+    wheelBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.72)", alignItems: "center", justifyContent: "center", padding: Spacing.lg },
+    wheelCard: { width: "100%", maxWidth: 420, backgroundColor: Color.surface1, borderRadius: 24, padding: Spacing.lg },
+    wheelTitle: { fontSize: 18, fontWeight: "700", color: Color.textPrimary, textAlign: "center", marginBottom: Spacing.md },
     chipperAddButton: { borderRadius: Radius.pill, borderWidth: 1, borderColor: Color.gold, paddingHorizontal: Spacing.sm, paddingVertical: 9 },
     chipperAddButtonText: { fontSize: 14, fontWeight: "700", color: Color.gold },
     chipperPlayButton: {

@@ -571,6 +571,11 @@ function ChipperMovementRow({
   onChange: (patch: Partial<ChipperMovement>) => void;
   onRemove: () => void;
 }) {
+  const styles = useStyles();
+  const feelStyles = useFeelStyles();
+  const Color = useLegacyColors();
+  const [wheelOpen, setWheelOpen] = useState(false);
+  const [wheelSecs, setWheelSecs] = useState(300);
   return (
     <FormatMovementCard
       index={index}
@@ -583,18 +588,37 @@ function ChipperMovementRow({
       {movement.mode === "reps" ? (
         <FormatMiniField label="Target reps" value={movement.targetReps} onChangeText={(v) => onChange({ targetReps: v })} placeholder="50" />
       ) : (
-        <FormatMiniField
-          label="Target time (m:ss)"
-          value={movement.targetSeconds}
-          onChangeText={(v) => onChange({ targetSeconds: v })}
-          onBlur={() => {
-            const formatted = formatAsMmSs(movement.targetSeconds);
-            if (formatted !== movement.targetSeconds) onChange({ targetSeconds: formatted });
-          }}
-          placeholder="5:00"
-          keyboardType="numbers-and-punctuation"
-        />
+        <View style={{ flex: 1, gap: 2 }}>
+          <Text style={styles.fieldLabel}>Target time</Text>
+          <Pressable
+            onPress={() => {
+              setWheelSecs(parseDuration(movement.targetSeconds) ?? 300);
+              setWheelOpen(true);
+            }}
+            accessibilityRole="button"
+            accessibilityLabel="Set the target time"
+            style={[styles.smallInput, { justifyContent: "center", alignItems: "center" }]}
+          >
+            <Text style={{ fontSize: 16, color: movement.targetSeconds ? Color.textPrimary : Color.textFaint }}>{movement.targetSeconds || "Set time"}</Text>
+          </Pressable>
+        </View>
       )}
+      <Modal visible={wheelOpen} transparent animationType="fade" onRequestClose={() => setWheelOpen(false)}>
+        <Pressable style={feelStyles.backdrop} onPress={() => setWheelOpen(false)}>
+          <View style={styles.timePickerCard} onStartShouldSetResponder={() => true}>
+            <Text style={styles.timePickerTitle}>{movement.name || "Target time"}</Text>
+            <TimeWheelPicker totalSecs={wheelSecs} onChange={setWheelSecs} />
+            <Button
+              title="Done"
+              onPress={() => {
+                onChange({ targetSeconds: `${Math.floor(wheelSecs / 60)}:${String(wheelSecs % 60).padStart(2, "0")}` });
+                setWheelOpen(false);
+              }}
+              style={{ marginTop: Spacing.lg }}
+            />
+          </View>
+        </Pressable>
+      </Modal>
     </FormatMovementCard>
   );
 }

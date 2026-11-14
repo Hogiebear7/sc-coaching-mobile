@@ -29,6 +29,10 @@ export interface HyroxSession {
   /** The overall time (seconds) at the end of each lap so far, oldest first. 16 of them means finished. */
   lapTotals: number[];
   finished: boolean;
+  /** Roxzone: the time spent in the transition zones, timed on its own beside the laps. Absent on a race saved before this existed. */
+  roxzoneSecs?: number;
+  /** When the Roxzone clock was last started; null while it is stopped. */
+  roxzoneStartedAtMs?: number | null;
 }
 
 export const HYROX_LAPS = 16;
@@ -51,7 +55,7 @@ export function defaultHyroxConfig(): HyroxConfig {
 }
 
 export function emptyHyroxSession(): HyroxSession {
-  return { started: false, startedAtMs: null, accumulatedSecs: 0, lapTotals: [], finished: false };
+  return { started: false, startedAtMs: null, accumulatedSecs: 0, lapTotals: [], finished: false, roxzoneSecs: 0, roxzoneStartedAtMs: null };
 }
 
 export interface HyroxSegment {
@@ -95,6 +99,24 @@ export function hyroxElapsed(session: HyroxSession, nowMs: number): number {
   return session.accumulatedSecs + running;
 }
 
+/** Roxzone time so far in whole seconds, including the stretch that is running now. */
+export function roxzoneElapsed(session: HyroxSession, nowMs: number): number {
+  const running = session.roxzoneStartedAtMs ? Math.max(0, Math.floor((nowMs - session.roxzoneStartedAtMs) / 1000)) : 0;
+  return (session.roxzoneSecs ?? 0) + running;
+}
+
+function stopRoxzone(session: HyroxSession, nowMs: number): HyroxSession {
+  if (!session.roxzoneStartedAtMs) return session;
+  return { ...session, roxzoneSecs: roxzoneElapsed(session, nowMs), roxzoneStartedAtMs: null };
+}
+
+/** Starts the Roxzone clock when you reach a transition zone, and stops it when you leave. Only while the race is running. */
+export function hyroxRoxzoneToggle(session: HyroxSession, nowMs: number): HyroxSession {
+  if (session.roxzoneStartedAtMs) return stopRoxzone(session, nowMs);
+  if (!session.started || session.finished || session.startedAtMs === null) return session;
+  return { ...session, roxzoneStartedAtMs: nowMs };
+}
+
 export function hyroxStart(session: HyroxSession, nowMs: number): HyroxSession {
   if (session.finished || session.startedAtMs !== null) return session;
   return { ...session, started: true, startedAtMs: nowMs };
@@ -102,7 +124,7 @@ export function hyroxStart(session: HyroxSession, nowMs: number): HyroxSession {
 
 export function hyroxPause(session: HyroxSession, nowMs: number): HyroxSession {
   if (session.startedAtMs === null) return session;
-  return { ...session, accumulatedSecs: hyroxElapsed(session, nowMs), startedAtMs: null };
+  return { ...stopRoxzone(session, nowMs), accumulatedSecs: hyroxElapsed(session, nowMs), startedAtMs: null };
 }
 
 /** Ends the current lap. The 16th lap stops the clock and finishes the race. */
@@ -111,7 +133,7 @@ export function hyroxLap(session: HyroxSession, nowMs: number): HyroxSession {
   const total = hyroxElapsed(session, nowMs);
   const lapTotals = [...session.lapTotals, total];
   const finished = lapTotals.length >= HYROX_LAPS;
-  return finished ? { ...session, lapTotals, finished: true, startedAtMs: null, accumulatedSecs: total } : { ...session, lapTotals };
+  return finished ? { ...stopRoxzone(session, nowMs), lapTotals, finished: true, startedAtMs: null, accumulatedSecs: total } : { ...session, lapTotals };
 }
 
 /** Takes the last lap back (a mis-tap). If the race had finished, the clock carries on from where the last lap ended. */
@@ -142,6 +164,7 @@ export interface HyroxResult {
   runTotal: number;
   stationTotal: number;
   bestRun: number | null;
+  roxzone: number;
 }
 
 export function hyroxResult(session: HyroxSession): HyroxResult {
@@ -153,6 +176,7 @@ export function hyroxResult(session: HyroxSession): HyroxResult {
     runTotal: runs.reduce((a, b) => a + b, 0),
     stationTotal: stations.reduce((a, b) => a + b, 0),
     bestRun: runs.length ? Math.min(...runs) : null,
+    roxzone: session.roxzoneSecs ?? 0,
   };
 }
 
@@ -162,6 +186,7 @@ export function hyroxSummaryNote(session: HyroxSession): string {
   const bits = [`${hyroxClock(r.total)} total${session.finished ? "" : ` (${session.lapTotals.length}/${HYROX_LAPS} laps)`}`];
   if (r.runTotal > 0) bits.push(`run total ${hyroxClock(r.runTotal)}`);
   if (r.bestRun !== null) bits.push(`best run ${hyroxClock(r.bestRun)}`);
+  if (r.roxzone > 0) bits.push(`Roxzone ${hyroxClock(r.roxzone)}`);
   return bits.join(", ");
 }
 

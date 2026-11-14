@@ -12,6 +12,8 @@ import {
   hyroxElapsed,
   hyroxLap,
   hyroxPause,
+  hyroxRoxzoneToggle,
+  roxzoneElapsed,
   hyroxResult,
   hyroxSegments,
   hyroxSplits,
@@ -39,6 +41,8 @@ export default function HyroxScreen() {
   const lapIndex = session.lapTotals.length;
   const lapStart = lapIndex === 0 ? 0 : session.lapTotals[lapIndex - 1];
   const total = useTickingValue(() => hyroxElapsed(session, Date.now()), running, 250);
+  const inRoxzone = !!session.roxzoneStartedAtMs;
+  const roxzone = useTickingValue(() => roxzoneElapsed(session, Date.now()), inRoxzone, 250);
   const current = segments[lapIndex] ?? null;
   const isLast = lapIndex === HYROX_LAPS - 1;
   const paused = session.started && !running && !session.finished;
@@ -62,6 +66,10 @@ export default function HyroxScreen() {
     if (next.finished) celebrateFeedback();
     else successFeedback();
     commit(next);
+  }
+  function handleRoxzone() {
+    tapFeedback();
+    commit(hyroxRoxzoneToggle(session, Date.now()));
   }
   function handleUndo() {
     tapFeedback();
@@ -88,6 +96,7 @@ export default function HyroxScreen() {
           <ResultLine label="Run total" value={hyroxClock(result.runTotal)} />
           <ResultLine label="Stations total" value={hyroxClock(result.stationTotal)} />
           <ResultLine label="Best run lap" value={result.bestRun !== null ? hyroxClock(result.bestRun) : "—"} />
+          <ResultLine label="Roxzone time" value={hyroxClock(result.roxzone)} />
           <Text style={styles.savedHint}>Go back and press Log workout to save every run and station.</Text>
           <Button title="Done" onPress={() => router.back()} style={{ marginTop: Spacing.md }} />
         </View>
@@ -118,6 +127,19 @@ export default function HyroxScreen() {
               <Text style={styles.bigButtonText}>{isLast ? "Finish" : "Lap"}</Text>
             </Pressable>
           )}
+          {running ? (
+            <Pressable
+              onPress={handleRoxzone}
+              accessibilityRole="button"
+              accessibilityState={{ selected: inRoxzone }}
+              accessibilityLabel={inRoxzone ? "In the Roxzone. Tap when you leave it." : "Tap when you enter the Roxzone"}
+              style={[styles.roxButton, inRoxzone && styles.roxButtonOn]}
+            >
+              <Text style={[styles.roxText, inRoxzone && styles.roxTextOn]}>
+                {inRoxzone ? `In the Roxzone · ${hyroxClock(roxzone)} (tap to leave)` : `Roxzone · ${hyroxClock(roxzone)} (tap to enter)`}
+              </Text>
+            </Pressable>
+          ) : null}
           <View style={styles.smallRow}>
             {running ? (
               <Pressable onPress={handlePause} accessibilityRole="button" style={styles.smallButton}>
@@ -187,6 +209,10 @@ const useStyles = makeLegacyStyles((Color) =>
     controls: { alignItems: "center", paddingHorizontal: Spacing.lg, marginTop: Spacing.md, gap: Spacing.sm },
     bigButton: { width: "100%", minHeight: 88, borderRadius: Radius.pill, backgroundColor: Color.gold, alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 10 },
     bigButtonText: { fontSize: 26, fontWeight: "800", color: Color.goldForeground },
+    roxButton: { width: "100%", minHeight: 52, borderRadius: Radius.pill, borderWidth: 2, borderColor: Color.borderDefault, alignItems: "center", justifyContent: "center", paddingHorizontal: Spacing.md },
+    roxButtonOn: { backgroundColor: "#FFFFFF", borderColor: "#FFFFFF" },
+    roxText: { fontSize: 15, fontWeight: "700", color: Color.textPrimary },
+    roxTextOn: { color: "#0A1526" },
     smallRow: { flexDirection: "row", gap: Spacing.sm },
     smallButton: { minHeight: 44, paddingHorizontal: 16, borderRadius: Radius.pill, backgroundColor: Color.surface2, flexDirection: "row", alignItems: "center", gap: 6 },
     smallText: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },

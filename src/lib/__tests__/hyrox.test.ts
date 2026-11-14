@@ -103,3 +103,33 @@ describe("hyrox saved entries", () => {
     expect(e.stations[7].weight).toBe("6 kg");
   });
 });
+
+import { hyroxRoxzoneToggle, roxzoneElapsed } from "../hyrox";
+
+describe("roxzone", () => {
+  it("adds up the time spent in the zones, separately from the laps", () => {
+    let s = hyroxStart(emptyHyroxSession(), 0);
+    s = hyroxRoxzoneToggle(s, 10_000);
+    s = hyroxRoxzoneToggle(s, 40_000);
+    s = hyroxRoxzoneToggle(s, 100_000);
+    expect(roxzoneElapsed(s, 120_000)).toBe(50);
+    s = hyroxRoxzoneToggle(s, 160_000);
+    expect(s.roxzoneSecs).toBe(90);
+    expect(s.lapTotals).toEqual([]);
+  });
+
+  it("stops when the race is paused or finishes, and cannot start before the race does", () => {
+    expect(hyroxRoxzoneToggle(emptyHyroxSession(), 5_000).roxzoneStartedAtMs).toBeNull();
+    let s = hyroxStart(emptyHyroxSession(), 0);
+    s = hyroxRoxzoneToggle(s, 10_000);
+    s = hyroxPause(s, 25_000);
+    expect(s.roxzoneStartedAtMs).toBeNull();
+    expect(s.roxzoneSecs).toBe(15);
+    s = hyroxStart(s, 30_000);
+    s = hyroxRoxzoneToggle(s, 31_000);
+    for (let i = 1; i <= 16; i++) s = hyroxLap(s, 31_000 + i * 100_000);
+    expect(s.roxzoneStartedAtMs).toBeNull();
+    expect(hyroxResult(s).roxzone).toBeGreaterThan(15);
+    expect(hyroxSummaryNote(s)).toContain("Roxzone");
+  });
+});

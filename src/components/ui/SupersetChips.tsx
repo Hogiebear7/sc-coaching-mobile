@@ -2,6 +2,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { Radius, Spacing } from "@/constants/theme";
 import { makeLegacyStyles } from "@/lib/theme";
+import { supersetLetter } from "@/lib/superset-label";
 
 // Computes the next unused "ST<n>" label given the groups already assigned
 // in scope, so "+ New" always offers the next free slot.
@@ -41,11 +42,11 @@ export function SupersetChips({
           onPress={() => onChange(group)}
           style={[styles.chip, value === group && styles.chipActive]}
         >
-          <Text style={[styles.chipText, value === group && styles.chipTextActive]}>{group}</Text>
+          <Text style={[styles.chipText, value === group && styles.chipTextActive]}>Superset {supersetLetter(group, allGroups)}</Text>
         </Pressable>
       ))}
       <Pressable onPress={() => onChange(nextSupersetLabel(allGroups))} style={styles.chip}>
-        <Text style={styles.chipText}>+ New</Text>
+        <Text style={styles.chipText}>+ New superset</Text>
       </Pressable>
     </View>
   );

@@ -182,7 +182,7 @@ const useStyles = makeLegacyStyles((Color) =>
     barSegment: { height: 8, borderRadius: 4, backgroundColor: Color.surface3, overflow: "hidden" },
     barFill: { height: 8, borderRadius: 4, backgroundColor: Color.brand },
     barLabels: { flexDirection: "row", gap: 4, marginTop: 6 },
-    barLabel: { fontSize: 11, fontWeight: "600", letterSpacing: 0.5, color: Color.textFaint, textAlign: "center" },
+    barLabel: { fontSize: 12, fontWeight: "600", letterSpacing: 0.5, color: Color.textFaint, textAlign: "center" },
 
     hero: { padding: Spacing.lg },
     eyebrow: { fontSize: 12, fontWeight: "700", letterSpacing: 1, color: Color.textMuted },

@@ -10,6 +10,7 @@ import { figure, Radius, Spacing } from "@/constants/theme";
 import { successFeedback, tapFeedback } from "@/lib/haptics";
 import { useRestTimer } from "@/lib/rest-timer";
 import { useTickingValue } from "@/lib/use-ticker";
+import { getTimerTarget, offerTimerResult } from "@/lib/timer-result";
 import { useWorkoutDraft } from "@/lib/workout-draft";
 import { TimeWheelPicker } from "@/components/ui/TimeWheelPicker";
 import { TimerDial } from "@/components/ui/TimerDial";
@@ -114,9 +115,13 @@ export default function RestTimerScreen() {
     }
   }
 
+  // A timer started from a set is that set's own time: no -15s / +15s, and Reset always goes back to it.
+  const targetSecs = Number(initialSecondsParam) > 0 ? Number(initialSecondsParam) : null;
+  const fromSet = getReadyParam === "1" && !!getTimerTarget() && targetSecs !== null;
+
   function handleReset() {
     tapFeedback();
-    timer.reset(timer.state.durationSecs, timer.state.label);
+    timer.reset(fromSet && targetSecs ? targetSecs : timer.state.durationSecs, timer.state.label);
   }
 
   function handlePreset(secs: number) {
@@ -218,12 +223,37 @@ export default function RestTimerScreen() {
           </View>
         ) : null}
 
+        {(() => {
+          // Started from a set on the log screen? Offer the time back to that set, then clear the timer so it does not linger at the bottom of the
+          // log screen. A countdown that ran out adds the set's own time; stopping early adds the time actually done.
+          if (!fromSet || !targetSecs) return null;
+          const finished = !isStopwatch && done;
+          const doneSecs = isStopwatch ? stopwatchElapsed : Math.max(0, timer.state.durationSecs - remaining);
+          const secs = finished ? targetSecs : doneSecs;
+          if (isStopwatch ? (timer.isStopwatchRunning || secs <= 0) : (!finished && (doneSecs <= 0 || timer.isPreCountingDown))) return null;
+          return (
+            <Pressable
+              onPress={() => {
+                successFeedback();
+                offerTimerResult(secs);
+                timer.reset(targetSecs, null);
+                router.back();
+              }}
+              accessibilityRole="button"
+              style={styles.addToSetButton}
+            >
+              <Ionicons name="checkmark-circle" size={20} color={Color.goldForeground} />
+              <Text style={styles.addToSetText}>{finished ? `Done: add ${formatClock(secs)} to the set` : `Finish early: add ${formatClock(secs)}`}</Text>
+            </Pressable>
+          );
+        })()}
+
         {timer.isPreCountingDown ? (
           <View style={styles.getReadyWrap}>
             <Text style={styles.getReadyLabel}>Get ready</Text>
             <Text style={styles.getReadyNumber}>{preCountdownRemaining}</Text>
             <Text style={styles.getReadyHint}>
-              {timer.state.label ? `${timer.state.label} starts in a moment` : "Your rest starts in a moment"}
+              {getReadyParam === "1" ? (timer.state.label ? `${timer.state.label}: get ready` : "Get ready") : timer.state.label ? `${timer.state.label} starts in a moment` : "Your rest starts in a moment"}
             </Text>
           </View>
         ) : isStopwatch ? (
@@ -284,14 +314,16 @@ export default function RestTimerScreen() {
               </View>
             </View>
 
-            <View style={styles.adjustRow}>
-              <Pressable onPress={() => adjust(-15)} style={styles.adjustButton}>
-                <Text style={styles.adjustText}>−15s</Text>
-              </Pressable>
-              <Pressable onPress={() => adjust(15)} style={styles.adjustButton}>
-                <Text style={styles.adjustText}>+15s</Text>
-              </Pressable>
-            </View>
+            {fromSet ? null : (
+              <View style={styles.adjustRow}>
+                <Pressable onPress={() => adjust(-15)} style={styles.adjustButton}>
+                  <Text style={styles.adjustText}>−15s</Text>
+                </Pressable>
+                <Pressable onPress={() => adjust(15)} style={styles.adjustButton}>
+                  <Text style={styles.adjustText}>+15s</Text>
+                </Pressable>
+              </View>
+            )}
 
             <View style={styles.controlsRow}>
               <Pressable onPress={handleReset} style={styles.secondaryControl}>
@@ -338,6 +370,8 @@ const useStyles = makeLegacyStyles((Color) =>
     },
     batteryBannerTitle: { fontSize: 15, fontWeight: "600", color: Color.textPrimary },
     batteryBannerBody: { fontSize: 14, color: Color.textMuted, marginTop: 2, lineHeight: 20 },
+    addToSetButton: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, alignSelf: "center", minHeight: 48, paddingHorizontal: 24, borderRadius: 24, backgroundColor: Color.gold, marginBottom: Spacing.lg },
+    addToSetText: { fontSize: 16, fontWeight: "700", color: Color.goldForeground },
     batteryBannerActions: { flexDirection: "row", gap: Spacing.lg, marginTop: Spacing.sm },
     batteryBannerLink: { fontSize: 14, fontWeight: "600", color: Color.textPrimary, textDecorationLine: "underline" },
     batteryBannerDismiss: { fontSize: 14, fontWeight: "600", color: Color.textFaint },

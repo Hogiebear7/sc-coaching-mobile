@@ -9,7 +9,8 @@ import { Card } from "@/components/ui/Card";
 import { StatCard } from "@/components/ui/StatCard";
 import { Radius, Spacing } from "@/constants/theme";
 import { exerciseMatchesEquipmentSlugs } from "@/lib/equipment-matching";
-import { pickHeroMedia, useExerciseLibraryDetail } from "@/lib/queries/exercise-library";
+import { ExerciseDemoMedia } from "@/components/ui/ExerciseDemoMedia";
+import { pickHeroMedia, pickOwnVideo, useExerciseLibraryDetail } from "@/lib/queries/exercise-library";
 import { useEquipmentCatalog, useGymProfiles } from "@/lib/queries/gym-profiles";
 import { useWorkouts } from "@/lib/queries/workouts";
 import { getExerciseStats } from "@/lib/workout-formatters";
@@ -40,7 +41,7 @@ function GifSlot({ url, name }: { url: string | null; name: string }) {
         source={{ uri: url }}
         accessibilityLabel={`${name} demonstration`}
         style={styles.gif}
-        resizeMode="cover"
+        resizeMode="contain"
         onLoad={() => setLoaded(true)}
       />
     </View>
@@ -96,7 +97,13 @@ export default function ExerciseLibraryDetailScreen() {
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.scroll}>
-          <GifSlot url={pickHeroMedia(data.media)?.url ?? null} name={data.exercise.name} />
+          {pickOwnVideo(data.media) ? (
+            <View style={styles.gifWrap}>
+              <ExerciseDemoMedia media={data.media} name={data.exercise.name} size={300} />
+            </View>
+          ) : (
+            <GifSlot url={pickHeroMedia(data.media)?.url ?? null} name={data.exercise.name} />
+          )}
 
           <Button
             title="Add to workout"
@@ -211,8 +218,11 @@ const useStyles = makeLegacyStyles((Color) =>
     centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
     errorText: { color: Color.textMuted, fontSize: 14 },
     scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
+    // Capped at 300pt and centred: the largest render we hold is 360 pixels, so stretching it across a whole phone screen made it blurry.
     gifWrap: {
       width: "100%",
+      maxWidth: 300,
+      alignSelf: "center",
       aspectRatio: 1,
       borderRadius: Radius.md,
       overflow: "hidden",

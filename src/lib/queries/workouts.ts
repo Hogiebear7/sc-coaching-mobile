@@ -37,6 +37,8 @@ export interface WorkoutExerciseEntry {
   setType?: WorkoutSetType | null;
   supersetGroup?: string | null;
   perSide?: boolean | null;
+  /** Place in the whole workout, exercises and cardio together. Absent on sessions saved before ordering existed. */
+  order?: number | null;
   notes: string | null;
 }
 
@@ -50,6 +52,10 @@ export interface WorkoutRunEntry {
   /** Absent on older entries (runs) and from older servers. */
   cardioType?: import("@/lib/cardio").CardioType;
   level?: number | null;
+  /** Place in the whole workout, exercises and cardio together. Absent on sessions saved before ordering existed. */
+  order?: number | null;
+  /** Superset label shared with the exercises it was done back to back with. */
+  supersetGroup?: string | null;
 }
 
 // Mirrors WorkoutsData in the main repo's lib/workouts-data.ts.
@@ -66,6 +72,9 @@ export interface WorkoutSessionSummary {
   classId: string | null;
   /** Hides this session from the member's followers' Community feed. */
   isPrivate: boolean;
+  /** How hard the whole session felt (1 to 10) and a few words on it, when the member said. Absent from older servers. */
+  sessionRpe?: number | null;
+  feelingNotes?: string | null;
 }
 
 export interface PersonalBest {
@@ -118,6 +127,8 @@ export interface CreateWorkoutExerciseInput {
   setType: WorkoutSetType | null;
   supersetGroup: string | null;
   perSide: boolean;
+  /** Place in the whole workout, exercises and cardio together. Older servers ignore it. */
+  order?: number | null;
   notes: string | null;
 }
 
@@ -129,6 +140,10 @@ export interface CreateWorkoutRunInput {
   notes: string | null;
   cardioType?: import("@/lib/cardio").CardioType;
   level?: number | null;
+  /** Place in the whole workout, exercises and cardio together. Older servers ignore it. */
+  order?: number | null;
+  /** Superset label shared with the exercises it was done back to back with. Older servers ignore it. */
+  supersetGroup?: string | null;
 }
 
 export interface CreateWorkoutInput {
@@ -225,6 +240,12 @@ export interface UpdateClassWorkoutInput {
   sessionId: string;
   exercises: CreateWorkoutExerciseInput[];
   notes: string;
+  /** Cardio from the class, as edited. Older servers ignore it. */
+  runs?: CreateWorkoutRunInput[];
+  /** How hard the whole session felt, 1 to 10. Older servers ignore it. */
+  sessionRpe?: number | null;
+  /** A few words on how it felt. Older servers ignore it. */
+  feelingNotes?: string;
 }
 
 // Class-synced sessions only — corrects exercises/notes on a workout that

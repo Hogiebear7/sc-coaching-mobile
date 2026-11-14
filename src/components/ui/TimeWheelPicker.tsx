@@ -1,5 +1,5 @@
-import { useEffect, useRef } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { useEffect, useRef, useState } from "react";
+import { PanResponder, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { Spacing } from "@/constants/theme";
 import { tapFeedback } from "@/lib/haptics";
@@ -26,83 +26,71 @@ function WheelColumn({
   label: string;
 }) {
   const styles = useStyles();
-  const scrollRef = useRef<ScrollView>(null);
-  const suppressNextSync = useRef(false);
-  const settleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const values = Array.from({ length: max + 1 }, (_, i) => i);
-
-  // Keep the scroll position synced when `value` changes from outside this
-  // column (a reset, or the parent clamping an out-of-range value) — but
-  // not right after this column's own scroll just set it, or the sync
-  // would fight the native snap that's already mid-flight.
+  // The newest value and callback, for touch handlers that outlive the render that created them.
+  const latest = useRef({ value, onChange, max });
   useEffect(() => {
-    if (suppressNextSync.current) {
-      suppressNextSync.current = false;
-      return;
-    }
-    scrollRef.current?.scrollTo({ y: value * ITEM_HEIGHT, animated: false });
-  }, [value]);
+    latest.current = { value, onChange, max };
+  });
+  const startValue = useRef(0);
+  const flingTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  useEffect(() => {
-    return () => {
-      if (settleTimer.current) clearTimeout(settleTimer.current);
-    };
-  }, []);
-
-  // Takes the offset, not the event: React Native releases a scroll event's
-  // nativeEvent once the handler returns, so reading it later (the settle
-  // timer below) crashed with "contentOffset of null".
-  function commitFromOffset(offsetY: number) {
-    const index = Math.round(offsetY / ITEM_HEIGHT);
-    const clamped = Math.max(0, Math.min(max, index));
-    if (clamped !== value) {
-      suppressNextSync.current = true;
+  function stopFling() {
+    if (flingTimer.current) clearInterval(flingTimer.current);
+    flingTimer.current = null;
+  }
+  function moveTo(next: number) {
+    const { value: current, onChange: change, max: top } = latest.current;
+    const clamped = Math.max(0, Math.min(top, next));
+    if (clamped !== current) {
       tapFeedback();
-      onChange(clamped);
+      change(clamped);
     }
   }
+  useEffect(() => stopFling, []);
 
+  // Dragging is handled here rather than by a scrolling list, so it follows the finger the same way on every phone: every ITEM_HEIGHT of
+  // movement is one step, and a flick carries on for a moment before it settles.
+  // The handlers only read the refs when a touch happens, never while rendering.
+  // eslint-disable-next-line react-hooks/refs
+  const [pan] = useState(() =>
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderTerminationRequest: () => false,
+      onPanResponderGrant: () => {
+        stopFling();
+        startValue.current = latest.current.value;
+      },
+      onPanResponderMove: (_e, g) => {
+        moveTo(startValue.current + Math.round(-g.dy / ITEM_HEIGHT));
+      },
+      onPanResponderRelease: (_e, g) => {
+        // Release speed in px/ms (negative = flicked up, so the value goes up).
+        let speed = -g.vy;
+        if (Math.abs(speed) < 0.5) return;
+        stopFling();
+        flingTimer.current = setInterval(() => {
+          moveTo(latest.current.value + (speed > 0 ? 1 : -1));
+          speed *= 0.82;
+          if (Math.abs(speed) < 0.35) stopFling();
+        }, 60);
+      },
+      onPanResponderTerminate: () => stopFling(),
+    })
+  );
+
+  const rows = [value - 1, value, value + 1];
   return (
     <View style={styles.column}>
-      <View style={styles.viewport}>
-        <ScrollView
-          ref={scrollRef}
-          showsVerticalScrollIndicator={false}
-          snapToInterval={ITEM_HEIGHT}
-          decelerationRate="fast"
-          contentContainerStyle={{ paddingVertical: ITEM_HEIGHT * PADDING_ROWS }}
-          onMomentumScrollEnd={(e) => commitFromOffset(e.nativeEvent.contentOffset.y)}
-          onScrollEndDrag={(e) => {
-            // A slow drag that never picks up momentum doesn't always fire
-            // onMomentumScrollEnd on every platform — this catches that
-            // case too; if momentum does follow, it just re-confirms the
-            // same index onChange already no-ops against.
-            if (e.nativeEvent.velocity && Math.abs(e.nativeEvent.velocity.y) < 0.05) commitFromOffset(e.nativeEvent.contentOffset.y);
-          }}
-          // Trackpad/mouse-wheel scrolling (web) doesn't reliably fire
-          // onMomentumScrollEnd/onScrollEndDrag the way a touch drag does —
-          // the scroll position visibly moves but nothing ever commits it.
-          // This is the platform-agnostic fallback: any scroll resets an
-          // idle timer, and once scrolling has genuinely stopped for a
-          // moment (whatever the input device), commit wherever it settled.
-          // Harmless alongside the two handlers above — same clamped index,
-          // onChange just no-ops the second time.
-          onScroll={(e) => {
-            if (settleTimer.current) clearTimeout(settleTimer.current);
-            const y = e.nativeEvent.contentOffset.y;
-            settleTimer.current = setTimeout(() => commitFromOffset(y), 120);
-          }}
-          scrollEventThrottle={16}
-        >
-          {values.map((v) => (
-            <View key={v} style={styles.row}>
-              <Text style={[styles.rowText, v === value && styles.rowTextActive]}>{pad(v)}</Text>
-            </View>
-          ))}
-        </ScrollView>
-        {/* Selected-row frame — thin gold rules above/below the center row,
-            matching the reference picker's highlighted middle row. Purely
-            decorative, so it can't intercept the scroll gesture beneath it. */}
+      <View style={styles.viewport} {...pan.panHandlers} accessibilityRole="adjustable" accessibilityLabel={label} accessibilityValue={{ min: 0, max, now: value }}
+        accessibilityActions={[{ name: "increment" }, { name: "decrement" }]}
+        onAccessibilityAction={(e) => moveTo(latest.current.value + (e.nativeEvent.actionName === "increment" ? 1 : -1))}
+      >
+        {rows.map((v, i) => (
+          <View key={i} style={styles.row} pointerEvents="none">
+            <Text style={[styles.rowText, i === 1 && styles.rowTextActive]}>{v >= 0 && v <= max ? pad(v) : ""}</Text>
+          </View>
+        ))}
         <View pointerEvents="none" style={styles.selectionFrame} />
       </View>
       <Text style={styles.columnLabel}>{label}</Text>
@@ -133,7 +121,11 @@ export function TimeWheelPicker({
   const m = Math.floor((totalSecs % 3600) / 60);
   const s = totalSecs % 60;
 
+  const maxTotal = (showHours ? maxHours * 3600 : 0) + 59 * 60 + 59;
+  const nudge = (delta: number) => onChange(Math.max(0, Math.min(maxTotal, totalSecs + delta)));
+
   return (
+    <View>
     <View style={styles.wrap}>
       {showHours ? (
         <>
@@ -145,11 +137,31 @@ export function TimeWheelPicker({
       <Text style={styles.colon}>:</Text>
       <WheelColumn value={s} max={59} label="sec" onChange={(v) => onChange(h * 3600 + m * 60 + v)} />
     </View>
+    <View style={styles.nudgeRow}>
+      {[-60, -15, 15, 60].map((d) => (
+        <Pressable
+          key={d}
+          onPress={() => {
+            tapFeedback();
+            nudge(d);
+          }}
+          accessibilityRole="button"
+          accessibilityLabel={`${d < 0 ? "Take off" : "Add"} ${Math.abs(d)} seconds`}
+          style={styles.nudge}
+        >
+          <Text style={styles.nudgeText}>{d < 0 ? "−" : "+"}{Math.abs(d) === 60 ? "1m" : "15s"}</Text>
+        </Pressable>
+      ))}
+    </View>
+    </View>
   );
 }
 
 const useStyles = makeLegacyStyles((Color) =>
   StyleSheet.create({
+    nudgeRow: { flexDirection: "row", justifyContent: "center", gap: 8, marginTop: Spacing.md },
+    nudge: { minWidth: 56, minHeight: 40, paddingHorizontal: 10, borderRadius: 20, alignItems: "center", justifyContent: "center", backgroundColor: Color.surface2 },
+    nudgeText: { fontSize: 14, fontWeight: "700", color: Color.textPrimary },
     wrap: { flexDirection: "row", alignItems: "flex-start", justifyContent: "center" },
     column: { alignItems: "center", width: 64 },
     viewport: { height: ITEM_HEIGHT * (PADDING_ROWS * 2 + 1), width: "100%", overflow: "hidden" },

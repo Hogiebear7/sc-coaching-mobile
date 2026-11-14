@@ -23,6 +23,8 @@ import { todayDateString } from "@/lib/workout-formatters";
 const STORAGE_KEY = "workout-draft-v1";
 const LIVE_NOTIFICATION_ID = "workout-draft-live";
 
+import { defaultHyroxConfig, emptyHyroxSession, type HyroxConfig, type HyroxSession } from "@/lib/hyrox";
+
 export type SetRow = {
   key: string;
   weight: string;
@@ -31,6 +33,8 @@ export type SetRow = {
   repsLeft: string;
   setType: WorkoutSetType;
   completed: boolean;
+  /** What was typed under each unit (kg, time, band), so switching units and back never loses it. `weight` holds the current unit's value. */
+  modeValues?: Partial<Record<"weight" | "time" | "band", string>>;
 };
 
 export type ExerciseRow = {
@@ -47,6 +51,8 @@ export type ExerciseRow = {
   supersetGroup: string | null;
   /** Reps/weight performed per side (unilateral exercise). */
   perSide: boolean;
+  /** Place in the whole workout, exercises and cardio together (see lib/entry-order.ts). Absent on older drafts. */
+  order?: number | null;
 };
 
 export type RunRow = {
@@ -62,9 +68,19 @@ export type RunRow = {
   cardioType: import("@/lib/cardio").CardioType;
   /** Machine level or incline, as typed. */
   level: string;
+  /** How hard the cardio felt, 1-10, as chosen. Saved into the cardio note as "RPE 7". */
+  rpe?: string;
+  /** Place in the whole workout, exercises and cardio together (see lib/entry-order.ts). Absent on older drafts. */
+  order?: number | null;
+  /** "ST1", "ST2" ...: cardio done back to back with the exercises sharing this label. */
+  supersetGroup?: string | null;
+  /** Cardio inside a superset is ticked once per round: the rounds (from 0) it has been ticked for. Not saved. */
+  roundsDone?: number[];
+  /** True once the member has picked a cardio type, so the card says "Cardio" until then and the type after. */
+  typeChosen?: boolean;
 };
 
-export type WorkoutFormat = "standard" | "circuit" | "amrap" | "emom" | "tabata" | "chipper";
+export type WorkoutFormat = "standard" | "circuit" | "amrap" | "emom" | "tabata" | "chipper" | "hyrox";
 
 // Every circuit station always runs on a clock — reps-only stations with no
 // time limit at all aren't a circuit, they're just an exercise list. repTarget
@@ -245,6 +261,9 @@ export interface WorkoutDraft {
   emomConfig: EmomConfig;
   tabataConfig: TabataConfig;
   chipperConfig: ChipperConfig;
+  /** Hyrox: the stations (distance and weight are the member's to change) and the live race state. */
+  hyroxConfig: HyroxConfig;
+  hyroxSession: HyroxSession;
   formatResultNote: string;
   formatSession: FormatSessionState;
 }
@@ -270,6 +289,8 @@ function emptyDraft(): WorkoutDraft {
     emomConfig: emptyEmomConfig(),
     tabataConfig: emptyTabataConfig(),
     chipperConfig: emptyChipperConfig(),
+    hyroxConfig: defaultHyroxConfig(),
+    hyroxSession: emptyHyroxSession(),
     formatResultNote: "",
     formatSession: emptyFormatSession(),
   };
@@ -297,6 +318,7 @@ function normalizeSetRow(raw: Partial<SetRow> | null | undefined): SetRow {
     repsLeft: r.repsLeft ?? "",
     setType: r.setType ?? "standard",
     completed: r.completed ?? false,
+    modeValues: r.modeValues && typeof r.modeValues === "object" ? r.modeValues : undefined,
   };
 }
 
@@ -313,6 +335,7 @@ function normalizeExerciseRow(raw: Partial<ExerciseRow> | null | undefined): Exe
     defaultSetType: r.defaultSetType ?? "standard",
     supersetGroup: r.supersetGroup ?? null,
     perSide: r.perSide ?? false,
+    order: typeof r.order === "number" ? r.order : null,
   };
 }
 
@@ -329,6 +352,12 @@ function normalizeRunRow(raw: Partial<RunRow> | null | undefined): RunRow {
     splits: Array.isArray(r.splits) ? r.splits : [],
     cardioType: asCardioType(r.cardioType),
     level: r.level ?? "",
+    rpe: r.rpe ?? "",
+    order: typeof r.order === "number" ? r.order : null,
+    supersetGroup: typeof r.supersetGroup === "string" ? r.supersetGroup : null,
+    roundsDone: Array.isArray(r.roundsDone) ? r.roundsDone.filter((n) => typeof n === "number") : [],
+    // A draft saved before this existed: a type other than the default run means it was picked.
+    typeChosen: r.typeChosen ?? asCardioType(r.cardioType) !== "run",
   };
 }
 

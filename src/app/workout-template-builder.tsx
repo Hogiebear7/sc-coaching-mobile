@@ -21,6 +21,7 @@ import {
   useUpdateWorkoutTemplate,
   useWorkoutTemplates,
 } from "@/lib/queries/workout-templates";
+import { OptionPicker } from "@/components/ui/OptionPicker";
 import { SET_TYPE_OPTIONS, useWorkouts, type WorkoutSetType } from "@/lib/queries/workouts";
 import { takePendingWorkoutTemplateSeed } from "@/lib/workout-template-seed";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
@@ -120,16 +121,7 @@ function rowsToExercises(rows: ExerciseRow[]): PrescribedExercise[] {
 }
 
 function SetTypeChips({ value, onChange }: { value: WorkoutSetType; onChange: (v: WorkoutSetType) => void }) {
-  const styles = useStyles();
-  return (
-    <View style={styles.setTypeRow}>
-      {SET_TYPE_OPTIONS.map((opt) => (
-        <Pressable key={opt.value} onPress={() => onChange(opt.value)} style={[styles.setTypeChip, value === opt.value && styles.setTypeChipActive]}>
-          <Text style={[styles.setTypeChipText, value === opt.value && styles.setTypeChipTextActive]}>{opt.label}</Text>
-        </Pressable>
-      ))}
-    </View>
-  );
+  return <OptionPicker<WorkoutSetType> title="Set type" options={SET_TYPE_OPTIONS} value={value} onChange={onChange} />;
 }
 
 export default function WorkoutTemplateBuilderScreen() {

@@ -29,7 +29,9 @@ export type NotificationType =
   | "nutrition_update"
   // Staff (owner) only: AI spending has passed 50% / 80% of the ceiling; last month's report is ready.
   | "ai_spend_alert"
-  | "monthly_report";
+  | "monthly_report"
+  // "Well done today": the coach has finished a class workout; open it, check it and say how it felt.
+  | "class_recap";
 
 export interface NotificationRecord {
   id: string;

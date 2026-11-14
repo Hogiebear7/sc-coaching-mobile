@@ -21,7 +21,8 @@ import { BodyWeightCard } from "@/components/ui/BodyWeightCard";
 import { Card } from "@/components/ui/Card";
 import { ContinueWorkoutPill } from "@/components/ui/ContinueWorkoutPill";
 import { InfoModal } from "@/components/ui/InfoModal";
-import { LiquidBottle } from "@/components/ui/LiquidBottle";
+import { WaterAdjuster } from "@/components/nutrition/WaterAdjuster";
+import { OptionPicker, type PickerOption } from "@/components/ui/OptionPicker";
 import { KeyboardAwareScroll } from "@/components/ui/KeyboardAwareScroll";
 import type { MacroKind } from "@/components/ui/MacroPieChart";
 import { ProgressBar } from "@/components/ui/ProgressBar";
@@ -59,7 +60,8 @@ import { todayDateString } from "@/lib/workout-formatters";
 import { makeStyles, useAppTheme } from "@/lib/theme";
 import { tourTarget, useTourScroll } from "@/lib/tour-registry";
 import { notInPlanCopy, CAN_SELL_DIGITAL_PLAN, DIGITAL_PLAN_ROUTE } from "@/lib/upsell-config";
-import { DEFAULT_DRINK, DRINK_TYPES, drinkNote, waterEquivalentMl, type DrinkId } from "@/lib/drink-types";
+import { DEFAULT_DRINK, DRINK_TYPES, drinkNote, findDrink, waterEquivalentMl, type DrinkId } from "@/lib/drink-types";
+import { reportTouch } from "@/lib/outside-touch";
 import { useWaterAmount, waterQuickAdds } from "@/lib/water-amount";
 
 function shiftDate(dateISO: string, days: number): string {
@@ -99,10 +101,6 @@ const MACRO_INFO: Record<MacroKind, { title: string; body: string }> = {
   },
 };
 
-// Generous sanity cap on manual entry — catches the realistic typo (typing
-// "15" meaning "1.5") rather than trying to guess a "real" hydration max.
-const MANUAL_MAX_ML = 15_000;
-
 // Target is 1ml water per kcal in the daily calorie target above (same
 // number, so it can't disagree) — 2805 kcal target means 2.8L. Falls back to
 // a generic "no target yet" message when the calorie target itself isn't
@@ -116,6 +114,13 @@ const HYDRATION_INFO_BODY =
   "not a flat \"drink 2 litres\" rule. Food counts toward it too: fruit, vegetables, dairy, and most cooked meals are " +
   "60–90% water, so a good chunk of today's target is already covered before you've had a sip.";
 
+const DRINK_PICKER_OPTIONS: readonly PickerOption<DrinkId>[] = DRINK_TYPES.map((d) => ({
+  value: d.id,
+  label: d.label,
+  color: d.color,
+  hint: d.share < 1 ? `Counts as ${Math.round(d.share * 100)}% towards your goal` : undefined,
+}));
+
 function HydrationCard({ date }: { date: string }) {
   const waterAmount = useWaterAmount();
   const styles = useStyles();
@@ -123,8 +128,6 @@ function HydrationCard({ date }: { date: string }) {
   const { data: hydration } = useHydration(date);
   const logWater = useLogWater();
   const reduceMotion = useReduceMotionPref();
-  const [manualEntry, setManualEntry] = useState("");
-  const [manualError, setManualError] = useState<string | null>(null);
   const [showInfo, setShowInfo] = useState(false);
   // What the quick-add buttons log. The server keeps one water-equivalent total,
   // so a drink is converted before it is sent (see lib/drink-types.ts).
@@ -133,7 +136,6 @@ function HydrationCard({ date }: { date: string }) {
 
   const target = hydration?.targetMl ?? null;
   const logged = hydration?.loggedMl ?? 0;
-  const remainingPct = target && target > 0 ? Math.max(0, Math.min(100, 100 - (logged / target) * 100)) : 100;
 
   // Distinguishes "exactly on target" from "over target" — both used to
   // collapse into the same "target hit" copy once remainingPct clamped to 0,
@@ -150,23 +152,6 @@ function HydrationCard({ date }: { date: string }) {
     return `Target hit — ${diffL.toFixed(1)}L over.`;
   }, [target, logged]);
 
-  function handleSetManual() {
-    const parsed = parseFloat(manualEntry);
-    if (!manualEntry.trim() || !Number.isFinite(parsed) || parsed < 0) {
-      setManualError("Enter a valid number of litres.");
-      return;
-    }
-    const ml = Math.round(parsed * 1000);
-    if (ml > MANUAL_MAX_ML) {
-      setManualError("That's more than 15L — check the value.");
-      return;
-    }
-    tapFeedback();
-    logWater.mutate({ date, setMl: ml });
-    setManualEntry("");
-    setManualError(null);
-  }
-
   return (
     <Card style={styles.hydrationCard}>
       <View style={styles.hydrationLabelRow}>
@@ -182,47 +167,26 @@ function HydrationCard({ date }: { date: string }) {
         {target ? <Text style={styles.hydrationMetricTarget}> of {(target / 1000).toFixed(1)}L</Text> : null}
       </Text>
 
-      <View style={styles.hydrationBodyRow}>
-        <LiquidBottle fillPct={100 - remainingPct} reduceMotion={reduceMotion} />
-        <View style={styles.hydrationSideCol}>
-          {target ? (
-            <Text style={styles.hydrationSideText}>{statusText}</Text>
-          ) : (
-            <Text style={styles.hydrationEmptyText}>
-              No calorie target yet, so there&apos;s nothing to base a hydration target on — set one up in the card
-              above.
-            </Text>
-          )}
-        </View>
-      </View>
+      <WaterAdjuster
+        loggedMl={logged}
+        targetMl={target}
+        share={findDrink(drink).share}
+        drinkLabel={findDrink(drink).label}
+        reduceMotion={reduceMotion}
+        statusText={statusText}
+        noTargetText="No calorie target yet, so there's nothing to base a hydration target on. Set one up in the card above."
+        onSave={(totalMl) => logWater.mutate({ date, setMl: totalMl })}
+      />
 
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.hydrationDrinkScroll}
-        contentContainerStyle={styles.hydrationDrinkRow}
-        keyboardShouldPersistTaps="handled"
-      >
-        {DRINK_TYPES.map((d) => {
-          const active = d.id === drink;
-          return (
-            <Pressable
-              key={d.id}
-              onPress={() => {
-                selectionFeedback();
-                setDrink(d.id);
-              }}
-              accessibilityRole="button"
-              accessibilityState={{ selected: active }}
-              accessibilityLabel={d.label}
-              style={[styles.hydrationDrinkChip, active && { borderColor: colors.textSecondary }]}
-            >
-              <View style={[styles.hydrationDrinkDot, { backgroundColor: d.color }]} />
-              <Text style={[styles.hydrationDrinkText, active && styles.hydrationDrinkTextActive]}>{d.label}</Text>
-            </Pressable>
-          );
-        })}
-      </ScrollView>
+      <View style={styles.hydrationDrinkScroll}>
+        <OptionPicker<DrinkId>
+          label="Drink"
+          title="What are you drinking?"
+          options={DRINK_PICKER_OPTIONS}
+          value={drink}
+          onChange={setDrink}
+        />
+      </View>
       {drinkLine ? <Text style={styles.hydrationDrinkNote}>{drinkLine}</Text> : null}
 
       <View style={styles.hydrationQuickAddRow}>
@@ -249,36 +213,6 @@ function HydrationCard({ date }: { date: string }) {
           );
         })}
       </View>
-
-      <View style={styles.hydrationManualDivider} />
-      <Text style={styles.hydrationManualLabel}>Or enter manually</Text>
-      <View style={styles.hydrationManualRow}>
-        <TextInput
-          value={manualEntry}
-          onChangeText={(v) => {
-            setManualEntry(v);
-            if (manualError) setManualError(null);
-          }}
-          keyboardType="decimal-pad"
-          placeholder="Enter total litres, e.g. 1.5"
-          placeholderTextColor={colors.textMuted}
-          style={styles.hydrationManualInput}
-          onSubmitEditing={handleSetManual}
-          returnKeyType="done"
-        />
-        <Pressable
-          onPress={handleSetManual}
-          disabled={!manualEntry.trim()}
-          style={({ pressed }) => [
-            styles.hydrationManualButton,
-            !manualEntry.trim() && styles.hydrationManualButtonDisabled,
-            pressed && styles.pressed,
-          ]}
-        >
-          <Text style={styles.hydrationManualButtonText}>Set</Text>
-        </Pressable>
-      </View>
-      {manualError ? <Text style={styles.hydrationManualError}>{manualError}</Text> : null}
 
       <InfoModal visible={showInfo} onClose={() => setShowInfo(false)} title="Hydration" body={HYDRATION_INFO_BODY} />
     </Card>
@@ -594,7 +528,8 @@ export default function NutritionScreen() {
   const atToday = selectedDate === today;
 
   return (
-    <SafeAreaView style={styles.safe} edges={["top"]}>
+    // Every touch is reported so the water bottle, when switched on for dragging, can save when the member taps anywhere else.
+    <SafeAreaView style={styles.safe} edges={["top"]} onTouchStart={(e) => reportTouch(e.nativeEvent.pageX, e.nativeEvent.pageY)}>
       <KeyboardAwareScroll
         ref={scrollRef as never}
         contentContainerStyle={styles.scroll}

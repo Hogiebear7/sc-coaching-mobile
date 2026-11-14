@@ -16,6 +16,9 @@ import type { PrescribedExercise } from "@/lib/queries/programs";
 import { useDeleteWorkoutSession, useSetWorkoutVisibility, useWorkouts, type WorkoutExerciseEntry } from "@/lib/queries/workouts";
 import { setPendingWorkoutTemplateSeed } from "@/lib/workout-template-seed";
 import { computeExerciseSetTotals, computeSessionTotals, formatExerciseSetLabels, formatRun, groupSetLabels } from "@/lib/workout-formatters";
+import { CARDIO_LABEL, describeCardio } from "@/lib/cardio";
+import { supersetBadges } from "@/lib/superset-display";
+import { mergeSavedEntries } from "@/lib/entry-order";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 function formatLongDate(dateISO: string): string {
@@ -184,7 +187,55 @@ export default function SessionDetailScreen() {
             <>
               <Text style={styles.sectionLabel}>Exercises</Text>
               <View style={styles.exerciseList}>
-                {session.exercises.map((ex, idx) => {
+                {(() => {
+                  const merged = mergeSavedEntries(session.exercises, session.runs);
+                  const badges = supersetBadges(merged.map((m) => m.entry.supersetGroup ?? null));
+                  return merged.map((item, itemIdx) => {
+                  const badge = badges[itemIdx];
+                  // Cardio sits where it was done in the workout (older sessions have no order: exercises first, cardio after).
+                  if (item.kind === "run") {
+                    const run = item.entry;
+                    const desc = describeCardio({ cardioType: run.cardioType, distance: run.distance, durationSecs: run.durationSecs, sets: run.sets });
+                    return (
+                      <View key={`run-${itemIdx}`} style={styles.exerciseCard}>
+                        <View style={styles.exerciseHead}>
+                          <View style={{ flex: 1 }}>
+                            <Text style={styles.exerciseName}>{CARDIO_LABEL[run.cardioType ?? "run"]}</Text>
+                            <View style={styles.exerciseMetaRow}>
+                              {badge ? (
+                                <View style={[styles.supersetBadge, { backgroundColor: badge.color }]}>
+                                  <Text style={[styles.supersetBadgeText, { color: "#0a1526" }]}>{badge.label}</Text>
+                                </View>
+                              ) : null}
+                              <Text style={styles.exerciseMeta}>
+                                {desc.rounds > 1 ? `${desc.rounds} sets` : "Cardio"}
+                                {desc.total ? ` · ${desc.total} total` : ""}
+                              </Text>
+                            </View>
+                          </View>
+                        </View>
+                        {desc.perSet ? (
+                          <View style={styles.setTable}>
+                            <View style={styles.setRow}>
+                              <Text style={styles.setNumber}>{desc.rounds > 1 ? `Sets 1–${desc.rounds}` : "Set 1"}</Text>
+                              <Text style={styles.setValue}>{desc.perSet}</Text>
+                            </View>
+                            {desc.total ? (
+                              <View style={[styles.setRow, styles.setRowDivider]}>
+                                <Text style={styles.setNumber}>Total</Text>
+                                <Text style={styles.setValue}>{desc.total}</Text>
+                              </View>
+                            ) : null}
+                          </View>
+                        ) : (
+                          <Text style={styles.exerciseMeta}>{formatRun(run) || "Cardio"}</Text>
+                        )}
+                        {run.notes ? <Text style={styles.exerciseNote}>{run.notes}</Text> : null}
+                      </View>
+                    );
+                  }
+                  const ex = item.entry;
+                  const idx = session.exercises.indexOf(ex);
                   const exTotals = computeExerciseSetTotals(ex);
                   const groups = groupSetLabels(formatExerciseSetLabels(ex));
                   const section = ex.exerciseId ? sectionByExerciseId.get(ex.exerciseId) : undefined;
@@ -217,9 +268,9 @@ export default function SessionDetailScreen() {
                         <View style={{ flex: 1 }}>
                           <Text style={styles.exerciseName}>{ex.name}</Text>
                           <View style={styles.exerciseMetaRow}>
-                            {ex.supersetGroup ? (
-                              <View style={styles.supersetBadge}>
-                                <Text style={styles.supersetBadgeText}>Superset {ex.supersetGroup.replace(/^ST/, "")}</Text>
+                            {badge ? (
+                              <View style={[styles.supersetBadge, { backgroundColor: badge.color }]}>
+                                <Text style={[styles.supersetBadgeText, { color: "#0a1526" }]}>{badge.label}</Text>
                               </View>
                             ) : null}
                             <Text style={styles.exerciseMeta}>{meta}</Text>
@@ -242,14 +293,15 @@ export default function SessionDetailScreen() {
                       {ex.notes ? <Text style={styles.exerciseNote}>{ex.notes}</Text> : null}
                     </Pressable>
                   );
-                })}
+                  });
+                })()}
               </View>
             </>
           ) : null}
 
-          {session.runs.length > 0 ? (
+          {session.runs.length > 0 && session.exercises.length === 0 ? (
             <>
-              <Text style={styles.sectionLabel}>Runs</Text>
+              <Text style={styles.sectionLabel}>Cardio</Text>
               <Card style={styles.list}>
                 {session.runs.map((run, idx) => (
                   <View key={idx} style={[styles.row, idx > 0 && styles.rowDivider]}>
@@ -313,7 +365,7 @@ const useStyles = makeLegacyStyles((Color) =>
     exerciseMetaRow: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 6, marginTop: 3 },
     exerciseMeta: { fontSize: 14, color: Color.textMuted },
     supersetBadge: { borderRadius: Radius.pill, backgroundColor: Color.surface2, paddingHorizontal: 8, paddingVertical: 2 },
-    supersetBadgeText: { fontSize: 12, fontWeight: "600", color: Color.textSecondary },
+    supersetBadgeText: { fontSize: 12, fontWeight: "700", color: Color.textSecondary },
     setTable: { marginTop: 12, borderRadius: Radius.md, backgroundColor: Color.bg0, paddingHorizontal: 14 },
     setRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", minHeight: 42, gap: Spacing.md },
     setRowDivider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: Color.borderSubtle },

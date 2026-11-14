@@ -21,7 +21,15 @@ import {
 } from "@/lib/workout-draft";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
-type Phase = { label: string; kind: "work" | "rest"; durationSecs: number; meta: string };
+type Phase = {
+  label: string;
+  kind: "work" | "rest";
+  durationSecs: number;
+  meta: string;
+  /** Which round (circuit, tabata) or minute (EMOM) this phase belongs to, from 0, and how many there are. Unset when there is no fixed number. */
+  step?: number;
+  steps?: number;
+};
 
 function computeElapsed(startedAtMs: number | null, elapsedAtPauseSecs: number): number {
   if (startedAtMs === null) return elapsedAtPauseSecs;
@@ -62,13 +70,15 @@ function buildCircuitPhases(config: CircuitConfig): Phase[] {
         kind: "work",
         durationSecs: dur,
         meta: `Round ${r + 1}${config.capMode === "sets" ? ` of ${roundsCount}` : ""} · Station ${i + 1}/${stations.length}`,
+        step: r,
+        steps: config.capMode === "sets" ? roundsCount : undefined,
       });
       if (restStation > 0 && i < stations.length - 1) {
-        phases.push({ label: "Rest", kind: "rest", durationSecs: restStation, meta: `Round ${r + 1}` });
+        phases.push({ label: "Rest", kind: "rest", durationSecs: restStation, meta: `Round ${r + 1}`, step: r, steps: config.capMode === "sets" ? roundsCount : undefined });
       }
     });
     if (restRound > 0 && r < roundsCount - 1) {
-      phases.push({ label: "Rest before next round", kind: "rest", durationSecs: restRound, meta: "" });
+      phases.push({ label: "Rest before next round", kind: "rest", durationSecs: restRound, meta: "", step: r, steps: config.capMode === "sets" ? roundsCount : undefined });
     }
   }
   return phases;
@@ -82,8 +92,8 @@ function buildTabataPhases(config: TabataConfig): Phase[] {
   const phases: Phase[] = [];
   for (let r = 0; r < rounds; r++) {
     const label = movements[r % movements.length];
-    phases.push({ label, kind: "work", durationSecs: work, meta: `Round ${r + 1} of ${rounds}` });
-    if (rest > 0) phases.push({ label: "Rest", kind: "rest", durationSecs: rest, meta: `Round ${r + 1} of ${rounds}` });
+    phases.push({ label, kind: "work", durationSecs: work, meta: `Round ${r + 1} of ${rounds}`, step: r, steps: rounds });
+    if (rest > 0) phases.push({ label: "Rest", kind: "rest", durationSecs: rest, meta: `Round ${r + 1} of ${rounds}`, step: r, steps: rounds });
   }
   return phases;
 }
@@ -101,6 +111,8 @@ function buildEmomPhases(config: EmomConfig): Phase[] {
       kind: "work",
       durationSecs: interval,
       meta: `Minute ${i + 1} of ${count}`,
+      step: i,
+      steps: count,
     });
   }
   return phases;
@@ -200,6 +212,7 @@ function usePhaseClock(phases: Phase[], timeCapSecs?: number) {
     session,
     phase,
     nextPhase: phases[session.phaseIndex + 1],
+    index: session.phaseIndex,
     running,
     manual,
     remaining,
@@ -389,7 +402,8 @@ function PhaseLiveView({ phases, timeCapSecs }: { phases: Phase[]; timeCapSecs?:
   const styles = useStyles();
   const Color = useLegacyColors();
   const clock = usePhaseClock(phases, timeCapSecs);
-  const { phase, nextPhase, remaining, elapsedInPhase, totalElapsed, running, manual } = clock;
+  const { phase, nextPhase, remaining, elapsedInPhase, totalElapsed, running, manual, index } = clock;
+  const upcoming = phases.slice(index + 1, index + 4);
 
   if (!phase) {
     return (
@@ -405,6 +419,22 @@ function PhaseLiveView({ phases, timeCapSecs }: { phases: Phase[]; timeCapSecs?:
       <Text style={styles.phaseLabel}>{phase.label}</Text>
       {phase.meta ? <Text style={styles.phaseMeta}>{phase.meta}</Text> : null}
 
+      {phase.steps && phase.steps > 1 && phase.steps <= 40 && phase.step !== undefined ? (
+        <View style={styles.stepDashes} accessibilityLabel={`${(phase.step ?? 0) + 1} of ${phase.steps}`}>
+          {Array.from({ length: phase.steps }, (_, i) => (
+            <View
+              key={i}
+              style={[
+                styles.stepDash,
+                { borderColor: i <= (phase.step ?? 0) ? Color.gold : Color.textMuted },
+                i < (phase.step ?? 0) && { backgroundColor: Color.gold },
+                i === phase.step && { backgroundColor: Color.gold + "55", borderWidth: 2.5 },
+              ]}
+            />
+          ))}
+        </View>
+      ) : null}
+
       <CircularClock remaining={remaining} elapsed={elapsedInPhase} durationSecs={phase.durationSecs} kind={phase.kind} />
 
       <Text style={styles.totalElapsed}>Total {formatDuration(Math.floor(totalElapsed))}</Text>
@@ -412,7 +442,11 @@ function PhaseLiveView({ phases, timeCapSecs }: { phases: Phase[]; timeCapSecs?:
       {nextPhase ? (
         <View style={styles.nextPreview}>
           <Text style={styles.nextPreviewLabel}>Up next</Text>
-          <Text style={styles.nextPreviewText}>{nextPhase.label}</Text>
+          {upcoming.map((p, i) => (
+            <Text key={i} style={[styles.nextPreviewText, i > 0 && { opacity: 0.6, fontSize: 14 }]} numberOfLines={1}>
+              {p.kind === "rest" ? `Rest ${formatDuration(p.durationSecs)}` : p.label}
+            </Text>
+          ))}
         </View>
       ) : null}
 
@@ -808,9 +842,24 @@ function ChipperLiveView({ config }: { config: ChipperConfig }) {
       <Text style={styles.clock}>{formatDuration(Math.floor(totalElapsed))}</Text>
 
       <View style={styles.chipperMovements}>
-        {config.movements.map((m) => (
-          <ChipperMovementLive key={m.key} movement={m} onChange={(patch) => updateMovement(m.key, patch)} />
-        ))}
+        {(() => {
+          const isDone = (m: ChipperMovement) => {
+            const target = m.mode === "reps" ? parseInt(m.targetReps, 10) || 0 : parseDuration(m.targetSeconds) ?? 0;
+            const done = m.mode === "reps" ? m.doneReps : m.doneSeconds;
+            return target > 0 && done >= target;
+          };
+          const nowKey = config.movements.find((m) => !isDone(m))?.key;
+          return config.movements.map((m, i) => (
+            <View key={m.key} style={[m.key === nowKey && styles.chipperNow, isDone(m) && { opacity: 0.55 }]}>
+              <View style={styles.chipperTag}>
+                <Text style={styles.chipperTagNumber}>{i + 1}</Text>
+                <Text style={styles.chipperTagText}>{isDone(m) ? "Done" : m.key === nowKey ? "NOW" : "Up next"}</Text>
+                {isDone(m) ? <Ionicons name="checkmark-circle" size={16} color={Color.success} /> : null}
+              </View>
+              <ChipperMovementLive movement={m} onChange={(patch) => updateMovement(m.key, patch)} />
+            </View>
+          ));
+        })()}
       </View>
 
       <View style={styles.controlsRow}>
@@ -1021,6 +1070,12 @@ const useStyles = makeLegacyStyles((Color) =>
       justifyContent: "center", backgroundColor: Color.surface2 },
     roundsValue: { ...figure(38), color: Color.textPrimary },
     roundsLabel: { fontSize: 13, color: Color.textMuted },
+    stepDashes: { flexDirection: "row", flexWrap: "wrap", justifyContent: "center", gap: 6, marginBottom: Spacing.md },
+    stepDash: { width: 24, height: 11, borderRadius: 6, borderWidth: 1.5, backgroundColor: "transparent" },
+    chipperNow: { borderWidth: 2, borderColor: Color.gold, borderRadius: Radius.lg, padding: 2 },
+    chipperTag: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 4, paddingVertical: 4 },
+    chipperTagNumber: { minWidth: 22, textAlign: "center", fontSize: 12, fontWeight: "800", color: Color.goldForeground, backgroundColor: Color.gold, borderRadius: 11, overflow: "hidden", paddingVertical: 2 },
+    chipperTagText: { fontSize: 12, fontWeight: "800", letterSpacing: 0.8, color: Color.textMuted },
     chipperMovements: { width: "100%", marginTop: Spacing.lg, gap: Spacing.sm },
     chipperMovement: {
       borderRadius: Radius.md,

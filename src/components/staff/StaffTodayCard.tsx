@@ -113,7 +113,7 @@ const useStyles = makeLegacyStyles((Color) =>
     figure: { width: "48%", flexGrow: 1, padding: Spacing.md, borderRadius: Radius.md, backgroundColor: Color.surface2, gap: 2 },
     figureLabel: { fontSize: 12, color: Color.textMuted },
     figureValue: { fontSize: 22, fontWeight: "700", color: Color.textPrimary, fontVariant: ["tabular-nums"] },
-    figureTrend: { fontSize: 11, fontVariant: ["tabular-nums"] },
+    figureTrend: { fontSize: 12, fontVariant: ["tabular-nums"] },
     empty: { fontSize: 14, color: Color.textSecondary, paddingVertical: Spacing.sm },
     member: { flexDirection: "row", alignItems: "center", gap: Spacing.sm, paddingVertical: Spacing.sm, minHeight: 44 },
     memberName: { fontSize: 15, fontWeight: "600", color: Color.textPrimary },

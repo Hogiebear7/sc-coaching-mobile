@@ -50,6 +50,7 @@ const TYPE_LABEL: Record<NotificationType, string> = {
   nutrition_update: "Nutrition",
   ai_spend_alert: "AI spending",
   monthly_report: "Monthly report",
+  class_recap: "Class workout",
 };
 
 const TYPE_ICON: Record<NotificationType, keyof typeof Ionicons.glyphMap> = {
@@ -80,6 +81,7 @@ const TYPE_ICON: Record<NotificationType, keyof typeof Ionicons.glyphMap> = {
   nutrition_update: "nutrition-outline",
   ai_spend_alert: "warning-outline",
   monthly_report: "document-text-outline",
+  class_recap: "barbell-outline",
 };
 
 // Mirrors the web app's urgent/routine split (dashboard/notifications/
@@ -110,6 +112,7 @@ const TYPE_IS_URGENT: Record<NotificationType, boolean> = {
   nutrition_update: false,
   ai_spend_alert: true,
   monthly_report: false,
+  class_recap: false,
 };
 
 function formatRelativeTime(iso: string): string {

@@ -1,0 +1,213 @@
+import { describe, expect, it } from "vitest";
+
+import { groupSelected, nextSupersetLabel, ungroup } from "../superset-select";
+
+type Row = { key: string; supersetGroup: string | null; order?: number | null };
+const ex = (key: string, supersetGroup: string | null = null, order?: number): Row => ({ key, supersetGroup, order });
+const run = (key: string, order?: number) => ({ key, order });
+const summary = (rows: Row[]) => rows.map((r) => `${r.key}:${r.supersetGroup ?? "-"}:${r.order}`).join(" ");
+
+describe("nextSupersetLabel", () => {
+  it("is the next free number", () => {
+    expect(nextSupersetLabel([])).toBe("ST1");
+    expect(nextSupersetLabel(["ST1", null, "ST4"])).toBe("ST5");
+  });
+});
+
+describe("groupSelected", () => {
+  it("brings the chosen exercises together where the first one was", () => {
+    const out = groupSelected([ex("a"), ex("b"), ex("c"), ex("d")], [], new Set(["a", "c"]), "ST1");
+    expect(summary(out.exerciseRows)).toBe("a:ST1:0 c:ST1:1 b:-:2 d:-:3");
+  });
+
+  it("keeps cardio in the order and numbers everything", () => {
+    const out = groupSelected([ex("a", null, 0), ex("b", null, 2), ex("c", null, 3)], [run("r", 1)], new Set(["a", "c"]), "ST1");
+    expect(summary(out.exerciseRows)).toBe("a:ST1:0 c:ST1:1 b:-:3");
+    expect(out.runRows.map((r) => `${r.key}:${r.order}`)).toEqual(["r:2"]);
+  });
+
+  it("needs at least two exercises", () => {
+    const rows = [ex("a"), ex("b")];
+    expect(groupSelected(rows, [], new Set(["a"]), "ST1").exerciseRows).toBe(rows);
+  });
+
+  it("moves an exercise out of an older superset and clears one left alone", () => {
+    const out = groupSelected([ex("a", "ST1"), ex("b", "ST1"), ex("c")], [], new Set(["b", "c"]), "ST2");
+    expect(summary(out.exerciseRows)).toBe("a:-:0 b:ST2:1 c:ST2:2");
+  });
+});
+
+describe("ungroup", () => {
+  it("clears one superset only", () => {
+    expect(summary(ungroup([ex("a", "ST1"), ex("b", "ST1"), ex("c", "ST2")], "ST1"))).toBe("a:-:undefined b:-:undefined c:ST2:undefined");
+  });
+});
+
+import { assignSuperset, availableSupersetLabels, nextSupersetInCycle, withoutLonelySupersets } from "../superset-select";
+
+describe("tapping an exercise number", () => {
+  it("offers one superset per two exercises", () => {
+    expect(availableSupersetLabels(1)).toEqual([]);
+    expect(availableSupersetLabels(3)).toEqual(["ST1"]);
+    expect(availableSupersetLabels(5)).toEqual(["ST1", "ST2"]);
+  });
+
+  it("cycles none, then A, then B, then back to none", () => {
+    expect(nextSupersetInCycle(null, 5)).toBe("ST1");
+    expect(nextSupersetInCycle("ST1", 5)).toBe("ST2");
+    expect(nextSupersetInCycle("ST2", 5)).toBeNull();
+  });
+
+  it("with room for one superset, two taps take it out again", () => {
+    expect(nextSupersetInCycle(null, 3)).toBe("ST1");
+    expect(nextSupersetInCycle("ST1", 3)).toBeNull();
+  });
+
+  it("does nothing with a single exercise, and clears a label that no longer fits", () => {
+    expect(nextSupersetInCycle(null, 1)).toBeNull();
+    expect(nextSupersetInCycle("ST7", 4)).toBeNull();
+  });
+});
+
+describe("assignSuperset", () => {
+  it("brings the exercise next to the others in its superset", () => {
+    const out = assignSuperset([ex("a", "ST1"), ex("b"), ex("c"), ex("d")], [], "d", "ST1");
+    expect(summary(out.exerciseRows)).toBe("a:ST1:0 d:ST1:1 b:-:2 c:-:3");
+  });
+
+  it("leaves the order alone for the first member, and when taking an exercise out", () => {
+    expect(summary(assignSuperset([ex("a"), ex("b")], [], "b", "ST1").exerciseRows)).toBe("a:-:0 b:ST1:1");
+    expect(summary(assignSuperset([ex("a", "ST1"), ex("b", "ST1")], [], "b", null).exerciseRows)).toBe("a:ST1:0 b:-:1");
+  });
+
+  it("clears lonely labels when saving", () => {
+    expect(summary(withoutLonelySupersets([ex("a", "ST1"), ex("b", "ST2"), ex("c", "ST2")]))).toBe("a:-:undefined b:ST2:undefined c:ST2:undefined");
+  });
+});
+
+import { nextSupersetTap } from "../superset-select";
+
+describe("nextSupersetTap", () => {
+  const rows = (...groups: (string | null)[]) => groups.map((g, i) => ({ key: `k${i}`, supersetGroup: g }));
+
+  it("joins the superset of the exercise directly above first", () => {
+    // A1 A2, then B1, then a new exercise: its first tap is B (ST2), never A.
+    expect(nextSupersetTap(rows("ST1", "ST1", "ST2", null), "k3")).toBe("ST2");
+  });
+
+  it("starts the first superset when nothing above is in one", () => {
+    expect(nextSupersetTap(rows(null, null), "k1")).toBe("ST1");
+  });
+
+  it("then offers the other supersets, then none", () => {
+    const r = rows("ST1", "ST1", "ST2", "ST2", "ST2", null);
+    expect(nextSupersetTap(r, "k5")).toBe("ST2");
+    const joined = rows("ST1", "ST1", "ST2", "ST2", "ST2", "ST2");
+    expect(nextSupersetTap(joined, "k5")).toBe("ST1");
+  });
+
+  it("does nothing for a single exercise", () => {
+    expect(nextSupersetTap(rows(null), "k0")).toBeUndefined();
+  });
+});
+
+import { assignSuperset as assignAll, cleanLonelySupersets, ungroupAll } from "../superset-select";
+import { entryBlocks } from "../entry-order";
+
+describe("cardio in a superset", () => {
+  const ex = (key: string, order: number, group: string | null = null) => ({ key, order, supersetGroup: group });
+  const run = (key: string, order: number, group: string | null = null) => ({ key, order, supersetGroup: group });
+
+  it("puts cardio next to the superset it joins", () => {
+    const r = assignAll([ex("a", 0, "ST1"), ex("c", 2)], [run("bike", 1)], "bike", "ST1");
+    expect(r.runRows[0].supersetGroup).toBe("ST1");
+    expect(r.runRows[0].order).toBe(1);
+    const r2 = assignAll([ex("a", 0, "ST1"), ex("b", 1), ex("c", 3)], [run("bike", 2)], "bike", "ST1");
+    expect(r2.runRows[0].order).toBe(1);
+    expect(r2.exerciseRows.find((e) => e.key === "b")?.order).toBe(2);
+  });
+
+  it("clears a label held by only one entry, counting cardio", () => {
+    const r = cleanLonelySupersets([ex("a", 0, "ST1"), ex("b", 1, "ST2")], [run("bike", 2, "ST2")]);
+    expect(r.exerciseRows[0].supersetGroup).toBeNull();
+    expect(r.exerciseRows[1].supersetGroup).toBe("ST2");
+    expect(r.runRows[0].supersetGroup).toBe("ST2");
+  });
+
+  it("ungroups cardio too", () => {
+    const r = ungroupAll([ex("a", 0, "ST1")], [run("bike", 1, "ST1")], "ST1");
+    expect(r.runRows[0].supersetGroup).toBeNull();
+  });
+
+  it("draws a superset with cardio as one block, in order", () => {
+    const blocks = entryBlocks([ex("a", 0, "ST1"), ex("c", 3), ex("d", 4)], [run("bike", 1, "ST1"), run("row", 2)]);
+    expect(blocks.map((b) => b.kind)).toEqual(["mixed", "run", "exercise"]);
+    const first = blocks[0];
+    expect(first.kind === "mixed" && first.entries.map((e) => e.row.key)).toEqual(["a", "bike"]);
+  });
+});
+
+import { tapSuperset } from "../superset-select";
+
+describe("tapSuperset", () => {
+  const ex = (key: string, order: number, group: string | null = null) => ({ key, order, supersetGroup: group });
+
+  it("splits a superset: tapping A3 makes B1 and brings A4 along as B2", () => {
+    const rows = [ex("a1", 0, "ST1"), ex("a2", 1, "ST1"), ex("a3", 2, "ST1"), ex("a4", 3, "ST1")];
+    const r = tapSuperset(rows, [], "a3", "ST2");
+    const byKey = Object.fromEntries(r.exerciseRows.map((e) => [e.key, e.supersetGroup]));
+    expect(byKey).toEqual({ a1: "ST1", a2: "ST1", a3: "ST2", a4: "ST2" });
+    expect(r.exerciseRows.map((e) => e.key)).toEqual(["a1", "a2", "a3", "a4"]);
+  });
+
+  it("joining an existing superset moves only that entry", () => {
+    const rows = [ex("a1", 0, "ST1"), ex("a2", 1, "ST1"), ex("b1", 2, "ST2"), ex("b2", 3, "ST2")];
+    const r = tapSuperset(rows, [], "a2", "ST2");
+    const byKey = Object.fromEntries(r.exerciseRows.map((e) => [e.key, e.supersetGroup]));
+    expect(byKey.a2).toBe("ST2");
+    expect(byKey.a1).toBe("ST1");
+  });
+});
+
+import { tapSupersetLabel } from "../superset-select";
+
+describe("tapSupersetLabel", () => {
+  const ex = (key: string, order: number, group: string | null = null) => ({ key, order, supersetGroup: group });
+  const groups = (r: { exerciseRows: { key: string; supersetGroup: string | null }[] } | null) => Object.fromEntries((r?.exerciseRows ?? []).map((e) => [e.key, e.supersetGroup]));
+
+  it("links an exercise with the one above it, making a new superset of the two", () => {
+    expect(groups(tapSupersetLabel([ex("a", 0), ex("b", 1), ex("c", 2)], [], "b"))).toEqual({ a: "ST1", b: "ST1", c: null });
+  });
+
+  it("joins the superset above, as the next one in line", () => {
+    expect(groups(tapSupersetLabel([ex("a", 0, "ST1"), ex("b", 1, "ST1"), ex("c", 2)], [], "c"))).toEqual({ a: "ST1", b: "ST1", c: "ST1" });
+  });
+
+  it("starts a new superset below an existing one without touching the existing one", () => {
+    const rows = [ex("a1", 0, "ST1"), ex("a2", 1, "ST1"), ex("b1", 2, "ST2"), ex("c", 3), ex("d", 4)];
+    expect(groups(tapSupersetLabel(rows, [], "d"))).toEqual({ a1: "ST1", a2: "ST1", b1: null, c: "ST3", d: "ST3" });
+  });
+
+  it("tapping A3 makes B1 and brings A4 along", () => {
+    const rows = [ex("a1", 0, "ST1"), ex("a2", 1, "ST1"), ex("a3", 2, "ST1"), ex("a4", 3, "ST1")];
+    expect(groups(tapSupersetLabel(rows, [], "a3"))).toEqual({ a1: "ST1", a2: "ST1", a3: "ST2", a4: "ST2" });
+  });
+
+  it("tapping B1 puts the whole of B back into A", () => {
+    const rows = [ex("a1", 0, "ST1"), ex("a2", 1, "ST1"), ex("b1", 2, "ST2"), ex("b2", 3, "ST2")];
+    expect(groups(tapSupersetLabel(rows, [], "b1"))).toEqual({ a1: "ST1", a2: "ST1", b1: "ST1", b2: "ST1" });
+  });
+
+  it("tapping the first of the first superset takes it out, and a pair left with one dissolves", () => {
+    expect(groups(tapSupersetLabel([ex("a", 0, "ST1"), ex("b", 1, "ST1")], [], "a"))).toEqual({ a: null, b: null });
+  });
+
+  it("does nothing for the very first entry when it is on its own", () => {
+    expect(tapSupersetLabel([ex("a", 0), ex("b", 1)], [], "a")).toBeNull();
+  });
+
+  it("works for cardio in the middle", () => {
+    const r = tapSupersetLabel([ex("a", 0, "ST1"), ex("b", 2)], [{ key: "bike", order: 1, supersetGroup: null }], "bike");
+    expect(r?.runRows[0].supersetGroup).toBe("ST1");
+  });
+});

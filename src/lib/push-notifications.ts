@@ -130,6 +130,9 @@ export function mapLinkHrefToRoute(linkHref: string): string {
   // they pass through unchanged rather than needing a fixed dict entry per
   // dynamic id (same idea as the /log-workout passthrough below).
   if (linkHref === "/community" || linkHref.startsWith("/community/")) return linkHref;
+  // "Well done today": opens the member's own copy of the class workout, where they check it and say how it felt.
+  const recap = linkHref.match(/^\/dashboard\/workouts\/class\/([A-Za-z0-9_-]+)$/);
+  if (recap) return `/edit-class-workout?id=${recap[1]}`;
   return LINK_HREF_ROUTES[linkHref] ?? "/(tabs)";
 }
 

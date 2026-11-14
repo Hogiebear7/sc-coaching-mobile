@@ -17,6 +17,9 @@ import { makeStyles, useAppTheme } from "@/lib/theme";
 const BODY_W = 84;
 const BODY_H = 150;
 
+/** Height of the part of the bottle the water fills, for anything that has to line up with it (the drag control). */
+export const LIQUID_BOTTLE_BODY_H = BODY_H;
+
 // A spring for the surface angle. Slightly under-damped so it overshoots and
 // wobbles a touch before settling, which is what makes it read as liquid.
 const STIFFNESS = 80;

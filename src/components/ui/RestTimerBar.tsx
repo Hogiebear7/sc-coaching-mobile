@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { figure, Radius, Spacing } from "@/constants/theme";
 import { tapFeedback } from "@/lib/haptics";
 import { useRestTimer } from "@/lib/rest-timer";
+import { getTimerTarget, setTimerTarget } from "@/lib/timer-result";
 import { useTickingValue } from "@/lib/use-ticker";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
@@ -52,6 +53,8 @@ export function RestTimerBar({ onExpand }: { onExpand: () => void }) {
   }
 
   const done = timer.isRunning && remaining <= 0;
+  // A timer started from a set is that set's own time, so there is nothing to nudge.
+  const fromSet = !!getTimerTarget();
 
   function handleAdjust(delta: number) {
     tapFeedback();
@@ -66,14 +69,17 @@ export function RestTimerBar({ onExpand }: { onExpand: () => void }) {
 
   function handleSkip() {
     tapFeedback();
+    setTimerTarget(null);
     timer.reset(timer.state.durationSecs, timer.state.label);
   }
 
   return (
     <View style={[styles.bar, { paddingBottom: Math.max(insets.bottom, Spacing.sm) }]}>
-      <Pressable onPress={() => handleAdjust(-15)} hitSlop={8} style={styles.adjustButton}>
-        <Text style={styles.adjustText}>−15s</Text>
-      </Pressable>
+      {fromSet ? null : (
+        <Pressable onPress={() => handleAdjust(-15)} hitSlop={8} style={styles.adjustButton}>
+          <Text style={styles.adjustText}>−15s</Text>
+        </Pressable>
+      )}
 
       <Pressable onPress={onExpand} style={styles.clockWrap} hitSlop={4}>
         <Text style={styles.label} numberOfLines={1}>
@@ -82,9 +88,11 @@ export function RestTimerBar({ onExpand }: { onExpand: () => void }) {
         <Text style={[styles.clock, done && styles.clockDone]}>{formatClock(remaining)}</Text>
       </Pressable>
 
-      <Pressable onPress={() => handleAdjust(15)} hitSlop={8} style={styles.adjustButton}>
-        <Text style={styles.adjustText}>+15s</Text>
-      </Pressable>
+      {fromSet ? null : (
+        <Pressable onPress={() => handleAdjust(15)} hitSlop={8} style={styles.adjustButton}>
+          <Text style={styles.adjustText}>+15s</Text>
+        </Pressable>
+      )}
 
       <Pressable onPress={handlePauseResume} hitSlop={8} style={styles.iconButton}>
         <Ionicons name={timer.isRunning ? "pause" : "play"} size={16} color={Color.goldForeground} />

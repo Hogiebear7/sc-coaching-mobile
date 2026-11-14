@@ -115,7 +115,7 @@ export default function RestTimerScreen() {
     }
   }
 
-  // A timer started from a set always goes back to that set's own time, however much it was nudged with -15s / +15s.
+  // A timer started from a set is that set's own time: no -15s / +15s, and Reset always goes back to it.
   const targetSecs = Number(initialSecondsParam) > 0 ? Number(initialSecondsParam) : null;
   const fromSet = getReadyParam === "1" && !!getTimerTarget() && targetSecs !== null;
 
@@ -314,14 +314,16 @@ export default function RestTimerScreen() {
               </View>
             </View>
 
-            <View style={styles.adjustRow}>
-              <Pressable onPress={() => adjust(-15)} style={styles.adjustButton}>
-                <Text style={styles.adjustText}>−15s</Text>
-              </Pressable>
-              <Pressable onPress={() => adjust(15)} style={styles.adjustButton}>
-                <Text style={styles.adjustText}>+15s</Text>
-              </Pressable>
-            </View>
+            {fromSet ? null : (
+              <View style={styles.adjustRow}>
+                <Pressable onPress={() => adjust(-15)} style={styles.adjustButton}>
+                  <Text style={styles.adjustText}>−15s</Text>
+                </Pressable>
+                <Pressable onPress={() => adjust(15)} style={styles.adjustButton}>
+                  <Text style={styles.adjustText}>+15s</Text>
+                </Pressable>
+              </View>
+            )}
 
             <View style={styles.controlsRow}>
               <Pressable onPress={handleReset} style={styles.secondaryControl}>

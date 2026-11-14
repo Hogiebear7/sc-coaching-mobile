@@ -381,7 +381,7 @@ export default function ClassWorkoutBuilderScreen() {
   // New entries go just below the one being worked on, so cardio can sit in the middle of the class.
   function addExercise() {
     const added = newTemplateRow();
-    const next = insertEntry(template, cardio, { kind: "exercise", row: added }, touchedKey);
+    const next = insertEntry(template, cardio, { kind: "exercise", row: added }, null);
     setTemplate(next.exerciseRows);
     setCardio(next.runRows);
     setTouchedKey(added.key);
@@ -390,7 +390,7 @@ export default function ClassWorkoutBuilderScreen() {
 
   function addCardio() {
     const added = newCardioRow();
-    const next = insertEntry(template, cardio, { kind: "run", row: added }, touchedKey);
+    const next = insertEntry(template, cardio, { kind: "run", row: added }, null);
     setTemplate(next.exerciseRows);
     setCardio(next.runRows);
     setTouchedKey(added.key);

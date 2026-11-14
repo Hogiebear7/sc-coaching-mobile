@@ -3,7 +3,7 @@ import { useState, type ReactNode } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 
 import { Radius, Spacing } from "@/constants/theme";
-import { CARDIO_LABEL } from "@/lib/cardio";
+import { CARDIO_LABEL, usesFloors } from "@/lib/cardio";
 import { isRoundComplete, roundCount } from "@/lib/superset-rounds";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 import { sanitizeWeight, stripWeightUnit, withWeightUnit, type WeightUnit } from "@/lib/weight-input";
@@ -158,19 +158,21 @@ export function SupersetRounds({
                     value={r.distance}
                     onChangeText={(v) => onChangeRun(r.key, { distance: v.replace(/[^0-9.]/g, "") })}
                     keyboardType="decimal-pad"
-                    placeholder={r.distanceUnit === "m" ? "Distance (m)" : "Distance (km)"}
+                    placeholder={usesFloors(r.cardioType) ? "Floors" : r.distanceUnit === "m" ? "Distance (m)" : "Distance (km)"}
                     placeholderTextColor={Color.textFaint}
                     accessibilityLabel={`${label} distance`}
                     style={[styles.box, { flex: 1.3 }]}
                   />
-                  <Pressable
-                    onPress={() => onChangeRun(r.key, { distanceUnit: r.distanceUnit === "km" ? "m" : "km" })}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Distance in ${r.distanceUnit}. Tap to change.`}
-                    style={styles.unitBtn}
-                  >
-                    <Text style={styles.unitBtnText}>{r.distanceUnit}</Text>
-                  </Pressable>
+                  {usesFloors(r.cardioType) ? null : (
+                    <Pressable
+                      onPress={() => onChangeRun(r.key, { distanceUnit: r.distanceUnit === "km" ? "m" : "km" })}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Distance in ${r.distanceUnit}. Tap to change.`}
+                      style={styles.unitBtn}
+                    >
+                      <Text style={styles.unitBtnText}>{r.distanceUnit}</Text>
+                    </Pressable>
+                  )}
                   <Pressable
                     onPress={() => onPickRunTime(r.key, parseDuration(r.duration) ?? 0)}
                     accessibilityRole="button"

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { figure, Radius, Spacing } from "@/constants/theme";
 import { tapFeedback } from "@/lib/haptics";
 import { formatDuration } from "@/lib/workout-formatters";
+import { CARDIO_LABEL } from "@/lib/cardio";
 import { useWorkoutDraft } from "@/lib/workout-draft";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
@@ -21,6 +22,9 @@ export default function RunTimerScreen() {
   const router = useRouter();
   const { runKey } = useLocalSearchParams<{ runKey: string }>();
   const { draft, update } = useWorkoutDraft();
+
+  const thisRun = draft.runRows.find((r) => r.key === runKey);
+  const timerTitle = thisRun?.typeChosen ? `${CARDIO_LABEL[thisRun.cardioType]} timer` : "Cardio timer";
 
   const [accumulatedSecs, setAccumulatedSecs] = useState(0);
   const [startedAtMs, setStartedAtMs] = useState<number | null>(null);
@@ -87,7 +91,7 @@ export default function RunTimerScreen() {
         <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backButton} accessibilityRole="button" accessibilityLabel="Back">
           <Ionicons name="chevron-back" size={26} color={Color.textPrimary} />
         </Pressable>
-        <Text style={styles.headerTitle}>Run timer</Text>
+        <Text style={styles.headerTitle}>{timerTitle}</Text>
         <View style={{ width: 36 }} />
       </View>
 
@@ -96,13 +100,13 @@ export default function RunTimerScreen() {
 
         <View style={styles.controlsRow}>
           <Pressable onPress={handleReset} style={styles.secondaryControl}>
-            <Ionicons name="refresh" size={20} color={Color.textSecondary} />
+            <Ionicons name="refresh" size={24} color={Color.textSecondary} />
           </Pressable>
           <Pressable onPress={handleStartPause} style={styles.primaryControl}>
-            <Ionicons name={running ? "pause" : "play"} size={28} color={Color.goldForeground} />
+            <Ionicons name={running ? "pause" : "play"} size={52} color={Color.goldForeground} />
           </Pressable>
           <Pressable onPress={handleLap} style={styles.secondaryControl} disabled={!running}>
-            <Ionicons name="flag-outline" size={20} color={running ? Color.textSecondary : Color.textFaint} />
+            <Ionicons name="flag-outline" size={24} color={running ? Color.textSecondary : Color.textFaint} />
           </Pressable>
         </View>
 
@@ -141,8 +145,8 @@ const useStyles = makeLegacyStyles((Color) =>
     body: { flex: 1, alignItems: "center", paddingTop: Spacing.xxl, paddingHorizontal: Spacing.lg },
     clock: { ...figure(64, "700"), color: Color.gold },
     controlsRow: { flexDirection: "row", alignItems: "center", gap: Spacing.xl, marginTop: Spacing.xl },
-    secondaryControl: { width: 48, height: 48, borderRadius: 24, alignItems: "center", justifyContent: "center", backgroundColor: Color.surface2 },
-    primaryControl: { width: 72, height: 72, borderRadius: 36, alignItems: "center", justifyContent: "center", backgroundColor: Color.gold },
+    secondaryControl: { width: 60, height: 60, borderRadius: 30, alignItems: "center", justifyContent: "center", backgroundColor: Color.surface2 },
+    primaryControl: { width: 120, height: 120, borderRadius: 60, alignItems: "center", justifyContent: "center", backgroundColor: Color.gold },
     splitsCard: {
       width: "100%",
       marginTop: Spacing.xl,

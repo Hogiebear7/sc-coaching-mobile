@@ -1,22 +1,24 @@
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useEffect, useState } from "react";
-import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
+import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { Radius, Spacing } from "@/constants/theme";
 import { useAuth } from "@/lib/auth-context";
 import { tapFeedback } from "@/lib/haptics";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
-const STORAGE_PREFIX = "log-workout-tour-seen-v1-";
+const STORAGE_PREFIX = "log-workout-tour-seen-v2-";
 
 const TIPS = [
-  "Tap a set's number to cycle its type — standard, warm-up, dropset, myoset, failure, or partial.",
-  "The plate calculator works out which plates to load for a target weight.",
-  "The timer icon starts a rest countdown; the stopwatch on a run tracks it live.",
-  "Add more exercises or a run any time with the buttons at the bottom.",
-  "Save as template to reuse this exact workout later.",
-  "After you finish, a quick \"how did that feel\" check leads to a session review.",
+  "Each exercise (or superset) is one simple card, one set or round at a time. Tick each one as you do it. Tap Edit for the full card, and Simple view to go back.",
+  "To make a superset, tap an exercise's number: it links with the one above. Tap a later one (A3) to start a new superset (B). Tap the first one again to undo. Cardio can join too.",
+  "In a superset you work through rounds: A1, then A2, with no rest until the round is done. Your rest timer starts when you tick the last one.",
+  "A timed exercise has a play button next to the tick. It counts you in, counts the time down, and puts the time back on the set for you to tick.",
+  "Tap Weight (kg) to switch between kg, time and band. Tap Reps to split it into right and left. Weight carries down to the sets below.",
+  "Cardio has its own stopwatch, and a tick and RPE circle. Add exercise and Add cardio put the new one at the end of your workout.",
+  "The plate calculator works out which plates to load. Save as template reuses this workout later.",
+  "When you finish, a quick \"how did that feel\" check leads to a session review.",
 ];
 
 // One-time first-run card for the Log Workout screen — same "explain once,
@@ -59,14 +61,16 @@ export function LogWorkoutTour() {
           </View>
           <Text style={styles.title}>Logging a workout</Text>
           <Text style={styles.description}>A few things worth knowing before you start.</Text>
-          <View style={styles.tipList}>
-            {TIPS.map((tip, i) => (
-              <View key={i} style={styles.tipRow}>
-                <View style={styles.tipBullet} />
-                <Text style={styles.tipText}>{tip}</Text>
-              </View>
-            ))}
-          </View>
+          <ScrollView style={styles.tipScroll}>
+            <View style={styles.tipList}>
+              {TIPS.map((tip, i) => (
+                <View key={i} style={styles.tipRow}>
+                  <View style={styles.tipBullet} />
+                  <Text style={styles.tipText}>{tip}</Text>
+                </View>
+              ))}
+            </View>
+          </ScrollView>
           <Pressable onPress={dismiss} style={styles.gotItButton}>
             <Text style={styles.gotItText}>Got it</Text>
           </Pressable>
@@ -104,6 +108,7 @@ const useStyles = makeLegacyStyles((Color) =>
     },
     title: { fontSize: 18, fontWeight: "700", color: Color.textPrimary, textAlign: "center" },
     description: { fontSize: 13, color: Color.textMuted, textAlign: "center", marginTop: Spacing.sm },
+    tipScroll: { maxHeight: 380, width: "100%" },
     tipList: { width: "100%", marginTop: Spacing.lg, gap: Spacing.sm },
     tipRow: { flexDirection: "row", alignItems: "flex-start", gap: Spacing.sm },
     tipBullet: { width: 5, height: 5, borderRadius: Radius.pill, backgroundColor: Color.gold, marginTop: 6 },

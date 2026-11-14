@@ -19,6 +19,8 @@ import { DataColor, Radius, Spacing, type LegacyPalette } from "@/constants/them
 import { ExerciseDemoMedia } from "@/components/ui/ExerciseDemoMedia";
 import { OptionPicker, type PickerOption } from "@/components/ui/OptionPicker";
 import { setTimerTarget, takeTimerResult } from "@/lib/timer-result";
+import { describeCardio, usesFloors } from "@/lib/cardio";
+import { supersetBadges } from "@/lib/superset-display";
 import { entryBlocks, orderedEntries, insertEntry, orderToSave, type EntrySegment } from "@/lib/entry-order";
 import { distinctGroups, supersetLetter, supersetMemberLabel } from "@/lib/superset-label";
 import { cleanLonelySupersets, tapSupersetLabel, ungroupAll } from "@/lib/superset-select";
@@ -828,20 +830,28 @@ function HowDidYouFeelModal({
         <Pressable style={feelStyles.card} onPress={(e) => e.stopPropagation()}>
           <Text style={feelStyles.title}>How did that feel?</Text>
           <Text style={feelStyles.rpeDescription}>{RPE_DESCRIPTION}</Text>
-          <View style={feelStyles.rpeRow}>
-            {RPE_VALUES.map((v) => (
-              <Pressable
-                key={v}
-                onPress={() => {
-                  tapFeedback();
-                  onChangeRpe(rpe === v ? null : v);
-                }}
-                style={[feelStyles.rpeChip, rpe === v && feelStyles.rpeChipActive]}
-              >
-                <Text style={[feelStyles.rpeChipText, rpe === v && feelStyles.rpeChipTextActive]}>{v}</Text>
-              </Pressable>
-            ))}
-          </View>
+          {[RPE_VALUES.slice(0, 5), RPE_VALUES.slice(5)].map((line, li) => (
+            <View key={li} style={feelStyles.rpeRow}>
+              {line.map((v) => {
+                const c = rpeColor(v);
+                const on = rpe === v;
+                return (
+                  <Pressable
+                    key={v}
+                    onPress={() => {
+                      tapFeedback();
+                      onChangeRpe(on ? null : v);
+                    }}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected: on }}
+                    style={[feelStyles.rpeChip, { borderColor: c }, on && { backgroundColor: c }]}
+                  >
+                    <Text style={[feelStyles.rpeChipText, on && { color: Color.bg0 }]}>{v}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          ))}
           <Text style={[styles.fieldLabel, { marginTop: Spacing.md }]}>Notes (optional)</Text>
           <TextInput
             value={notes}
@@ -1124,7 +1134,7 @@ export default function LogWorkoutScreen() {
     tapFeedback();
     const added = newExerciseRow();
     setOpenRows((prev) => [...prev, added.key]);
-    update(insertEntry(exerciseRows, runRows, { kind: "exercise", row: added }, lastTouchedKey.current));
+    update(insertEntry(exerciseRows, runRows, { kind: "exercise", row: added }, null));
     lastTouchedKey.current = added.key;
     // The new row needs a layout pass before its position can be measured —
     // same short-delay pattern already used elsewhere in this file (see the
@@ -1135,7 +1145,7 @@ export default function LogWorkoutScreen() {
   function handleAddRun() {
     tapFeedback();
     const added = newRunRow();
-    update(insertEntry(exerciseRows, runRows, { kind: "run", row: added }, lastTouchedKey.current));
+    update(insertEntry(exerciseRows, runRows, { kind: "run", row: added }, null));
     lastTouchedKey.current = added.key;
     setTimeout(scrollToAddButtons, 50);
   }
@@ -1542,7 +1552,7 @@ export default function LogWorkoutScreen() {
           distance: r.distance.trim() ? (r.distanceUnit === "m" ? Math.round((parseFloat(r.distance) / 1000) * 1000) / 1000 : parseFloat(r.distance)) : null,
           durationSecs: parseDuration(r.duration),
           reps: r.reps.trim() ? parseInt(r.reps, 10) : null,
-          sets: r.sets.trim() ? parseInt(r.sets, 10) : null,
+          sets: r.sets.trim() ? parseInt(r.sets, 10) : r.supersetGroup && (r.roundsDone?.length ?? 0) > 1 ? (r.roundsDone as number[]).length : null,
           notes: combinedNotes || null,
           cardioType: r.cardioType,
           level: hasLevel(r.cardioType) ? parseLevel(r.level) : null,
@@ -1630,6 +1640,37 @@ export default function LogWorkoutScreen() {
           isPb,
         };
       });
+      // Cardio goes in the summary like any other entry, in the place it was done, with the same superset labels.
+      const summaryEntries = [
+        ...exerciseSummaries.map((e, i) => ({ ...e, order: rowsWithContent[i].order ?? null, group: savedGroup(rowsWithContent[i].key) })),
+        ...runs.map((r, i) => {
+          const d = describeCardio({ cardioType: r.cardioType, distance: r.distance, durationSecs: r.durationSecs, sets: r.sets });
+          const rounds = d.rounds;
+          return {
+            name: CARDIO_LABEL[r.cardioType ?? "run"],
+            summary: d.rounds > 1 ? `${d.rounds} × ${d.perSet}${d.total ? ` (total ${d.total})` : ""}` : d.perSet,
+            setsLogged: rounds,
+            setsCompleted: rounds,
+            isPb: false,
+            kind: "cardio" as const,
+            order: r.order ?? null,
+            group: r.supersetGroup ?? null,
+          };
+        }),
+      ]
+        .map((e, i) => ({ e, i }))
+        .sort((a, b) => (a.e.order ?? 1_000_000) - (b.e.order ?? 1_000_000) || a.i - b.i)
+        .map(({ e }) => e);
+      const summaryBadges = supersetBadges(summaryEntries.map((e) => e.group));
+      const summaryList = summaryEntries.map((e, i) => ({
+        name: e.name,
+        summary: e.summary,
+        setsLogged: e.setsLogged,
+        setsCompleted: e.setsCompleted,
+        isPb: e.isPb,
+        kind: ("kind" in e ? e.kind : "exercise") as "exercise" | "cardio",
+        badge: summaryBadges[i],
+      }));
       const result = await create.mutateAsync({
         title: title.trim(),
         date: date.trim(),
@@ -1653,9 +1694,9 @@ export default function LogWorkoutScreen() {
         totalVolume: Math.round(totalVolume),
         totalSets,
         completedSets,
-        totalExercises: rowsWithContent.length,
-        completedExercises,
-        exercises: exerciseSummaries,
+        totalExercises: rowsWithContent.length + runs.length,
+        completedExercises: completedExercises + runs.length,
+        exercises: summaryList,
       };
       if (programId) await advanceProgram.mutateAsync(programId);
       successFeedback();
@@ -2117,7 +2158,7 @@ export default function LogWorkoutScreen() {
 
               <View style={styles.gridRow}>
                 <View style={styles.numberField}>
-                  <Text style={styles.fieldLabel}>Distance (optional)</Text>
+                  <Text style={styles.fieldLabel}>{usesFloors(row.cardioType) ? "Floors (optional)" : "Distance (optional)"}</Text>
                   <View style={{ flexDirection: "row", gap: Spacing.xs }}>
                     <TextInput
                       value={row.distance}
@@ -2127,12 +2168,14 @@ export default function LogWorkoutScreen() {
                       placeholderTextColor={Color.textFaint}
                       style={[styles.smallInput, { flex: 1 }]}
                     />
-                    <Pressable
-                      onPress={() => updateRunRow(row.key, { distanceUnit: row.distanceUnit === "km" ? "m" : "km" })}
-                      style={styles.unitSwitch}
-                    >
-                      <Text style={styles.unitSwitchText}>{row.distanceUnit}</Text>
-                    </Pressable>
+                    {usesFloors(row.cardioType) ? null : (
+                      <Pressable
+                        onPress={() => updateRunRow(row.key, { distanceUnit: row.distanceUnit === "km" ? "m" : "km" })}
+                        style={styles.unitSwitch}
+                      >
+                        <Text style={styles.unitSwitchText}>{row.distanceUnit}</Text>
+                      </Pressable>
+                    )}
                   </View>
                 </View>
                 <View style={styles.numberField}>
@@ -3042,19 +3085,10 @@ const useFeelStyles = makeLegacyStyles((Color) =>
     },
     title: { fontSize: 17, fontWeight: "700", color: Color.textPrimary },
     rpeDescription: { fontSize: 14, color: Color.textMuted, marginTop: Spacing.xs, lineHeight: 20 },
-    rpeRow: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: Spacing.md },
-    rpeChip: {
-      width: 36,
-      height: 36,
-      borderRadius: 18,
-      alignItems: "center",
-      justifyContent: "center",
-      borderWidth: 1,
-      borderColor: "transparent",
-      backgroundColor: Color.surface2,
-    },
+    rpeRow: { flexDirection: "row", gap: 8, marginTop: Spacing.sm },
+    rpeChip: { flex: 1, minHeight: 50, borderRadius: 25, borderWidth: 2, borderColor: Color.borderDefault, alignItems: "center", justifyContent: "center" },
     rpeChipActive: { borderColor: Color.gold, backgroundColor: Color.gold },
-    rpeChipText: { fontSize: 13, fontWeight: "600", color: Color.textSecondary },
+    rpeChipText: { fontSize: 16, fontWeight: "700", color: Color.textSecondary },
     rpeChipTextActive: { color: Color.goldForeground },
     // Unlike log-workout's other Notes fields (styles.smallInput or the
     // TextField component), this one is a bare TextInput with no wrapper

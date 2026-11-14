@@ -29,7 +29,17 @@ export interface WorkoutSummaryData {
   completedSets: number;
   totalExercises: number;
   completedExercises: number;
-  exercises: { name: string; summary: string; setsLogged: number; setsCompleted: number; isPb: boolean }[];
+  exercises: {
+    name: string;
+    summary: string;
+    setsLogged: number;
+    setsCompleted: number;
+    isPb: boolean;
+    /** Cardio is listed with the exercises, in the place it was done. */
+    kind?: "exercise" | "cardio";
+    /** The superset label ("A1") and its colour, when the entry was in a superset. */
+    badge?: { label: string; color: string } | null;
+  }[];
 }
 
 export default function WorkoutSummaryScreen() {
@@ -113,6 +123,11 @@ export default function WorkoutSummaryScreen() {
                 <View key={`${ex.name}-${idx}`} style={[styles.row, idx > 0 && styles.rowDivider]}>
                   <View style={{ flex: 1 }}>
                     <View style={styles.nameRow}>
+                      {ex.badge ? (
+                        <View style={[styles.supersetChip, { backgroundColor: ex.badge.color }]}>
+                          <Text style={styles.supersetChipText}>{ex.badge.label}</Text>
+                        </View>
+                      ) : null}
                       <Text style={styles.rowTitle}>{ex.name}</Text>
                       {ex.isPb ? (
                         <View style={styles.pbTag}>
@@ -122,10 +137,14 @@ export default function WorkoutSummaryScreen() {
                     </View>
                     <Text style={styles.rowSub}>{ex.summary || "—"}</Text>
                   </View>
-                  <Text style={styles.rowValue}>
-                    {ex.setsCompleted}/{ex.setsLogged}
-                    <Text style={styles.rowUnit}> sets</Text>
-                  </Text>
+                  {ex.kind === "cardio" && ex.setsLogged <= 1 ? (
+                    <Text style={styles.rowUnit}>cardio</Text>
+                  ) : (
+                    <Text style={styles.rowValue}>
+                      {ex.setsCompleted}/{ex.setsLogged}
+                      <Text style={styles.rowUnit}> sets</Text>
+                    </Text>
+                  )}
                 </View>
               ))}
             </View>
@@ -199,6 +218,8 @@ const useStyles = makeStyles((c) =>
     list: { backgroundColor: c.surface, borderRadius: AppRadius.card, overflow: "hidden" },
     row: { flexDirection: "row", alignItems: "center", gap: 12, minHeight: 62, paddingHorizontal: 16, paddingVertical: 10 },
     rowDivider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: c.hairline },
+    supersetChip: { minWidth: 30, height: 22, borderRadius: 11, paddingHorizontal: 7, alignItems: "center", justifyContent: "center", marginRight: 8 },
+    supersetChipText: { fontSize: 12, fontWeight: "800", color: "#0a1526" },
     nameRow: { flexDirection: "row", alignItems: "center", gap: 8 },
     rowTitle: { fontSize: 16, color: c.text, flexShrink: 1 },
     rowSub: { fontSize: 14, color: c.textMuted, marginTop: 2 },

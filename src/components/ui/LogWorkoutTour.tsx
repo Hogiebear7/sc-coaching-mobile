@@ -32,7 +32,8 @@ export function LogWorkoutTour() {
   const Color = useLegacyColors();
   const { user } = useAuth();
   const [visible, setVisible] = useState(false);
-  const userId = user?.role === "member" ? user.id : null;
+  // Anyone signed in who opens the log screen sees it once (an owner or coach using the member view too).
+  const userId = user?.id ?? null;
 
   useEffect(() => {
     if (!userId) return;

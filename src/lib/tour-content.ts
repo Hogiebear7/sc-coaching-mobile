@@ -125,7 +125,7 @@ export const TOUR_PAGES: TourPage[] = [
         id: "log",
         target: "train.actions",
         title: "Log a session",
-        body: "The + starts a workout, set by set. The clock shows your full history.",
+        body: "The + starts a workout. Each exercise is one simple card you tick off set by set. Tap a number to link exercises into a superset, press Edit for the full details, and use the format menu for Hyrox, circuits, EMOM and more. The clock shows your full history.",
       },
       {
         id: "programme",

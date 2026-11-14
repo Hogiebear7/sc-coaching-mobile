@@ -254,6 +254,7 @@ function AuthGate() {
       <Stack.Screen name="rest-timer" options={{ presentation: "modal" }} />
       <Stack.Screen name="run-timer" options={{ presentation: "modal" }} />
       <Stack.Screen name="format-timer" options={{ presentation: "modal" }} />
+      <Stack.Screen name="hyrox" options={{ presentation: "modal" }} />
       <Stack.Screen name="drink-calculator" options={{ presentation: "card" }} />
       </Stack>
     </>

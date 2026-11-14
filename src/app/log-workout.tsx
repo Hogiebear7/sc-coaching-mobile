@@ -20,6 +20,7 @@ import { ExerciseDemoMedia } from "@/components/ui/ExerciseDemoMedia";
 import { OptionPicker, type PickerOption } from "@/components/ui/OptionPicker";
 import { setTimerTarget, takeTimerResult } from "@/lib/timer-result";
 import { describeCardio, usesFloors } from "@/lib/cardio";
+import { emptyHyroxSession, hyroxClock, hyroxEntries, hyroxResult, type HyroxStation } from "@/lib/hyrox";
 import { supersetBadges } from "@/lib/superset-display";
 import { entryBlocks, orderedEntries, insertEntry, orderToSave, type EntrySegment } from "@/lib/entry-order";
 import { distinctGroups, supersetLetter, supersetMemberLabel } from "@/lib/superset-label";
@@ -86,6 +87,7 @@ const FORMAT_OPTIONS: { value: WorkoutFormat; label: string }[] = [
   { value: "amrap", label: "AMRAP" },
   { value: "emom", label: "EMOM" },
   { value: "tabata", label: "Tabata" },
+  { value: "hyrox", label: "Hyrox" },
 ];
 
 // Shown live below the format picker so a member who doesn't recognize a
@@ -98,6 +100,7 @@ const FORMAT_DESCRIPTIONS: Record<WorkoutFormat, string> = {
   amrap: "As Many Reps (or Rounds) As Possible — set a time cap, then work through your movements for as much output as you can fit in before time's up.",
   emom: "Every Minute On the Minute — start a new movement at the top of each interval. Finish early and the rest of that minute is your rest.",
   tabata: "20 seconds of work, 10 seconds of rest, repeated for a set number of rounds — a short, high-intensity interval format.",
+  hyrox: "8 stations, each with a run before it. The stations are fixed: you only change the distance and weight. One overall clock, and a lap at the end of every run and station.",
 };
 
 const CARDIO_PICKER_OPTIONS: readonly PickerOption<CardioType>[] = CARDIO_TYPES.map((t) => ({ value: t, label: CARDIO_LABEL[t] }));
@@ -109,6 +112,7 @@ const FORMAT_LABELS: Record<WorkoutFormat, string> = {
   amrap: "AMRAP",
   emom: "EMOM",
   tabata: "Tabata",
+  hyrox: "Hyrox",
 };
 
 let keySeq = 0;
@@ -1561,12 +1565,21 @@ export default function LogWorkoutScreen() {
         };
       });
 
+      // Hyrox: every finished run is saved as cardio and every finished station as an exercise, in race order, after anything else in the workout.
+      const hyrox = draft.format === "hyrox" && draft.hyroxSession.lapTotals.length > 0 ? hyroxEntries(draft.hyroxConfig, draft.hyroxSession, 100) : null;
+      if (hyrox) {
+        runs.push(...(hyrox.runs as CreateWorkoutRunInput[]));
+        exercises.push(...(hyrox.stations as CreateWorkoutExerciseInput[]));
+      }
+
       // Prefer the live-tracked time whenever the timer was actually used;
       // otherwise fall back to whatever was typed into the manual duration
       // field (shown either for a past date, or when today's timer was never
       // started because the workout was already fully done before logging it).
       const liveElapsed = elapsedSecsNow();
-      const finalDurationMins = liveElapsed > 0 ? String(Math.round(liveElapsed / 60)) : durationMins.trim();
+      const hyroxTotalSecs = hyrox && draft.hyroxSession.finished ? hyroxResult(draft.hyroxSession).total : 0;
+      const finalDurationMins =
+        liveElapsed > 0 ? String(Math.round(liveElapsed / 60)) : durationMins.trim() || (hyroxTotalSecs > 0 ? String(Math.round(hyroxTotalSecs / 60)) : "");
       const durationLabel = liveElapsed > 0 ? formatDuration(liveElapsed) : finalDurationMins ? `${finalDurationMins} min` : "—";
 
       const chipperSummary =
@@ -1642,6 +1655,17 @@ export default function LogWorkoutScreen() {
       });
       // Cardio goes in the summary like any other entry, in the place it was done, with the same superset labels.
       const summaryEntries = [
+        ...(hyrox
+          ? hyrox.stations.map((st) => ({
+              name: st.name,
+              summary: [st.weight, st.notes.replace(/^Hyrox station \d+: /, "")].filter(Boolean).join(" · "),
+              setsLogged: 1,
+              setsCompleted: 1,
+              isPb: false,
+              order: st.order as number | null,
+              group: null as string | null,
+            }))
+          : []),
         ...exerciseSummaries.map((e, i) => ({ ...e, order: rowsWithContent[i].order ?? null, group: savedGroup(rowsWithContent[i].key) })),
         ...runs.map((r, i) => {
           const d = describeCardio({ cardioType: r.cardioType, distance: r.distance, durationSecs: r.durationSecs, sets: r.sets });
@@ -2405,6 +2429,84 @@ export default function LogWorkoutScreen() {
           />
           <Text style={styles.formatDescription}>{FORMAT_DESCRIPTIONS[draft.format]}</Text>
 
+          {draft.format === "hyrox" ? (
+            <Card style={styles.entryCard}>
+              <Text style={styles.formatHint}>
+                The 8 stations stay as they are. Change the distance (or reps) and the weight in kg for any of them, and the length of the runs.
+              </Text>
+              <View style={{ flexDirection: "row", gap: Spacing.sm, marginTop: Spacing.sm }}>
+                <NumberField
+                  label="Each run (m)"
+                  value={draft.hyroxConfig.runDistanceM}
+                  onChangeText={(v) => update({ hyroxConfig: { ...draft.hyroxConfig, runDistanceM: v.replace(/[^0-9.]/g, "") } })}
+                  placeholder="1000"
+                />
+              </View>
+              {draft.hyroxConfig.stations.map((st: HyroxStation, i: number) => (
+                <View key={st.key} style={{ marginTop: Spacing.md }}>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                    <View style={styles.hyroxNumber}>
+                      <Text style={styles.hyroxNumberText}>{i + 1}</Text>
+                    </View>
+                    <Text style={styles.entryLabel}>{st.name}</Text>
+                    <Ionicons name="lock-closed-outline" size={14} color={Color.textMuted} />
+                  </View>
+                  <View style={{ flexDirection: "row", gap: Spacing.sm, marginTop: 4 }}>
+                    <NumberField
+                      label={st.kind === "reps" ? "Reps" : "Distance (m)"}
+                      value={st.amount}
+                      onChangeText={(v) =>
+                        update({
+                          hyroxConfig: { ...draft.hyroxConfig, stations: draft.hyroxConfig.stations.map((s) => (s.key === st.key ? { ...s, amount: v.replace(/[^0-9.]/g, "") } : s)) },
+                        })
+                      }
+                    />
+                    <NumberField
+                      label="Weight (kg)"
+                      value={st.weightKg}
+                      onChangeText={(v) =>
+                        update({
+                          hyroxConfig: { ...draft.hyroxConfig, stations: draft.hyroxConfig.stations.map((s) => (s.key === st.key ? { ...s, weightKg: v.replace(/[^0-9.]/g, "") } : s)) },
+                        })
+                      }
+                      placeholder="none"
+                    />
+                  </View>
+                </View>
+              ))}
+              <Button
+                title={
+                  draft.hyroxSession.finished
+                    ? "See your Hyrox results"
+                    : draft.hyroxSession.lapTotals.length > 0 || draft.hyroxSession.started
+                      ? "Resume Hyrox"
+                      : "Open the Hyrox timer"
+                }
+                onPress={() => router.push({ pathname: "/hyrox" })}
+                style={{ marginTop: Spacing.lg }}
+              />
+              {draft.hyroxSession.started || draft.hyroxSession.lapTotals.length > 0 ? (
+                <Pressable
+                  onPress={() =>
+                    Alert.alert("Reset Hyrox?", "This clears the clock and every lap so far.", [
+                      { text: "Cancel", style: "cancel" },
+                      { text: "Reset", style: "destructive", onPress: () => update({ hyroxSession: emptyHyroxSession(), formatResultNote: "" }) },
+                    ])
+                  }
+                  accessibilityRole="button"
+                  style={{ alignSelf: "center", marginTop: Spacing.md, padding: Spacing.sm }}
+                >
+                  <Text style={styles.ungroupText}>Reset Hyrox</Text>
+                </Pressable>
+              ) : null}
+              {draft.hyroxSession.finished ? (
+                <Text style={styles.formatResultText}>
+                  Finished in {hyroxClock(hyroxResult(draft.hyroxSession).total)}. Log the workout to save every run and station.
+                </Text>
+              ) : null}
+            </Card>
+          ) : null}
+
           {draft.format === "chipper" ? (
             <Card style={styles.entryCard}>
               <Text style={styles.formatHint}>
@@ -3058,6 +3160,8 @@ const useStyles = makeLegacyStyles((Color) =>
     rirCircle: { alignSelf: "flex-start", minHeight: 40, minWidth: 40, paddingHorizontal: 12, borderRadius: 20, borderWidth: 2, alignItems: "center", justifyContent: "center", marginTop: 8 },
     rirCircleText: { fontSize: 13, fontWeight: "700", color: Color.textSecondary },
     rpeRow: { flexDirection: "row", gap: 8, marginTop: 8 },
+    hyroxNumber: { width: 26, height: 26, borderRadius: 13, backgroundColor: Color.gold, alignItems: "center", justifyContent: "center" },
+    hyroxNumberText: { fontSize: 13, fontWeight: "800", color: Color.goldForeground },
     rpeChip: { flex: 1, minHeight: 46, borderRadius: 22, borderWidth: 2, borderColor: Color.borderDefault, alignItems: "center", justifyContent: "center" },
     rirOpen: { marginTop: 8 },
     noteButton: { alignSelf: "flex-start", flexDirection: "row", alignItems: "center", gap: 4, minHeight: 36, marginTop: 4 },

@@ -23,6 +23,8 @@ import { todayDateString } from "@/lib/workout-formatters";
 const STORAGE_KEY = "workout-draft-v1";
 const LIVE_NOTIFICATION_ID = "workout-draft-live";
 
+import { defaultHyroxConfig, emptyHyroxSession, type HyroxConfig, type HyroxSession } from "@/lib/hyrox";
+
 export type SetRow = {
   key: string;
   weight: string;
@@ -78,7 +80,7 @@ export type RunRow = {
   typeChosen?: boolean;
 };
 
-export type WorkoutFormat = "standard" | "circuit" | "amrap" | "emom" | "tabata" | "chipper";
+export type WorkoutFormat = "standard" | "circuit" | "amrap" | "emom" | "tabata" | "chipper" | "hyrox";
 
 // Every circuit station always runs on a clock — reps-only stations with no
 // time limit at all aren't a circuit, they're just an exercise list. repTarget
@@ -259,6 +261,9 @@ export interface WorkoutDraft {
   emomConfig: EmomConfig;
   tabataConfig: TabataConfig;
   chipperConfig: ChipperConfig;
+  /** Hyrox: the stations (distance and weight are the member's to change) and the live race state. */
+  hyroxConfig: HyroxConfig;
+  hyroxSession: HyroxSession;
   formatResultNote: string;
   formatSession: FormatSessionState;
 }
@@ -284,6 +289,8 @@ function emptyDraft(): WorkoutDraft {
     emomConfig: emptyEmomConfig(),
     tabataConfig: emptyTabataConfig(),
     chipperConfig: emptyChipperConfig(),
+    hyroxConfig: defaultHyroxConfig(),
+    hyroxSession: emptyHyroxSession(),
     formatResultNote: "",
     formatSession: emptyFormatSession(),
   };

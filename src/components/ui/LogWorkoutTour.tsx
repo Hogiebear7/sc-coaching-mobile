@@ -17,6 +17,7 @@ const TIPS = [
   "A timed exercise has a play button next to the tick. It counts you in, counts the time down, and puts the time back on the set for you to tick.",
   "Tap Weight (kg) to switch between kg, time and band. Tap Reps to split it into right and left. Weight carries down to the sets below.",
   "Cardio has its own stopwatch, and a tick and RPE circle. Add exercise and Add cardio put the new one at the end of your workout.",
+  "Workout format (circuit, EMOM, AMRAP, tabata, chipper or Hyrox) sets up your movements as cards, runs them on a clock, and saves each one to your history. Hyrox has fixed stations: you only change the distance and weight, and lap each run and station.",
   "The plate calculator works out which plates to load. Save as template reuses this workout later.",
   "When you finish, a quick \"how did that feel\" check leads to a session review.",
 ];

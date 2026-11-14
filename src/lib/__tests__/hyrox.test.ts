@@ -133,3 +133,16 @@ describe("roxzone", () => {
     expect(hyroxSummaryNote(s)).toContain("Roxzone");
   });
 });
+
+import { parseClock } from "../hyrox";
+
+describe("parseClock", () => {
+  it("reads minutes and seconds, hours, or bare minutes", () => {
+    expect(parseClock("9:02")).toBe(542);
+    expect(parseClock("1:02:05")).toBe(3725);
+    expect(parseClock("9")).toBe(540);
+    expect(parseClock("")).toBeNull();
+    expect(parseClock("9:75")).toBeNull();
+    expect(parseClock("abc")).toBeNull();
+  });
+});

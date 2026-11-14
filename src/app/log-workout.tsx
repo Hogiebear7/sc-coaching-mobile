@@ -20,12 +20,14 @@ import { ExerciseDemoMedia } from "@/components/ui/ExerciseDemoMedia";
 import { OptionPicker, type PickerOption } from "@/components/ui/OptionPicker";
 import { setTimerTarget, takeTimerResult } from "@/lib/timer-result";
 import { describeCardio, usesFloors } from "@/lib/cardio";
-import { emptyHyroxSession, hyroxClock, hyroxEntries, hyroxResult, type HyroxStation } from "@/lib/hyrox";
+import { formatEntries } from "@/lib/format-entries";
+import { emptyHyroxSession, hyroxClock, hyroxEntries, hyroxResult, hyroxSummaryNote, parseClock, type HyroxStation } from "@/lib/hyrox";
 import { supersetBadges } from "@/lib/superset-display";
 import { entryBlocks, orderedEntries, insertEntry, orderToSave, type EntrySegment } from "@/lib/entry-order";
 import { distinctGroups, supersetLetter, supersetMemberLabel } from "@/lib/superset-label";
 import { cleanLonelySupersets, tapSupersetLabel, ungroupAll } from "@/lib/superset-select";
 import { applyWeightFrom, normalizeWeights, sanitizeWeight, stripWeightUnit, weightUnitFor, withWeightUnit } from "@/lib/weight-input";
+import { FormatChoiceChip, FormatMiniField, FormatMovementCard } from "@/components/workout/FormatMovementCard";
 import { SupersetRounds, type RoundMember } from "@/components/workout/SupersetRounds";
 import { addRound, removeLastRound } from "@/lib/superset-rounds";
 import { CARDIO_LABEL, CARDIO_TYPES, hasLevel, hasPace, parseLevel, type CardioType } from "@/lib/cardio";
@@ -535,43 +537,22 @@ function newChipperMovement(): ChipperMovement {
 // just a short label like "10 Burpees", not a full weight/reps/sets row.
 function MovementsEditor({ movements, onChange }: { movements: string[]; onChange: (m: string[]) => void }) {
   const styles = useStyles();
-  const Color = useLegacyColors();
-  const [draftText, setDraftText] = useState("");
-  function add() {
-    const v = draftText.trim();
-    if (!v) return;
-    onChange([...movements, v]);
-    setDraftText("");
-  }
   return (
     <View style={{ marginTop: Spacing.sm }}>
       <Text style={styles.fieldLabel}>Movements</Text>
-      <View style={styles.movementsInputRow}>
-        <TextInput
-          value={draftText}
-          onChangeText={setDraftText}
-          placeholder="e.g. 10 Burpees"
-          placeholderTextColor={Color.textFaint}
-          style={styles.movementsInput}
-          onSubmitEditing={add}
-          returnKeyType="done"
+      {movements.map((m, i) => (
+        <FormatMovementCard
+          key={i}
+          index={i}
+          name={m}
+          onChangeName={(v) => onChange(movements.map((x, idx) => (idx === i ? v : x)))}
+          namePlaceholder={`Movement ${i + 1}, e.g. Thrusters`}
+          onRemove={() => onChange(movements.filter((_, idx) => idx !== i))}
         />
-        <Pressable onPress={add} style={styles.movementsAddButton}>
-          <Ionicons name="add" size={18} color={Color.goldForeground} />
-        </Pressable>
-      </View>
-      {movements.length > 0 ? (
-        <View style={styles.movementsList}>
-          {movements.map((m, i) => (
-            <View key={`${m}-${i}`} style={styles.movementChip}>
-              <Text style={styles.movementChipText}>{m}</Text>
-              <Pressable onPress={() => onChange(movements.filter((_, idx) => idx !== i))} hitSlop={6}>
-                <Ionicons name="close" size={13} color={Color.textFaint} />
-              </Pressable>
-            </View>
-          ))}
-        </View>
-      ) : null}
+      ))}
+      <Pressable onPress={() => onChange([...movements, ""])} style={styles.addChip}>
+        <Text style={styles.addChipText}>+ Movement</Text>
+      </Pressable>
     </View>
   );
 }
@@ -590,34 +571,20 @@ function ChipperMovementRow({
   onChange: (patch: Partial<ChipperMovement>) => void;
   onRemove: () => void;
 }) {
-  const styles = useStyles();
-  const Color = useLegacyColors();
   return (
-    <View style={styles.stationRow}>
-      <TextInput
-        value={movement.name}
-        onChangeText={(v) => onChange({ name: v })}
-        placeholder={`Movement ${index + 1}, e.g. Squats`}
-        placeholderTextColor={Color.textFaint}
-        style={[styles.stationNameInput, { flex: 2 }]}
-      />
-      <Pressable
-        onPress={() => onChange({ mode: movement.mode === "reps" ? "time" : "reps" })}
-        style={styles.stationModeChip}
-      >
-        <Text style={styles.stationModeText}>{movement.mode === "reps" ? "Reps" : "Time"}</Text>
-      </Pressable>
+    <FormatMovementCard
+      index={index}
+      name={movement.name}
+      onChangeName={(v) => onChange({ name: v })}
+      namePlaceholder={`Movement ${index + 1}, e.g. Squats`}
+      onRemove={onRemove}
+    >
+      <FormatChoiceChip label={movement.mode === "reps" ? "Reps" : "Time"} onPress={() => onChange({ mode: movement.mode === "reps" ? "time" : "reps" })} />
       {movement.mode === "reps" ? (
-        <TextInput
-          value={movement.targetReps}
-          onChangeText={(v) => onChange({ targetReps: v })}
-          keyboardType="number-pad"
-          placeholder="reps"
-          placeholderTextColor={Color.textFaint}
-          style={styles.stationValueInputWide}
-        />
+        <FormatMiniField label="Target reps" value={movement.targetReps} onChangeText={(v) => onChange({ targetReps: v })} placeholder="50" />
       ) : (
-        <TextInput
+        <FormatMiniField
+          label="Target time (m:ss)"
           value={movement.targetSeconds}
           onChangeText={(v) => onChange({ targetSeconds: v })}
           onBlur={() => {
@@ -625,14 +592,10 @@ function ChipperMovementRow({
             if (formatted !== movement.targetSeconds) onChange({ targetSeconds: formatted });
           }}
           placeholder="5:00"
-          placeholderTextColor={Color.textFaint}
-          style={styles.stationValueInputWide}
+          keyboardType="numbers-and-punctuation"
         />
       )}
-      <Pressable onPress={onRemove} hitSlop={6}>
-        <Ionicons name="close" size={16} color={Color.textFaint} />
-      </Pressable>
-    </View>
+    </FormatMovementCard>
   );
 }
 
@@ -660,48 +623,28 @@ function ChipperEditor({ movements, onChange }: { movements: ChipperMovement[]; 
 
 function StationsEditor({ stations, onChange }: { stations: CircuitStation[]; onChange: (s: CircuitStation[]) => void }) {
   const styles = useStyles();
-  const Color = useLegacyColors();
   function updateStation(key: string, patch: Partial<CircuitStation>) {
     onChange(stations.map((s) => (s.key === key ? { ...s, ...patch } : s)));
   }
   function addStation() {
-    // A new station defaults its time to whatever the first station is
-    // already set to — most circuits run every station on the same clock,
-    // so this saves re-typing it each time; still freely editable after.
+    // A new station defaults its time to whatever the first station is already set to: most circuits run every station on the same clock.
     onChange([...stations, newCircuitStation(stations[0]?.seconds)]);
   }
   return (
     <View>
       <Text style={styles.fieldLabel}>Stations</Text>
       {stations.map((s, i) => (
-        <View key={s.key} style={styles.stationRow}>
-          <TextInput
-            value={s.name}
-            onChangeText={(v) => updateStation(s.key, { name: v })}
-            placeholder={`Station ${i + 1} name`}
-            placeholderTextColor={Color.textFaint}
-            style={styles.stationNameInput}
-          />
-          <TextInput
-            value={s.seconds}
-            onChangeText={(v) => updateStation(s.key, { seconds: v })}
-            keyboardType="number-pad"
-            placeholder="secs"
-            placeholderTextColor={Color.textFaint}
-            style={styles.stationValueInput}
-          />
-          <TextInput
-            value={s.repTarget}
-            onChangeText={(v) => updateStation(s.key, { repTarget: v })}
-            keyboardType="number-pad"
-            placeholder="reps (opt.)"
-            placeholderTextColor={Color.textFaint}
-            style={styles.stationValueInput}
-          />
-          <Pressable onPress={() => onChange(stations.filter((row) => row.key !== s.key))} hitSlop={6}>
-            <Ionicons name="close" size={16} color={Color.textFaint} />
-          </Pressable>
-        </View>
+        <FormatMovementCard
+          key={s.key}
+          index={i}
+          name={s.name}
+          onChangeName={(v) => updateStation(s.key, { name: v })}
+          namePlaceholder={`Station ${i + 1} name`}
+          onRemove={() => onChange(stations.filter((row) => row.key !== s.key))}
+        >
+          <FormatMiniField label="Time (s)" value={s.seconds} onChangeText={(v) => updateStation(s.key, { seconds: v })} placeholder="40" />
+          <FormatMiniField label="Reps (optional)" value={s.repTarget} onChangeText={(v) => updateStation(s.key, { repTarget: v })} placeholder="10" />
+        </FormatMovementCard>
       ))}
       <Pressable onPress={addStation} style={styles.addChip}>
         <Text style={styles.addChipText}>+ Station</Text>
@@ -712,33 +655,23 @@ function StationsEditor({ stations, onChange }: { stations: CircuitStation[]; on
 
 function EmomMovementsEditor({ movements, onChange }: { movements: EmomMovement[]; onChange: (m: EmomMovement[]) => void }) {
   const styles = useStyles();
-  const Color = useLegacyColors();
   function update(key: string, patch: Partial<EmomMovement>) {
     onChange(movements.map((m) => (m.key === key ? { ...m, ...patch } : m)));
   }
   return (
     <View style={{ marginTop: Spacing.sm }}>
-      <Text style={styles.fieldLabel}>Movements</Text>
+      <Text style={styles.fieldLabel}>Movements (one per minute, in turn)</Text>
       {movements.map((m, i) => (
-        <View key={m.key} style={styles.stationRow}>
-          <TextInput
-            value={m.name}
-            onChangeText={(v) => update(m.key, { name: v })}
-            placeholder={`Movement ${i + 1}, e.g. OH Slams`}
-            placeholderTextColor={Color.textFaint}
-            style={[styles.stationNameInput, { flex: 2 }]}
-          />
-          <TextInput
-            value={m.repsOrTime}
-            onChangeText={(v) => update(m.key, { repsOrTime: v })}
-            placeholder="30/30s"
-            placeholderTextColor={Color.textFaint}
-            style={styles.stationValueInputWide}
-          />
-          <Pressable onPress={() => onChange(movements.filter((row) => row.key !== m.key))} hitSlop={6}>
-            <Ionicons name="close" size={16} color={Color.textFaint} />
-          </Pressable>
-        </View>
+        <FormatMovementCard
+          key={m.key}
+          index={i}
+          name={m.name}
+          onChangeName={(v) => update(m.key, { name: v })}
+          namePlaceholder={`Movement ${i + 1}, e.g. OH Slams`}
+          onRemove={() => onChange(movements.filter((row) => row.key !== m.key))}
+        >
+          <FormatMiniField label="Reps or time" value={m.repsOrTime} onChangeText={(v) => update(m.key, { repsOrTime: v })} placeholder="15 or 40s" keyboardType="default" />
+        </FormatMovementCard>
       ))}
       <Pressable onPress={() => onChange([...movements, newEmomMovement()])} style={styles.addChip}>
         <Text style={styles.addChipText}>+ Movement</Text>
@@ -757,7 +690,6 @@ function AmrapMovementsEditor({
   onChange: (m: AmrapMovement[]) => void;
 }) {
   const styles = useStyles();
-  const Color = useLegacyColors();
   function update(key: string, patch: Partial<AmrapMovement>) {
     onChange(movements.map((m) => (m.key === key ? { ...m, ...patch } : m)));
   }
@@ -765,28 +697,18 @@ function AmrapMovementsEditor({
     <View style={{ marginTop: Spacing.sm }}>
       <Text style={styles.fieldLabel}>Movements</Text>
       {movements.map((m, i) => (
-        <View key={m.key} style={styles.stationRow}>
-          <TextInput
-            value={m.name}
-            onChangeText={(v) => update(m.key, { name: v })}
-            placeholder={`Movement ${i + 1}, e.g. Burpees`}
-            placeholderTextColor={Color.textFaint}
-            style={[styles.stationNameInput, subMode === "reps" && { flex: 2 }]}
-          />
+        <FormatMovementCard
+          key={m.key}
+          index={i}
+          name={m.name}
+          onChangeName={(v) => update(m.key, { name: v })}
+          namePlaceholder={`Movement ${i + 1}, e.g. Burpees`}
+          onRemove={() => onChange(movements.filter((row) => row.key !== m.key))}
+        >
           {subMode === "rounds" ? (
-            <TextInput
-              value={m.targetReps}
-              onChangeText={(v) => update(m.key, { targetReps: v })}
-              keyboardType="number-pad"
-              placeholder="reps/rd"
-              placeholderTextColor={Color.textFaint}
-              style={styles.stationValueInputWide}
-            />
+            <FormatMiniField label="Reps each round" value={m.targetReps} onChangeText={(v) => update(m.key, { targetReps: v })} placeholder="10" />
           ) : null}
-          <Pressable onPress={() => onChange(movements.filter((row) => row.key !== m.key))} hitSlop={6}>
-            <Ionicons name="close" size={16} color={Color.textFaint} />
-          </Pressable>
-        </View>
+        </FormatMovementCard>
       ))}
       <Pressable onPress={() => onChange([...movements, newAmrapMovement()])} style={styles.addChip}>
         <Text style={styles.addChipText}>+ Movement</Text>
@@ -811,8 +733,11 @@ function HowDidYouFeelModal({
   onSkip,
   onSubmit,
   submitting,
+  roxzone,
 }: {
   visible: boolean;
+  /** Hyrox only: a Roxzone time to type in, for someone who has it from their official results. */
+  roxzone?: { value: string; onChange: (v: string) => void } | null;
   rpe: number | null;
   onChangeRpe: (v: number | null) => void;
   notes: string;
@@ -856,6 +781,20 @@ function HowDidYouFeelModal({
               })}
             </View>
           ))}
+          {roxzone ? (
+            <>
+              <Text style={[styles.fieldLabel, { marginTop: Spacing.md }]}>Roxzone time (optional)</Text>
+              <TextInput
+                value={roxzone.value}
+                onChangeText={roxzone.onChange}
+                placeholder="e.g. 9:02, from your official results"
+                placeholderTextColor={Color.textFaint}
+                keyboardType="numbers-and-punctuation"
+                style={[styles.smallInput, { marginTop: 4 }]}
+                accessibilityLabel="Roxzone time"
+              />
+            </>
+          ) : null}
           <Text style={[styles.fieldLabel, { marginTop: Spacing.md }]}>Notes (optional)</Text>
           <TextInput
             value={notes}
@@ -942,6 +881,7 @@ export default function LogWorkoutScreen() {
   const restTimerSeconds = draft.restTimerOverrideSecs ?? profile?.restTimerSeconds ?? 90;
   const [error, setError] = useState<string | null>(null);
   const [feelModalOpen, setFeelModalOpen] = useState(false);
+  const [roxText, setRoxText] = useState("");
   const [sessionRpe, setSessionRpe] = useState<number | null>(null);
   const [feelingNotes, setFeelingNotes] = useState("");
 
@@ -1497,6 +1437,7 @@ export default function LogWorkoutScreen() {
     // edge on Android — dismiss first so the modal opens onto a settled
     // screen.
     Keyboard.dismiss();
+    if (draft.format === "hyrox") setRoxText(draft.hyroxSession.roxzoneSecs ? hyroxClock(draft.hyroxSession.roxzoneSecs) : "");
     setFeelModalOpen(true);
   }
 
@@ -1572,6 +1513,20 @@ export default function LogWorkoutScreen() {
         exercises.push(...(hyrox.stations as CreateWorkoutExerciseInput[]));
       }
 
+      // The other formats (circuit, EMOM, AMRAP, tabata, chipper) save one exercise per movement once they have been run, so the history and the
+      // summary show them like any other workout.
+      const formatExtra =
+        draft.format !== "standard" && draft.format !== "hyrox"
+          ? formatEntries(
+              draft.format,
+              { circuit: draft.circuitConfig, amrap: draft.amrapConfig, emom: draft.emomConfig, tabata: draft.tabataConfig, chipper: draft.chipperConfig },
+              !!draft.formatResultNote,
+              200
+            )
+          : [];
+      exercises.push(...(formatExtra as CreateWorkoutExerciseInput[]));
+      const extraStations = hyrox ? hyrox.stations : formatExtra;
+
       // Prefer the live-tracked time whenever the timer was actually used;
       // otherwise fall back to whatever was typed into the manual duration
       // field (shown either for a past date, or when today's timer was never
@@ -1596,8 +1551,13 @@ export default function LogWorkoutScreen() {
               .join(", ")}`
           : "";
 
+      // Hyrox: a Roxzone time typed in at the end replaces the one the clock counted.
+      const hyroxSessionFinal =
+        draft.format === "hyrox" ? { ...draft.hyroxSession, roxzoneSecs: parseClock(roxText) ?? draft.hyroxSession.roxzoneSecs ?? 0 } : null;
       const formatSummary =
-        draft.format === "chipper"
+        hyroxSessionFinal && hyroxSessionFinal.lapTotals.length > 0
+          ? `Hyrox: ${hyroxSummaryNote(hyroxSessionFinal)}`
+          : draft.format === "chipper"
           ? chipperSummary
           : draft.format !== "standard" && draft.formatResultNote
             ? `${FORMAT_LABELS[draft.format]}: ${draft.formatResultNote}`
@@ -1655,10 +1615,10 @@ export default function LogWorkoutScreen() {
       });
       // Cardio goes in the summary like any other entry, in the place it was done, with the same superset labels.
       const summaryEntries = [
-        ...(hyrox
-          ? hyrox.stations.map((st) => ({
+        ...(extraStations.length > 0
+          ? extraStations.map((st) => ({
               name: st.name,
-              summary: [st.weight, st.notes.replace(/^Hyrox station \d+: /, "")].filter(Boolean).join(" · "),
+              summary: [st.weight, st.reps ? `${st.reps} reps` : null, st.notes.replace(/^Hyrox station \d+: /, "")].filter(Boolean).join(" · "),
               setsLogged: 1,
               setsCompleted: 1,
               isPb: false,
@@ -1718,8 +1678,8 @@ export default function LogWorkoutScreen() {
         totalVolume: Math.round(totalVolume),
         totalSets,
         completedSets,
-        totalExercises: rowsWithContent.length + runs.length,
-        completedExercises: completedExercises + runs.length,
+        totalExercises: rowsWithContent.length + runs.length + extraStations.length,
+        completedExercises: completedExercises + runs.length + extraStations.length,
         exercises: summaryList,
       };
       if (programId) await advanceProgram.mutateAsync(programId);
@@ -2779,6 +2739,7 @@ export default function LogWorkoutScreen() {
         onSkip={() => void handleSubmit(null, "")}
         onSubmit={() => void handleSubmit(sessionRpe, feelingNotes)}
         submitting={create.isPending}
+        roxzone={draft.format === "hyrox" && draft.hyroxSession.lapTotals.length > 0 ? { value: roxText, onChange: setRoxText } : null}
       />
 
       <Modal visible={cardioTimeTarget !== null} transparent animationType="fade" onRequestClose={() => setCardioTimeTarget(null)}>

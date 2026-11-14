@@ -257,3 +257,15 @@ export function hyroxEntries(config: HyroxConfig, session: HyroxSession, orderBa
   });
   return { runs, stations };
 }
+
+/** "9:02", "1:02:05" or a bare number of minutes ("9") as seconds. Null when it is blank or not a time. */
+export function parseClock(text: string): number | null {
+  const t = text.trim();
+  if (!t) return null;
+  const parts = t.split(":");
+  if (parts.length > 3 || parts.some((p) => !/^\d{1,2}$/.test(p.trim()))) return null;
+  const n = parts.map((p) => parseInt(p, 10));
+  if (n.length === 1) return n[0] * 60;
+  if (n.some((v, i) => i > 0 && v > 59)) return null;
+  return n.length === 2 ? n[0] * 60 + n[1] : n[0] * 3600 + n[1] * 60 + n[2];
+}

@@ -30,10 +30,12 @@ import {
   type ClassWorkoutRunEntry,
 } from "@/lib/queries/staff";
 import { OptionPicker, type PickerOption } from "@/components/ui/OptionPicker";
+import { FormatChoiceChip, FormatMiniField, FormatMovementCard } from "@/components/workout/FormatMovementCard";
 import { newPlanSet, PlanExerciseCard, type PlanSet, type UnitMode } from "@/components/class/PlanExerciseCard";
 import { TimeWheelPicker } from "@/components/ui/TimeWheelPicker";
 import { useProfile } from "@/lib/queries/profile";
 import { cleanLonelySupersets, tapSupersetLabel } from "@/lib/superset-select";
+import { defaultHyroxConfig, stationDetail, type HyroxConfig } from "@/lib/hyrox";
 import { distinctGroups, supersetMemberLabel } from "@/lib/superset-label";
 import { DataColor } from "@/constants/theme";
 import { weightUnitFor } from "@/lib/weight-input";
@@ -48,7 +50,7 @@ function nextKey(): string {
   return `cw-${Date.now()}-${keySeq}`;
 }
 
-type WorkoutFormat = "standard" | "circuit" | "amrap" | "emom" | "tabata" | "chipper";
+type WorkoutFormat = "standard" | "circuit" | "amrap" | "emom" | "tabata" | "chipper" | "hyrox";
 
 const FORMAT_OPTIONS: { value: WorkoutFormat; label: string }[] = [
   { value: "standard", label: "Standard" },
@@ -57,6 +59,7 @@ const FORMAT_OPTIONS: { value: WorkoutFormat; label: string }[] = [
   { value: "amrap", label: "AMRAP" },
   { value: "emom", label: "EMOM" },
   { value: "tabata", label: "Tabata" },
+  { value: "hyrox", label: "Hyrox" },
 ];
 
 type CircuitStation = { key: string; name: string; mode: "reps" | "time"; reps: string; seconds: string };
@@ -104,50 +107,28 @@ function newCircuitStation(): CircuitStation {
 
 function MovementsEditor({ movements, onChange }: { movements: string[]; onChange: (m: string[]) => void }) {
   const styles = useStyles();
-  const Color = useLegacyColors();
-  const [draftText, setDraftText] = useState("");
-  function add() {
-    const v = draftText.trim();
-    if (!v) return;
-    onChange([...movements, v]);
-    setDraftText("");
-  }
   return (
     <View style={{ marginTop: Spacing.sm }}>
       <Text style={styles.rowLabel}>Movements</Text>
-      <View style={{ flexDirection: "row", gap: Spacing.xs }}>
-        <TextInput
-          value={draftText}
-          onChangeText={setDraftText}
-          placeholder="e.g. 10 Burpees"
-          placeholderTextColor={Color.textFaint}
-          style={[inputStyleBase(), { flex: 1 }]}
-          onSubmitEditing={add}
-          returnKeyType="done"
+      {movements.map((m, i) => (
+        <FormatMovementCard
+          key={i}
+          index={i}
+          name={m}
+          onChangeName={(v) => onChange(movements.map((x, idx) => (idx === i ? v : x)))}
+          namePlaceholder={`Movement ${i + 1}, e.g. 10 Burpees`}
+          onRemove={() => onChange(movements.filter((_, idx) => idx !== i))}
         />
-        <Pressable onPress={add} style={styles.formatAddButton}>
-          <Ionicons name="add" size={18} color={Color.goldForeground} />
-        </Pressable>
-      </View>
-      {movements.length > 0 ? (
-        <View style={styles.movementsList}>
-          {movements.map((m, i) => (
-            <View key={`${m}-${i}`} style={styles.movementChip}>
-              <Text style={styles.movementChipText}>{m}</Text>
-              <Pressable onPress={() => onChange(movements.filter((_, idx) => idx !== i))} hitSlop={6}>
-                <Ionicons name="close" size={13} color={Color.textFaint} />
-              </Pressable>
-            </View>
-          ))}
-        </View>
-      ) : null}
+      ))}
+      <Pressable onPress={() => onChange([...movements, ""])} style={styles.addChip}>
+        <Text style={styles.addChipText}>+ Movement</Text>
+      </Pressable>
     </View>
   );
 }
 
 function StationsEditor({ stations, onChange }: { stations: CircuitStation[]; onChange: (s: CircuitStation[]) => void }) {
   const styles = useStyles();
-  const Color = useLegacyColors();
   function updateStation(key: string, patch: Partial<CircuitStation>) {
     onChange(stations.map((s) => (s.key === key ? { ...s, ...patch } : s)));
   }
@@ -155,29 +136,22 @@ function StationsEditor({ stations, onChange }: { stations: CircuitStation[]; on
     <View>
       <Text style={styles.rowLabel}>Stations</Text>
       {stations.map((s, i) => (
-        <View key={s.key} style={styles.stationRow}>
-          <TextInput
-            value={s.name}
-            onChangeText={(v) => updateStation(s.key, { name: v })}
-            placeholder={`Station ${i + 1} name`}
-            placeholderTextColor={Color.textFaint}
-            style={[inputStyleBase(), { flex: 1 }]}
-          />
-          <Pressable onPress={() => updateStation(s.key, { mode: s.mode === "reps" ? "time" : "reps" })} style={styles.formatModeChip}>
-            <Text style={styles.formatModeText}>{s.mode === "reps" ? "Reps" : "Time"}</Text>
-          </Pressable>
-          <TextInput
+        <FormatMovementCard
+          key={s.key}
+          index={i}
+          name={s.name}
+          onChangeName={(v) => updateStation(s.key, { name: v })}
+          namePlaceholder={`Station ${i + 1} name`}
+          onRemove={() => onChange(stations.filter((row) => row.key !== s.key))}
+        >
+          <FormatChoiceChip label={s.mode === "reps" ? "Reps" : "Time"} onPress={() => updateStation(s.key, { mode: s.mode === "reps" ? "time" : "reps" })} />
+          <FormatMiniField
+            label={s.mode === "reps" ? "Reps" : "Seconds"}
             value={s.mode === "reps" ? s.reps : s.seconds}
             onChangeText={(v) => updateStation(s.key, s.mode === "reps" ? { reps: v } : { seconds: v })}
-            keyboardType="number-pad"
-            placeholder={s.mode === "reps" ? "reps" : "secs"}
-            placeholderTextColor={Color.textFaint}
-            style={[inputStyleBase(), { width: 56, paddingHorizontal: 4 }]}
+            placeholder={s.mode === "reps" ? "10" : "40"}
           />
-          <Pressable onPress={() => onChange(stations.filter((row) => row.key !== s.key))} hitSlop={6}>
-            <Ionicons name="close" size={16} color={Color.textFaint} />
-          </Pressable>
-        </View>
+        </FormatMovementCard>
       ))}
       <Pressable onPress={() => onChange([...stations, newCircuitStation()])} style={styles.addChip}>
         <Text style={styles.addChipText}>+ Station</Text>
@@ -337,6 +311,7 @@ export default function ClassWorkoutBuilderScreen() {
   const sendRecap = useSendClassRecap();
   const [workoutNotes, setWorkoutNotes] = useState("");
   const [format, setFormat] = useState<WorkoutFormat>("standard");
+  const [hyroxConfig, setHyroxConfig] = useState<HyroxConfig>(defaultHyroxConfig());
   const [circuitStations, setCircuitStations] = useState<CircuitStation[]>([]);
   const [circuitRestStation, setCircuitRestStation] = useState("15");
   const [circuitRestRound, setCircuitRestRound] = useState("60");
@@ -443,7 +418,13 @@ export default function ClassWorkoutBuilderScreen() {
               tabataRounds
             )
           : "";
-      const combinedNotes = [formatSummary, workoutNotes.trim()].filter(Boolean).join("\n\n");
+      const hyroxSummary =
+        format === "hyrox"
+          ? `Format: Hyrox: 8 stations, each with a ${hyroxConfig.runDistanceM || "1000"} m run before it. ${hyroxConfig.stations
+              .map((st, i) => `${i + 1}) ${st.name} ${stationDetail(st)}`.trim())
+              .join("; ")}`
+          : "";
+      const combinedNotes = [formatSummary || hyroxSummary, workoutNotes.trim()].filter(Boolean).join("\n\n");
 
       const res = await saveWorkout.mutateAsync({
         classId,
@@ -777,6 +758,46 @@ export default function ClassWorkoutBuilderScreen() {
 
             {format === "chipper" ? (
               <Text style={styles.sectionHint}>List the movements above as exercises, done once for time.</Text>
+            ) : null}
+
+            {format === "hyrox" ? (
+              <View style={styles.formatConfig}>
+                <Text style={styles.sectionHint}>
+                  The 8 stations are fixed, each with a run before it. Change the distance or reps and the weight (kg) for this class. It goes into the class notes.
+                </Text>
+                <View style={{ flexDirection: "row", gap: Spacing.sm, marginTop: Spacing.sm }}>
+                  <FormatMiniField
+                    label="Each run (m)"
+                    value={hyroxConfig.runDistanceM}
+                    onChangeText={(v) => setHyroxConfig({ ...hyroxConfig, runDistanceM: v.replace(/[^0-9.]/g, "") })}
+                    placeholder="1000"
+                  />
+                </View>
+                {hyroxConfig.stations.map((st, i) => (
+                  <View key={st.key} style={{ marginTop: Spacing.sm }}>
+                    <Text style={styles.rowLabel}>
+                      {i + 1}. {st.name}
+                    </Text>
+                    <View style={{ flexDirection: "row", gap: Spacing.sm }}>
+                      <FormatMiniField
+                        label={st.kind === "reps" ? "Reps" : "Distance (m)"}
+                        value={st.amount}
+                        onChangeText={(v) =>
+                          setHyroxConfig({ ...hyroxConfig, stations: hyroxConfig.stations.map((x) => (x.key === st.key ? { ...x, amount: v.replace(/[^0-9.]/g, "") } : x)) })
+                        }
+                      />
+                      <FormatMiniField
+                        label="Weight (kg)"
+                        value={st.weightKg}
+                        onChangeText={(v) =>
+                          setHyroxConfig({ ...hyroxConfig, stations: hyroxConfig.stations.map((x) => (x.key === st.key ? { ...x, weightKg: v.replace(/[^0-9.]/g, "") } : x)) })
+                        }
+                        placeholder="none"
+                      />
+                    </View>
+                  </View>
+                ))}
+              </View>
             ) : null}
 
             {format === "circuit" ? (

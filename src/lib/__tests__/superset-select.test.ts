@@ -168,3 +168,46 @@ describe("tapSuperset", () => {
     expect(byKey.a1).toBe("ST1");
   });
 });
+
+import { tapSupersetLabel } from "../superset-select";
+
+describe("tapSupersetLabel", () => {
+  const ex = (key: string, order: number, group: string | null = null) => ({ key, order, supersetGroup: group });
+  const groups = (r: { exerciseRows: { key: string; supersetGroup: string | null }[] } | null) => Object.fromEntries((r?.exerciseRows ?? []).map((e) => [e.key, e.supersetGroup]));
+
+  it("links an exercise with the one above it, making a new superset of the two", () => {
+    expect(groups(tapSupersetLabel([ex("a", 0), ex("b", 1), ex("c", 2)], [], "b"))).toEqual({ a: "ST1", b: "ST1", c: null });
+  });
+
+  it("joins the superset above, as the next one in line", () => {
+    expect(groups(tapSupersetLabel([ex("a", 0, "ST1"), ex("b", 1, "ST1"), ex("c", 2)], [], "c"))).toEqual({ a: "ST1", b: "ST1", c: "ST1" });
+  });
+
+  it("starts a new superset below an existing one without touching the existing one", () => {
+    const rows = [ex("a1", 0, "ST1"), ex("a2", 1, "ST1"), ex("b1", 2, "ST2"), ex("c", 3), ex("d", 4)];
+    expect(groups(tapSupersetLabel(rows, [], "d"))).toEqual({ a1: "ST1", a2: "ST1", b1: null, c: "ST3", d: "ST3" });
+  });
+
+  it("tapping A3 makes B1 and brings A4 along", () => {
+    const rows = [ex("a1", 0, "ST1"), ex("a2", 1, "ST1"), ex("a3", 2, "ST1"), ex("a4", 3, "ST1")];
+    expect(groups(tapSupersetLabel(rows, [], "a3"))).toEqual({ a1: "ST1", a2: "ST1", a3: "ST2", a4: "ST2" });
+  });
+
+  it("tapping B1 puts the whole of B back into A", () => {
+    const rows = [ex("a1", 0, "ST1"), ex("a2", 1, "ST1"), ex("b1", 2, "ST2"), ex("b2", 3, "ST2")];
+    expect(groups(tapSupersetLabel(rows, [], "b1"))).toEqual({ a1: "ST1", a2: "ST1", b1: "ST1", b2: "ST1" });
+  });
+
+  it("tapping the first of the first superset takes it out, and a pair left with one dissolves", () => {
+    expect(groups(tapSupersetLabel([ex("a", 0, "ST1"), ex("b", 1, "ST1")], [], "a"))).toEqual({ a: null, b: null });
+  });
+
+  it("does nothing for the very first entry when it is on its own", () => {
+    expect(tapSupersetLabel([ex("a", 0), ex("b", 1)], [], "a")).toBeNull();
+  });
+
+  it("works for cardio in the middle", () => {
+    const r = tapSupersetLabel([ex("a", 0, "ST1"), ex("b", 2)], [{ key: "bike", order: 1, supersetGroup: null }], "bike");
+    expect(r?.runRows[0].supersetGroup).toBe("ST1");
+  });
+});

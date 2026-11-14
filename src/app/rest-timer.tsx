@@ -115,9 +115,13 @@ export default function RestTimerScreen() {
     }
   }
 
+  // A timer started from a set always goes back to that set's own time, however much it was nudged with -15s / +15s.
+  const targetSecs = Number(initialSecondsParam) > 0 ? Number(initialSecondsParam) : null;
+  const fromSet = getReadyParam === "1" && !!getTimerTarget() && targetSecs !== null;
+
   function handleReset() {
     tapFeedback();
-    timer.reset(timer.state.durationSecs, timer.state.label);
+    timer.reset(fromSet && targetSecs ? targetSecs : timer.state.durationSecs, timer.state.label);
   }
 
   function handlePreset(secs: number) {
@@ -220,21 +224,26 @@ export default function RestTimerScreen() {
         ) : null}
 
         {(() => {
-          // Started from a set on the log screen? Offer the finished time back to that set.
-          const secs = isStopwatch ? (!timer.isStopwatchRunning ? stopwatchElapsed : 0) : done ? timer.state.durationSecs : 0;
-          if (!getTimerTarget() || secs <= 0) return null;
+          // Started from a set on the log screen? Offer the time back to that set, then clear the timer so it does not linger at the bottom of the
+          // log screen. A countdown that ran out adds the set's own time; stopping early adds the time actually done.
+          if (!fromSet || !targetSecs) return null;
+          const finished = !isStopwatch && done;
+          const doneSecs = isStopwatch ? stopwatchElapsed : Math.max(0, timer.state.durationSecs - remaining);
+          const secs = finished ? targetSecs : doneSecs;
+          if (isStopwatch ? (timer.isStopwatchRunning || secs <= 0) : (!finished && (doneSecs <= 0 || timer.isPreCountingDown))) return null;
           return (
             <Pressable
               onPress={() => {
                 successFeedback();
                 offerTimerResult(secs);
+                timer.reset(targetSecs, null);
                 router.back();
               }}
               accessibilityRole="button"
               style={styles.addToSetButton}
             >
-              <Ionicons name="add-circle" size={20} color={Color.goldForeground} />
-              <Text style={styles.addToSetText}>Add {formatClock(secs)} to the set</Text>
+              <Ionicons name="checkmark-circle" size={20} color={Color.goldForeground} />
+              <Text style={styles.addToSetText}>{finished ? `Done: add ${formatClock(secs)} to the set` : `Finish early: add ${formatClock(secs)}`}</Text>
             </Pressable>
           );
         })()}

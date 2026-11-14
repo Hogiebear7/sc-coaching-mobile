@@ -167,3 +167,58 @@ export function tapSuperset<E extends Row, R extends RunLike>(
   }
   return result;
 }
+
+/**
+ * One tap on an entry's number or label links it with what is above it, or undoes that. No cycling:
+ *  - not in a superset, and the entry above is in one: it joins that superset (the next one in line there);
+ *  - not in a superset, and the entry above is not in one: the two form a new superset;
+ *  - in a superset, not the first of it: it and everything after it in that superset become a new superset (tap A3 to start B1);
+ *  - the first of a superset, with another superset directly above: the whole superset joins the one above (undoing a split);
+ *  - the first of a superset with nothing in a superset above: it leaves the superset.
+ * A superset left with a single entry is dissolved. Returns null when nothing can happen (the first entry in the workout, not in a superset).
+ */
+export function tapSupersetLabel<E extends Row, R extends RunLike>(
+  exerciseRows: E[],
+  runRows: R[],
+  key: string
+): { exerciseRows: E[]; runRows: R[] } | null {
+  const entries = orderedEntries(exerciseRows, runRows);
+  const at = entries.findIndex((e) => e.row.key === key);
+  if (at === -1) return null;
+  const groupAt = (i: number): string | null => (entries[i].row as RunLike).supersetGroup ?? null;
+  const current = groupAt(at);
+  const above = at > 0 ? groupAt(at - 1) : null;
+  const fresh = nextSupersetLabel(entries.map((e) => (e.row as RunLike).supersetGroup ?? null));
+
+  let keys: string[];
+  let label: string | null;
+  if (current === null) {
+    if (at === 0) return null;
+    if (above) {
+      keys = [key];
+      label = above;
+    } else {
+      keys = [entries[at - 1].row.key, key];
+      label = fresh;
+    }
+  } else {
+    const members = entries.filter((e) => (e.row as RunLike).supersetGroup === current).map((e) => e.row.key);
+    const idx = members.indexOf(key);
+    if (idx > 0) {
+      keys = members.slice(idx);
+      label = fresh;
+    } else if (above && above !== current) {
+      keys = members;
+      label = above;
+    } else {
+      keys = [key];
+      label = null;
+    }
+  }
+  const set = new Set(keys);
+  const relabelled = {
+    exerciseRows: exerciseRows.map((r) => (set.has(r.key) ? { ...r, supersetGroup: label } : r)),
+    runRows: runRows.map((r) => (set.has(r.key) ? { ...r, supersetGroup: label } : r)),
+  };
+  return cleanLonelySupersets(relabelled.exerciseRows, relabelled.runRows);
+}

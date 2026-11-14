@@ -21,7 +21,7 @@ import { OptionPicker, type PickerOption } from "@/components/ui/OptionPicker";
 import { setTimerTarget, takeTimerResult } from "@/lib/timer-result";
 import { entryBlocks, orderedEntries, insertEntry, orderToSave, type EntrySegment } from "@/lib/entry-order";
 import { distinctGroups, supersetLetter, supersetMemberLabel } from "@/lib/superset-label";
-import { cleanLonelySupersets, nextSupersetTap, tapSuperset, ungroupAll } from "@/lib/superset-select";
+import { cleanLonelySupersets, tapSupersetLabel, ungroupAll } from "@/lib/superset-select";
 import { applyWeightFrom, normalizeWeights, sanitizeWeight, stripWeightUnit, weightUnitFor, withWeightUnit } from "@/lib/weight-input";
 import { SupersetRounds, type RoundMember } from "@/components/workout/SupersetRounds";
 import { addRound, removeLastRound } from "@/lib/superset-rounds";
@@ -1123,6 +1123,7 @@ export default function LogWorkoutScreen() {
   function handleAddExercise() {
     tapFeedback();
     const added = newExerciseRow();
+    setOpenRows((prev) => [...prev, added.key]);
     update(insertEntry(exerciseRows, runRows, { kind: "exercise", row: added }, lastTouchedKey.current));
     lastTouchedKey.current = added.key;
     // The new row needs a layout pass before its position can be measured —
@@ -1142,6 +1143,14 @@ export default function LogWorkoutScreen() {
   // Rounds view: draws each superset as Round 1, Round 2 ... with a tick per round. Off by default (the normal view is unchanged); remembered.
   // A superset shows as one grouped card with its rounds. "Edit exercises" on the card opens the full per-exercise cards (names, units, left/right).
   const [editingGroups, setEditingGroups] = useState<string[]>([]);
+  // Exercises added in this session stay in the full card until "Simple view" is pressed, so typing a name never flips the card half way.
+  const [openRows, setOpenRows] = useState<string[]>([]);
+  // Cardio entries the member has put into the simple (one line) view.
+  const [simpleRuns, setSimpleRuns] = useState<string[]>([]);
+  function toggleSimpleRun(key: string) {
+    tapFeedback();
+    setSimpleRuns((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]));
+  }
   function toggleEditGroup(label: string) {
     tapFeedback();
     setEditingGroups((prev) => (prev.includes(label) ? prev.filter((g) => g !== label) : [...prev, label]));
@@ -1164,16 +1173,15 @@ export default function LogWorkoutScreen() {
   }
 
   // Tap an exercise's number to cycle it through the supersets (Superset A, B ... as far as the exercises allow), then back to none.
+  // Tap an entry's number or label: link it with the one above, or undo that (see tapSupersetLabel).
   function cycleSuperset(row: { key: string; supersetGroup?: string | null }) {
-    const shown = orderedEntries(exerciseRows, runRows).map((e) => ({ key: e.row.key, supersetGroup: e.row.supersetGroup ?? null }));
-    const next = nextSupersetTap(shown, row.key);
-    if (next === undefined) {
-      // A superset needs at least two entries (exercises or cardio).
+    const next = tapSupersetLabel(exerciseRows, runRows, row.key);
+    if (!next) {
       warningFeedback();
       return;
     }
     selectionFeedback();
-    update(tapSuperset(exerciseRows, runRows, row.key, next));
+    update(next);
   }
 
   // kg, time and band are different kinds of value: each keeps its own typed values per set, so switching away and back loses nothing and a time never shows up as a weight.
@@ -1997,7 +2005,40 @@ export default function LogWorkoutScreen() {
               members: grp.rows.map((r) => ({ kind: "exercise" as const, row: r })),
               editCards: cards,
             });
-          }) : (() => { const row = seg.row; return (
+          }) : (() => { const row = seg.row;
+          if (!opts?.inMixed && simpleRuns.includes(row.key)) {
+            const parts = [
+              row.distance.trim() ? `${row.distance.trim()} ${row.distanceUnit}` : "",
+              row.duration.trim() ? formatDuration(parseDuration(row.duration) ?? 0) : "",
+              row.rpe ? `RPE ${row.rpe}` : "",
+            ].filter(Boolean);
+            return (
+              <Card key={row.key} style={styles.entryCard}>
+                <View style={styles.entryHeader}>
+                  <View style={styles.entryHeaderTitle}>
+                    <Pressable
+                      onPress={() => cycleSuperset(row)}
+                      hitSlop={6}
+                      accessibilityRole="button"
+                      accessibilityLabel="Cardio. Tap to link it with the exercise above."
+                      style={[styles.indexBadge, styles.indexBadgeButton]}
+                    >
+                      <Ionicons name="pulse" size={16} color={Color.textPrimary} />
+                      <Ionicons name="link" size={9} color={Color.textMuted} style={styles.indexBadgeIcon} />
+                    </Pressable>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.entryLabel}>{row.typeChosen ? CARDIO_LABEL[row.cardioType] : "Cardio"}</Text>
+                      <Text style={styles.splitsText}>{parts.length ? parts.join(" · ") : "No details yet"}</Text>
+                    </View>
+                  </View>
+                  <Pressable onPress={() => toggleSimpleRun(row.key)} hitSlop={8} accessibilityRole="button" accessibilityLabel="Edit the cardio details">
+                    <Text style={styles.ungroupText}>Edit</Text>
+                  </Pressable>
+                </View>
+              </Card>
+            );
+          }
+          return (
             <Card key={row.key} style={opts?.inMixed ? styles.entryCardGrouped : styles.entryCard}>
               <View style={styles.entryHeader}>
                 <View style={styles.entryHeaderTitle}>
@@ -2022,6 +2063,11 @@ export default function LogWorkoutScreen() {
                   <Text style={styles.entryLabel}>{row.typeChosen ? CARDIO_LABEL[row.cardioType] : "Cardio"}</Text>
                 </View>
                 <View style={styles.entryHeaderActions}>
+                  {!opts?.inMixed && row.typeChosen ? (
+                    <Pressable onPress={() => toggleSimpleRun(row.key)} hitSlop={8} accessibilityRole="button" accessibilityLabel="Simple view">
+                      <Text style={styles.ungroupText}>Simple view</Text>
+                    </Pressable>
+                  ) : null}
                   {row.cardioType === "run" ? (
                     <Pressable
                       onPress={() => router.push({ pathname: "/run-timer", params: { runKey: row.key } })}
@@ -2143,7 +2189,7 @@ export default function LogWorkoutScreen() {
     const colour = p.group ? supersetColor(p.group, allGroupLabels) : "#9FB3D1";
     const exerciseMembers = p.members.flatMap((m) => (m.kind === "exercise" ? [m.row] : []));
     const unnamed = exerciseMembers.some((r) => !r.name.trim());
-    const editing = editingGroups.includes(p.blockKey) || unnamed;
+    const editing = editingGroups.includes(p.blockKey) || unnamed || exerciseMembers.some((r) => openRows.includes(r.key));
     const lastExerciseKey = exerciseMembers[exerciseMembers.length - 1]?.key;
     const labels = p.members.map((m, k) => (p.group ? supersetMemberLabel(p.group, allGroupLabels, memberNumber(m.row.key)) : String(exerciseNumber(m.row.key) || k + 1)));
     return (
@@ -2155,7 +2201,15 @@ export default function LogWorkoutScreen() {
           <View style={{ flexDirection: "row", alignItems: "center", gap: Spacing.md }}>
             {unnamed ? null : (
               <Pressable
-                onPress={() => toggleEditGroup(p.blockKey)}
+                onPress={() => {
+                  if (editing) {
+                    tapFeedback();
+                    setEditingGroups((prev) => prev.filter((g) => g !== p.blockKey));
+                    setOpenRows((prev) => prev.filter((k) => !exerciseMembers.some((r) => r.key === k)));
+                  } else {
+                    toggleEditGroup(p.blockKey);
+                  }
+                }}
                 hitSlop={8}
                 accessibilityRole="button"
                 accessibilityLabel={editing ? "Back to the simple view" : "Edit the details"}
@@ -2513,7 +2567,7 @@ export default function LogWorkoutScreen() {
             </View>
           </View>
           {exerciseRows.length >= 2 && !exerciseRows.some((r) => r.supersetGroup) ? (
-            <Text style={styles.formatHint}>Tip: tap an exercise&apos;s number to make a superset.</Text>
+            <Text style={styles.formatHint}>Tip: tap an exercise&apos;s number to link it with the one above and make a superset.</Text>
           ) : null}
 
           {exerciseRows.length === 0 && runRows.length === 0 ? (

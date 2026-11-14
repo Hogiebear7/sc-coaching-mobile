@@ -33,7 +33,7 @@ import { OptionPicker, type PickerOption } from "@/components/ui/OptionPicker";
 import { newPlanSet, PlanExerciseCard, type PlanSet, type UnitMode } from "@/components/class/PlanExerciseCard";
 import { TimeWheelPicker } from "@/components/ui/TimeWheelPicker";
 import { useProfile } from "@/lib/queries/profile";
-import { cleanLonelySupersets, nextSupersetTap, tapSuperset } from "@/lib/superset-select";
+import { cleanLonelySupersets, tapSupersetLabel } from "@/lib/superset-select";
 import { distinctGroups, supersetMemberLabel } from "@/lib/superset-label";
 import { DataColor } from "@/constants/theme";
 import { weightUnitFor } from "@/lib/weight-input";
@@ -558,14 +558,12 @@ export default function ClassWorkoutBuilderScreen() {
   }
 
   function cycleSuperset(row: { key: string; supersetGroup?: string | null }) {
-    const shown = orderedEntries(template, cardio).map((e) => ({ key: e.row.key, supersetGroup: e.row.supersetGroup ?? null }));
-    const next = nextSupersetTap(shown, row.key);
-    if (next === undefined) {
+    const r = tapSupersetLabel(template, cardio, row.key);
+    if (!r) {
       warningFeedback();
       return;
     }
     tapFeedback();
-    const r = tapSuperset(template, cardio, row.key, next);
     setTemplate(r.exerciseRows);
     setCardio(r.runRows);
     setTouchedKey(row.key);

@@ -1255,6 +1255,20 @@ export default function LogWorkoutScreen() {
     updateRow(rowKey, { perSide: !row.perSide });
   }
   // Starts the countdown for a timed set; the finished time comes back to this set (see lib/timer-result.ts).
+  // Ticks a cardio line for one round of its superset; the rest starts when it is the last thing in the round.
+  function toggleRunRound(runKey: string, roundIndex: number, isLastInRound: boolean) {
+    const run = runRows.find((r) => r.key === runKey);
+    if (!run) return;
+    const had = (run.roundsDone ?? []).includes(roundIndex);
+    lastTouchedKey.current = runKey;
+    if (had) tapFeedback();
+    else {
+      successFeedback();
+      if (isLastInRound) restTimer.start(restTimerSeconds, null, null);
+    }
+    updateRunRow(runKey, { roundsDone: had ? (run.roundsDone ?? []).filter((n) => n !== roundIndex) : [...(run.roundsDone ?? []), roundIndex] });
+  }
+
   function startSetTimer(rowKey: string, setKey: string) {
     const row = exerciseRows.find((r) => r.key === rowKey);
     const set = row?.setRows.find((sr) => sr.key === setKey);
@@ -2190,7 +2204,6 @@ export default function LogWorkoutScreen() {
     const exerciseMembers = p.members.flatMap((m) => (m.kind === "exercise" ? [m.row] : []));
     const unnamed = exerciseMembers.some((r) => !r.name.trim());
     const editing = editingGroups.includes(p.blockKey) || unnamed || exerciseMembers.some((r) => openRows.includes(r.key));
-    const lastExerciseKey = exerciseMembers[exerciseMembers.length - 1]?.key;
     const labels = p.members.map((m, k) => (p.group ? supersetMemberLabel(p.group, allGroupLabels, memberNumber(m.row.key)) : String(exerciseNumber(m.row.key) || k + 1)));
     return (
       <View key={p.blockKey} style={[styles.supersetGroupWrap, { borderColor: colour }]}>
@@ -2234,7 +2247,7 @@ export default function LogWorkoutScreen() {
             roundWord={p.group ? "Round" : "Set"}
             weightUnit={weightUnit}
             onChangeSet={updateSetRow}
-            onToggleSet={(rowKey, setKey) => toggleSetComplete(rowKey, setKey, !p.group || rowKey === lastExerciseKey)}
+            onToggleSet={(rowKey, setKey) => toggleSetComplete(rowKey, setKey, !p.group || rowKey === p.members[p.members.length - 1].row.key)}
             onAddRound={() => (p.group ? addGroupRound(p.group) : addSetRow(exerciseMembers[0].key))}
             onRemoveRound={() => {
               if (p.group) removeGroupRound(p.group);
@@ -2247,6 +2260,8 @@ export default function LogWorkoutScreen() {
             onCycleSuperset={(key) => cycleSuperset({ key })}
             onChangeRun={updateRunRow}
             onPickRunTime={(rowKey, secs) => setCardioTimeTarget({ rowKey, secs })}
+            onToggleRun={(rowKey, roundIndex) => toggleRunRound(rowKey, roundIndex, rowKey === p.members[p.members.length - 1].row.key)}
+            onOpenRunTimer={(rowKey) => router.push({ pathname: "/run-timer", params: { runKey: rowKey } })}
             renderFooter={(row) => <RirControl value={row.rir} onChange={(v) => updateRow(row.key, { rir: v })} />}
           />
         )}

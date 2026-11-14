@@ -34,6 +34,8 @@ export function SupersetRounds({
   onCycleSuperset,
   onChangeRun,
   onPickRunTime,
+  onToggleRun,
+  onOpenRunTimer,
   renderFooter,
 }: {
   members: RoundMember[];
@@ -58,6 +60,10 @@ export function SupersetRounds({
   onCycleSuperset: (key: string) => void;
   onChangeRun: (rowKey: string, patch: Partial<Omit<RunRow, "key">>) => void;
   onPickRunTime: (rowKey: string, secs: number) => void;
+  /** Ticks or unticks a cardio line for one round. */
+  onToggleRun: (rowKey: string, roundIndex: number) => void;
+  /** Opens the run timer (timer or stopwatch) for a cardio line. */
+  onOpenRunTimer: (rowKey: string) => void;
   /** Shown once a round is done, for each exercise (reps in reserve). */
   renderFooter?: (row: ExerciseRow, label: string) => ReactNode;
 }) {
@@ -65,15 +71,20 @@ export function SupersetRounds({
   const Color = useLegacyColors();
   const exerciseRows = members.flatMap((m) => (m.kind === "exercise" ? [m.row] : []));
   const rounds = Math.max(1, roundCount(exerciseRows));
+  const runList = members.flatMap((m) => (m.kind === "run" ? [m.row] : []));
+  // A round is done when every exercise is ticked for it and so is every cardio line.
+  const roundIsDone = (i: number) => isRoundComplete(exerciseRows, i) && runList.every((r) => (r.roundsDone ?? []).includes(i));
   const [focusedKey, setFocusedKey] = useState<string | null>(null);
   const [picked, setPicked] = useState<number | null>(null);
 
   // The round you are on: the first one not finished, unless you tapped a dash.
-  const firstOpen = Array.from({ length: rounds }, (_, i) => i).find((i) => !isRoundComplete(exerciseRows, i));
+  const firstOpen = Array.from({ length: rounds }, (_, i) => i).find((i) => !roundIsDone(i));
   const current = Math.min(picked ?? firstOpen ?? rounds - 1, rounds - 1);
-  const roundDone = isRoundComplete(exerciseRows, current);
+  const roundDone = roundIsDone(current);
   // The exercise that is up next in this round (cardio lines are shown but never "next").
-  const nowKey = roundDone ? null : (exerciseRows.find((r) => r.setRows[current] && !r.setRows[current].completed)?.key ?? null);
+  const nowKey = roundDone
+    ? null
+    : (members.find((m) => (m.kind === "exercise" ? !!m.row.setRows[current] && !m.row.setRows[current].completed : !(m.row.roundsDone ?? []).includes(current)))?.row.key ?? null);
 
   const timeSecs = (text: string): number | null => {
     const m = text.trim().match(/^(\d+):(\d{2})$/);
@@ -86,7 +97,7 @@ export function SupersetRounds({
       <View style={styles.progressRow}>
         <View style={styles.dashes}>
           {Array.from({ length: rounds }, (_, i) => {
-            const done = isRoundComplete(exerciseRows, i);
+            const done = roundIsDone(i);
             const here = i === current;
             return (
               <Pressable
@@ -114,8 +125,9 @@ export function SupersetRounds({
         const label = labels[k] ?? String(k + 1);
         if (m.kind === "run") {
           const r = m.row;
+          const ticked = (r.roundsDone ?? []).includes(current);
           return (
-            <View key={r.key} style={styles.line}>
+            <View key={r.key} style={[styles.line, r.key === nowKey && styles.lineNow, ticked && styles.lineDone]}>
               <View style={styles.lineTop}>
                 <Pressable
                   onPress={() => onCycleSuperset(r.key)}
@@ -129,35 +141,56 @@ export function SupersetRounds({
                 <Text style={styles.name} numberOfLines={1}>
                   {r.typeChosen ? CARDIO_LABEL[r.cardioType] : "Cardio"}
                 </Text>
+                {r.key === nowKey ? <Text style={styles.nowText}>NOW</Text> : null}
+                <Pressable
+                  onPress={() => onOpenRunTimer(r.key)}
+                  hitSlop={8}
+                  accessibilityRole="button"
+                  accessibilityLabel="Timer or stopwatch for this cardio"
+                  style={styles.timerBtn}
+                >
+                  <Ionicons name="stopwatch-outline" size={20} color={Color.textPrimary} />
+                </Pressable>
               </View>
               <View style={styles.lineBottom}>
-                <Text style={styles.colLabel}>Distance</Text>
-                <TextInput
-                  value={r.distance}
-                  onChangeText={(v) => onChangeRun(r.key, { distance: v.replace(/[^0-9.]/g, "") })}
-                  keyboardType="decimal-pad"
-                  placeholder={r.distanceUnit === "m" ? "400" : "5.2"}
-                  placeholderTextColor={Color.textFaint}
-                  accessibilityLabel={`${label} distance`}
-                  style={[styles.box, { flex: 1 }]}
-                />
+                <View style={styles.boxes}>
+                  <TextInput
+                    value={r.distance}
+                    onChangeText={(v) => onChangeRun(r.key, { distance: v.replace(/[^0-9.]/g, "") })}
+                    keyboardType="decimal-pad"
+                    placeholder={r.distanceUnit === "m" ? "Distance (m)" : "Distance (km)"}
+                    placeholderTextColor={Color.textFaint}
+                    accessibilityLabel={`${label} distance`}
+                    style={[styles.box, { flex: 1.3 }]}
+                  />
+                  <Pressable
+                    onPress={() => onChangeRun(r.key, { distanceUnit: r.distanceUnit === "km" ? "m" : "km" })}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Distance in ${r.distanceUnit}. Tap to change.`}
+                    style={styles.unitBtn}
+                  >
+                    <Text style={styles.unitBtnText}>{r.distanceUnit}</Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={() => onPickRunTime(r.key, parseDuration(r.duration) ?? 0)}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${label} time. Tap to change.`}
+                    style={[styles.box, { flex: 1, justifyContent: "center" }]}
+                  >
+                    <Text style={{ textAlign: "center", fontSize: 16, color: r.duration.trim() ? Color.textPrimary : Color.textFaint }}>
+                      {r.duration.trim() ? formatDuration(parseDuration(r.duration) ?? 0) : "Time"}
+                    </Text>
+                  </Pressable>
+                </View>
                 <Pressable
-                  onPress={() => onChangeRun(r.key, { distanceUnit: r.distanceUnit === "km" ? "m" : "km" })}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Distance in ${r.distanceUnit}. Tap to change.`}
-                  style={styles.unitBtn}
+                  onPress={() => onToggleRun(r.key, current)}
+                  hitSlop={6}
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked: ticked }}
+                  accessibilityLabel={`${label} ${roundWord.toLowerCase()} ${current + 1} done`}
+                  style={[styles.tick, ticked && { backgroundColor: color, borderColor: color }]}
                 >
-                  <Text style={styles.unitBtnText}>{r.distanceUnit}</Text>
-                </Pressable>
-                <Pressable
-                  onPress={() => onPickRunTime(r.key, parseDuration(r.duration) ?? 0)}
-                  accessibilityRole="button"
-                  accessibilityLabel={`${label} time. Tap to change.`}
-                  style={[styles.box, { flex: 1, justifyContent: "center" }]}
-                >
-                  <Text style={{ textAlign: "center", fontSize: 16, color: r.duration.trim() ? Color.textPrimary : Color.textFaint }}>
-                    {r.duration.trim() ? formatDuration(parseDuration(r.duration) ?? 0) : "Time"}
-                  </Text>
+                  {ticked ? <Ionicons name="checkmark" size={22} color={Color.bg0} /> : null}
                 </Pressable>
               </View>
             </View>
@@ -341,10 +374,10 @@ export function SupersetRounds({
       ) : nowKey ? (
         <Text style={styles.hint}>
           {(() => {
-            const at = exerciseRows.findIndex((r) => r.key === nowKey);
-            const next = exerciseRows[at + 1];
-            const labelFor = (key: string) => labels[members.findIndex((m) => m.kind === "exercise" && m.row.key === key)] ?? "";
-            return next ? `No rest yet: go straight to ${labelFor(next.key)} (${next.name.trim() || "next exercise"}).` : `Tick ${labelFor(nowKey)} to start your rest.`;
+            const at = members.findIndex((m) => m.row.key === nowKey);
+            const next = members[at + 1];
+            const nameOf = (m: RoundMember) => (m.kind === "exercise" ? m.row.name.trim() || "next exercise" : m.row.typeChosen ? CARDIO_LABEL[m.row.cardioType] : "cardio");
+            return next ? `No rest yet: go straight to ${labels[at + 1]} (${nameOf(next)}).` : `Tick ${labels[at]} to start your rest.`;
           })()}
         </Text>
       ) : null}
@@ -396,6 +429,7 @@ const useStyles = makeLegacyStyles((Color) =>
     },
     unitBtn: { minWidth: 44, height: 48, borderRadius: Radius.md, backgroundColor: Color.surface2, alignItems: "center", justifyContent: "center" },
     unitBtnText: { fontSize: 14, fontWeight: "700", color: Color.textPrimary },
+    timerBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: Color.surface2, alignItems: "center", justifyContent: "center" },
     tick: { width: 52, height: 52, borderRadius: 26, borderWidth: 2, borderColor: Color.textMuted, alignItems: "center", justifyContent: "center" },
     noSet: { flex: 1, fontSize: 13, color: Color.textMuted },
     hint: { fontSize: 14, color: Color.textMuted },

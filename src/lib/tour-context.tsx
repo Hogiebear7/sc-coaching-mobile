@@ -52,6 +52,8 @@ interface TourContextValue {
    * to be false so they never open on top of a tour step.
    */
   holdTips: boolean;
+  /** A screen asks for the first of these tours that the member has not seen yet (they show once, whether or not the main tour is on). */
+  requestFeatureTour: (keys: string[]) => void;
   startTour: () => void;
   deferTour: () => void;
   /** The current page's tour is finished: do not show it again. */
@@ -70,6 +72,7 @@ export function TourProvider({ children }: { children: ReactNode }) {
   const segments = useSegments();
 
   const [state, setState] = useState<PersistedTourState | null>(null);
+  const [requestedKey, setRequestedKey] = useState<string | null>(null);
   // Members, and staff while they are looking at the app as a member does.
   const userId = user && (user.role === "member" || viewMode === "member") ? user.id : null;
 
@@ -95,11 +98,28 @@ export function TourProvider({ children }: { children: ReactNode }) {
   const showPrompt = !!(userId && state && !state.promptResolved);
 
   const currentKey = pageKeyFromSegments(segments as string[]);
-  const activePage = useMemo(() => {
+  const featurePage = useMemo(() => {
+    if (!userId || !state || showPrompt || !requestedKey) return null;
+    if (state.seenPages.includes(requestedKey)) return null;
+    return findTourPage(requestedKey);
+  }, [userId, state, showPrompt, requestedKey]);
+  const routePage = useMemo(() => {
     if (!userId || !state || showPrompt || !state.active || !currentKey) return null;
     if (state.seenPages.includes(currentKey)) return null;
     return findTourPage(currentKey);
   }, [userId, state, showPrompt, currentKey]);
+  const activePage = featurePage ?? routePage;
+
+  const requestFeatureTour = useCallback(
+    (keys: string[]) => {
+      if (!userId || !state || !state.promptResolved) return;
+      setRequestedKey((prev) => {
+        if (prev && !state.seenPages.includes(prev)) return prev;
+        return keys.find((k) => !state.seenPages.includes(k)) ?? null;
+      });
+    },
+    [userId, state]
+  );
 
   const startTour = useCallback(() => {
     if (!userId) return;
@@ -113,17 +133,30 @@ export function TourProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
 
+  const featureKey = featurePage ? featurePage.key : null;
   const dismissPage = useCallback(() => {
-    if (!userId || !state || !currentKey) return;
+    if (!userId || !state) return;
+    if (featureKey) {
+      persist(applyDismiss(state, featureKey, TOUR_PAGE_KEYS));
+      setRequestedKey(null);
+      return;
+    }
+    if (!currentKey) return;
     persist(applyDismiss(state, currentKey, TOUR_PAGE_KEYS));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId, state, currentKey]);
+  }, [userId, state, currentKey, featureKey]);
 
   const skipTour = useCallback(() => {
     if (!userId || !state) return;
+    // Skipping one screen's tips never switches off the main tour.
+    if (featureKey) {
+      persist(applyDismiss(state, featureKey, TOUR_PAGE_KEYS));
+      setRequestedKey(null);
+      return;
+    }
     persist({ ...state, active: false });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId, state]);
+  }, [userId, state, featureKey]);
 
   const restartTour = useCallback(() => {
     if (!userId) return;
@@ -138,6 +171,7 @@ export function TourProvider({ children }: { children: ReactNode }) {
     showPrompt,
     activePage,
     holdTips,
+    requestFeatureTour,
     startTour,
     deferTour,
     dismissPage,

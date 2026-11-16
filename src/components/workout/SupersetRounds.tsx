@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 
 import { Radius, Spacing } from "@/constants/theme";
 import { CARDIO_LABEL, usesFloors } from "@/lib/cardio";
+import { tourTarget } from "@/lib/tour-registry";
 import { isRoundComplete, roundCount } from "@/lib/superset-rounds";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 import { sanitizeWeight, stripWeightUnit, withWeightUnit, type WeightUnit } from "@/lib/weight-input";
@@ -37,7 +38,10 @@ export function SupersetRounds({
   onToggleRun,
   onOpenRunTimer,
   renderFooter,
+  tour,
 }: {
+  /** True for the first card on the screen: it carries the targets the Log workout tour points at. */
+  tour?: boolean;
   members: RoundMember[];
   /** What to call each member: "A1", "A2" ... in a superset, "1" for a single exercise. */
   labels: string[];
@@ -71,6 +75,7 @@ export function SupersetRounds({
   const Color = useLegacyColors();
   const exerciseRows = members.flatMap((m) => (m.kind === "exercise" ? [m.row] : []));
   const rounds = Math.max(1, roundCount(exerciseRows));
+  const firstExerciseKey = exerciseRows[0]?.key;
   const runList = members.flatMap((m) => (m.kind === "run" ? [m.row] : []));
   // A round is done when every exercise is ticked for it and so is every cardio line.
   const roundIsDone = (i: number) => isRoundComplete(exerciseRows, i) && runList.every((r) => (r.roundsDone ?? []).includes(i));
@@ -224,6 +229,7 @@ export function SupersetRounds({
                 accessibilityRole="button"
                 accessibilityLabel={`${label}. Tap to change superset.`}
                 style={[styles.badge, { backgroundColor: color }]}
+                {...(tour && row.key === firstExerciseKey ? tourTarget("log.number") : {})}
               >
                 <Text style={styles.badgeText}>{label}</Text>
               </Pressable>
@@ -234,7 +240,7 @@ export function SupersetRounds({
             </View>
 
             <View style={styles.headerLine}>
-              <Pressable onPress={() => onCycleUnit(row.key)} hitSlop={6} accessibilityRole="button" accessibilityLabel={`${unitLabel(row)}. Tap to change to kg, time or band.`} style={styles.headerBtn}>
+              <Pressable onPress={() => onCycleUnit(row.key)} hitSlop={6} accessibilityRole="button" accessibilityLabel={`${unitLabel(row)}. Tap to change to kg, time or band.`} style={styles.headerBtn} {...(tour && row.key === firstExerciseKey ? tourTarget("log.unit") : {})}>
                 <Text style={styles.headerBtnText}>{unitLabel(row)}</Text>
                 <Ionicons name="swap-horizontal" size={13} color={Color.gold} />
               </Pressable>
@@ -245,6 +251,7 @@ export function SupersetRounds({
                   accessibilityRole="button"
                   accessibilityLabel={row.perSide ? "Reps are split into right and left. Tap to use one box." : "Reps. Tap to split into right and left."}
                   style={[styles.headerBtn, { flex: row.perSide ? 2 : 1 }]}
+                  {...(tour && row.key === firstExerciseKey ? tourTarget("log.reps") : {})}
                 >
                   <Text style={styles.headerBtnText}>{row.perSide ? "Reps R | L" : "Reps"}</Text>
                   <Ionicons name={row.perSide ? "remove-circle-outline" : "git-compare-outline"} size={13} color={Color.gold} />
@@ -330,6 +337,7 @@ export function SupersetRounds({
                   accessibilityRole="button"
                   accessibilityLabel={`Start the timer for ${label}`}
                   style={[styles.tick, { borderColor: color }]}
+                  {...(tour ? tourTarget("log.play") : {})}
                 >
                   <Ionicons name="play" size={22} color={color} />
                 </Pressable>
@@ -341,6 +349,7 @@ export function SupersetRounds({
                 accessibilityState={{ checked: s.completed }}
                 accessibilityLabel={`${label} ${roundWord.toLowerCase()} ${current + 1} done`}
                 style={[styles.tick, s.completed && { backgroundColor: color, borderColor: color }]}
+                {...(tour && row.key === firstExerciseKey ? tourTarget("log.tick") : {})}
               >
                 {s.completed ? <Ionicons name="checkmark" size={22} color={Color.bg0} /> : null}
               </Pressable>

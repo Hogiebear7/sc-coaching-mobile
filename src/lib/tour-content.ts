@@ -29,8 +29,11 @@ export interface TourStep {
   body: string;
 }
 
+/** Tours that belong to a screen outside the tab pages: they show once, when a screen asks for them (see requestFeatureTour). */
+export type FeatureTourKey = "log-workout" | "log-cards";
+
 export interface TourPage {
-  key: TourPageKey;
+  key: TourPageKey | FeatureTourKey;
   icon: keyof typeof Ionicons.glyphMap;
   title: string;
   steps: TourStep[];
@@ -310,7 +313,7 @@ export const TOUR_PAGES: TourPage[] = [
   },
 ];
 
-export const TOUR_PAGE_KEYS: TourPageKey[] = TOUR_PAGES.map((p) => p.key);
+export const TOUR_PAGE_KEYS: TourPageKey[] = TOUR_PAGES.map((p) => p.key as TourPageKey);
 
 const TAB_PAGE_KEYS: TourPageKey[] = ["index", "schedule", "workouts", "recovery", "nutrition"];
 
@@ -334,5 +337,84 @@ export function pageKeyFromSegments(segments: readonly string[]): TourPageKey | 
 
 export function findTourPage(key: string | null): TourPage | null {
   if (!key) return null;
-  return TOUR_PAGES.find((p) => p.key === key) ?? null;
+  return TOUR_PAGES.find((p) => p.key === key) ?? FEATURE_TOURS.find((p) => p.key === key) ?? null;
 }
+
+// The Log workout screen, in two parts. The first is what is always on the screen; the second needs an exercise on the page, so the screen asks for it
+// once there is one. A step whose target is not on screen is skipped, so these still read well if something is missing.
+export const FEATURE_TOURS: TourPage[] = [
+  {
+    key: "log-workout",
+    icon: "barbell-outline",
+    title: "Logging a workout",
+    steps: [
+      {
+        id: "timer",
+        target: "log.timer",
+        title: "Start the clock",
+        body: "Press play when you begin and it times your whole session. Pause it any time, and it keeps counting even if you lock your phone.",
+      },
+      {
+        id: "format",
+        target: "log.format",
+        title: "Pick a format",
+        body: "Standard is sets and reps. Choose Hyrox, a circuit, EMOM, AMRAP, tabata or a chipper and the app sets up the movements and runs the clock for you.",
+      },
+      {
+        id: "add",
+        target: "log.add",
+        title: "Add what you do",
+        body: "Add an exercise or a cardio piece as you go. New ones always go on the end of your workout.",
+      },
+    ],
+  },
+  {
+    key: "log-cards",
+    icon: "layers-outline",
+    title: "Your exercise cards",
+    steps: [
+      {
+        id: "card",
+        target: "log.card",
+        title: "One simple card",
+        body: "Each exercise is one card, one set at a time. Type the weight and reps, then tick the circle when you've done it.",
+      },
+      {
+        id: "tick",
+        target: "log.tick",
+        title: "Tick as you go",
+        body: "Ticking a set starts your rest timer. A weight you type carries down to the sets below, but never up.",
+      },
+      {
+        id: "number",
+        target: "log.number",
+        title: "Make a superset",
+        body: "Tap the number to link this exercise with the one above it, so you do them back to back. Tap a later one (A3) to start a new superset (B), and tap the first again to undo. Cardio can join too.",
+      },
+      {
+        id: "unit",
+        target: "log.unit",
+        title: "kg, time or band",
+        body: "Tap Weight to switch this exercise between kilograms, a time, or a resistance band. Each one keeps its own numbers.",
+      },
+      {
+        id: "reps",
+        target: "log.reps",
+        title: "Right and left",
+        body: "Tap Reps to split it into a right and a left box, for single-arm and single-leg work.",
+      },
+      {
+        id: "play",
+        target: "log.play",
+        title: "Timed exercises",
+        body: "A timed exercise has a play button. It counts you in, counts the time down, then puts the time on the set for you to tick.",
+      },
+      {
+        id: "edit",
+        target: "log.edit",
+        title: "Edit and Simple view",
+        body: "Edit opens the full card, with the name, units, notes and reps in reserve. Simple view takes you back to this tidy one.",
+      },
+    ],
+  },
+];

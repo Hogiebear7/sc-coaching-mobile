@@ -10,7 +10,6 @@ import { Card } from "@/components/ui/Card";
 import { DateField } from "@/components/ui/DateField";
 import { ExerciseAutocomplete } from "@/components/ui/ExerciseAutocomplete";
 import { KeyboardAwareScroll } from "@/components/ui/KeyboardAwareScroll";
-import { LogWorkoutTour } from "@/components/ui/LogWorkoutTour";
 import { PbToast } from "@/components/ui/PbToast";
 import { RestTimerBar } from "@/components/ui/RestTimerBar";
 import { TextField } from "@/components/ui/TextField";
@@ -43,6 +42,8 @@ import {
   useExerciseLibraryNameIndex,
 } from "@/lib/queries/exercise-library";
 import { useProfile } from "@/lib/queries/profile";
+import { useTour } from "@/lib/tour-context";
+import { tourTarget, useTourScroll } from "@/lib/tour-registry";
 import { useRestTimer } from "@/lib/rest-timer";
 import { useWorkoutTemplates } from "@/lib/queries/workout-templates";
 import {
@@ -906,6 +907,15 @@ export default function LogWorkoutScreen() {
   const [error, setError] = useState<string | null>(null);
   const [feelModalOpen, setFeelModalOpen] = useState(false);
   const [roxText, setRoxText] = useState("");
+
+  // The spotlight tours for this screen: the basics first, then the exercise cards once there is one. Each shows once.
+  const { activePage: tourPage, requestFeatureTour } = useTour();
+  const hasNamedExercise = draft.exerciseRows.some((r) => r.name.trim());
+  useEffect(() => {
+    if (tourPage) return;
+    const t = setTimeout(() => requestFeatureTour(hasNamedExercise ? ["log-workout", "log-cards"] : ["log-workout"]), 900);
+    return () => clearTimeout(t);
+  }, [tourPage, hasNamedExercise, requestFeatureTour]);
   const [sessionRpe, setSessionRpe] = useState<number | null>(null);
   const [feelingNotes, setFeelingNotes] = useState("");
 
@@ -1076,6 +1086,8 @@ export default function LogWorkoutScreen() {
   }, [hydrated, prefillRunTitle, prefillRunDurationMins, prefillRunDistanceKm, runRows.length]);
 
   const scrollRef = useRef<KeyboardAwareScrollViewRef | null>(null);
+  useTourScroll("log-workout", scrollRef);
+  useTourScroll("log-cards", scrollRef);
   // The "+ Exercise"/"+ Run" row always sits right after the last entry (see
   // render below) — scrolling to bring IT into view is what actually shows
   // the newly-added box above it, without needing a ref per entry.
@@ -2255,9 +2267,10 @@ export default function LogWorkoutScreen() {
     const exerciseMembers = p.members.flatMap((m) => (m.kind === "exercise" ? [m.row] : []));
     const unnamed = exerciseMembers.some((r) => !r.name.trim());
     const editing = editingGroups.includes(p.blockKey) || unnamed || exerciseMembers.some((r) => openRows.includes(r.key));
+    const tourFirst = orderedEntries(exerciseRows, runRows)[0]?.row.key === p.members[0]?.row.key;
     const labels = p.members.map((m, k) => (p.group ? supersetMemberLabel(p.group, allGroupLabels, memberNumber(m.row.key)) : String(exerciseNumber(m.row.key) || k + 1)));
     return (
-      <View key={p.blockKey} style={[styles.supersetGroupWrap, { borderColor: colour }]}>
+      <View key={p.blockKey} style={[styles.supersetGroupWrap, { borderColor: colour }]} {...(tourFirst ? tourTarget("log.card") : {})}>
         <View style={styles.supersetGroupHeader}>
           <Text style={[styles.supersetGroupHeaderText, { color: colour }]}>
             {p.group ? `Superset ${supersetLetter(p.group, allGroupLabels)} · ${p.members.length} ${p.members.some((m) => m.kind === "run") ? "entries" : "exercises"}` : `Exercise ${labels[0]}`}
@@ -2277,6 +2290,7 @@ export default function LogWorkoutScreen() {
                 hitSlop={8}
                 accessibilityRole="button"
                 accessibilityLabel={editing ? "Back to the simple view" : "Edit the details"}
+                {...(tourFirst ? tourTarget("log.edit") : {})}
               >
                 <Text style={styles.ungroupText}>{editing ? "Simple view" : p.group ? "Edit exercises" : "Edit"}</Text>
               </Pressable>
@@ -2292,6 +2306,7 @@ export default function LogWorkoutScreen() {
           p.editCards
         ) : (
           <SupersetRounds
+            tour={tourFirst}
             members={p.members}
             labels={labels}
             color={colour}
@@ -2335,7 +2350,6 @@ export default function LogWorkoutScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
-      <LogWorkoutTour />
       <View style={styles.header}>
         <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backButton} accessibilityRole="button" accessibilityLabel="Back">
           <Ionicons name="chevron-back" size={26} color={Color.textPrimary} />
@@ -2349,6 +2363,8 @@ export default function LogWorkoutScreen() {
       <PbToast message={pbToast} onDismiss={() => setPbToast(null)} />
 
       <KeyboardAwareScroll ref={scrollRef} contentContainerStyle={styles.scroll}>
+          <View {...tourTarget("log-workout.top")} style={{ height: 0 }} />
+          <View {...tourTarget("log-cards.top")} style={{ height: 0 }} />
           <TextField label="Title" value={title} onChangeText={(v) => update({ title: v })} placeholder="e.g. Lower Body Strength" />
           <DateField
             label="Date"
@@ -2358,7 +2374,7 @@ export default function LogWorkoutScreen() {
           />
 
           {isLive ? (
-            <View style={styles.timerCard}>
+            <View style={styles.timerCard} {...tourTarget("log.timer")}>
               <View>
                 <Text style={styles.timerLabel}>Live workout time</Text>
                 <Text style={styles.timerClock}>{formatDuration(liveElapsedSecs)}</Text>
@@ -2405,12 +2421,14 @@ export default function LogWorkoutScreen() {
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionLabel}>Workout format</Text>
           </View>
-          <OptionPicker<WorkoutFormat>
-            title="Workout format"
-            options={FORMAT_OPTIONS}
-            value={draft.format}
-            onChange={(format) => update({ format, formatResultNote: "" })}
-          />
+          <View {...tourTarget("log.format")}>
+            <OptionPicker<WorkoutFormat>
+              title="Workout format"
+              options={FORMAT_OPTIONS}
+              value={draft.format}
+              onChange={(format) => update({ format, formatResultNote: "" })}
+            />
+          </View>
           <Text style={styles.formatDescription}>{FORMAT_DESCRIPTIONS[draft.format]}</Text>
 
           {draft.format === "hyrox" ? (
@@ -2720,15 +2738,17 @@ export default function LogWorkoutScreen() {
 
           {entryBlocks(exerciseRows, runRows).map((blk) => (blk.kind === "mixed" ? renderMixed(blk) : renderSegment(blk)))}
 
-          <View ref={addButtonsRef} style={styles.addButtonsRow}>
-            <Pressable onPress={handleAddExercise} style={styles.addChip} accessibilityRole="button">
-              <Ionicons name="barbell-outline" size={18} color={Color.textPrimary} />
-              <Text style={styles.addChipText}>Add exercise</Text>
-            </Pressable>
-            <Pressable onPress={handleAddRun} style={styles.addChip} accessibilityRole="button">
-              <Ionicons name="pulse-outline" size={18} color={Color.textPrimary} />
-              <Text style={styles.addChipText}>Add cardio</Text>
-            </Pressable>
+          <View {...tourTarget("log.add")}>
+            <View ref={addButtonsRef} style={styles.addButtonsRow}>
+              <Pressable onPress={handleAddExercise} style={styles.addChip} accessibilityRole="button">
+                <Ionicons name="barbell-outline" size={18} color={Color.textPrimary} />
+                <Text style={styles.addChipText}>Add exercise</Text>
+              </Pressable>
+              <Pressable onPress={handleAddRun} style={styles.addChip} accessibilityRole="button">
+                <Ionicons name="pulse-outline" size={18} color={Color.textPrimary} />
+                <Text style={styles.addChipText}>Add cardio</Text>
+              </Pressable>
+            </View>
           </View>
 
           <TextField

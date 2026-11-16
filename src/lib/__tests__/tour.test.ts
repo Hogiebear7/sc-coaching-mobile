@@ -4,6 +4,7 @@ import { join } from "path";
 import { describe, expect, it } from "vitest";
 
 import {
+  FEATURE_TOURS,
   TOUR_PAGES,
   TOUR_PAGE_KEYS,
   TOUR_STORAGE_VERSION,
@@ -189,5 +190,43 @@ describe("scrollOffsetFor", () => {
   it("scrolls back up when the target is above the viewport, and never below zero", () => {
     expect(scrollOffsetFor({ ...viewport, contentTop: -900, targetTop: 90, targetHeight: 100 })).toBe(894);
     expect(scrollOffsetFor({ ...viewport, contentTop: 100, targetTop: 60, targetHeight: 100 })).toBe(0);
+  });
+});
+
+describe("Log workout feature tours", () => {
+  it("are separate from the eight tab pages, so the main tour is unchanged", () => {
+    expect(FEATURE_TOURS.map((t) => t.key)).toEqual(["log-workout", "log-cards"]);
+    expect(TOUR_PAGE_KEYS).not.toContain("log-workout");
+    expect(findTourPage("log-cards")?.steps.length).toBeGreaterThan(3);
+  });
+
+  it("have unique step ids and real copy", () => {
+    for (const t of FEATURE_TOURS) {
+      const ids = t.steps.map((x) => x.id);
+      expect(new Set(ids).size).toBe(ids.length);
+      for (const x of t.steps) {
+        expect(x.title.trim().length).toBeGreaterThan(2);
+        expect(x.body.trim().length).toBeGreaterThan(20);
+      }
+    }
+  });
+
+  it("every spotlight on them is marked on a screen with tourTarget()", () => {
+    const source = sourceFiles(join(process.cwd(), "src"))
+      .filter((f) => !f.includes("__tests__") && !f.endsWith("tour-content.ts"))
+      .map((f) => readFileSync(f, "utf8"))
+      .join("\n");
+    const missing: string[] = [];
+    for (const t of FEATURE_TOURS) {
+      for (const step of t.steps) {
+        if (step.target && !source.includes(`tourTarget("${step.target}")`)) missing.push(`${t.key}/${step.id}: ${step.target}`);
+      }
+    }
+    expect(missing).toEqual([]);
+  });
+
+  it("the scroll helper has a top marker for each", () => {
+    const source = readFileSync(join(process.cwd(), "src/app/log-workout.tsx"), "utf8");
+    for (const t of FEATURE_TOURS) expect(source).toContain(`tourTarget("${t.key}.top")`);
   });
 });

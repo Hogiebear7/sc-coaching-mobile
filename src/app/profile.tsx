@@ -22,7 +22,6 @@ import { PregnancySummaryRow } from "@/components/pregnancy/PregnancyCards";
 import { CountryPicker } from "@/components/ui/CountryPicker";
 import { CyclePhaseChart } from "@/components/ui/CyclePhaseChart";
 import { DateField } from "@/components/ui/DateField";
-import { GoalTimelineCard } from "@/components/ui/GoalTimelineCard";
 import { TextField } from "@/components/ui/TextField";
 import { Radius, Spacing } from "@/constants/theme";
 import { ApiError, useAuth } from "@/lib/auth-context";
@@ -632,10 +631,6 @@ export default function ProfileScreen() {
               <BodyFatCard />
             </View>
 
-            <View {...tourTarget("profile.timeline")}>
-              <Text style={[styles.label, styles.labelSpaced]}>Goal timeline</Text>
-              <GoalTimelineCard />
-            </View>
 
             <Text style={[styles.sectionLabel, styles.sectionLabelSpaced]}>Account</Text>
             <Pressable onPress={() => router.push("/settings")} style={styles.cycleRow} {...tourTarget("profile.settings")}>

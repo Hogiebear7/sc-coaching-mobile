@@ -46,8 +46,9 @@ describe("tour content", () => {
     expect(settings.steps.map((s) => s.target)).toEqual(expect.arrayContaining(["settings.tabbar", "settings.training"]));
   });
 
-  it("the Profile tour covers the goal timeline", () => {
-    expect(findTourPage("profile")!.steps.some((s) => s.target === "profile.timeline")).toBe(true);
+  it("the Nutrition tour covers the goal timeline (moved there from Profile)", () => {
+    expect(findTourPage("nutrition")!.steps.some((s) => s.target === "nutrition.timeline")).toBe(true);
+    expect(findTourPage("profile")!.steps.some((s) => s.target === "profile.timeline")).toBe(false);
   });
 
   it("every spotlight id in the content is marked on a screen with tourTarget()", () => {

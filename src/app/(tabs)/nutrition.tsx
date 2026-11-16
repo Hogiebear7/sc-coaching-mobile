@@ -18,6 +18,7 @@ import { PillButton, RoundIconButton, SectionTitle } from "@/components/app/prim
 import { DayCompleteCard } from "@/components/nutrition/DayCompleteCard";
 import { TrainingTipCard } from "@/components/nutrition/TrainingTipCard";
 import { BodyWeightCard } from "@/components/ui/BodyWeightCard";
+import { GoalTimelineCard } from "@/components/ui/GoalTimelineCard";
 import { Card } from "@/components/ui/Card";
 import { ContinueWorkoutPill } from "@/components/ui/ContinueWorkoutPill";
 import { InfoModal } from "@/components/ui/InfoModal";
@@ -421,6 +422,8 @@ export default function NutritionScreen() {
   const [macroInfo, setMacroInfo] = useState<MacroKind | null>(null);
   const [showCalorieWhy, setShowCalorieWhy] = useState(false);
   const [quickAddTab, setQuickAddTab] = useState<"recent" | "favourites">("recent");
+  // "Today's emphasis" sits under More tools and starts closed, to keep the page short.
+  const [emphasisOpen, setEmphasisOpen] = useState(false);
   // Collapsed by default — a member who logs a lot of foods can otherwise
   // end up scrolling past a long, always-expanded list for every meal just
   // to reach the next section. Empty meals don't need a collapse state at
@@ -709,6 +712,72 @@ export default function NutritionScreen() {
                   </View>
                 );
               })}
+              {/* Quick add lives inside the Diary box, under the meals */}
+              {(recentFoods && recentFoods.length > 0) || (favorites && favorites.length > 0) ? (
+                <View style={[styles.rowDivider, { padding: 14 }]}>
+                  <Text style={[styles.rowTitle, { marginBottom: 10 }]}>Quick add</Text>
+                  <View style={{ marginBottom: 12 }}>
+                    <Segmented
+                      options={["recent", "favourites"] as const}
+                      value={quickAddTab}
+                      onChange={setQuickAddTab}
+                      format={(t) => (t === "recent" ? "Recent" : "Favourites")}
+                    />
+                  </View>
+                  {quickAddTab === "recent" ? (
+                    (recentFoods?.length ?? 0) > 0 ? (
+                      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.quickRow}>
+                        {recentFoods!.slice(0, 10).map((f) => (
+                          <Pressable
+                            key={f.id}
+                            onPress={() => handleQuickAdd(f)}
+                            style={({ pressed }) => [styles.quickChip, pressed && styles.pressed]}
+                            accessibilityRole="button"
+                            accessibilityLabel={`Add ${f.name}, ${f.calories} kcal`}
+                          >
+                            <Text style={styles.quickChipText} numberOfLines={2}>
+                              {f.name}
+                            </Text>
+                            <View style={styles.quickChipFoot}>
+                              <Text style={styles.quickChipSub}>{f.calories} kcal</Text>
+                              <Ionicons name="add-circle" size={20} color={colors.text} />
+                            </View>
+                          </Pressable>
+                        ))}
+                      </ScrollView>
+                    ) : (
+                      <Text style={styles.quietText}>Nothing logged recently.</Text>
+                    )
+                  ) : (favorites?.length ?? 0) > 0 ? (
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.quickRow}>
+                      {favorites!.map((f: FoodFavorite) => (
+                        <View key={f.id} style={styles.quickChip}>
+                          <Pressable onPress={() => handleQuickAdd(f)} accessibilityRole="button" accessibilityLabel={`Add ${f.name}, ${f.calories} kcal`} style={{ flex: 1 }}>
+                            <Text style={[styles.quickChipText, { paddingRight: 18 }]} numberOfLines={2}>
+                              {f.name}
+                            </Text>
+                            <View style={styles.quickChipFoot}>
+                              <Text style={styles.quickChipSub}>{f.calories} kcal</Text>
+                              <Ionicons name="add-circle" size={20} color={colors.text} />
+                            </View>
+                          </Pressable>
+                          <Pressable
+                            onPress={() => confirmRemoveFavorite(f)}
+                            hitSlop={10}
+                            style={styles.quickChipDelete}
+                            accessibilityRole="button"
+                            accessibilityLabel={`Remove ${f.name} from favourites`}
+                          >
+                            <Ionicons name="close" size={16} color={colors.textMuted} />
+                          </Pressable>
+                        </View>
+                      ))}
+                    </ScrollView>
+                  ) : (
+                    <Text style={styles.quietText}>No favourites yet — save one from the star icon when adding a food.</Text>
+                  )}
+                </View>
+              ) : null}
             </View>
             <DayCompleteCard
               date={selectedDate}
@@ -718,99 +787,22 @@ export default function NutritionScreen() {
             />
           </View>
 
-          {/* Quick add */}
-          {(recentFoods && recentFoods.length > 0) || (favorites && favorites.length > 0) ? (
-            <View style={styles.section}>
-              <SectionTitle title="Quick add" />
-              <View style={{ marginBottom: 12 }}>
-                <Segmented
-                  options={["recent", "favourites"] as const}
-                  value={quickAddTab}
-                  onChange={setQuickAddTab}
-                  format={(t) => (t === "recent" ? "Recent" : "Favourites")}
-                />
-              </View>
-              {quickAddTab === "recent" ? (
-                (recentFoods?.length ?? 0) > 0 ? (
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.quickRow}>
-                    {recentFoods!.slice(0, 10).map((f) => (
-                      <Pressable
-                        key={f.id}
-                        onPress={() => handleQuickAdd(f)}
-                        style={({ pressed }) => [styles.quickChip, pressed && styles.pressed]}
-                        accessibilityRole="button"
-                        accessibilityLabel={`Add ${f.name}, ${f.calories} kcal`}
-                      >
-                        <Text style={styles.quickChipText} numberOfLines={2}>
-                          {f.name}
-                        </Text>
-                        <View style={styles.quickChipFoot}>
-                          <Text style={styles.quickChipSub}>{f.calories} kcal</Text>
-                          <Ionicons name="add-circle" size={20} color={colors.text} />
-                        </View>
-                      </Pressable>
-                    ))}
-                  </ScrollView>
-                ) : (
-                  <Text style={styles.quietText}>Nothing logged recently.</Text>
-                )
-              ) : (favorites?.length ?? 0) > 0 ? (
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.quickRow}>
-                  {favorites!.map((f: FoodFavorite) => (
-                    <View key={f.id} style={styles.quickChip}>
-                      <Pressable onPress={() => handleQuickAdd(f)} accessibilityRole="button" accessibilityLabel={`Add ${f.name}, ${f.calories} kcal`} style={{ flex: 1 }}>
-                        <Text style={[styles.quickChipText, { paddingRight: 18 }]} numberOfLines={2}>
-                          {f.name}
-                        </Text>
-                        <View style={styles.quickChipFoot}>
-                          <Text style={styles.quickChipSub}>{f.calories} kcal</Text>
-                          <Ionicons name="add-circle" size={20} color={colors.text} />
-                        </View>
-                      </Pressable>
-                      <Pressable
-                        onPress={() => confirmRemoveFavorite(f)}
-                        hitSlop={10}
-                        style={styles.quickChipDelete}
-                        accessibilityRole="button"
-                        accessibilityLabel={`Remove ${f.name} from favourites`}
-                      >
-                        <Ionicons name="close" size={16} color={colors.textMuted} />
-                      </Pressable>
-                    </View>
-                  ))}
-                </ScrollView>
-              ) : (
-                <Text style={styles.quietText}>No favourites yet — save one from the star icon when adding a food.</Text>
-              )}
-            </View>
-          ) : null}
-
           {/* Hydration */}
           <View style={styles.section} {...tourTarget("nutrition.hydration")}>
             <SectionTitle title="Hydration" />
             <HydrationCard date={selectedDate} />
           </View>
 
-          {/* Emphasis */}
-          <View style={styles.section}>
-            <SectionTitle title="Today's emphasis" />
-            <View style={styles.list}>
-              <EmphasisRow icon="water-outline" tone="hydration" title="Hydration" text={hydrationLine} />
-              <EmphasisRow icon="flash-outline" tone="fuel" title="Training fuel" text={trainingLine} divider />
-              <EmphasisRow
-                icon="heart-outline"
-                tone="recovery"
-                title="Micros & recovery"
-                text="Spread protein across 3–4 meals, get colour on every plate for micronutrients, and keep the last big meal 2–3 hours before sleep. Repair happens between sessions, not during them."
-                divider
-              />
-            </View>
-          </View>
-
           {/* Weight */}
           <View style={styles.section}>
             <SectionTitle title="Weight check-in" />
             <BodyWeightCard compact />
+          </View>
+
+          {/* Goal timeline: moved here from Profile. The headline shows; the inputs and projections open on demand. */}
+          <View style={styles.section} {...tourTarget("nutrition.timeline")}>
+            <SectionTitle title="Goal timeline" />
+            <GoalTimelineCard collapsible />
           </View>
 
           {/* Tools */}
@@ -840,6 +832,36 @@ export default function NutritionScreen() {
             ) : (
               <UpsellCard icon="construct-outline" title="More Tools" body="Sports drink calculator, weekly training, meal ideas, and shopping list" />
             )}
+          </View>
+
+          {/* Today's emphasis: under More tools, collapsed until opened */}
+          <View style={styles.section}>
+            <Pressable
+              onPress={() => {
+                tapFeedback();
+                setEmphasisOpen((v) => !v);
+              }}
+              style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: emphasisOpen ? 12 : 0 }}
+              accessibilityRole="button"
+              accessibilityState={{ expanded: emphasisOpen }}
+              accessibilityLabel="Today's emphasis"
+            >
+              <Text style={styles.rowTitle}>Today's emphasis</Text>
+              <Ionicons name={emphasisOpen ? "chevron-up" : "chevron-down"} size={20} color={colors.textMuted} />
+            </Pressable>
+            {emphasisOpen ? (
+              <View style={styles.list}>
+                <EmphasisRow icon="water-outline" tone="hydration" title="Hydration" text={hydrationLine} />
+                <EmphasisRow icon="flash-outline" tone="fuel" title="Training fuel" text={trainingLine} divider />
+                <EmphasisRow
+                  icon="heart-outline"
+                  tone="recovery"
+                  title="Micros & recovery"
+                  text="Spread protein across 3–4 meals, get colour on every plate for micronutrients, and keep the last big meal 2–3 hours before sleep. Repair happens between sessions, not during them."
+                  divider
+                />
+              </View>
+            ) : null}
           </View>
 
           <View style={styles.section}>
@@ -986,7 +1008,7 @@ const useStyles = makeStyles((c, dc) =>
     macroChipText: { fontSize: 13, color: c.textMuted, fontVariant: ["tabular-nums"] },
 
     quickRow: { gap: 10 },
-    quickChip: { width: 132, minHeight: 92, backgroundColor: c.surface, borderRadius: AppRadius.card, padding: 12 },
+    quickChip: { width: 132, minHeight: 92, backgroundColor: c.surfaceHi, borderRadius: AppRadius.card, padding: 12 },
     quickChipText: { fontSize: 15, color: c.text, lineHeight: 20 },
     quickChipFoot: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: "auto", paddingTop: 8 },
     quickChipSub: { fontSize: 13, color: c.textMuted },

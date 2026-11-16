@@ -204,6 +204,12 @@ export const TOUR_PAGES: TourPage[] = [
         title: "Water",
         body: "Pick what you're drinking, then use the quick-add buttons, or type a total. The bottle moves with your phone, so give it a tilt.",
       },
+      {
+        id: "timeline",
+        target: "nutrition.timeline",
+        title: "Your goal timeline",
+        body: "Your target date and the weekly pace it takes. Tap Edit goal to set a goal weight or body fat and how many days a week you can train, then Generate. Your calorie target adjusts to match, capped at a safe rate. It's the part that keeps you honest.",
+      },
     ],
   },
   {
@@ -253,12 +259,6 @@ export const TOUR_PAGES: TourPage[] = [
         target: "profile.body",
         title: "Body metrics",
         body: "Log your weight and body fat here. Your calorie target and progress charts are built from it.",
-      },
-      {
-        id: "timeline",
-        target: "profile.timeline",
-        title: "Your goal timeline",
-        body: "Set a goal weight or body fat and how many days a week you can train, then tap Generate. You get a target date and the weekly pace it takes, and your calorie target adjusts to match, capped at a safe rate. It's the part that keeps you honest.",
       },
       {
         id: "cycle",

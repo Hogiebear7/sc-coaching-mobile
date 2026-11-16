@@ -95,9 +95,11 @@ function TimelineSummary({ label, unit, timeline }: { label: string; unit: strin
 // projection, against the same /api/profile/goal + /goal-timeline routes.
 // App v2 layout borrows the "strategy" pattern: consequence tiles up top
 // that change with the inputs, then the inputs, then the explained summary.
-export function GoalTimelineCard() {
+export function GoalTimelineCard({ collapsible = false }: { collapsible?: boolean } = {}) {
   const styles = useStyles();
   const { colors, data: dc } = useAppTheme();
+  // On the Nutrition tab only the headline (target date, weekly pace, from/to weight) shows; the inputs and projections open on demand.
+  const [open, setOpen] = useState(!collapsible);
   const { data, isLoading, refetch } = useGoalTimeline();
   const saveGoal = useSaveGoal();
   const [goalWeightKg, setGoalWeightKg] = useState("");
@@ -234,6 +236,26 @@ export function GoalTimelineCard() {
         </View>
       ) : null}
 
+      {collapsible ? (
+        <Pressable
+          onPress={() => {
+            tapFeedback();
+            setOpen((v) => !v);
+          }}
+          style={{ marginTop: 14, flexDirection: "row", alignItems: "center", gap: 6, alignSelf: "flex-start", paddingVertical: 4 }}
+          accessibilityRole="button"
+          accessibilityState={{ expanded: open }}
+          accessibilityLabel={open ? "Hide goal details" : "Edit goal and see the full timeline"}
+        >
+          <Text style={{ fontSize: 15, fontWeight: "500", color: colors.text, textDecorationLine: "underline" }}>
+            {open ? "Hide details" : "Edit goal and see full timeline"}
+          </Text>
+          <Ionicons name={open ? "chevron-up" : "chevron-down"} size={16} color={colors.textMuted} />
+        </Pressable>
+      ) : null}
+
+      {open ? (
+      <>
       <View style={styles.inputRow}>
         <View style={{ flex: 1 }}>
           <Text style={styles.label}>Goal weight (kg)</Text>
@@ -324,6 +346,8 @@ export function GoalTimelineCard() {
         </View>
       ) : !isLoading && data && (data.goalWeightKg !== null || data.goalBodyFatPct !== null) ? (
         <Text style={styles.intro}>Log your weight or body fat to start seeing a projection.</Text>
+      ) : null}
+      </>
       ) : null}
     </View>
   );

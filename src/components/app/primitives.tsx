@@ -249,8 +249,10 @@ const useStyles = makeStyles((c) =>
     pillSecondary: { backgroundColor: c.control },
     pillText: { fontSize: 16, fontWeight: "600" },
 
-    grid: { flexDirection: "row", flexWrap: "wrap", gap: AppSpace.gap },
-    tile: { width: "48.6%", backgroundColor: c.surface, borderRadius: AppRadius.card, padding: 16, minHeight: 168 },
+    // 47.5% leaves a 5% gutter, so two tiles still fit side by side on a narrow screen (a folding phone's cover/inner screen), where 48.6% plus
+    // the fixed gap pushed the second tile onto its own row. space-between keeps a lone last tile on the left.
+    grid: { flexDirection: "row", flexWrap: "wrap", gap: AppSpace.gap, justifyContent: "space-between" },
+    tile: { width: "47.5%", backgroundColor: c.surface, borderRadius: AppRadius.card, padding: 16, minHeight: 168 },
     tileTitle: { fontSize: 17, fontWeight: "500", color: c.text },
     tileWindow: { marginTop: 2, fontSize: 14, color: c.textMuted },
     tileChart: { flex: 1, minHeight: 44, justifyContent: "flex-end", marginVertical: 12 },

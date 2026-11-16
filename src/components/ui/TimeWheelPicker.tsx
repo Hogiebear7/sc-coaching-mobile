@@ -98,6 +98,41 @@ function WheelColumn({
   );
 }
 
+function ClockWheel({ totalSecs, onChange }: { totalSecs: number; onChange: (totalSecs: number) => void }) {
+  const styles = useStyles();
+  const h = Math.min(23, Math.floor(totalSecs / 3600));
+  const m = Math.floor((totalSecs % 3600) / 60);
+  const nudge = (deltaMins: number) => onChange(Math.max(0, Math.min(23 * 3600 + 59 * 60, totalSecs + deltaMins * 60)));
+  return (
+    <View>
+      <View style={styles.wrap}>
+        <WheelColumn value={h} max={23} label="hour" onChange={(v) => onChange(v * 3600 + m * 60)} />
+        <Text style={styles.colon}>:</Text>
+        <WheelColumn value={m} max={59} label="min" onChange={(v) => onChange(h * 3600 + v * 60)} />
+      </View>
+      <View style={styles.nudgeRow}>
+        {[-60, -15, 15, 60].map((d) => (
+          <Pressable
+            key={d}
+            onPress={() => {
+              tapFeedback();
+              nudge(d);
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={`${d < 0 ? "Earlier by" : "Later by"} ${Math.abs(d)} minutes`}
+            style={styles.nudge}
+          >
+            <Text style={styles.nudgeText}>
+              {d < 0 ? "−" : "+"}
+              {Math.abs(d) === 60 ? "1h" : "15m"}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+    </View>
+  );
+}
+
 /**
  * A scroll-wheel duration picker — three columns (h/min/sec) or two
  * (min/sec) with the current value centered and highlighted, matching the
@@ -110,13 +145,17 @@ export function TimeWheelPicker({
   onChange,
   showHours = false,
   maxHours = 23,
+  clock = false,
 }: {
   totalSecs: number;
   onChange: (totalSecs: number) => void;
   showHours?: boolean;
   maxHours?: number;
+  /** Pick a time of day: hours (0-23) and minutes, no seconds. `totalSecs` is seconds since midnight. */
+  clock?: boolean;
 }) {
   const styles = useStyles();
+  if (clock) return <ClockWheel totalSecs={totalSecs} onChange={onChange} />;
   const h = showHours ? Math.floor(totalSecs / 3600) : 0;
   const m = Math.floor((totalSecs % 3600) / 60);
   const s = totalSecs % 60;

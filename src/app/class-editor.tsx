@@ -1,13 +1,16 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Alert, Modal, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
 import { KeyboardAwareScroll } from "@/components/ui/KeyboardAwareScroll";
 import { MonthDatePicker } from "@/components/ui/MonthDatePicker";
 import { Stepper } from "@/components/ui/Stepper";
+import { TimeWheelPicker } from "@/components/ui/TimeWheelPicker";
+import { useAuth } from "@/lib/auth-context";
 import { Radius, Spacing } from "@/constants/theme";
 import { ApiError } from "@/lib/api-client";
 import { tapFeedback } from "@/lib/haptics";
@@ -100,6 +103,41 @@ export default function ClassEditorScreen() {
   const [error, setError] = useState<string | null>(null);
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [endCalendarOpen, setEndCalendarOpen] = useState(false);
+  const [timeOpen, setTimeOpen] = useState(false);
+  const [wheelSecs, setWheelSecs] = useState(9 * 3600);
+
+  // New classes start from the coach's own length and capacity, if they have saved them (kept per person on this phone for now).
+  const { user: authUser } = useAuth();
+  const defaultsKey = authUser ? `class-defaults-v1-${authUser.id}` : null;
+  const [defaultsSaved, setDefaultsSaved] = useState<{ durationMins: number; capacity: number } | null>(null);
+  useEffect(() => {
+    if (!defaultsKey) return;
+    let cancelled = false;
+    AsyncStorage.getItem(defaultsKey)
+      .then((raw) => {
+        if (cancelled || !raw) return;
+        const d = JSON.parse(raw) as { durationMins?: number; capacity?: number };
+        if (typeof d.durationMins === "number" && typeof d.capacity === "number") {
+          setDefaultsSaved({ durationMins: d.durationMins, capacity: d.capacity });
+          if (!isEditing) {
+            setDurationMins(d.durationMins);
+            setCapacity(d.capacity);
+          }
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [defaultsKey]);
+  function saveDefaults() {
+    if (!defaultsKey) return;
+    tapFeedback();
+    const d = { durationMins, capacity };
+    AsyncStorage.setItem(defaultsKey, JSON.stringify(d)).catch(() => {});
+    setDefaultsSaved(d);
+  }
 
   const dateIso = displayToIso(dateText);
   const endDateIso = displayToIso(endDateText);
@@ -314,17 +352,44 @@ export default function ClassEditorScreen() {
             </Pressable>
           ))}
         </View>
-        <TextInput
-          value={startTime}
-          onChangeText={setStartTime}
-          placeholder="HH:MM (24-hour)"
-          placeholderTextColor={Color.textFaint}
-          style={[styles.input, { marginTop: Spacing.xs }]}
-          autoCapitalize="none"
-        />
+        <Pressable
+          onPress={() => {
+            const m = startTime.match(/^(\d{1,2}):(\d{2})$/);
+            setWheelSecs(m ? Number(m[1]) * 3600 + Number(m[2]) * 60 : 9 * 3600);
+            setTimeOpen(true);
+          }}
+          accessibilityRole="button"
+          accessibilityLabel={startTime ? `Start time ${startTime}. Tap to change.` : "Choose a start time"}
+          style={[styles.input, { marginTop: Spacing.xs, justifyContent: "center" }]}
+        >
+          <Text style={{ fontSize: 16, color: startTime ? Color.textPrimary : Color.textFaint }}>{startTime || "Choose a time"}</Text>
+        </Pressable>
+        <Modal visible={timeOpen} transparent animationType="fade" onRequestClose={() => setTimeOpen(false)}>
+          <Pressable style={styles.wheelBackdrop} onPress={() => setTimeOpen(false)}>
+            <View style={styles.wheelCard} onStartShouldSetResponder={() => true}>
+              <Text style={styles.wheelTitle}>Start time</Text>
+              <TimeWheelPicker clock totalSecs={wheelSecs} onChange={setWheelSecs} />
+              <Button
+                title="Done"
+                onPress={() => {
+                  setStartTime(`${String(Math.floor(wheelSecs / 3600)).padStart(2, "0")}:${String(Math.floor((wheelSecs % 3600) / 60)).padStart(2, "0")}`);
+                  setTimeOpen(false);
+                }}
+                style={{ marginTop: Spacing.lg }}
+              />
+            </View>
+          </Pressable>
+        </Modal>
 
         <Stepper label="Duration" value={durationMins} onChange={setDurationMins} min={5} max={180} step={5} suffix="min" />
         <Stepper label="Capacity" value={capacity} onChange={setCapacity} min={1} max={50} step={1} suffix="spots" />
+        <Pressable onPress={saveDefaults} accessibilityRole="button" style={styles.defaultsLink}>
+          <Text style={styles.defaultsText}>
+            {defaultsSaved && defaultsSaved.durationMins === durationMins && defaultsSaved.capacity === capacity
+              ? `Saved: new classes start at ${durationMins} min and ${capacity} spots`
+              : `Make ${durationMins} min and ${capacity} spots my default for new classes`}
+          </Text>
+        </Pressable>
 
         {!isEditing ? (
           <>
@@ -422,6 +487,11 @@ const useStyles = makeLegacyStyles((Color) =>
     centerFill: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.xl },
     errorText: { color: Color.textMuted, fontSize: 14, textAlign: "center" },
     scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
+    defaultsLink: { alignSelf: "flex-start", paddingVertical: Spacing.sm, marginBottom: Spacing.sm },
+    defaultsText: { fontSize: 14, fontWeight: "600", color: Color.gold, textDecorationLine: "underline" },
+    wheelBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.72)", alignItems: "center", justifyContent: "center", padding: Spacing.lg },
+    wheelCard: { width: "100%", maxWidth: 420, backgroundColor: Color.surface1, borderRadius: 24, padding: Spacing.lg },
+    wheelTitle: { fontSize: 18, fontWeight: "700", color: Color.textPrimary, textAlign: "center", marginBottom: Spacing.md },
     fieldLabel: { fontSize: 14, fontWeight: "500", color: Color.textSecondary, marginBottom: 6 },
     input: {
       height: 44,

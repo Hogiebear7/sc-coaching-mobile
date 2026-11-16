@@ -368,13 +368,15 @@ export function SupersetRounds({
               <Text style={styles.footerTitle}>How hard was that?</Text>
               {members.map((m, k) =>
                 m.kind === "exercise" ? (
-                  <View key={m.row.key} style={styles.footerLine}>
-                    <View style={[styles.badge, { backgroundColor: color }]}>
-                      <Text style={styles.badgeText}>{labels[k] ?? String(k + 1)}</Text>
+                  <View key={m.row.key} style={styles.footerBlock}>
+                    <View style={styles.footerLine}>
+                      <View style={[styles.badge, { backgroundColor: color }]}>
+                        <Text style={styles.badgeText}>{labels[k] ?? String(k + 1)}</Text>
+                      </View>
+                      <Text style={styles.footerName} numberOfLines={2}>
+                        {m.row.name.trim() || "Exercise"}
+                      </Text>
                     </View>
-                    <Text style={styles.footerName} numberOfLines={1}>
-                      {m.row.name.trim() || "Exercise"}
-                    </Text>
                     {renderFooter(m.row, labels[k] ?? String(k + 1))}
                   </View>
                 ) : null
@@ -446,6 +448,7 @@ const useStyles = makeLegacyStyles((Color) =>
     hint: { fontSize: 14, color: Color.textMuted },
     footers: { gap: 6, borderTopWidth: 1, borderTopColor: Color.borderSubtle, paddingTop: Spacing.sm },
     footerTitle: { fontSize: 13, fontWeight: "700", color: Color.textMuted },
+    footerBlock: { gap: 2, marginBottom: Spacing.xs },
     footerLine: { flexDirection: "row", alignItems: "center", gap: Spacing.sm },
     footerName: { flex: 1, fontSize: 14, fontWeight: "600", color: Color.textPrimary },
     actions: { flexDirection: "row", gap: Spacing.sm, marginTop: Spacing.xs },

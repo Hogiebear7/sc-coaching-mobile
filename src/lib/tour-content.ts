@@ -412,8 +412,8 @@ export const FEATURE_TOURS: TourPage[] = [
       {
         id: "edit",
         target: "log.edit",
-        title: "Edit and Simple view",
-        body: "Edit opens the full card, with the name, units, notes and reps in reserve. Simple view takes you back to this tidy one.",
+        title: "Edit and Focused view",
+        body: "Edit opens the full card, with the name, units, notes and reps in reserve. Focused view takes you back to this tidy one.",
       },
     ],
   },

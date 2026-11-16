@@ -1312,6 +1312,29 @@ export default function LogWorkoutScreen() {
       ),
     });
   }
+  // In the focused (compact) view a change to one round carries down to the rounds after it that are not done yet, and never touches the ones before:
+  // changing round 2 leaves round 1 alone.
+  function changeSetCarry(rowKey: string, setKey: string, patch: Partial<Omit<SetRow, "key">>) {
+    lastTouchedKey.current = rowKey;
+    const carried: Partial<Omit<SetRow, "key">> = {};
+    for (const k of ["weight", "reps", "repsRight", "repsLeft"] as const) if (patch[k] !== undefined) carried[k] = patch[k];
+    update({
+      exerciseRows: exerciseRows.map((r) => {
+        if (r.key !== rowKey) return r;
+        const at = r.setRows.findIndex((sr) => sr.key === setKey);
+        if (at === -1) return r;
+        return {
+          ...r,
+          setRows: r.setRows.map((sr, i) => {
+            if (i < at) return sr;
+            if (i === at) return { ...sr, ...patch };
+            return sr.completed ? sr : { ...sr, ...carried };
+          }),
+        };
+      }),
+    });
+  }
+
   // Editing set 1's weight/reps also fills any later set that's still blank —
   // most sets are the same or similar, and this saves retyping each one.
   // Sets the member has already typed something into are left alone.
@@ -2140,7 +2163,7 @@ export default function LogWorkoutScreen() {
                 <View style={styles.entryHeaderActions}>
                   {!opts?.inMixed && row.typeChosen ? (
                     <Pressable onPress={() => toggleSimpleRun(row.key)} hitSlop={8} accessibilityRole="button" accessibilityLabel="Simple view">
-                      <Text style={styles.ungroupText}>Simple view</Text>
+                      <Text style={styles.ungroupText}>Focused view</Text>
                     </Pressable>
                   ) : null}
                   {row.cardioType === "run" ? (
@@ -2289,10 +2312,10 @@ export default function LogWorkoutScreen() {
                 }}
                 hitSlop={8}
                 accessibilityRole="button"
-                accessibilityLabel={editing ? "Back to the simple view" : "Edit the details"}
+                accessibilityLabel={editing ? "Back to the focused view" : "Edit the details"}
                 {...(tourFirst ? tourTarget("log.edit") : {})}
               >
-                <Text style={styles.ungroupText}>{editing ? "Simple view" : p.group ? "Edit exercises" : "Edit"}</Text>
+                <Text style={styles.ungroupText}>{editing ? "Focused view" : p.group ? "Edit exercises" : "Edit"}</Text>
               </Pressable>
             )}
             {p.group ? (
@@ -2312,7 +2335,7 @@ export default function LogWorkoutScreen() {
             color={colour}
             roundWord={p.group ? "Round" : "Set"}
             weightUnit={weightUnit}
-            onChangeSet={updateSetRow}
+            onChangeSet={changeSetCarry}
             onToggleSet={(rowKey, setKey) => toggleSetComplete(rowKey, setKey, !p.group || rowKey === p.members[p.members.length - 1].row.key)}
             onAddRound={() => (p.group ? addGroupRound(p.group) : addSetRow(exerciseMembers[0].key))}
             onRemoveRound={() => {

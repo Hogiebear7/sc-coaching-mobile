@@ -19,6 +19,7 @@ import { useExerciseLibraryNameIndex } from "@/lib/queries/exercise-library";
 import {
   SET_TYPE_OPTIONS,
   useEditWorkout,
+  useUpdateClassWorkout,
   useWorkouts,
   type CreateWorkoutExerciseInput,
   type CreateWorkoutRunInput,
@@ -148,6 +149,8 @@ export default function EditWorkoutScreen() {
     [data?.sessions, data?.exerciseLibrary, libraryIndex?.items]
   );
   const editWorkout = useEditWorkout();
+  // A class workout is edited here too, set by set. It saves through the class route (the class owns the title, date and length).
+  const updateClassWorkout = useUpdateClassWorkout();
 
   const session = useMemo(() => data?.sessions.find((s) => s.id === id), [data, id]);
 
@@ -299,15 +302,27 @@ export default function EditWorkoutScreen() {
     }));
 
     try {
-      await editWorkout.mutateAsync({
-        id: session.id,
-        title: title.trim(),
-        date: date.trim(),
-        durationMins: durationMins.trim(),
-        notes: notes.trim(),
-        exercises,
-        runs,
-      });
+      if (session.classId) {
+        await updateClassWorkout.mutateAsync({
+          sessionId: session.id,
+          exercises,
+          notes: notes.trim(),
+          runs,
+          // Kept as they were: this editor doesn't change how the session felt.
+          sessionRpe: session.sessionRpe ?? null,
+          feelingNotes: session.feelingNotes ?? "",
+        });
+      } else {
+        await editWorkout.mutateAsync({
+          id: session.id,
+          title: title.trim(),
+          date: date.trim(),
+          durationMins: durationMins.trim(),
+          notes: notes.trim(),
+          exercises,
+          runs,
+        });
+      }
       tapFeedback();
       router.back();
     } catch (e) {
@@ -334,24 +349,25 @@ export default function EditWorkoutScreen() {
             <Text style={styles.emptyText}>Couldn&apos;t find that session.</Text>
             <Button title="Back" variant="secondary" onPress={() => router.back()} style={{ marginTop: Spacing.md }} />
           </View>
-        ) : session.classId ? (
-          <View style={styles.centerFill}>
-            <Text style={styles.emptyText}>
-              Class workouts are corrected from Session Detail&apos;s Edit link, not here.
-            </Text>
-            <Button title="Back" variant="secondary" onPress={() => router.back()} style={{ marginTop: Spacing.md }} />
-          </View>
         ) : (
           <KeyboardAwareScroll contentContainerStyle={styles.scroll}>
-            <TextField label="Title" value={title} onChangeText={setTitle} placeholder="e.g. Lower Body Strength" />
-            <DateField label="Date" value={date} onChange={setDate} maxDate={todayDateString()} />
-            <TextField
-              label="Duration (minutes) — optional"
-              value={durationMins}
-              onChangeText={setDurationMins}
-              keyboardType="number-pad"
-              placeholder="e.g. 60"
-            />
+            {session.classId ? (
+              <Text style={styles.emptyHint}>
+                {session.title}: change your weights, reps and times for each set. The class sets the title, date and length.
+              </Text>
+            ) : (
+              <>
+                <TextField label="Title" value={title} onChangeText={setTitle} placeholder="e.g. Lower Body Strength" />
+                <DateField label="Date" value={date} onChange={setDate} maxDate={todayDateString()} />
+                <TextField
+                  label="Duration (minutes) — optional"
+                  value={durationMins}
+                  onChangeText={setDurationMins}
+                  keyboardType="number-pad"
+                  placeholder="e.g. 60"
+                />
+              </>
+            )}
             <TextField
               label="Notes — optional"
               value={notes}

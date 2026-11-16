@@ -70,6 +70,8 @@ export interface WorkoutSessionSummary {
   /** Set when synced from a class — edited via useUpdateClassWorkout
       (exercises/notes only), not the general self-logged edit flow. */
   classId: string | null;
+  /** The class's start time ("HH:MM") for a class-synced session. Absent from older servers. */
+  classStartTime?: string | null;
   /** Hides this session from the member's followers' Community feed. */
   isPrivate: boolean;
   /** How hard the whole session felt (1 to 10) and a few words on it, when the member said. Absent from older servers. */

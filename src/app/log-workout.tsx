@@ -49,6 +49,7 @@ import { useWorkoutTemplates } from "@/lib/queries/workout-templates";
 import {
   SET_TYPE_OPTIONS,
   useCreateWorkout,
+  useUpdateClassWorkout,
   useWorkouts,
   type CreateWorkoutExerciseInput,
   type CreateWorkoutRunInput,
@@ -851,6 +852,7 @@ export default function LogWorkoutScreen() {
     title: initialTitle,
     date: initialDate,
     templateId,
+    classSessionId,
     addExerciseName,
     generatedExercises: generatedExercisesParam,
     prefillRunTitle,
@@ -862,6 +864,9 @@ export default function LogWorkoutScreen() {
     title?: string;
     date?: string;
     templateId?: string;
+    /** From a class session's "Start workout": the member's class-synced session. The logger is seeded from its exercises and, on finish, saves
+     *  back into that same session (no duplicate). */
+    classSessionId?: string;
     /** From the exercise library's "Add to workout" action — appended to
      *  whatever's already in progress (the draft persists across screens),
      *  not a fresh-seed like programId/templateId above. */
@@ -896,6 +901,7 @@ export default function LogWorkoutScreen() {
   const { data: program } = useMyProgram();
   const { data: templates } = useWorkoutTemplates();
   const create = useCreateWorkout();
+  const updateClassSession = useUpdateClassWorkout();
   const advanceProgram = useAdvanceProgram();
 
   const { draft, hydrated, update, startTimer, pauseTimer, resetTimer, discard, elapsedSecsNow } = useWorkoutDraft();
@@ -926,9 +932,11 @@ export default function LogWorkoutScreen() {
     ? `program:${programId}:${dayId}`
     : templateId
       ? `template:${templateId}`
-      : generatedExercisesParam
-        ? "generated"
-        : null;
+      : classSessionId
+        ? `class:${classSessionId}`
+        : generatedExercisesParam
+          ? "generated"
+          : null;
 
   // Initialize once, on first arrival with an empty draft and no seed source
   // — a genuine blank start. Arriving WITH a seed source is handled by the
@@ -990,7 +998,23 @@ export default function LogWorkoutScreen() {
         // Malformed/tampered param — fall through to the other sources.
       }
     }
-    const source = dayExercises ?? templateExercises ?? generatedExercisesSource;
+    // The class workout the coach set, already in the member's Workouts as a class-synced session.
+    const classSession = classSessionId ? data?.sessions.find((s) => s.id === classSessionId) : undefined;
+    const classExercises = classSession?.exercises.map((ex, i) => ({
+      id: `class-${i}`,
+      exerciseId: ex.exerciseId,
+      name: ex.name,
+      muscleTags: [] as string[],
+      targetSets: ex.sets,
+      targetReps: ex.reps !== null ? String(ex.reps) : null,
+      targetWeight: null,
+      setType: ex.setType ?? null,
+      sets: null,
+      supersetGroup: ex.supersetGroup ?? null,
+      notes: ex.notes,
+      conditioningProtocol: null,
+    }));
+    const source = dayExercises ?? templateExercises ?? classExercises ?? generatedExercisesSource;
     // program/templates data may not have loaded yet on the very first
     // render — this effect re-fires once it has, via the deps below, rather
     // than giving up and leaving the draft unseeded.
@@ -1057,7 +1081,7 @@ export default function LogWorkoutScreen() {
       seededFrom: currentSeedSource,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentSeedSource, draft.seededFrom, program, templates, generatedExercisesParam]);
+  }, [currentSeedSource, draft.seededFrom, program, templates, generatedExercisesParam, data?.sessions]);
 
   // "Add to workout" from the exercise library — appends to whatever's
   // already in progress (a ref, not the `seeded` flag above, since this can
@@ -1714,21 +1738,34 @@ export default function LogWorkoutScreen() {
         kind: ("kind" in e ? e.kind : "exercise") as "exercise" | "cardio",
         badge: summaryBadges[i],
       }));
-      const result = await create.mutateAsync({
-        title: title.trim(),
-        date: date.trim(),
-        durationMins: finalDurationMins,
-        notes: combinedNotes,
-        exercises,
-        runs,
-        sessionRpe: finalRpe,
-        feelingNotes: finalFeelingNotes.trim() || undefined,
-        // firstStartedAtMs (not startedAtMs, which pausing clears) survives
-        // pause/resume, so this is still populated for the common "stop the
-        // timer, fill in RPE, then submit" flow. getHours() resolves to the
-        // device's own local time, so the server needs no timezone math.
-        startedAtHour: draft.firstStartedAtMs !== null ? new Date(draft.firstStartedAtMs).getHours() : undefined,
-      });
+      // A class workout started from its session saves back into that same session (title, date and duration come from the class); anything else
+      // is a new workout as before.
+      const result = classSessionId
+        ? await updateClassSession
+            .mutateAsync({
+              sessionId: classSessionId,
+              exercises,
+              notes: combinedNotes,
+              runs,
+              sessionRpe: finalRpe,
+              feelingNotes: finalFeelingNotes.trim() || undefined,
+            })
+            .then(() => ({ id: classSessionId }))
+        : await create.mutateAsync({
+            title: title.trim(),
+            date: date.trim(),
+            durationMins: finalDurationMins,
+            notes: combinedNotes,
+            exercises,
+            runs,
+            sessionRpe: finalRpe,
+            feelingNotes: finalFeelingNotes.trim() || undefined,
+            // firstStartedAtMs (not startedAtMs, which pausing clears) survives
+            // pause/resume, so this is still populated for the common "stop the
+            // timer, fill in RPE, then submit" flow. getHours() resolves to the
+            // device's own local time, so the server needs no timezone math.
+            startedAtHour: draft.firstStartedAtMs !== null ? new Date(draft.firstStartedAtMs).getHours() : undefined,
+          });
       const summary: WorkoutSummaryData = {
         id: result.id,
         title: title.trim(),

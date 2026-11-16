@@ -25,6 +25,12 @@ function formatLongDate(dateISO: string): string {
   return new Date(`${dateISO}T00:00:00`).toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 }
 
+// A class workout can be started on the member's own phone once the class has begun. Older servers don't send the start time, so fall back to the day.
+function classHasStarted(dateISO: string, startTime: string | null | undefined): boolean {
+  const start = startTime ? new Date(`${dateISO}T${startTime}:00`) : new Date(`${dateISO}T00:00:00`);
+  return Number.isFinite(start.getTime()) && start.getTime() <= Date.now();
+}
+
 let templateKeySeq = 0;
 function nextTemplateKey(): string {
   templateKeySeq += 1;
@@ -105,7 +111,7 @@ export default function SessionDetailScreen() {
               onPress={() =>
                 router.push(
                   session.classId
-                    ? { pathname: "/edit-class-workout", params: { id: session.id } }
+                    ? { pathname: "/edit-workout", params: { id: session.id } }
                     : { pathname: "/edit-workout", params: { id: session.id } }
                 )
               }
@@ -170,6 +176,24 @@ export default function SessionDetailScreen() {
               <Ionicons name="eye-off-outline" size={12} color={Color.textFaint} />
               <Text style={styles.privateBadgeText}>Hidden from Community feed</Text>
             </View>
+          ) : null}
+
+          {session.classId && classHasStarted(session.date, session.classStartTime) ? (
+            <Button
+              title="Start workout"
+              onPress={() => {
+                tapFeedback();
+                router.push({ pathname: "/log-workout", params: { classSessionId: session.id, title: session.title, date: session.date } });
+              }}
+              style={{ marginTop: Spacing.md }}
+            />
+          ) : null}
+          {session.classId ? (
+            <Text style={styles.date}>
+              {classHasStarted(session.date, session.classStartTime)
+                ? "Log your weights and times as you go, or fill them in afterwards with the edit button."
+                : "You can start this workout on your phone once the class begins."}
+            </Text>
           ) : null}
 
           <View style={styles.statsGrid}>

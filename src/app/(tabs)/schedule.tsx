@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -53,6 +54,7 @@ function ClassRow({ item }: { item: ScheduleClass }) {
   const styles = useStyles();
   const { legacy: Color } = useAppTheme();
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
   const book = useBookClass();
   const joinWaitlist = useJoinWaitlist();
   const leaveWaitlist = useLeaveWaitlist();
@@ -65,6 +67,11 @@ function ClassRow({ item }: { item: ScheduleClass }) {
       const res = await action();
       if (!res.success) setError(res.message);
     } catch (e) {
+      // A gym member who hasn't done the health check yet (PAR-Q) is taken to it; booking works once it's saved.
+      if (e instanceof ApiError && e.code === "parq_required") {
+        router.push("/parq" as never);
+        return;
+      }
       setError(e instanceof ApiError ? e.message : "Something went wrong.");
     }
   }

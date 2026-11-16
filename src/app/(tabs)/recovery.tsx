@@ -252,7 +252,7 @@ export default function RecoveryScreen() {
               />
               <MetricTile
                 title="Training load"
-                window="Rolling 7 days"
+                window="Rolling 7 days · tap: what is AU?"
                 value={data.rollingLoad.daysWithLoad > 0 ? data.rollingLoad.sevenDaySum.toLocaleString() : null}
                 unit="AU"
                 color={dc.load}
@@ -283,9 +283,12 @@ export default function RecoveryScreen() {
           <InfoModal
             visible={loadInfoOpen}
             onClose={() => setLoadInfoOpen(false)}
-            title="7-Day Load"
+            title="Training load (AU)"
             body={
-              "Training duration × RPE, added up over a rolling 7-day window ending today. Pulled from your logged " +
+              "AU stands for arbitrary units: a score for how much training stress you have taken on, not a unit of weight or distance. " +
+              "For each session it is how long you trained in minutes × how hard it felt (RPE, out of 10). 60 minutes at RPE 7 is 420 AU. " +
+              "This tile adds up the last 7 days.\n\n" +
+              "More detail: training duration × RPE, added up over a rolling 7-day window ending today. Pulled from your logged " +
               "workouts (duration and how-did-that-feel RPE), or your recovery check-in's own numbers if you filled " +
               "those in instead. Days you don't log anything simply add nothing — a quiet week, a rest day, or a " +
               "brand-new account all show a lower number rather than a broken one. It resets naturally as old days " +

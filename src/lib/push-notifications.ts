@@ -121,6 +121,8 @@ const LINK_HREF_ROUTES: Record<string, string> = {
   "/log-workout": "/log-workout",
   // The morning check-in reminder, scheduled on the phone (checkin-reminder.ts).
   "/recovery": "/(tabs)/recovery",
+  // The server's "quick check-in before class" prompt.
+  "/dashboard/recovery": "/(tabs)/recovery",
 };
 
 export function mapLinkHrefToRoute(linkHref: string): string {

@@ -1,3 +1,4 @@
+import { SeasonOverlay } from "@/components/season/SeasonOverlay";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
@@ -444,6 +445,7 @@ export default function DashboardScreen() {
           </View>
         </View>
       </ScrollView>
+      <SeasonOverlay />
       <PostSignupOnboardingRedirect />
       <PostSignupTrialOffer />
     </SafeAreaView>

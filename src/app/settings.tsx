@@ -21,6 +21,7 @@ import { isBatteryOptimizationRelevant, openBatteryOptimizationSettings } from "
 import { hapticsEnabled, setHapticsEnabled, tapFeedback } from "@/lib/haptics";
 import { hasAccess, tierFromAccess } from "@/lib/member-access";
 import { useAiConsent, useSetAiConsent } from "@/lib/queries/ai-consent";
+import { SEASON_PREVIEW_ENABLED, useSeasonPrefs } from "@/lib/season";
 import { setTabChoice, useTabChoice } from "@/lib/tab-choice";
 import { canChooseTabs, normaliseChoice, TAB_PAIR_OPTIONS } from "@/lib/tab-config";
 import { LIGHT_MODE_AVAILABLE, makeLegacyStyles, useLegacyColors } from "@/lib/theme";
@@ -172,6 +173,7 @@ export default function SettingsScreen() {
   const [haptics, setHaptics] = useState(hapticsEnabled());
   const access = useMemberAccess();
   const aiConsent = useAiConsent();
+  const seasonPrefs = useSeasonPrefs();
   const setAiConsent = useSetAiConsent();
   const tier = tierFromAccess(access);
   const tabChoice = normaliseChoice(useTabChoice(), tier);
@@ -385,6 +387,40 @@ export default function SettingsScreen() {
                 sub={access.digital ? "Your plan: manage or restore" : "Coach chat, calorie targets, programmes and more"}
                 onPress={() => router.push(DIGITAL_PLAN_ROUTE as never)}
               />
+            ) : null}
+          </Card>
+
+          <SectionLabel>Appearance</SectionLabel>
+          <Card style={styles.settingsCard}>
+            <View style={styles.row}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.rowTitle}>Seasonal effects</Text>
+                <Text style={styles.rowSub}>Falling snow and other seasonal touches at Christmas and other times of the year. Turn off for a plain look.</Text>
+              </View>
+              <Switch
+                value={seasonPrefs.effectsOn}
+                onValueChange={(v) => seasonPrefs.setEffectsOn.mutate(v)}
+                trackColor={{ false: Color.surface3, true: Color.success }}
+                thumbColor="#ffffff"
+                accessibilityLabel="Seasonal effects"
+              />
+            </View>
+            {SEASON_PREVIEW_ENABLED ? (
+              <View style={[styles.row, { flexWrap: "wrap", gap: 8 }]}>
+                <Text style={[styles.rowTitle, { width: "100%" }]}>Preview a season (test builds only)</Text>
+                {([null, "christmas", "new-year"] as const).map((p) => (
+                  <Pressable
+                    key={String(p)}
+                    onPress={() => seasonPrefs.setPreview.mutate(p)}
+                    style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, backgroundColor: seasonPrefs.preview === p ? Color.gold : Color.surface2 }}
+                    accessibilityRole="button"
+                  >
+                    <Text style={{ color: seasonPrefs.preview === p ? Color.goldForeground : Color.textMuted, fontWeight: "600" }}>
+                      {p === null ? "Today" : p === "christmas" ? "Christmas" : "New Year"}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
             ) : null}
           </Card>
 

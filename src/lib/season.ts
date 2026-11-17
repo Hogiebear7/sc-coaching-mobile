@@ -19,6 +19,8 @@ export interface SeasonInfo {
 export interface SeasonNow {
   season: SeasonInfo | null;
   overlay: { key: "new-year"; fireworks: boolean; message: string } | null;
+  /** The splash and banner message from the server (Christmas has none until 18 December). Absent from older servers. */
+  greeting?: string | null;
   date: string;
 }
 
@@ -104,12 +106,13 @@ export function localSeason(now: Date = new Date()): SeasonNow {
   return {
     season: christmas ? { key: "christmas", label: "Christmas", particle: "snow", pile: true, hat: true, ready: true } : null,
     overlay: christmas && newYear ? { key: "new-year", fireworks: true, message: "Happy New Year from S&C Performance Coaching" } : null,
+    greeting: christmas && md >= 1218 ? "Happy Christmas" : null,
     date: "local",
   };
 }
 
 /** What season the app should look like right now: null when it's the plain brand look, the member has switched effects off, or the server can't be reached. */
-export function useSeason(): { season: SeasonInfo | null; overlay: SeasonNow["overlay"] } {
+export function useSeason(): { season: SeasonInfo | null; overlay: SeasonNow["overlay"]; greeting: string | null } {
   const { effectsOn, preview } = useSeasonPrefs();
   const q = useQuery({
     queryKey: ["season", preview],
@@ -120,6 +123,7 @@ export function useSeason(): { season: SeasonInfo | null; overlay: SeasonNow["ov
         return {
           season: { key, ...PREVIEW_INFO[key] },
           overlay: preview === "new-year" ? { key: "new-year" as const, fireworks: true, message: "Happy New Year from S&C Performance Coaching" } : null,
+          greeting: preview === "new-year" ? null : SPLASH_MESSAGES[key] ?? null,
           date: "preview",
         } satisfies SeasonNow;
       }
@@ -136,6 +140,6 @@ export function useSeason(): { season: SeasonInfo | null; overlay: SeasonNow["ov
     retry: false,
     placeholderData: preview ? undefined : localSeason(),
   });
-  if (!effectsOn || !q.data) return { season: null, overlay: null };
-  return { season: q.data.season, overlay: q.data.overlay };
+  if (!effectsOn || !q.data) return { season: null, overlay: null, greeting: null };
+  return { season: q.data.season, overlay: q.data.overlay, greeting: q.data.greeting ?? null };
 }

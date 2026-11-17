@@ -4,7 +4,7 @@ import Svg, { Line } from "react-native-svg";
 
 import { SPRITE_COLOURS, Sprite, type SpriteKind } from "@/components/season/seasonArt";
 import { SeasonGround } from "@/components/season/seasonScenes";
-import { SPLASH_MESSAGES, useSeason, type Particle } from "@/lib/season";
+import { useSeason, type Particle } from "@/lib/season";
 
 // Falling snow, a drift along the bottom of the screen, and (1 and 2 January) a New Year burst of fireworks, drawn over the Home screen. Light on purpose: about
 // 26 flakes on the native animation thread, never takes a touch, switches off for people who reduce motion on their phone, and stays off when the member turns
@@ -153,7 +153,7 @@ function Fireworks({ width, height, surface }: { width: number; height: number; 
 }
 
 export function SeasonOverlay({ surface = "home" }: { surface?: "home" | "community" | "splash" }) {
-  const { season, overlay } = useSeason();
+  const { season, overlay, greeting } = useSeason();
   const { width, height } = Dimensions.get("window");
 
   if (!season) return null;
@@ -162,7 +162,7 @@ export function SeasonOverlay({ surface = "home" }: { surface?: "home" | "commun
   const reduceMotion = reduceMotionCache;
   // Only snow falls (owner, 2026-11-17: no falling hearts, shamrocks, eggs or leaves). Everything else is a calm scene along the bottom.
   const falling = season.particle === "snow";
-  const message = overlay ? "Happy New Year" : SPLASH_MESSAGES[season.key];
+  const message = overlay ? "Happy New Year" : greeting;
 
   return (
     <View pointerEvents="none" style={StyleSheet.absoluteFill}>

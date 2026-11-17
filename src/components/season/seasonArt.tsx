@@ -2,6 +2,8 @@ import { Animated, Easing, View } from "react-native";
 import { useEffect, useState } from "react";
 import Svg, { Circle, Ellipse, G, Line, Path, Rect } from "react-native-svg";
 
+import { RemoteArt } from "@/components/season/RemoteArt";
+
 // The drawings for every season, as simple vector shapes (a stand-in for the Canva artwork, which can replace any piece later). Everything here is pure drawing:
 // which season is on, and where it goes, is decided by SeasonOverlay, SnowCap and BrandMark.
 export type SpriteKind = "heart" | "shamrock" | "egg" | "leaf";
@@ -61,7 +63,7 @@ export function LogoAccessory({ season, height, width }: { season: string; heigh
     );
   }
   if (season === "halloween") {
-    return (
+    const drawn = (
       <Svg width={w} height={h} viewBox="0 0 64 52" style={topLeft}>
         <Path d="M8 42 C14 30 22 14 40 4 C38 16 42 28 56 42 Z" fill="#1c1b22" />
         <Path d="M10 36 C26 32 42 32 54 38 L56 42 L8 42 Z" fill="#7b3fb0" />
@@ -69,9 +71,10 @@ export function LogoAccessory({ season, height, width }: { season: string; heigh
         <Ellipse cx="32" cy="45" rx="30" ry="5" fill="#1c1b22" />
       </Svg>
     );
+    return <RemoteArt name="witch-hat" style={{ position: "absolute", left: -height * 0.14, top: -height * 0.4, width: height * 0.8, height: height * 0.64, transform: [{ rotate: "-10deg" }] }} fallback={drawn} />;
   }
   if (season === "easter") {
-    return (
+    const drawn = (
       <Svg width={w} height={h * 1.1} viewBox="0 0 64 56" style={{ position: "absolute", left: height * 0.1, top: -height * 0.5 }}>
         <Ellipse cx="22" cy="26" rx="8" ry="22" fill="#ffffff" transform="rotate(-12 22 26)" />
         <Ellipse cx="22" cy="28" rx="3.8" ry="16" fill="#ffb3c7" transform="rotate(-12 22 28)" />
@@ -79,6 +82,7 @@ export function LogoAccessory({ season, height, width }: { season: string; heigh
         <Ellipse cx="44" cy="28" rx="3.8" ry="16" fill="#ffb3c7" transform="rotate(14 44 28)" />
       </Svg>
     );
+    return <RemoteArt name="bunny-ears" style={{ position: "absolute", left: height * 0.1, top: -height * 0.48, width: height * 0.7, height: height * 0.55 }} fallback={drawn} />;
   }
   return null;
 }
@@ -87,7 +91,7 @@ export function LogoAccessory({ season, height, width }: { season: string; heigh
 export function CardTopDecor({ season, seed }: { season: string; seed: number }) {
   const shift = (seed * 37) % 60;
   if (season === "christmas") {
-    return (
+    const drawn = (
       <Svg width="100%" height="100%" viewBox="0 0 400 22" preserveAspectRatio="none">
         <Path
           d={`M0 12 C20 3 ${50 + shift} 2 ${90 + shift} 7 C${130 + shift} 1 ${170 + shift} 2 ${210 + shift} 6 C${250 + shift} 0 300 3 340 6 C370 4 392 8 400 12 L400 14 C390 12 380 15 370 14 C365 20 355 20 352 14 C300 16 ${270 + shift} 13 ${230 + shift} 15 C${224 + shift} 21 ${214 + shift} 21 ${210 + shift} 15 C170 15 130 13 100 15 C94 20 84 20 80 14 C50 14 20 15 0 14 Z`}
@@ -98,6 +102,7 @@ export function CardTopDecor({ season, seed }: { season: string; seed: number })
         <Circle cx={Math.round(280 + shift / 2)} cy="16" r="2.6" fill="#f7faff" />
       </Svg>
     );
+    return <RemoteArt name="snow-edge" contentFit="fill" style={{ width: "100%", height: "100%", transform: [{ scaleX: seed % 2 === 0 ? 1 : -1 }] }} fallback={drawn} />;
   }
   return null;
 }
@@ -117,7 +122,11 @@ export function CardEdgeSprites({ season, seed }: { season: string; seed: number
           const size = 15 + ((seed + i * 5) % 8);
           return (
             <View key={i} style={{ position: "absolute", left, top: -size + 5, transform: [{ rotate: `${((seed + i * 4) % 5) * 9 - 18}deg` }] }}>
-              <Sprite kind={kind} size={size} color={colours[(seed + i) % colours.length]} />
+              <RemoteArt
+                name={kind === "egg" ? "eggs" : seed % 4 === 1 ? "clover" : "shamrock"}
+                style={{ width: size * 1.3, height: size * 1.3 }}
+                fallback={<Sprite kind={kind} size={size} color={colours[(seed + i) % colours.length]} />}
+              />
             </View>
           );
         })}
@@ -133,7 +142,11 @@ export function CardEdgeSprites({ season, seed }: { season: string; seed: number
       <>
         {webSize > 0 ? (
           <View style={{ position: "absolute", top: -3, ...side }}>
-            <Cobweb size={webSize} flip={variant % 2 === 1} variant={variant} />
+            <RemoteArt
+              name="web-corner"
+              style={{ width: webSize * 1.5, height: webSize * 1.05, transform: [{ scaleX: variant % 2 === 1 ? 1 : -1 }] }}
+              fallback={<Cobweb size={webSize} flip={variant % 2 === 1} variant={variant} />}
+            />
           </View>
         ) : null}
         {variant !== 1 ? <Spider left={left} drop={14 + (seed % 4) * 6} /> : null}

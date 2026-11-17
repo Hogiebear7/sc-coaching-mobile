@@ -3,6 +3,8 @@ import { AccessibilityInfo, Animated, Dimensions, Easing, StyleSheet, Text, View
 import Svg, { Line } from "react-native-svg";
 
 import { SPRITE_COLOURS, Sprite, type SpriteKind } from "@/components/season/seasonArt";
+import { RemoteArt } from "@/components/season/RemoteArt";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { SeasonGround } from "@/components/season/seasonScenes";
 import { useSeason, type Particle } from "@/lib/season";
 
@@ -155,6 +157,7 @@ function Fireworks({ width, height, surface }: { width: number; height: number; 
 export function SeasonOverlay({ surface = "home" }: { surface?: "home" | "community" | "splash" }) {
   const { season, overlay, greeting } = useSeason();
   const { width, height } = Dimensions.get("window");
+  const insets = useSafeAreaInsets();
 
   if (!season) return null;
   // The Community screen only gets the Christmas / New Year and Halloween looks (owner, 2026-11-17).
@@ -174,6 +177,10 @@ export function SeasonOverlay({ surface = "home" }: { surface?: "home" | "commun
         <View style={{ position: "absolute", left: 0, right: 0, top: height * 0.62, alignItems: "center" }}>
           <Text style={{ color: "#e3b341", fontSize: 30, fontWeight: "800", letterSpacing: 1.5, textTransform: "uppercase", textAlign: "center" }}>{message}</Text>
         </View>
+      ) : null}
+      {surface === "home" && season.key === "christmas" ? (
+        // String of lights under the status bar (the owner's Canva picture; nothing is drawn if it can't be loaded).
+        <RemoteArt name="lights" style={{ position: "absolute", top: insets.top - 4, left: 0, width, height: width * (164 / 900), opacity: 0.95 }} />
       ) : null}
       <SeasonGround season={overlay ? "christmas" : season.key} />
     </View>

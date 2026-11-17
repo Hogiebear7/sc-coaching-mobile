@@ -1,5 +1,6 @@
 import { Image, type ImageStyle } from "expo-image";
 import { View } from "react-native";
+import { RemoteArt } from "@/components/season/RemoteArt";
 import { LogoAccessory } from "@/components/season/seasonArt";
 import { useSeason } from "@/lib/season";
 
@@ -14,15 +15,20 @@ const LOGO_ASPECT_RATIO = 975 / 480;
 
 export function BrandMark({ height = 36, style }: { height?: number; style?: ImageStyle }) {
   const { season } = useSeason();
-  return (
-    <View style={{ width: height * LOGO_ASPECT_RATIO, height }}>
-      <Image
-        source={LOGO}
-        style={[{ width: height * LOGO_ASPECT_RATIO, height }, style]}
-        contentFit="contain"
-        accessibilityLabel="S&C Performance Coaching"
-      />
-      {season ? <LogoAccessory season={season.key} height={height} width={height * LOGO_ASPECT_RATIO} /> : null}
-    </View>
+  const width = height * LOGO_ASPECT_RATIO;
+  const plain = (
+    <>
+      <Image source={LOGO} style={[{ width, height }, style]} contentFit="contain" accessibilityLabel="S&C Performance Coaching" />
+      {season ? <LogoAccessory season={season.key} height={height} width={width} /> : null}
+    </>
   );
+  // At Christmas the logo is the owner's Canva picture with the Santa hat already on it (loaded from the website); the plain logo and drawn hat are the fallback.
+  if (season?.key === "christmas") {
+    return (
+      <View style={{ width, height }}>
+        <RemoteArt name="logo-christmas" style={[{ width, height }, style]} fallback={plain} />
+      </View>
+    );
+  }
+  return <View style={{ width, height }}>{plain}</View>;
 }

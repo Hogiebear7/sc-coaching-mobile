@@ -191,6 +191,8 @@ export default function SignupScreen() {
   const [submitting, setSubmitting] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [agreedToPrivacy, setAgreedToPrivacy] = useState(false);
+  // Optional: news and offers by email. Never pre-ticked, and not needed to sign up.
+  const [marketingOptIn, setMarketingOptIn] = useState(false);
   // The outcome of the availability check, for the email it was run on. The status shown is derived from it: not an email yet = idle; an email with no outcome
   // yet = checking; so nothing has to set state synchronously inside the effect below.
   const [emailCheck, setEmailCheck] = useState<{ email: string; status: "idle" | "available" | "taken" } | null>(null);
@@ -319,6 +321,7 @@ export default function SignupScreen() {
         skipAuth: true,
         body: {
           email: values.email.trim(),
+          marketingOptIn,
           password: values.password,
           fullName: values.fullName.trim(),
           phone: values.phone.trim(),
@@ -745,6 +748,15 @@ export default function SignupScreen() {
                   <Pressable onPress={() => Linking.openURL(`${API_BASE_URL}/privacy`)}>
                     <Text style={styles.legalLink}>Read Privacy Policy</Text>
                   </Pressable>
+
+                  <CheckboxRow
+                    label="Optional: send me news and offers"
+                    description="News and offers from S&C Performance Coaching by email. You can unsubscribe at any time."
+                    checked={marketingOptIn}
+                    onToggle={() => {
+                      setMarketingOptIn((v) => !v);
+                    }}
+                  />
                 </Card>
               </>
             ) : null}

@@ -21,6 +21,7 @@ import { isBatteryOptimizationRelevant, openBatteryOptimizationSettings } from "
 import { hapticsEnabled, setHapticsEnabled, tapFeedback } from "@/lib/haptics";
 import { hasAccess, tierFromAccess } from "@/lib/member-access";
 import { useAiConsent, useSetAiConsent } from "@/lib/queries/ai-consent";
+import { useEmailPrefs, useSetEmailPrefs } from "@/lib/queries/email-preferences";
 import { PREVIEW_CHOICES, SEASON_PREVIEW_ENABLED, useSeasonPrefs } from "@/lib/season";
 import { setTabChoice, useTabChoice } from "@/lib/tab-choice";
 import { canChooseTabs, normaliseChoice, TAB_PAIR_OPTIONS } from "@/lib/tab-config";
@@ -174,6 +175,8 @@ export default function SettingsScreen() {
   const access = useMemberAccess();
   const aiConsent = useAiConsent();
   const seasonPrefs = useSeasonPrefs();
+  const emailPrefs = useEmailPrefs();
+  const setEmailPrefs = useSetEmailPrefs();
   const setAiConsent = useSetAiConsent();
   const tier = tierFromAccess(access);
   const tabChoice = normaliseChoice(useTabChoice(), tier);
@@ -388,6 +391,38 @@ export default function SettingsScreen() {
                 onPress={() => router.push(DIGITAL_PLAN_ROUTE as never)}
               />
             ) : null}
+          </Card>
+
+          <SectionLabel>Emails</SectionLabel>
+          <Card style={styles.settingsCard}>
+            <View style={styles.row}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.rowTitle}>Getting-started tips</Text>
+                <Text style={styles.rowSub}>A few short emails after you join.</Text>
+              </View>
+              <Switch
+                value={emailPrefs.data?.tips ?? true}
+                disabled={!emailPrefs.data || setEmailPrefs.isPending}
+                onValueChange={(v) => setEmailPrefs.mutate({ tips: v })}
+                trackColor={{ false: Color.surface3, true: Color.success }}
+                thumbColor="#ffffff"
+                accessibilityLabel="Getting-started tips by email"
+              />
+            </View>
+            <View style={styles.row}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.rowTitle}>News and offers</Text>
+                <Text style={styles.rowSub}>Newsletters and promotions from S&C Performance Coaching. Emails about bookings, payments and your account are separate and always sent.</Text>
+              </View>
+              <Switch
+                value={emailPrefs.data?.marketing ?? false}
+                disabled={!emailPrefs.data || setEmailPrefs.isPending}
+                onValueChange={(v) => setEmailPrefs.mutate({ marketing: v })}
+                trackColor={{ false: Color.surface3, true: Color.success }}
+                thumbColor="#ffffff"
+                accessibilityLabel="News and offers by email"
+              />
+            </View>
           </Card>
 
           <SectionLabel>Appearance</SectionLabel>

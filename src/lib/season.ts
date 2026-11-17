@@ -21,6 +21,8 @@ export interface SeasonNow {
   overlay: { key: "new-year"; fireworks: boolean; message: string } | null;
   /** The splash and banner message from the server (Christmas has none until 18 December). Absent from older servers. */
   greeting?: string | null;
+  /** Changes when the artwork files on the website change, so a phone downloads the new pictures. Absent from older servers. */
+  artVersion?: number;
   date: string;
 }
 
@@ -112,7 +114,7 @@ export function localSeason(now: Date = new Date()): SeasonNow {
 }
 
 /** What season the app should look like right now: null when it's the plain brand look, the member has switched effects off, or the server can't be reached. */
-export function useSeason(): { season: SeasonInfo | null; overlay: SeasonNow["overlay"]; greeting: string | null } {
+export function useSeason(): { season: SeasonInfo | null; overlay: SeasonNow["overlay"]; greeting: string | null; artVersion: number } {
   const { effectsOn, preview } = useSeasonPrefs();
   const q = useQuery({
     queryKey: ["season", preview],
@@ -140,6 +142,7 @@ export function useSeason(): { season: SeasonInfo | null; overlay: SeasonNow["ov
     retry: false,
     placeholderData: preview ? undefined : localSeason(),
   });
-  if (!effectsOn || !q.data) return { season: null, overlay: null, greeting: null };
-  return { season: q.data.season, overlay: q.data.overlay, greeting: q.data.greeting ?? null };
+  const artVersion = q.data?.artVersion ?? 1;
+  if (!effectsOn || !q.data) return { season: null, overlay: null, greeting: null, artVersion };
+  return { season: q.data.season, overlay: q.data.overlay, greeting: q.data.greeting ?? null, artVersion };
 }

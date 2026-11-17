@@ -1,6 +1,7 @@
 import { View } from "react-native";
 import Svg, { Circle, Ellipse, G, Line, Path, Rect } from "react-native-svg";
 
+import { RemoteArt } from "@/components/season/RemoteArt";
 import { Sprite } from "@/components/season/seasonArt";
 
 // The scene along the bottom of the screen for each season: a strip of ground with a few small drawings standing on it, still, like the corner scenes on the
@@ -12,6 +13,8 @@ interface Item {
   size: number;
   lift?: number;
   colour?: string;
+  /** A picture from the website (the owner's Canva artwork) drawn instead; the built-in drawing of `kind` is the fallback. aspect is width / height. */
+  img?: { name: string; aspect: number };
 }
 
 function Art({ kind, size, colour }: { kind: ItemKind; size: number; colour?: string }) {
@@ -147,7 +150,7 @@ const SCENES: Record<string, { strip: "snow" | "grass" | "sand" | "leaves" | "ni
     strip: "grass",
     items: [
       { kind: "flag", left: "5%", size: 26, lift: 8 },
-      { kind: "shamrock", left: "40%", size: 14, lift: 10 },
+      { kind: "shamrock", left: "40%", size: 18, lift: 9, img: { name: "clover", aspect: 400 / 464 } },
       { kind: "pot", left: "69%", size: 23, lift: 8 },
       { kind: "rainbow", left: "78%", size: 30, lift: 8 },
     ],
@@ -155,12 +158,11 @@ const SCENES: Record<string, { strip: "snow" | "grass" | "sand" | "leaves" | "ni
   easter: {
     strip: "grass",
     items: [
-      { kind: "egg", left: "5%", size: 16, lift: 9, colour: "#ffd1dc" },
-      { kind: "egg", left: "17%", size: 14, lift: 9, colour: "#cde7ff" },
+      { kind: "egg", left: "5%", size: 26, lift: 8, colour: "#ffd1dc", img: { name: "eggs", aspect: 500 / 470 } },
+      { kind: "egg", left: "20%", size: 14, lift: 9, colour: "#cde7ff" },
       { kind: "bunny", left: "38%", size: 30, lift: 6 },
       { kind: "egg", left: "62%", size: 15, lift: 9, colour: "#fff1a8" },
-      { kind: "egg", left: "80%", size: 16, lift: 9, colour: "#e6d3ff" },
-      { kind: "egg", left: "92%", size: 14, lift: 9, colour: "#d6f5d6" },
+      { kind: "egg", left: "86%", size: 30, lift: 8, colour: "#e6d3ff", img: { name: "basket", aspect: 500 / 526 } },
     ],
   },
   halloween: {
@@ -185,6 +187,18 @@ function Strip({ kind }: { kind: "snow" | "grass" | "sand" | "leaves" | "night" 
     <Svg width="100%" height="100%" viewBox="0 0 400 30" preserveAspectRatio="none">
       {kind === "sand" ? <Path d="M0 30 L0 6 C40 1 80 10 130 5 C180 0 230 10 280 5 C330 1 370 7 400 5 L400 30 Z" fill="#48c1ee" opacity={0.9} /> : null}
       <Path d={kind === "sand" ? "M0 30 L0 15 C50 11 90 18 140 14 C190 10 240 18 290 14 C340 10 380 16 400 14 L400 30 Z" : "M0 30 L0 15 C30 6 60 18 100 12 C140 6 170 18 210 12 C250 6 280 18 320 12 C350 8 380 14 400 16 L400 30 Z"} fill={paint[0]} />
+      {kind === "grass" ? (
+        <Path
+          d={Array.from({ length: 70 }, (_, i) => {
+            const x = 3 + i * 5.7 + ((i * 7) % 3);
+            const h = 3 + ((i * 5) % 4);
+            const lean = ((i * 3) % 5) - 2;
+            return `M${x} 15 L${x + lean} ${15 - h} L${x + 1.4} 15 Z`;
+          }).join(" ")}
+          fill={paint[0]}
+          opacity={0.8}
+        />
+      ) : null}
       <Path d="M0 30 L0 23 C40 19 80 26 130 22 C180 18 230 26 280 22 C330 18 370 24 400 24 L400 30 Z" fill={paint[1]} />
     </Svg>
   );
@@ -199,7 +213,11 @@ export function SeasonGround({ season }: { season: string }) {
       {scene.strip ? <Strip kind={scene.strip} /> : null}
       {scene.items.map((it, i) => (
         <View key={i} style={{ position: "absolute", left: it.left, bottom: it.lift ?? 0 }}>
-          <Art kind={it.kind} size={it.size} colour={it.colour} />
+          {it.img ? (
+            <RemoteArt name={it.img.name} style={{ width: it.size * it.img.aspect, height: it.size }} fallback={<Art kind={it.kind} size={it.size} colour={it.colour} />} />
+          ) : (
+            <Art kind={it.kind} size={it.size} colour={it.colour} />
+          )}
         </View>
       ))}
     </View>

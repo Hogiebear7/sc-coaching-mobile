@@ -11,7 +11,7 @@ export function SnowCap({ seed = 0 }: { seed?: number }) {
   if (!season) return null;
   const snowy = season.key === "christmas";
   return (
-    <View pointerEvents="none" style={{ position: "absolute", left: snowy ? 6 : 0, right: snowy ? 6 : 0, top: snowy ? -9 : 0, height: snowy ? 22 : 0 }}>
+    <View pointerEvents="none" style={{ position: "absolute", left: snowy ? 6 : 0, right: snowy ? 6 : 0, top: snowy ? -11 : 0, height: snowy ? 30 : 0 }}>
       {snowy ? <CardTopDecor season={season.key} seed={seed} /> : <CardEdgeSprites season={season.key} seed={seed} />}
     </View>
   );

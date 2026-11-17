@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { AccessibilityInfo, Animated, Dimensions, Easing, StyleSheet, Text, View } from "react-native";
 import Svg, { Line } from "react-native-svg";
 
-import { Cobweb, Ground, SPRITE_COLOURS, Sprite, SummerSun, type SpriteKind } from "@/components/season/seasonArt";
+import { SPRITE_COLOURS, Sprite, type SpriteKind } from "@/components/season/seasonArt";
+import { SeasonGround } from "@/components/season/seasonScenes";
 import { SPLASH_MESSAGES, useSeason, type Particle } from "@/lib/season";
 
 // Falling snow, a drift along the bottom of the screen, and (1 and 2 January) a New Year burst of fireworks, drawn over the Home screen. Light on purpose: about
@@ -157,7 +158,8 @@ export function SeasonOverlay({ surface = "home" }: { surface?: "home" | "commun
 
   if (!season) return null;
   const reduceMotion = reduceMotionCache;
-  const falling = season.particle in SPRITE_FOR || season.particle === "snow";
+  // Only snow falls (owner, 2026-11-17: no falling hearts, shamrocks, eggs or leaves). Everything else is a calm scene along the bottom.
+  const falling = season.particle === "snow";
   const message = overlay ? "Happy New Year" : SPLASH_MESSAGES[season.key];
 
   return (
@@ -165,28 +167,13 @@ export function SeasonOverlay({ surface = "home" }: { surface?: "home" | "commun
       {falling && !reduceMotion
         ? Array.from({ length: FLAKES }, (_, i) => <Flake key={i} index={i} width={width} height={height} particle={season.particle} />)
         : null}
-      {season.particle === "sun" ? <SummerSun /> : null}
-      {season.particle === "cobwebs" ? (
-        <>
-          <View style={{ position: "absolute", left: 0, top: 0 }}>
-            <Cobweb size={120} />
-          </View>
-          <View style={{ position: "absolute", right: 0, top: 0 }}>
-            <Cobweb size={120} flip />
-          </View>
-        </>
-      ) : null}
       {overlay?.fireworks && !reduceMotion ? <Fireworks width={width} height={height} surface={surface} /> : null}
       {surface === "splash" && message ? (
         <View style={{ position: "absolute", left: 0, right: 0, top: height * 0.62, alignItems: "center" }}>
           <Text style={{ color: "#e3b341", fontSize: 30, fontWeight: "800", letterSpacing: 1.5, textTransform: "uppercase", textAlign: "center" }}>{message}</Text>
         </View>
       ) : null}
-      {season.pile ? (
-        <View style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: 30 }}>
-          <Ground season={overlay ? "christmas" : season.key} />
-        </View>
-      ) : null}
+      <SeasonGround season={overlay ? "christmas" : season.key} />
     </View>
   );
 }

@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { AccessibilityInfo, Animated, Dimensions, Easing, StyleSheet, Text, View } from "react-native";
-import Svg, { Line, Path } from "react-native-svg";
+import Svg, { Line } from "react-native-svg";
 
-import { useSeason } from "@/lib/season";
+import { Cobweb, Ground, SPRITE_COLOURS, Sprite, SummerSun, type SpriteKind } from "@/components/season/seasonArt";
+import { SPLASH_MESSAGES, useSeason, type Particle } from "@/lib/season";
 
 // Falling snow, a drift along the bottom of the screen, and (1 and 2 January) a New Year burst of fireworks, drawn over the Home screen. Light on purpose: about
 // 26 flakes on the native animation thread, never takes a touch, switches off for people who reduce motion on their phone, and stays off when the member turns
@@ -31,13 +32,16 @@ function Crystal({ size }: { size: number }) {
   );
 }
 
-function Flake({ index, width, height }: { index: number; width: number; height: number }) {
+const SPRITE_FOR: Partial<Record<Particle, SpriteKind>> = { hearts: "heart", shamrocks: "shamrock", eggs: "egg", leaves: "leaf" };
+
+function Flake({ index, width, height, particle }: { index: number; width: number; height: number; particle: Particle }) {
+  const kind = SPRITE_FOR[particle];
   const [progress] = useState(() => new Animated.Value(0));
   const spec = useMemo(() => {
     // Spread flakes with a repeatable pseudo-random layout so they don't clump.
     const r = (n: number) => ((Math.sin(index * 12.9898 + n * 78.233) * 43758.5453) % 1 + 1) % 1;
-    return { x: r(1) * width, crystal: index % 3 === 0, size: 3 + r(2) * 4, duration: 7000 + r(3) * 7000, delay: r(4) * 7000, sway: 10 + r(5) * 22, opacity: 0.55 + r(6) * 0.4 };
-  }, [index, width]);
+    return { x: r(1) * width, crystal: index % 3 === 0, size: 3 + r(2) * 4, duration: 7000 + r(3) * 7000, delay: r(4) * 7000, sway: 10 + r(5) * 22, opacity: kind ? 0.9 : 0.55 + r(6) * 0.4, spriteSize: 14 + r(7) * 12, colourIndex: Math.floor(r(8) * 5) };
+  }, [index, width, kind]);
 
   useEffect(() => {
     const loop = Animated.loop(
@@ -46,6 +50,27 @@ function Flake({ index, width, height }: { index: number; width: number; height:
     loop.start();
     return () => loop.stop();
   }, [progress, spec]);
+
+  if (kind) {
+    const colours = SPRITE_COLOURS[kind];
+    return (
+      <Animated.View
+        style={{
+          position: "absolute",
+          left: spec.x,
+          top: 0,
+          opacity: spec.opacity,
+          transform: [
+            { translateY: progress.interpolate({ inputRange: [0, 1], outputRange: [-30, height + 30] }) },
+            { translateX: progress.interpolate({ inputRange: [0, 0.25, 0.5, 0.75, 1], outputRange: [0, spec.sway, 0, -spec.sway, 0] }) },
+            { rotate: progress.interpolate({ inputRange: [0, 0.25, 0.5, 0.75, 1], outputRange: ["-25deg", "25deg", "-25deg", "25deg", "-25deg"] }) },
+          ],
+        }}
+      >
+        <Sprite kind={kind} size={spec.spriteSize} color={colours[spec.colourIndex % colours.length]} />
+      </Animated.View>
+    );
+  }
 
   return (
     <Animated.View
@@ -132,26 +157,34 @@ export function SeasonOverlay({ surface = "home" }: { surface?: "home" | "commun
 
   if (!season) return null;
   const reduceMotion = reduceMotionCache;
+  const falling = season.particle in SPRITE_FOR || season.particle === "snow";
+  const message = overlay ? "Happy New Year" : SPLASH_MESSAGES[season.key];
 
   return (
     <View pointerEvents="none" style={StyleSheet.absoluteFill}>
-      {season.particle === "snow" && !reduceMotion
-        ? Array.from({ length: FLAKES }, (_, i) => <Flake key={i} index={i} width={width} height={height} />)
+      {falling && !reduceMotion
+        ? Array.from({ length: FLAKES }, (_, i) => <Flake key={i} index={i} width={width} height={height} particle={season.particle} />)
         : null}
+      {season.particle === "sun" ? <SummerSun /> : null}
+      {season.particle === "cobwebs" ? (
+        <>
+          <View style={{ position: "absolute", left: 0, top: 0 }}>
+            <Cobweb size={120} />
+          </View>
+          <View style={{ position: "absolute", right: 0, top: 0 }}>
+            <Cobweb size={120} flip />
+          </View>
+        </>
+      ) : null}
       {overlay?.fireworks && !reduceMotion ? <Fireworks width={width} height={height} surface={surface} /> : null}
-      {surface === "splash" ? (
+      {surface === "splash" && message ? (
         <View style={{ position: "absolute", left: 0, right: 0, top: height * 0.62, alignItems: "center" }}>
-          <Text style={{ color: "#e3b341", fontSize: 30, fontWeight: "800", letterSpacing: 1.5, textTransform: "uppercase" }}>
-            {overlay ? "Happy New Year" : "Happy Christmas"}
-          </Text>
+          <Text style={{ color: "#e3b341", fontSize: 30, fontWeight: "800", letterSpacing: 1.5, textTransform: "uppercase", textAlign: "center" }}>{message}</Text>
         </View>
       ) : null}
       {season.pile ? (
         <View style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: 30 }}>
-          <Svg width="100%" height="100%" viewBox="0 0 400 30" preserveAspectRatio="none">
-            <Path d="M0 30 L0 15 C30 6 60 18 100 12 C140 6 170 18 210 12 C250 6 280 18 320 12 C350 8 380 14 400 16 L400 30 Z" fill="#f4f8ff" />
-            <Path d="M0 30 L0 23 C40 19 80 26 130 22 C180 18 230 26 280 22 C330 18 370 24 400 24 L400 30 Z" fill="#dce8f7" />
-          </Svg>
+          <Ground season={overlay ? "christmas" : season.key} />
         </View>
       ) : null}
     </View>

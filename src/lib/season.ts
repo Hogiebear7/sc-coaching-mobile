@@ -25,6 +25,40 @@ export interface SeasonNow {
 const EFFECTS_KEY = "season-effects-v1"; // "off" when the member has switched seasonal effects off
 const PREVIEW_KEY = "season-preview-v1"; // test builds only: "christmas" or "new-year" to see a season on any day
 
+/** The seasons a test build can preview on any day (Settings, Appearance). Real dates and which ones are switched on come from the server. */
+export const PREVIEW_CHOICES: { key: string | null; label: string }[] = [
+  { key: null, label: "Today" },
+  { key: "christmas", label: "Christmas" },
+  { key: "new-year", label: "New Year" },
+  { key: "valentines", label: "Valentine's" },
+  { key: "stpatricks", label: "St Patrick's" },
+  { key: "easter", label: "Easter" },
+  { key: "summer", label: "Summer" },
+  { key: "autumn", label: "Autumn" },
+  { key: "halloween", label: "Halloween" },
+];
+
+const PREVIEW_INFO: Record<string, Omit<SeasonInfo, "key">> = {
+  christmas: { label: "Christmas", particle: "snow", pile: true, hat: true, ready: true },
+  valentines: { label: "Valentine's", particle: "hearts", pile: false, hat: false, ready: true },
+  stpatricks: { label: "St Patrick's", particle: "shamrocks", pile: false, hat: false, ready: true },
+  easter: { label: "Easter", particle: "eggs", pile: false, hat: false, ready: true },
+  summer: { label: "Summer", particle: "sun", pile: true, hat: false, ready: true },
+  autumn: { label: "Autumn", particle: "leaves", pile: true, hat: false, ready: true },
+  halloween: { label: "Halloween", particle: "cobwebs", pile: false, hat: false, ready: true },
+};
+
+/** What the splash screen says for each season. */
+export const SPLASH_MESSAGES: Record<string, string> = {
+  christmas: "Happy Christmas",
+  valentines: "Happy Valentine's Day",
+  stpatricks: "Happy St Patrick's Day",
+  easter: "Happy Easter",
+  summer: "Enjoy the sunshine",
+  autumn: "Happy Autumn",
+  halloween: "Happy Halloween",
+};
+
 /** Test builds (built with EXPO_PUBLIC_SEASON_PREVIEW=true) show a "Preview season" picker in Settings. Store builds never do. */
 export const SEASON_PREVIEW_ENABLED = process.env.EXPO_PUBLIC_SEASON_PREVIEW === "true";
 
@@ -87,9 +121,10 @@ export function useSeason(): { season: SeasonInfo | null; overlay: SeasonNow["ov
     queryKey: ["season", preview],
     queryFn: async () => {
       // Test builds: a previewed season is built here, so it works before (or without) the server answering.
-      if (preview === "christmas" || preview === "new-year") {
+      if (preview && (preview === "new-year" || preview in PREVIEW_INFO)) {
+        const key = preview === "new-year" ? "christmas" : preview;
         return {
-          season: { key: "christmas", label: "Christmas", particle: "snow" as const, pile: true, hat: true, ready: true },
+          season: { key, ...PREVIEW_INFO[key] },
           overlay: preview === "new-year" ? { key: "new-year" as const, fireworks: true, message: "Happy New Year from S&C Performance Coaching" } : null,
           date: "preview",
         } satisfies SeasonNow;

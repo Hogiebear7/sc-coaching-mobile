@@ -21,7 +21,7 @@ import { isBatteryOptimizationRelevant, openBatteryOptimizationSettings } from "
 import { hapticsEnabled, setHapticsEnabled, tapFeedback } from "@/lib/haptics";
 import { hasAccess, tierFromAccess } from "@/lib/member-access";
 import { useAiConsent, useSetAiConsent } from "@/lib/queries/ai-consent";
-import { SEASON_PREVIEW_ENABLED, useSeasonPrefs } from "@/lib/season";
+import { PREVIEW_CHOICES, SEASON_PREVIEW_ENABLED, useSeasonPrefs } from "@/lib/season";
 import { setTabChoice, useTabChoice } from "@/lib/tab-choice";
 import { canChooseTabs, normaliseChoice, TAB_PAIR_OPTIONS } from "@/lib/tab-config";
 import { LIGHT_MODE_AVAILABLE, makeLegacyStyles, useLegacyColors } from "@/lib/theme";
@@ -408,7 +408,7 @@ export default function SettingsScreen() {
             {SEASON_PREVIEW_ENABLED ? (
               <View style={[styles.row, { flexWrap: "wrap", gap: 8 }]}>
                 <Text style={[styles.rowTitle, { width: "100%" }]}>Preview a season (test builds only)</Text>
-                {([null, "christmas", "new-year"] as const).map((p) => (
+                {PREVIEW_CHOICES.map(({ key: p, label }) => (
                   <Pressable
                     key={String(p)}
                     onPress={() => seasonPrefs.setPreview.mutate(p)}
@@ -416,7 +416,7 @@ export default function SettingsScreen() {
                     accessibilityRole="button"
                   >
                     <Text style={{ color: seasonPrefs.preview === p ? Color.goldForeground : Color.textMuted, fontWeight: "600" }}>
-                      {p === null ? "Today" : p === "christmas" ? "Christmas" : "New Year"}
+                      {label}
                     </Text>
                   </Pressable>
                 ))}

@@ -1,3 +1,5 @@
+import { BrandMark } from "@/components/ui/BrandMark";
+import { SnowCap } from "@/components/season/SnowCap";
 import { SeasonOverlay } from "@/components/season/SeasonOverlay";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
@@ -226,6 +228,9 @@ export default function DashboardScreen() {
         <View style={styles.band}>
           <View style={styles.titleRow}>
             <View style={{ flex: 1 }}>
+              <View style={{ marginBottom: 10, marginTop: 6 }}>
+                <BrandMark height={30} />
+              </View>
               <Text style={styles.dateLine}>{formatTodayLabel()}</Text>
               <Text style={appTitle(38, colors.text)} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
                 {greetingPrefix()} {data.firstName}
@@ -426,6 +431,8 @@ export default function DashboardScreen() {
         {/* Club */}
         <View style={styles.section} {...tourTarget("home.club")}>
           <SectionTitle title="Club" />
+          <View style={{ position: "relative" }}>
+          <SnowCap seed={5} />
           <View style={styles.list}>
             <ListRow
               icon="card-outline"
@@ -442,6 +449,7 @@ export default function DashboardScreen() {
               onPress={() => router.push("/community")}
               divider
             />
+          </View>
           </View>
         </View>
       </ScrollView>

@@ -1,3 +1,4 @@
+import { SnowCap } from "@/components/season/SnowCap";
 import { Ionicons } from "@expo/vector-icons";
 import type { ReactNode } from "react";
 import { Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from "react-native";
@@ -124,6 +125,7 @@ export function MetricTile({
     scale === "range" && max > min ? 25 + ((b - min) / (max - min)) * 75 : Math.max(8, (b / max) * 100);
   const body = (
     <>
+      <SnowCap seed={title.length} />
       <Text style={styles.tileTitle} numberOfLines={1}>{title}</Text>
       <Text style={styles.tileWindow} numberOfLines={1}>{window}</Text>
       <View style={styles.tileChart}>

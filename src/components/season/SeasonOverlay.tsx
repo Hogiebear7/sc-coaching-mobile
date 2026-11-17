@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { AccessibilityInfo, Animated, Dimensions, Easing, StyleSheet, View } from "react-native";
-import Svg, { Path } from "react-native-svg";
+import Svg, { Line, Path } from "react-native-svg";
 
 import { useSeason } from "@/lib/season";
 
@@ -19,12 +19,24 @@ AccessibilityInfo.addEventListener("reduceMotionChanged", (v) => {
   reduceMotionCache = v;
 });
 
+// A little six-armed crystal, for the odd real snowflake among the round ones.
+function Crystal({ size }: { size: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="-10 -10 20 20">
+      {[0, 60, 120].map((a) => {
+        const r = (a * Math.PI) / 180;
+        return <Line key={a} x1={Math.cos(r) * -9} y1={Math.sin(r) * -9} x2={Math.cos(r) * 9} y2={Math.sin(r) * 9} stroke="#ffffff" strokeWidth={1.8} strokeLinecap="round" />;
+      })}
+    </Svg>
+  );
+}
+
 function Flake({ index, width, height }: { index: number; width: number; height: number }) {
   const [progress] = useState(() => new Animated.Value(0));
   const spec = useMemo(() => {
     // Spread flakes with a repeatable pseudo-random layout so they don't clump.
     const r = (n: number) => ((Math.sin(index * 12.9898 + n * 78.233) * 43758.5453) % 1 + 1) % 1;
-    return { x: r(1) * width, size: 3 + r(2) * 4, duration: 7000 + r(3) * 7000, delay: r(4) * 7000, sway: 10 + r(5) * 22, opacity: 0.55 + r(6) * 0.4 };
+    return { x: r(1) * width, crystal: index % 3 === 0, size: 3 + r(2) * 4, duration: 7000 + r(3) * 7000, delay: r(4) * 7000, sway: 10 + r(5) * 22, opacity: 0.55 + r(6) * 0.4 };
   }, [index, width]);
 
   useEffect(() => {
@@ -41,24 +53,26 @@ function Flake({ index, width, height }: { index: number; width: number; height:
         position: "absolute",
         left: spec.x,
         top: 0,
-        width: spec.size,
-        height: spec.size,
-        borderRadius: spec.size / 2,
-        backgroundColor: "#ffffff",
+        width: spec.crystal ? spec.size * 3.4 : spec.size,
+        height: spec.crystal ? spec.size * 3.4 : spec.size,
+        borderRadius: spec.crystal ? 0 : spec.size / 2,
+        backgroundColor: spec.crystal ? "transparent" : "#ffffff",
         opacity: spec.opacity,
         transform: [
           { translateY: progress.interpolate({ inputRange: [0, 1], outputRange: [-12, height + 12] }) },
           { translateX: progress.interpolate({ inputRange: [0, 0.25, 0.5, 0.75, 1], outputRange: [0, spec.sway, 0, -spec.sway, 0] }) },
         ],
       }}
-    />
+    >
+      {spec.crystal ? <Crystal size={spec.size * 3.4} /> : null}
+    </Animated.View>
   );
 }
 
 function Spark({ cx, cy, angle, distance, color, delay }: { cx: number; cy: number; angle: number; distance: number; color: string; delay: number }) {
   const [t] = useState(() => new Animated.Value(0));
   useEffect(() => {
-    const anim = Animated.timing(t, { toValue: 1, duration: 1600, delay, easing: Easing.out(Easing.quad), useNativeDriver: true });
+    const anim = Animated.timing(t, { toValue: 1, duration: 1700, delay, easing: Easing.out(Easing.quad), useNativeDriver: true });
     anim.start();
     return () => anim.stop();
   }, [t, delay]);
@@ -68,9 +82,9 @@ function Spark({ cx, cy, angle, distance, color, delay }: { cx: number; cy: numb
         position: "absolute",
         left: cx,
         top: cy,
-        width: 5,
-        height: 5,
-        borderRadius: 2.5,
+        width: 8,
+        height: 8,
+        borderRadius: 4,
         backgroundColor: color,
         opacity: t.interpolate({ inputRange: [0, 0.1, 0.8, 1], outputRange: [0, 1, 0.8, 0] }),
         transform: [
@@ -91,11 +105,11 @@ function Fireworks({ width, height }: { width: number; height: number }) {
   const COLOURS = ["#e3b341", "#ffffff", "#5ea0ff", "#f4d57a"];
   const bursts = useMemo(
     () =>
-      Array.from({ length: 6 }, (_, b) => ({
-        cx: width * (0.15 + ((b * 0.37) % 0.7)),
-        cy: height * (0.12 + ((b * 0.23) % 0.35)),
+      Array.from({ length: 9 }, (_, b) => ({
+        cx: width * (0.12 + ((b * 0.29) % 0.76)),
+        cy: height * (0.1 + ((b * 0.19) % 0.4)),
         color: COLOURS[b % COLOURS.length],
-        delay: b * 900,
+        delay: b * 380,
       })),
     [width, height] // eslint-disable-line react-hooks/exhaustive-deps
   );
@@ -103,8 +117,8 @@ function Fireworks({ width, height }: { width: number; height: number }) {
   return (
     <>
       {bursts.flatMap((burst, b) =>
-        Array.from({ length: 16 }, (_, i) => (
-          <Spark key={`${b}-${i}`} cx={burst.cx} cy={burst.cy} angle={(i / 16) * Math.PI * 2} distance={50 + (i % 3) * 14} color={burst.color} delay={burst.delay} />
+        Array.from({ length: 24 }, (_, i) => (
+          <Spark key={`${b}-${i}`} cx={burst.cx} cy={burst.cy} angle={(i / 24) * Math.PI * 2} distance={70 + (i % 3) * 26} color={burst.color} delay={burst.delay} />
         ))
       )}
     </>

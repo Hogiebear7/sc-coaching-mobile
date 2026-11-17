@@ -1,3 +1,4 @@
+import { SeasonOverlay } from "@/components/season/SeasonOverlay";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -462,6 +463,7 @@ export default function CommunityScreen() {
           router.push("/community-privacy");
         }}
       />
+      <SeasonOverlay />
     </SafeAreaView>
   );
 }

@@ -157,6 +157,8 @@ export function SeasonOverlay({ surface = "home" }: { surface?: "home" | "commun
   const { width, height } = Dimensions.get("window");
 
   if (!season) return null;
+  // The Community screen only gets the Christmas / New Year and Halloween looks (owner, 2026-11-17).
+  if (surface === "community" && season.key !== "christmas" && season.key !== "halloween") return null;
   const reduceMotion = reduceMotionCache;
   // Only snow falls (owner, 2026-11-17: no falling hearts, shamrocks, eggs or leaves). Everything else is a calm scene along the bottom.
   const falling = season.particle === "snow";

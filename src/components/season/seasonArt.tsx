@@ -80,48 +80,6 @@ export function LogoAccessory({ season, height, width }: { season: string; heigh
       </Svg>
     );
   }
-  if (season === "valentines") {
-    return (
-      <Svg width={h * 0.9} height={h * 0.9} viewBox="0 0 24 24" style={{ position: "absolute", left: -height * 0.05, top: -height * 0.22, transform: [{ rotate: "-16deg" }] }}>
-        <Path d="M12 21 C4 14 2 9 2 6.5 C2 3.5 4.5 2 7 2 C9 2 11 3.3 12 5 C13 3.3 15 2 17 2 C19.5 2 22 3.5 22 6.5 C22 9 20 14 12 21 Z" fill="#ff2e63" />
-        <Path d="M7 6 C8 5 9.5 5.2 10 6.4" stroke="#ffffff" strokeWidth="1.4" fill="none" strokeLinecap="round" opacity={0.7} />
-      </Svg>
-    );
-  }
-  if (season === "stpatricks") {
-    return (
-      <View style={{ position: "absolute", left: -height * 0.08, top: -height * 0.3 }}>
-        <Sprite kind="shamrock" size={h * 0.95} color="#1fa84f" />
-        <View style={{ position: "absolute", left: h * 0.8, top: h * 0.5 }}>
-          <Svg width={h * 0.45} height={h * 0.45} viewBox="0 0 20 20">
-            <Circle cx="10" cy="10" r="9" fill="#f1c40f" stroke="#c99a06" strokeWidth="1.2" />
-            <Circle cx="10" cy="10" r="5.5" fill="none" stroke="#c99a06" strokeWidth="1" />
-          </Svg>
-        </View>
-      </View>
-    );
-  }
-  if (season === "autumn") {
-    return (
-      <View style={{ position: "absolute", left: -height * 0.04, top: -height * 0.24, transform: [{ rotate: "-20deg" }] }}>
-        <Sprite kind="leaf" size={h * 0.95} color="#e07a1f" />
-      </View>
-    );
-  }
-  if (season === "summer") {
-    const s = h * 0.9;
-    return (
-      <View style={{ position: "absolute", left: width - s * 0.62, top: -height * 0.34 }}>
-        <Svg width={s} height={s} viewBox="-12 -12 24 24">
-          <Circle r="5" fill="#ffd23f" />
-          {Array.from({ length: 10 }, (_, i) => {
-            const a = (i / 10) * Math.PI * 2;
-            return <Line key={i} x1={Math.cos(a) * 7} y1={Math.sin(a) * 7} x2={Math.cos(a) * 10.5} y2={Math.sin(a) * 10.5} stroke="#ffd23f" strokeWidth="2" strokeLinecap="round" />;
-          })}
-        </Svg>
-      </View>
-    );
-  }
   return null;
 }
 
@@ -146,13 +104,15 @@ export function CardTopDecor({ season, seed }: { season: string; seed: number })
 
 /** Small drawings that sit on a card's top edge (hearts, shamrocks, eggs, leaves) or hang from it (Halloween spiders). */
 export function CardEdgeSprites({ season, seed }: { season: string; seed: number }) {
-  const kinds: Record<string, SpriteKind> = { valentines: "heart", stpatricks: "shamrock", easter: "egg", autumn: "leaf" };
+  const kinds: Record<string, SpriteKind> = { stpatricks: "shamrock", easter: "egg" };
   const kind = kinds[season];
   if (kind) {
+    // One small piece, and only on every other box, so it stays light.
+    if (seed % 2 === 0) return null;
     const colours = SPRITE_COLOURS[kind];
     return (
       <>
-        {[0, 1, 2].map((i) => {
+        {[0].map((i) => {
           const left = `${12 + ((seed * 13 + i * 31) % 70)}%` as const;
           const size = 15 + ((seed + i * 5) % 8);
           return (
@@ -166,12 +126,17 @@ export function CardEdgeSprites({ season, seed }: { season: string; seed: number
   }
   if (season === "halloween") {
     const left = `${18 + ((seed * 19) % 55)}%` as const;
+    const variant = seed % 4;
+    const webSize = [30, 38, 24, 0][variant];
+    const side = variant % 2 === 0 ? { right: 4 } : { left: 4 };
     return (
       <>
-        <View style={{ position: "absolute", right: 4, top: -4 }}>
-          <Cobweb size={34} />
-        </View>
-        <Spider left={left} drop={18 + (seed % 3) * 6} />
+        {webSize > 0 ? (
+          <View style={{ position: "absolute", top: -3, ...side }}>
+            <Cobweb size={webSize} flip={variant % 2 === 1} variant={variant} />
+          </View>
+        ) : null}
+        {variant !== 1 ? <Spider left={left} drop={14 + (seed % 4) * 6} /> : null}
       </>
     );
   }
@@ -179,19 +144,15 @@ export function CardEdgeSprites({ season, seed }: { season: string; seed: number
 }
 
 // ── Halloween ──────────────────────────────────────────────────────────────
-export function Cobweb({ size, flip = false }: { size: number; flip?: boolean }) {
+export function Cobweb({ size, flip = false, variant = 0 }: { size: number; flip?: boolean; variant?: number }) {
+  // Four webs that do not look alike: a full web, a sparse one, one with few rings, and a wide fan.
+  const rings = ["M8 0 Q8 8 0 8 M16 0 Q15 15 0 16 M24 0 Q22 22 0 24 M32 0 Q29 29 0 32", "M14 0 Q13 13 0 14 M30 0 Q27 27 0 30", "M10 0 Q10 10 0 10 M22 0 Q21 21 0 22 M34 0 Q31 31 0 34", "M12 0 Q11 11 0 12 M20 0 Q18 18 0 20 M28 0 Q25 25 0 28 M36 0 Q32 32 0 36"][variant % 4];
+  const spokes = ["M0 0 L40 0 M0 0 L0 40 M0 0 L34 34 M0 0 L40 16 M0 0 L16 40", "M0 0 L40 0 M0 0 L0 40 M0 0 L30 30", "M0 0 L40 0 M0 0 L0 40 M0 0 L36 22 M0 0 L22 36", "M0 0 L40 0 M0 0 L0 40 M0 0 L38 12 M0 0 L28 28 M0 0 L12 38"][variant % 4];
   return (
     <Svg width={size} height={size} viewBox="0 0 40 40" style={flip ? { transform: [{ scaleX: -1 }] } : undefined}>
       <G stroke="#e8e8f0" strokeWidth="1" opacity={0.75} fill="none">
-        <Line x1="0" y1="0" x2="40" y2="0" />
-        <Line x1="0" y1="0" x2="0" y2="40" />
-        <Line x1="0" y1="0" x2="34" y2="34" />
-        <Line x1="0" y1="0" x2="40" y2="16" />
-        <Line x1="0" y1="0" x2="16" y2="40" />
-        <Path d="M8 0 Q8 8 0 8" />
-        <Path d="M16 0 Q15 15 0 16" />
-        <Path d="M24 0 Q22 22 0 24" />
-        <Path d="M32 0 Q29 29 0 32" />
+        <Path d={spokes} />
+        <Path d={rings} />
       </G>
     </Svg>
   );

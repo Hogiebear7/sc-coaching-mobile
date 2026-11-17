@@ -33,8 +33,6 @@ export const PREVIEW_CHOICES: { key: string | null; label: string }[] = [
   { key: "valentines", label: "Valentine's" },
   { key: "stpatricks", label: "St Patrick's" },
   { key: "easter", label: "Easter" },
-  { key: "summer", label: "Summer" },
-  { key: "autumn", label: "Autumn" },
   { key: "halloween", label: "Halloween" },
 ];
 
@@ -43,8 +41,6 @@ const PREVIEW_INFO: Record<string, Omit<SeasonInfo, "key">> = {
   valentines: { label: "Valentine's", particle: "hearts", pile: false, hat: false, ready: true },
   stpatricks: { label: "St Patrick's", particle: "shamrocks", pile: false, hat: false, ready: true },
   easter: { label: "Easter", particle: "eggs", pile: false, hat: false, ready: true },
-  summer: { label: "Summer", particle: "sun", pile: true, hat: false, ready: true },
-  autumn: { label: "Autumn", particle: "leaves", pile: true, hat: false, ready: true },
   halloween: { label: "Halloween", particle: "cobwebs", pile: false, hat: false, ready: true },
 };
 
@@ -54,8 +50,6 @@ export const SPLASH_MESSAGES: Record<string, string> = {
   valentines: "Happy Valentine's Day",
   stpatricks: "Happy St Patrick's Day",
   easter: "Happy Easter",
-  summer: "Enjoy the sunshine",
-  autumn: "Happy Autumn",
   halloween: "Happy Halloween",
 };
 

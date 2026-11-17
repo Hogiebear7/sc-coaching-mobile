@@ -1,3 +1,4 @@
+import { SeasonOverlay } from "@/components/season/SeasonOverlay";
 import { focusManager, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import * as Linking from "expo-linking";
 import { Stack, usePathname, useRouter, useSegments } from "expo-router";
@@ -83,6 +84,7 @@ function CustomSplashScreen() {
         style={{ width: logoWidth, height: logoHeight }}
         resizeMode="contain"
       />
+      <SeasonOverlay surface="splash" />
     </View>
   );
 }

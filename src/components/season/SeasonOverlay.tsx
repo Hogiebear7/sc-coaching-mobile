@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { AccessibilityInfo, Animated, Dimensions, Easing, StyleSheet, View } from "react-native";
+import { AccessibilityInfo, Animated, Dimensions, Easing, StyleSheet, Text, View } from "react-native";
 import Svg, { Line, Path } from "react-native-svg";
 
 import { useSeason } from "@/lib/season";
@@ -8,7 +8,7 @@ import { useSeason } from "@/lib/season";
 // 26 flakes on the native animation thread, never takes a touch, switches off for people who reduce motion on their phone, and stays off when the member turns
 // "Seasonal effects" off in Settings or the server says there is no season.
 const FLAKES = 26;
-let fireworksPlayedThisLaunch = false;
+const fireworksPlayed: Record<string, boolean> = {};
 let reduceMotionCache = false;
 AccessibilityInfo.isReduceMotionEnabled()
   .then((v) => {
@@ -96,10 +96,11 @@ function Spark({ cx, cy, angle, distance, color, delay }: { cx: number; cy: numb
   );
 }
 
-function Fireworks({ width, height }: { width: number; height: number }) {
+function Fireworks({ width, height, surface }: { width: number; height: number; surface: string }) {
+  // Each screen plays them once per app launch.
   const [active] = useState(() => {
-    if (fireworksPlayedThisLaunch) return false;
-    fireworksPlayedThisLaunch = true;
+    if (fireworksPlayed[surface]) return false;
+    fireworksPlayed[surface] = true;
     return true;
   });
   const COLOURS = ["#e3b341", "#ffffff", "#5ea0ff", "#f4d57a"];
@@ -125,7 +126,7 @@ function Fireworks({ width, height }: { width: number; height: number }) {
   );
 }
 
-export function SeasonOverlay() {
+export function SeasonOverlay({ surface = "home" }: { surface?: "home" | "community" | "splash" }) {
   const { season, overlay } = useSeason();
   const { width, height } = Dimensions.get("window");
 
@@ -137,7 +138,14 @@ export function SeasonOverlay() {
       {season.particle === "snow" && !reduceMotion
         ? Array.from({ length: FLAKES }, (_, i) => <Flake key={i} index={i} width={width} height={height} />)
         : null}
-      {overlay?.fireworks && !reduceMotion ? <Fireworks width={width} height={height} /> : null}
+      {overlay?.fireworks && !reduceMotion ? <Fireworks width={width} height={height} surface={surface} /> : null}
+      {surface === "splash" ? (
+        <View style={{ position: "absolute", left: 0, right: 0, top: height * 0.62, alignItems: "center" }}>
+          <Text style={{ color: "#e3b341", fontSize: 30, fontWeight: "800", letterSpacing: 1.5, textTransform: "uppercase" }}>
+            {overlay ? "Happy New Year" : "Happy Christmas"}
+          </Text>
+        </View>
+      ) : null}
       {season.pile ? (
         <View style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: 30 }}>
           <Svg width="100%" height="100%" viewBox="0 0 400 30" preserveAspectRatio="none">

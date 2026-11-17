@@ -463,7 +463,7 @@ export default function CommunityScreen() {
           router.push("/community-privacy");
         }}
       />
-      <SeasonOverlay />
+      <SeasonOverlay surface="community" />
     </SafeAreaView>
   );
 }

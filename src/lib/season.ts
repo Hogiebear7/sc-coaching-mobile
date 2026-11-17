@@ -64,6 +64,22 @@ export function useSeasonPrefs() {
   return { effectsOn: prefs.data?.effectsOn ?? true, preview: prefs.data?.preview ?? null, setEffectsOn, setPreview };
 }
 
+/**
+ * The Christmas window worked out on the phone (1 Dec to 6 Jan, New Year on 1 and 2 Jan, Irish date). Only a stand-in for the first moments, such as the
+ * splash screen, before the server has answered; the server stays in charge (it can switch every effect off).
+ */
+export function localSeason(now: Date = new Date()): SeasonNow {
+  const parts = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Dublin", year: "numeric", month: "2-digit", day: "2-digit" }).format(now).split("-").map(Number);
+  const md = parts[1] * 100 + parts[2];
+  const christmas = md >= 1201 || md <= 106;
+  const newYear = md === 101 || md === 102;
+  return {
+    season: christmas ? { key: "christmas", label: "Christmas", particle: "snow", pile: true, hat: true, ready: true } : null,
+    overlay: christmas && newYear ? { key: "new-year", fireworks: true, message: "Happy New Year from S&C Performance Coaching" } : null,
+    date: "local",
+  };
+}
+
 /** What season the app should look like right now: null when it's the plain brand look, the member has switched effects off, or the server can't be reached. */
 export function useSeason(): { season: SeasonInfo | null; overlay: SeasonNow["overlay"] } {
   const { effectsOn, preview } = useSeasonPrefs();
@@ -89,6 +105,7 @@ export function useSeason(): { season: SeasonInfo | null; overlay: SeasonNow["ov
     },
     staleTime: 30 * 60 * 1000,
     retry: false,
+    placeholderData: preview ? undefined : localSeason(),
   });
   if (!effectsOn || !q.data) return { season: null, overlay: null };
   return { season: q.data.season, overlay: q.data.overlay };

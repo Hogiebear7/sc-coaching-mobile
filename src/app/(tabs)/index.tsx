@@ -229,7 +229,7 @@ export default function DashboardScreen() {
           <View style={styles.titleRow}>
             <View style={{ flex: 1 }}>
               <View style={{ marginBottom: 10, marginTop: 6 }}>
-                <BrandMark height={30} />
+                <BrandMark height={34} />
               </View>
               <Text style={styles.dateLine}>{formatTodayLabel()}</Text>
               <Text style={appTitle(38, colors.text)} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
@@ -308,6 +308,7 @@ export default function DashboardScreen() {
           {access.gymMembership ? (
             data.nextSession ? (
               <Pressable onPress={() => router.push("/(tabs)/schedule")} style={styles.nextCard} accessibilityRole="button">
+                <SnowCap seed={3} />
                 <View style={styles.nextTime}>
                   <Text style={styles.nextDay}>{formatClassDate(data.nextSession.date)}</Text>
                   <Text style={styles.nextClock}>{data.nextSession.startTime}</Text>
@@ -325,6 +326,7 @@ export default function DashboardScreen() {
               </Pressable>
             ) : (
               <View style={styles.nextCard}>
+                <SnowCap seed={3} />
                 <View style={{ flex: 1 }}>
                   <Text style={styles.nextTitle}>Nothing booked</Text>
                   <Text style={styles.nextMeta}>Book your next class in a couple of taps.</Text>
@@ -334,6 +336,7 @@ export default function DashboardScreen() {
             )
           ) : access.digital ? (
             <Pressable onPress={() => router.push("/(tabs)/workouts")} style={styles.nextCard} accessibilityRole="button">
+                <SnowCap seed={3} />
               <View style={{ flex: 1 }}>
                 <Text style={styles.nextTitle}>Today&apos;s workout</Text>
                 <Text style={styles.nextMeta} numberOfLines={1}>

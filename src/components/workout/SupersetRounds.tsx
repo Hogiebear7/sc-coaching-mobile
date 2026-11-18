@@ -39,7 +39,13 @@ export function SupersetRounds({
   onOpenRunTimer,
   renderFooter,
   tour,
+  mode = "log",
 }: {
+  /**
+   * "log": the live workout (ticks, rest, NOW, how hard was it). "template": the same card for building a template (targets only: no ticks, no rest).
+   * "view": the same card, read-only, for looking at a finished workout (history, someone else's workout in Community).
+   */
+  mode?: "log" | "template" | "view";
   /** True for the first card on the screen: it carries the targets the Log workout tour points at. */
   tour?: boolean;
   members: RoundMember[];
@@ -76,6 +82,8 @@ export function SupersetRounds({
   const exerciseRows = members.flatMap((m) => (m.kind === "exercise" ? [m.row] : []));
   const rounds = Math.max(1, roundCount(exerciseRows));
   const firstExerciseKey = exerciseRows[0]?.key;
+  const logging = mode === "log";
+  const readOnly = mode === "view";
   const runList = members.flatMap((m) => (m.kind === "run" ? [m.row] : []));
   // A round is done when every exercise is ticked for it and so is every cardio line.
   const roundIsDone = (i: number) => isRoundComplete(exerciseRows, i) && runList.every((r) => (r.roundsDone ?? []).includes(i));
@@ -84,10 +92,10 @@ export function SupersetRounds({
 
   // The round you are on: the first one not finished, unless you tapped a dash.
   const firstOpen = Array.from({ length: rounds }, (_, i) => i).find((i) => !roundIsDone(i));
-  const current = Math.min(picked ?? firstOpen ?? rounds - 1, rounds - 1);
-  const roundDone = roundIsDone(current);
+  const current = Math.min(picked ?? (logging ? firstOpen ?? rounds - 1 : 0), rounds - 1);
+  const roundDone = logging && roundIsDone(current);
   // The exercise that is up next in this round (cardio lines are shown but never "next").
-  const nowKey = roundDone
+  const nowKey = roundDone || !logging
     ? null
     : (members.find((m) => (m.kind === "exercise" ? !!m.row.setRows[current] && !m.row.setRows[current].completed : !(m.row.roundsDone ?? []).includes(current)))?.row.key ?? null);
 
@@ -147,19 +155,22 @@ export function SupersetRounds({
                   {r.typeChosen ? CARDIO_LABEL[r.cardioType] : "Cardio"}
                 </Text>
                 {r.key === nowKey ? <Text style={styles.nowText}>NOW</Text> : null}
-                <Pressable
-                  onPress={() => onOpenRunTimer(r.key)}
-                  hitSlop={8}
-                  accessibilityRole="button"
-                  accessibilityLabel="Timer or stopwatch for this cardio"
-                  style={styles.timerBtn}
-                >
-                  <Ionicons name="stopwatch-outline" size={20} color={Color.textPrimary} />
-                </Pressable>
+                {logging ? (
+                  <Pressable
+                    onPress={() => onOpenRunTimer(r.key)}
+                    hitSlop={8}
+                    accessibilityRole="button"
+                    accessibilityLabel="Timer or stopwatch for this cardio"
+                    style={styles.timerBtn}
+                  >
+                    <Ionicons name="stopwatch-outline" size={20} color={Color.textPrimary} />
+                  </Pressable>
+                ) : null}
               </View>
               <View style={styles.lineBottom}>
                 <View style={styles.boxes}>
                   <TextInput
+                    editable={!readOnly}
                     value={r.distance}
                     onChangeText={(v) => onChangeRun(r.key, { distance: v.replace(/[^0-9.]/g, "") })}
                     keyboardType="decimal-pad"
@@ -180,6 +191,7 @@ export function SupersetRounds({
                   )}
                   <Pressable
                     onPress={() => onPickRunTime(r.key, parseDuration(r.duration) ?? 0)}
+                disabled={readOnly}
                     accessibilityRole="button"
                     accessibilityLabel={`${label} time. Tap to change.`}
                     style={[styles.box, { flex: 1, justifyContent: "center" }]}
@@ -189,16 +201,18 @@ export function SupersetRounds({
                     </Text>
                   </Pressable>
                 </View>
-                <Pressable
-                  onPress={() => onToggleRun(r.key, current)}
-                  hitSlop={6}
-                  accessibilityRole="checkbox"
-                  accessibilityState={{ checked: ticked }}
-                  accessibilityLabel={`${label} ${roundWord.toLowerCase()} ${current + 1} done`}
-                  style={[styles.tick, ticked && { backgroundColor: color, borderColor: color }]}
-                >
-                  {ticked ? <Ionicons name="checkmark" size={22} color={Color.bg0} /> : null}
-                </Pressable>
+                {logging ? (
+                  <Pressable
+                    onPress={() => onToggleRun(r.key, current)}
+                    hitSlop={6}
+                    accessibilityRole="checkbox"
+                    accessibilityState={{ checked: ticked }}
+                    accessibilityLabel={`${label} ${roundWord.toLowerCase()} ${current + 1} done`}
+                    style={[styles.tick, ticked && { backgroundColor: color, borderColor: color }]}
+                  >
+                    {ticked ? <Ionicons name="checkmark" size={22} color={Color.bg0} /> : null}
+                  </Pressable>
+                ) : null}
               </View>
             </View>
           );
@@ -240,13 +254,15 @@ export function SupersetRounds({
             </View>
 
             <View style={styles.headerLine}>
-              <Pressable onPress={() => onCycleUnit(row.key)} hitSlop={6} accessibilityRole="button" accessibilityLabel={`${unitLabel(row)}. Tap to change to kg, time or band.`} style={styles.headerBtn} {...(tour && row.key === firstExerciseKey ? tourTarget("log.unit") : {})}>
+              <Pressable onPress={() => onCycleUnit(row.key)}
+                disabled={readOnly} hitSlop={6} accessibilityRole="button" accessibilityLabel={`${unitLabel(row)}. Tap to change to kg, time or band.`} style={styles.headerBtn} {...(tour && row.key === firstExerciseKey ? tourTarget("log.unit") : {})}>
                 <Text style={styles.headerBtnText}>{unitLabel(row)}</Text>
                 <Ionicons name="swap-horizontal" size={13} color={Color.gold} />
               </Pressable>
               {timed ? null : (
                 <Pressable
                   onPress={() => onToggleSplit(row.key)}
+                disabled={readOnly}
                   hitSlop={6}
                   accessibilityRole="button"
                   accessibilityLabel={row.perSide ? "Reps are split into right and left. Tap to use one box." : "Reps. Tap to split into right and left."}
@@ -265,6 +281,7 @@ export function SupersetRounds({
                 {timed ? (
                   <Pressable
                     onPress={() => onPickTime(row.key, s.key, timeSecs(s.weight))}
+                disabled={readOnly}
                     accessibilityRole="button"
                     accessibilityLabel={`${label} time. Tap to change.`}
                     style={[styles.box, { justifyContent: "center" }]}
@@ -273,6 +290,7 @@ export function SupersetRounds({
                   </Pressable>
                 ) : row.unitMode === "band" ? (
                   <TextInput
+                    editable={!readOnly}
                     value={s.weight}
                     onChangeText={(v) => onChangeSet(row.key, s.key, { weight: v })}
                     placeholder="band"
@@ -282,6 +300,7 @@ export function SupersetRounds({
                   />
                 ) : (
                   <TextInput
+                    editable={!readOnly}
                     value={focusedKey === s.key ? stripWeightUnit(s.weight) : withWeightUnit(s.weight, weightUnit)}
                     onChangeText={(v) => onChangeSet(row.key, s.key, { weight: sanitizeWeight(v) })}
                     onFocus={() => setFocusedKey(s.key)}
@@ -300,6 +319,7 @@ export function SupersetRounds({
                 {timed ? null : row.perSide ? (
                   <>
                     <TextInput
+                    editable={!readOnly}
                       value={s.repsRight}
                       onChangeText={(v) => onChangeSet(row.key, s.key, { repsRight: v.replace(/[^0-9]/g, "") })}
                       keyboardType="number-pad"
@@ -309,6 +329,7 @@ export function SupersetRounds({
                       style={styles.box}
                     />
                     <TextInput
+                    editable={!readOnly}
                       value={s.repsLeft}
                       onChangeText={(v) => onChangeSet(row.key, s.key, { repsLeft: v.replace(/[^0-9]/g, "") })}
                       keyboardType="number-pad"
@@ -320,6 +341,7 @@ export function SupersetRounds({
                   </>
                 ) : (
                   <TextInput
+                    editable={!readOnly}
                     value={s.reps}
                     onChangeText={(v) => onChangeSet(row.key, s.key, { reps: v.replace(/[^0-9]/g, "") })}
                     keyboardType="number-pad"
@@ -330,7 +352,7 @@ export function SupersetRounds({
                   />
                 )}
               </View>
-              {timed && !s.completed ? (
+              {logging && timed && !s.completed ? (
                 <Pressable
                   onPress={() => onStartTimer(row.key, s.key)}
                   hitSlop={6}
@@ -342,23 +364,25 @@ export function SupersetRounds({
                   <Ionicons name="play" size={22} color={color} />
                 </Pressable>
               ) : null}
-              <Pressable
-                onPress={() => onToggleSet(row.key, s.key)}
-                hitSlop={6}
-                accessibilityRole="checkbox"
-                accessibilityState={{ checked: s.completed }}
-                accessibilityLabel={`${label} ${roundWord.toLowerCase()} ${current + 1} done`}
-                style={[styles.tick, s.completed && { backgroundColor: color, borderColor: color }]}
-                {...(tour && row.key === firstExerciseKey ? tourTarget("log.tick") : {})}
-              >
-                {s.completed ? <Ionicons name="checkmark" size={22} color={Color.bg0} /> : null}
-              </Pressable>
+              {logging ? (
+                <Pressable
+                  onPress={() => onToggleSet(row.key, s.key)}
+                  hitSlop={6}
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked: s.completed }}
+                  accessibilityLabel={`${label} ${roundWord.toLowerCase()} ${current + 1} done`}
+                  style={[styles.tick, s.completed && { backgroundColor: color, borderColor: color }]}
+                  {...(tour && row.key === firstExerciseKey ? tourTarget("log.tick") : {})}
+                >
+                  {s.completed ? <Ionicons name="checkmark" size={22} color={Color.bg0} /> : null}
+                </Pressable>
+              ) : null}
             </View>
           </View>
         );
       })}
 
-      {roundDone ? (
+      {!logging ? null : roundDone ? (
         <>
           <Text style={styles.hint}>
             {current < rounds - 1 ? `${roundWord} ${current + 1} done. Rest, then ${roundWord} ${current + 2}.` : `Last ${roundWord.toLowerCase()} done. Well done.`}
@@ -395,16 +419,18 @@ export function SupersetRounds({
         </Text>
       ) : null}
 
-      <View style={styles.actions}>
-        <Pressable onPress={onAddRound} accessibilityRole="button" style={styles.action}>
-          <Text style={styles.actionText}>+ Add {roundWord.toLowerCase()}</Text>
-        </Pressable>
-        {rounds > 1 ? (
-          <Pressable onPress={onRemoveRound} accessibilityRole="button" style={styles.action}>
-            <Text style={styles.actionText}>− Remove last</Text>
+      {readOnly ? null : (
+        <View style={styles.actions}>
+          <Pressable onPress={onAddRound} accessibilityRole="button" style={styles.action}>
+            <Text style={styles.actionText}>+ Add {roundWord.toLowerCase()}</Text>
           </Pressable>
-        ) : null}
-      </View>
+          {rounds > 1 ? (
+            <Pressable onPress={onRemoveRound} accessibilityRole="button" style={styles.action}>
+              <Text style={styles.actionText}>− Remove last</Text>
+            </Pressable>
+          ) : null}
+        </View>
+      )}
     </View>
   );
 }

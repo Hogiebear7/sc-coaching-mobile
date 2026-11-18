@@ -10,6 +10,7 @@ import { Card } from "@/components/ui/Card";
 import { DateField } from "@/components/ui/DateField";
 import { ExerciseAutocomplete } from "@/components/ui/ExerciseAutocomplete";
 import { BodyPartPicker } from "@/components/workout/BodyPartPicker";
+import { WorkoutBlock } from "@/components/workout/WorkoutBlock";
 import { personalMuscleSections } from "@/lib/exercise-muscles";
 import { KeyboardAwareScroll } from "@/components/ui/KeyboardAwareScroll";
 import { PbToast } from "@/components/ui/PbToast";
@@ -2356,68 +2357,53 @@ export default function LogWorkoutScreen() {
     const tourFirst = orderedEntries(exerciseRows, runRows)[0]?.row.key === p.members[0]?.row.key;
     const labels = p.members.map((m, k) => (p.group ? supersetMemberLabel(p.group, allGroupLabels, memberNumber(m.row.key)) : String(exerciseNumber(m.row.key) || k + 1)));
     return (
-      <View key={p.blockKey} style={[styles.supersetGroupWrap, { borderColor: colour }]} {...(tourFirst ? tourTarget("log.card") : {})}>
-        <View style={styles.supersetGroupHeader}>
-          <Text style={[styles.supersetGroupHeaderText, { color: colour }]}>
-            {p.group ? `Superset ${supersetLetter(p.group, allGroupLabels)} · ${p.members.length} ${p.members.some((m) => m.kind === "run") ? "entries" : "exercises"}` : `Exercise ${labels[0]}`}
-          </Text>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: Spacing.md }}>
-            {unnamed ? null : (
-              <Pressable
-                onPress={() => {
-                  if (editing) {
-                    tapFeedback();
-                    setEditingGroups((prev) => prev.filter((g) => g !== p.blockKey));
-                    setOpenRows((prev) => prev.filter((k) => !exerciseMembers.some((r) => r.key === k)));
-                  } else {
-                    toggleEditGroup(p.blockKey);
-                  }
-                }}
-                hitSlop={8}
-                accessibilityRole="button"
-                accessibilityLabel={editing ? "Back to the focused view" : "Edit the details"}
-                {...(tourFirst ? tourTarget("log.edit") : {})}
-              >
-                <Text style={styles.ungroupText}>{editing ? "Focused view" : p.group ? "Edit exercises" : "Edit"}</Text>
-              </Pressable>
-            )}
-            {p.group ? (
-              <Pressable onPress={() => ungroupSuperset(p.group as string)} hitSlop={8} accessibilityRole="button" accessibilityLabel="Ungroup this superset">
-                <Text style={styles.ungroupText}>Ungroup</Text>
-              </Pressable>
-            ) : null}
-          </View>
-        </View>
-        {editing ? (
-          p.editCards
-        ) : (
-          <SupersetRounds
-            tour={tourFirst}
-            members={p.members}
-            labels={labels}
-            color={colour}
-            roundWord={p.group ? "Round" : "Set"}
-            weightUnit={weightUnit}
-            onChangeSet={changeSetCarry}
-            onToggleSet={(rowKey, setKey) => toggleSetComplete(rowKey, setKey, !p.group || rowKey === p.members[p.members.length - 1].row.key)}
-            onAddRound={() => (p.group ? addGroupRound(p.group) : addSetRow(exerciseMembers[0].key))}
-            onRemoveRound={() => {
-              if (p.group) removeGroupRound(p.group);
-              else if (exerciseMembers[0].setRows.length > 1) removeSetRow(exerciseMembers[0].key, exerciseMembers[0].setRows[exerciseMembers[0].setRows.length - 1].key);
-            }}
-            onPickTime={(rowKey, setKey, secs) => setTimePickerTarget({ rowKey, setKey, secs: secs ?? 90 })}
-            onStartTimer={startSetTimer}
-            onCycleUnit={cycleUnitMode}
-            onToggleSplit={toggleSplitRepsByKey}
-            onCycleSuperset={(key) => cycleSuperset({ key })}
-            onChangeRun={updateRunRow}
-            onPickRunTime={(rowKey, secs) => setCardioTimeTarget({ rowKey, secs })}
-            onToggleRun={(rowKey, roundIndex) => toggleRunRound(rowKey, roundIndex, rowKey === p.members[p.members.length - 1].row.key)}
-            onOpenRunTimer={(rowKey) => router.push({ pathname: "/run-timer", params: { runKey: rowKey } })}
-            renderFooter={(row) => <RirControl value={row.rir} onChange={(v) => updateRow(row.key, { rir: v })} />}
-          />
-        )}
-      </View>
+      <WorkoutBlock
+        key={p.blockKey}
+        colour={colour}
+        headerText={p.group ? `Superset ${supersetLetter(p.group, allGroupLabels)} · ${p.members.length} ${p.members.some((m) => m.kind === "run") ? "entries" : "exercises"}` : `Exercise ${labels[0]}`}
+        editing={editing}
+        showToggle={!unnamed}
+        toggleLabel={editing ? "Focused view" : p.group ? "Edit exercises" : "Edit"}
+        toggleHint={editing ? "Back to the focused view" : "Edit the details"}
+        onToggle={() => {
+          if (editing) {
+            tapFeedback();
+            setEditingGroups((prev) => prev.filter((g) => g !== p.blockKey));
+            setOpenRows((prev) => prev.filter((k) => !exerciseMembers.some((r) => r.key === k)));
+          } else {
+            toggleEditGroup(p.blockKey);
+          }
+        }}
+        onUngroup={p.group ? () => ungroupSuperset(p.group as string) : undefined}
+        boxTarget={tourFirst ? tourTarget("log.card") : undefined}
+        toggleTarget={tourFirst ? tourTarget("log.edit") : undefined}
+        fullCards={p.editCards}
+        rounds={{
+          tour: tourFirst,
+          members: p.members,
+          labels,
+          color: colour,
+          roundWord: p.group ? "Round" : "Set",
+          weightUnit,
+          onChangeSet: changeSetCarry,
+          onToggleSet: (rowKey, setKey) => toggleSetComplete(rowKey, setKey, !p.group || rowKey === p.members[p.members.length - 1].row.key),
+          onAddRound: () => (p.group ? addGroupRound(p.group) : addSetRow(exerciseMembers[0].key)),
+          onRemoveRound: () => {
+            if (p.group) removeGroupRound(p.group);
+            else if (exerciseMembers[0].setRows.length > 1) removeSetRow(exerciseMembers[0].key, exerciseMembers[0].setRows[exerciseMembers[0].setRows.length - 1].key);
+          },
+          onPickTime: (rowKey, setKey, secs) => setTimePickerTarget({ rowKey, setKey, secs: secs ?? 90 }),
+          onStartTimer: startSetTimer,
+          onCycleUnit: cycleUnitMode,
+          onToggleSplit: toggleSplitRepsByKey,
+          onCycleSuperset: (key) => cycleSuperset({ key }),
+          onChangeRun: updateRunRow,
+          onPickRunTime: (rowKey, secs) => setCardioTimeTarget({ rowKey, secs }),
+          onToggleRun: (rowKey, roundIndex) => toggleRunRound(rowKey, roundIndex, rowKey === p.members[p.members.length - 1].row.key),
+          onOpenRunTimer: (rowKey) => router.push({ pathname: "/run-timer", params: { runKey: rowKey } }),
+          renderFooter: (row) => <RirControl value={row.rir} onChange={(v) => updateRow(row.key, { rir: v })} />,
+        }}
+      />
     );
   };
 

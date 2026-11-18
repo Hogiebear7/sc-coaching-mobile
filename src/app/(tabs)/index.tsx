@@ -1,5 +1,5 @@
 import { BrandMark } from "@/components/ui/BrandMark";
-import { HangingLights, SnowCap } from "@/components/season/SnowCap";
+import { SnowCap } from "@/components/season/SnowCap";
 import { SeasonOverlay } from "@/components/season/SeasonOverlay";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
@@ -226,7 +226,6 @@ export default function DashboardScreen() {
       >
         {/* Top band: title, inbox buttons, the week, today's one action */}
         <View style={styles.band}>
-          <HangingLights />
           <View style={styles.titleRow}>
             <View style={{ flex: 1 }}>
               <View style={{ marginBottom: 10, marginTop: 6 }}>
@@ -505,7 +504,7 @@ const useStyles = makeStyles((colors, dc, Color) =>
     errorText: { fontSize: 16, color: colors.textSecondary },
     scroll: { paddingBottom: 40 },
 
-    band: { zIndex: 2, backgroundColor: colors.surface, paddingHorizontal: AppSpace.gutter, paddingTop: 12, paddingBottom: 20, borderBottomLeftRadius: 24, borderBottomRightRadius: 24, gap: 16 },
+    band: { backgroundColor: colors.surface, paddingHorizontal: AppSpace.gutter, paddingTop: 12, paddingBottom: 20, borderBottomLeftRadius: 24, borderBottomRightRadius: 24, gap: 16 },
     titleRow: { flexDirection: "row", alignItems: "center", gap: 12 },
     dateLine: { fontSize: 14, color: colors.textMuted, marginBottom: 2 },
     titleActions: { flexDirection: "row", gap: 8 },

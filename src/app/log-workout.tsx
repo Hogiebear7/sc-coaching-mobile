@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { DateField } from "@/components/ui/DateField";
 import { WorkoutBlock } from "@/components/workout/WorkoutBlock";
+import { groupExerciseRowsBySuperset, supersetColor } from "@/lib/superset-groups";
 import { ExerciseEditCard } from "@/components/workout/ExerciseEditCard";
 import { useLogStyles as useStyles } from "@/components/workout/log-styles";
 import { RirControl } from "@/components/workout/exercise-card-parts";
@@ -18,7 +19,7 @@ import { PbToast } from "@/components/ui/PbToast";
 import { RestTimerBar } from "@/components/ui/RestTimerBar";
 import { TextField } from "@/components/ui/TextField";
 import { TimeWheelPicker } from "@/components/ui/TimeWheelPicker";
-import { DataColor, Radius, Spacing } from "@/constants/theme";
+import { Radius, Spacing } from "@/constants/theme";
 import { OptionPicker, type PickerOption } from "@/components/ui/OptionPicker";
 import { setTimerTarget, takeTimerResult } from "@/lib/timer-result";
 import { describeCardio, usesFloors } from "@/lib/cardio";
@@ -26,7 +27,7 @@ import { formatEntries } from "@/lib/format-entries";
 import { emptyHyroxSession, hyroxClock, hyroxEntries, hyroxResult, hyroxSummaryNote, parseClock, type HyroxStation } from "@/lib/hyrox";
 import { supersetBadges } from "@/lib/superset-display";
 import { entryBlocks, orderedEntries, insertEntry, orderToSave, type EntrySegment } from "@/lib/entry-order";
-import { distinctGroups, supersetLetter, supersetMemberLabel } from "@/lib/superset-label";
+import { supersetLetter, supersetMemberLabel } from "@/lib/superset-label";
 import { cleanLonelySupersets, tapSupersetLabel, ungroupAll } from "@/lib/superset-select";
 import { applyWeightFrom, normalizeWeights, sanitizeWeight, weightUnitFor } from "@/lib/weight-input";
 import { FormatChoiceChip, FormatMiniField, FormatMovementCard } from "@/components/workout/FormatMovementCard";
@@ -183,36 +184,6 @@ function newExerciseRow(): ExerciseRow {
   };
 }
 
-// Exercises sharing a superset label render together as one visual block
-// (the "ST1"-style grouping from a station-based program layout) instead of
-// as separate cards — a row's FIRST appearance decides where its group sits
-// in the list; later rows with the same label join that group wherever it
-// already is, even if other rows come between them in the raw list.
-function groupExerciseRowsBySuperset(rows: ExerciseRow[]): { group: string | null; rows: ExerciseRow[] }[] {
-  const groups: { group: string | null; rows: ExerciseRow[] }[] = [];
-  const groupIndexByLabel = new Map<string, number>();
-  for (const row of rows) {
-    if (row.supersetGroup) {
-      const existingIdx = groupIndexByLabel.get(row.supersetGroup);
-      if (existingIdx !== undefined) {
-        groups[existingIdx].rows.push(row);
-        continue;
-      }
-      groupIndexByLabel.set(row.supersetGroup, groups.length);
-      groups.push({ group: row.supersetGroup, rows: [row] });
-    } else {
-      groups.push({ group: null, rows: [row] });
-    }
-  }
-  return groups;
-}
-
-// One colour per superset, in the order they appear, from the app's data colours.
-const SUPERSET_COLOURS = [DataColor.sessions, DataColor.load, DataColor.sleep, DataColor.hydration];
-function supersetColor(group: string, allGroups: (string | null)[]): string {
-  const i = distinctGroups(allGroups).indexOf(group);
-  return SUPERSET_COLOURS[(i < 0 ? 0 : i) % SUPERSET_COLOURS.length];
-}
 
 function newRunRow(): RunRow {
   return { key: nextKey(), distance: "", distanceUnit: "km", duration: "", reps: "", sets: "", notes: "", splits: [], cardioType: "run", level: "" };

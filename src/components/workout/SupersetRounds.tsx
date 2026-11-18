@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useState, type ReactNode } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 
+import { BodyweightButton } from "@/components/workout/BodyweightButton";
 import { Radius, Spacing } from "@/constants/theme";
 import { CARDIO_LABEL, usesFloors } from "@/lib/cardio";
 import { tourTarget } from "@/lib/tour-registry";
@@ -40,7 +41,10 @@ export function SupersetRounds({
   renderFooter,
   tour,
   mode = "log",
+  onToggleBodyweight,
 }: {
+  /** Bodyweight on or off for a set and the sets below it. Without it the BW button is not shown. */
+  onToggleBodyweight?: (rowKey: string, setKey: string) => void;
   /**
    * "log": the live workout (ticks, rest, NOW, how hard was it). "template": the same card for building a template (targets only: no ticks, no rest).
    * "view": the same card, read-only, for looking at a finished workout (history, someone else's workout in Community).
@@ -299,34 +303,25 @@ export function SupersetRounds({
                     style={styles.box}
                   />
                 ) : (
-                  <View style={{ flex: 1 }}>
-                  <TextInput
-                    editable={!readOnly}
-                    value={focusedKey === s.key ? stripWeightUnit(s.weight) : withWeightUnit(s.weight, weightUnit)}
-                    onChangeText={(v) => onChangeSet(row.key, s.key, { weight: sanitizeWeight(v) })}
-                    onFocus={() => setFocusedKey(s.key)}
-                    onBlur={() => {
-                      setFocusedKey(null);
-                      onChangeSet(row.key, s.key, { weight: withWeightUnit(s.weight, weightUnit) });
-                    }}
-                    selectTextOnFocus
-                    keyboardType="decimal-pad"
-                    placeholder={weightUnit}
-                    placeholderTextColor={Color.textFaint}
-                    accessibilityLabel={`${label} weight`}
-                    style={[styles.box, { flex: 0, width: "100%", paddingRight: readOnly ? 0 : 40 }]}
-                  />
-                    {readOnly ? null : (
-                      <Pressable
-                        onPress={() => onChangeSet(row.key, s.key, { weight: s.weight.trim() === "BW" ? "" : "BW" })}
-                        hitSlop={6}
-                        accessibilityRole="button"
-                        accessibilityState={{ selected: s.weight.trim() === "BW" }}
-                        accessibilityLabel={`${label} bodyweight`}
-                        style={[styles.bwPill, s.weight.trim() === "BW" && { backgroundColor: Color.gold }]}
-                      >
-                        <Text style={[styles.bwPillText, s.weight.trim() === "BW" && { color: Color.goldForeground }]}>BW</Text>
-                      </Pressable>
+                  <View style={[styles.box, { flexDirection: "row", alignItems: "center", paddingHorizontal: 6, gap: 4 }]}>
+                    <TextInput
+                      editable={!readOnly}
+                      value={focusedKey === s.key ? stripWeightUnit(s.weight) : withWeightUnit(s.weight, weightUnit)}
+                      onChangeText={(v) => onChangeSet(row.key, s.key, { weight: sanitizeWeight(v) })}
+                      onFocus={() => setFocusedKey(s.key)}
+                      onBlur={() => {
+                        setFocusedKey(null);
+                        onChangeSet(row.key, s.key, { weight: withWeightUnit(s.weight, weightUnit) });
+                      }}
+                      selectTextOnFocus
+                      keyboardType="decimal-pad"
+                      placeholder={weightUnit}
+                      placeholderTextColor={Color.textFaint}
+                      accessibilityLabel={`${label} weight`}
+                      style={styles.boxBare}
+                    />
+                    {readOnly || !onToggleBodyweight ? null : (
+                      <BodyweightButton active={s.weight.trim() === "BW"} label={`${label} bodyweight`} onConfirm={() => onToggleBodyweight(row.key, s.key)} />
                     )}
                   </View>
                 )}
@@ -480,8 +475,7 @@ const useStyles = makeLegacyStyles((Color) =>
       fontSize: 18,
       color: Color.textPrimary,
     },
-    bwPill: { position: "absolute", right: 6, top: 12, minWidth: 30, height: 24, borderRadius: 12, paddingHorizontal: 6, alignItems: "center", justifyContent: "center", backgroundColor: Color.surface1 },
-    bwPillText: { fontSize: 11, fontWeight: "800", color: Color.textMuted },
+    boxBare: { flex: 1, minWidth: 0, padding: 0, textAlign: "center", fontSize: 18, color: Color.textPrimary },
     unitBtn: { minWidth: 44, height: 48, borderRadius: Radius.md, backgroundColor: Color.surface2, alignItems: "center", justifyContent: "center" },
     unitBtnText: { fontSize: 14, fontWeight: "700", color: Color.textPrimary },
     timerBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: Color.surface2, alignItems: "center", justifyContent: "center" },

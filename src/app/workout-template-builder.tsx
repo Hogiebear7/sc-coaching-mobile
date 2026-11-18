@@ -27,7 +27,7 @@ import { cleanLonelySupersets, tapSupersetLabel, ungroupAll } from "@/lib/supers
 import { addRound, removeLastRound } from "@/lib/superset-rounds";
 import { newSetRow, newTemplateRow, rowsToTemplate, templateToRows, type TemplateRow } from "@/lib/template-rows";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
-import { applyWeightFrom, normalizeWeights, sanitizeWeight, weightUnitFor } from "@/lib/weight-input";
+import { applyWeightFrom, bodyweightFrom, normalizeWeights, sanitizeWeight, weightUnitFor } from "@/lib/weight-input";
 import { getPersonalExerciseNames } from "@/lib/workout-formatters";
 import { takePendingWorkoutTemplateSeed } from "@/lib/workout-template-seed";
 import type { SetRow } from "@/lib/workout-draft";
@@ -125,6 +125,10 @@ export default function WorkoutTemplateBuilderScreen() {
       const at = r.setRows.findIndex((sr) => sr.key === setKey);
       return { ...r, setRows: r.setRows.map((sr, idx) => (idx >= at && at !== -1 ? { ...sr, [field]: value } : sr)) };
     });
+  }
+  // Bodyweight on or off for a set and the sets below it; the numbers typed there are kept and come back when it is turned off.
+  function toggleBodyweight(rowKey: string, setKey: string) {
+    mapRow(rowKey, (r) => ({ ...r, setRows: bodyweightFrom(r.setRows, setKey) }));
   }
   function typeWeight(rowKey: string, setKey: string, text: string) {
     const value = sanitizeWeight(text);
@@ -339,6 +343,7 @@ export default function WorkoutTemplateBuilderScreen() {
               updateRow={updateRow}
               updateSetRow={updateSetRow}
               updateFirstSetField={updateFirstSetField}
+              onToggleBodyweight={(setKey) => toggleBodyweight(row.key, setKey)}
               typeWeight={typeWeight}
               finishWeight={finishWeight}
               changeUnitMode={changeUnitMode}
@@ -359,6 +364,7 @@ export default function WorkoutTemplateBuilderScreen() {
           roundWord: grp.group ? "Round" : "Set",
           weightUnit,
           onChangeSet: changeSetCarry,
+          onToggleBodyweight: toggleBodyweight,
           onToggleSet: noop,
           onAddRound: () => {
             tapFeedback();

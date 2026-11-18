@@ -45,3 +45,27 @@ export function normalizeWeights<S extends { weight: string }>(sets: S[], unit: 
     return next === s.weight ? s : { ...s, weight: next };
   });
 }
+
+export const BODYWEIGHT = "BW";
+
+type SetWithModes = { key: string; weight: string; modeValues?: Partial<Record<"weight" | "time" | "band" | "bwPrev", string>> };
+
+/**
+ * Bodyweight. Puts "BW" in this set and every set below it (never the ones above), and keeps whatever number was typed there so nothing is lost: tapping BW off
+ * on a set that is already BW puts the typed numbers back on that set and the ones below.
+ */
+export function bodyweightFrom<S extends SetWithModes>(sets: S[], fromKey: string): S[] {
+  const at = sets.findIndex((s) => s.key === fromKey);
+  if (at === -1) return sets;
+  const turningOff = sets[at].weight.trim() === BODYWEIGHT;
+  return sets.map((s, i) => {
+    if (i < at) return s;
+    if (turningOff) {
+      if (s.weight.trim() !== BODYWEIGHT) return s;
+      const { bwPrev, ...rest } = s.modeValues ?? {};
+      return { ...s, weight: bwPrev ?? "", modeValues: Object.keys(rest).length > 0 ? rest : undefined };
+    }
+    if (s.weight.trim() === BODYWEIGHT) return s;
+    return { ...s, weight: BODYWEIGHT, modeValues: { ...(s.modeValues ?? {}), bwPrev: s.weight } };
+  });
+}

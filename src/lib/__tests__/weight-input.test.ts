@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { applyWeightFrom, normalizeWeights, sanitizeWeight, stripWeightUnit, weightUnitFor, withWeightUnit } from "../weight-input";
+import { applyWeightFrom, bodyweightFrom, normalizeWeights, sanitizeWeight, stripWeightUnit, weightUnitFor, withWeightUnit } from "../weight-input";
 
 describe("sanitizeWeight", () => {
   it("lets numbers and one decimal point through and drops everything else", () => {
@@ -75,6 +75,30 @@ describe("bodyweight (BW)", () => {
     const sets = [{ key: "a", weight: "40" }, { key: "b", weight: "40" }, { key: "c", weight: "40" }];
     expect(applyWeightFrom(sets, "b", "BW").map((s) => s.weight)).toEqual(["40", "BW", "BW"]);
     expect(normalizeWeights([{ weight: "BW" }, { weight: "40" }], "kg").map((s) => s.weight)).toEqual(["BW", "40 kg"]);
+  });
+});
+
+describe("bodyweightFrom keeps what was typed", () => {
+  const sets = () => [{ key: "a", weight: "40 kg" }, { key: "b", weight: "50 kg" }, { key: "c", weight: "" }];
+  it("turns BW on from a set downwards and never touches the sets above it", () => {
+    const on = bodyweightFrom(sets(), "b");
+    expect(on.map((s) => s.weight)).toEqual(["40 kg", "BW", "BW"]);
+  });
+  it("turning it off brings back each set's own number", () => {
+    const off = bodyweightFrom(bodyweightFrom(sets(), "b"), "b");
+    expect(off.map((s) => s.weight)).toEqual(["40 kg", "50 kg", ""]);
+    expect(off.every((s) => s.modeValues === undefined)).toBe(true);
+  });
+  it("turning it off on a later set leaves an earlier BW set alone", () => {
+    const on = bodyweightFrom(sets(), "a");
+    const partlyOff = bodyweightFrom(on, "c");
+    expect(partlyOff.map((s) => s.weight)).toEqual(["BW", "BW", ""]);
+  });
+  it("keeps the other units' saved values", () => {
+    const withTime = [{ key: "a", weight: "30", modeValues: { time: "1:00" } as Partial<Record<"weight" | "time" | "band" | "bwPrev", string>> }];
+    const off = bodyweightFrom(bodyweightFrom(withTime, "a"), "a");
+    expect(off[0].weight).toBe("30");
+    expect(off[0].modeValues).toEqual({ time: "1:00" });
   });
 });
 

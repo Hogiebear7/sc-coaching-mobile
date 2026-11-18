@@ -4,6 +4,7 @@ import { Keyboard, Pressable, Text, TextInput, View } from "react-native";
 import { Card } from "@/components/ui/Card";
 import { ExerciseAutocomplete, type ExerciseLibraryNameEntry } from "@/components/ui/ExerciseAutocomplete";
 import { BodyPartPicker } from "@/components/workout/BodyPartPicker";
+import { BodyweightButton } from "@/components/workout/BodyweightButton";
 import { ExerciseDemoRow, NoteControl, RirControl } from "@/components/workout/exercise-card-parts";
 import { useLogStyles as useStyles } from "@/components/workout/log-styles";
 import { selectionFeedback, tapFeedback } from "@/lib/haptics";
@@ -84,6 +85,8 @@ export type ExerciseEditCardProps = {
   addSetRow: (rowKey: string) => void;
   removeSetRow: (rowKey: string, setKey: string) => void;
   onToggleSetComplete: (setKey: string) => void;
+  /** Bodyweight on or off for a set (and the sets below it): see bodyweightFrom. */
+  onToggleBodyweight: (setKey: string) => void;
   onStartSetTimer: (setKey: string) => void;
   onPickTime: (setKey: string, secs: number) => void;
 };
@@ -123,6 +126,7 @@ export function ExerciseEditCard(props: ExerciseEditCardProps) {
     addSetRow,
     removeSetRow,
     onToggleSetComplete,
+    onToggleBodyweight,
     onStartSetTimer,
     onPickTime,
   } = props;
@@ -297,33 +301,20 @@ export function ExerciseEditCard(props: ExerciseEditCardProps) {
                       </Pressable>
                     ) : (
                       row.unitMode === "weight" ? (
-                        <View style={{ flex: 1 }}>
-                        <TextInput
-                          value={focusedWeightKey === set.key ? stripWeightUnit(set.weight) : withWeightUnit(set.weight, weightUnit)}
-                          onChangeText={(v) => typeWeight(row.key, set.key, v)}
-                          onFocus={() => setFocusedWeightKey(set.key)}
-                          onBlur={() => finishWeight(row.key)}
-                          keyboardType="decimal-pad"
-                          selectTextOnFocus
-                          placeholder={lastSet?.weight ? stripWeightUnit(lastSet.weight) : "60"}
-                          placeholderTextColor={Color.textFaint}
-                          accessibilityLabel={`Set ${setIdx + 1} weight in ${weightUnit}`}
-                          style={[styles.setInput, set.completed && styles.setInputCompleted, { flex: 1, paddingRight: 40 }]}
-                        />
-                          <Pressable
-                            onPress={() => {
-                              selectionFeedback();
-                              // Bodyweight: "BW" goes in this set and every set below it, the same way a typed weight does; tap again to clear it.
-                              updateFirstSetField(row.key, set.key, "weight", set.weight.trim() === "BW" ? "" : "BW");
-                            }}
-                            hitSlop={6}
-                            accessibilityRole="button"
-                            accessibilityState={{ selected: set.weight.trim() === "BW" }}
-                            accessibilityLabel={`Set ${setIdx + 1} bodyweight`}
-                            style={[styles.bwPill, set.weight.trim() === "BW" && styles.bwPillOn]}
-                          >
-                            <Text style={[styles.bwPillText, set.weight.trim() === "BW" && styles.bwPillTextOn]}>BW</Text>
-                          </Pressable>
+                        <View style={[styles.setInput, set.completed && styles.setInputCompleted, { flex: 1, flexDirection: "row", alignItems: "center", paddingHorizontal: 6, gap: 4 }]}>
+                          <TextInput
+                            value={focusedWeightKey === set.key ? stripWeightUnit(set.weight) : withWeightUnit(set.weight, weightUnit)}
+                            onChangeText={(v) => typeWeight(row.key, set.key, v)}
+                            onFocus={() => setFocusedWeightKey(set.key)}
+                            onBlur={() => finishWeight(row.key)}
+                            keyboardType="decimal-pad"
+                            selectTextOnFocus
+                            placeholder={lastSet?.weight ? stripWeightUnit(lastSet.weight) : "60"}
+                            placeholderTextColor={Color.textFaint}
+                            accessibilityLabel={`Set ${setIdx + 1} weight in ${weightUnit}`}
+                            style={styles.setInputBare}
+                          />
+                          <BodyweightButton active={set.weight.trim() === "BW"} label={`Set ${setIdx + 1} bodyweight`} onConfirm={() => onToggleBodyweight(set.key)} />
                         </View>
                       ) : (
                         <TextInput

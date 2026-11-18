@@ -29,7 +29,7 @@ import { supersetBadges } from "@/lib/superset-display";
 import { entryBlocks, orderedEntries, insertEntry, orderToSave, type EntrySegment } from "@/lib/entry-order";
 import { supersetLetter, supersetMemberLabel } from "@/lib/superset-label";
 import { cleanLonelySupersets, tapSupersetLabel, ungroupAll } from "@/lib/superset-select";
-import { applyWeightFrom, normalizeWeights, sanitizeWeight, weightUnitFor } from "@/lib/weight-input";
+import { applyWeightFrom, bodyweightFrom, normalizeWeights, sanitizeWeight, weightUnitFor } from "@/lib/weight-input";
 import { FormatChoiceChip, FormatMiniField, FormatMovementCard } from "@/components/workout/FormatMovementCard";
 import type { RoundMember } from "@/components/workout/SupersetRounds";
 import { addRound, removeLastRound } from "@/lib/superset-rounds";
@@ -1128,6 +1128,12 @@ export default function LogWorkoutScreen() {
     });
   }
 
+  // Bodyweight on or off for a set and the sets below it; the numbers typed there are kept and come back when it is turned off.
+  function toggleBodyweight(rowKey: string, setKey: string) {
+    lastTouchedKey.current = rowKey;
+    update({ exerciseRows: exerciseRows.map((r) => (r.key === rowKey ? { ...r, setRows: bodyweightFrom(r.setRows, setKey) } : r)) });
+  }
+
   // Editing set 1's weight/reps also fills any later set that's still blank —
   // most sets are the same or similar, and this saves retyping each one.
   // Sets the member has already typed something into are left alone.
@@ -1635,6 +1641,7 @@ export default function LogWorkoutScreen() {
               updateRow={updateRow}
               updateSetRow={updateSetRow}
               updateFirstSetField={updateFirstSetField}
+              onToggleBodyweight={(setKey) => toggleBodyweight(row.key, setKey)}
               typeWeight={typeWeight}
               finishWeight={finishWeight}
               changeUnitMode={changeUnitMode}
@@ -1874,6 +1881,7 @@ export default function LogWorkoutScreen() {
           roundWord: p.group ? "Round" : "Set",
           weightUnit,
           onChangeSet: changeSetCarry,
+          onToggleBodyweight: toggleBodyweight,
           onToggleSet: (rowKey, setKey) => toggleSetComplete(rowKey, setKey, !p.group || rowKey === p.members[p.members.length - 1].row.key),
           onAddRound: () => (p.group ? addGroupRound(p.group) : addSetRow(exerciseMembers[0].key)),
           onRemoveRound: () => {

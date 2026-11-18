@@ -34,7 +34,7 @@ export type SetRow = {
   setType: WorkoutSetType;
   completed: boolean;
   /** What was typed under each unit (kg, time, band), so switching units and back never loses it. `weight` holds the current unit's value. */
-  modeValues?: Partial<Record<"weight" | "time" | "band", string>>;
+  modeValues?: Partial<Record<"weight" | "time" | "band" | "bwPrev", string>>;
 };
 
 export type ExerciseRow = {

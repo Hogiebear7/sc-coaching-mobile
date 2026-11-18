@@ -1,5 +1,5 @@
 import { BrandMark } from "@/components/ui/BrandMark";
-import { SnowCap } from "@/components/season/SnowCap";
+import { HalloweenHeaderDecor, SnowCap } from "@/components/season/SnowCap";
 import { SeasonOverlay } from "@/components/season/SeasonOverlay";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
@@ -226,6 +226,7 @@ export default function DashboardScreen() {
       >
         {/* Top band: title, inbox buttons, the week, today's one action */}
         <View style={styles.band}>
+          <HalloweenHeaderDecor />
           <View style={styles.titleRow}>
             <View style={{ flex: 1 }}>
               <View style={{ marginBottom: 10, marginTop: 6 }}>
@@ -308,7 +309,7 @@ export default function DashboardScreen() {
           {access.gymMembership ? (
             data.nextSession ? (
               <Pressable onPress={() => router.push("/(tabs)/schedule")} style={styles.nextCard} accessibilityRole="button">
-                <SnowCap seed={3} />
+                <SnowCap seed={3} slot="Up next" />
                 <View style={styles.nextTime}>
                   <Text style={styles.nextDay}>{formatClassDate(data.nextSession.date)}</Text>
                   <Text style={styles.nextClock}>{data.nextSession.startTime}</Text>
@@ -326,7 +327,7 @@ export default function DashboardScreen() {
               </Pressable>
             ) : (
               <View style={styles.nextCard}>
-                <SnowCap seed={3} />
+                <SnowCap seed={3} slot="Up next" />
                 <View style={{ flex: 1 }}>
                   <Text style={styles.nextTitle}>Nothing booked</Text>
                   <Text style={styles.nextMeta}>Book your next class in a couple of taps.</Text>
@@ -336,7 +337,7 @@ export default function DashboardScreen() {
             )
           ) : access.digital ? (
             <Pressable onPress={() => router.push("/(tabs)/workouts")} style={styles.nextCard} accessibilityRole="button">
-                <SnowCap seed={3} />
+                <SnowCap seed={3} slot="Up next" />
               <View style={{ flex: 1 }}>
                 <Text style={styles.nextTitle}>Today&apos;s workout</Text>
                 <Text style={styles.nextMeta} numberOfLines={1}>
@@ -435,7 +436,7 @@ export default function DashboardScreen() {
         <View style={styles.section} {...tourTarget("home.club")}>
           <SectionTitle title="Club" />
           <View style={{ position: "relative" }}>
-          <SnowCap seed={5} />
+          <SnowCap seed={5} slot="Club" />
           <View style={styles.list}>
             <ListRow
               icon="card-outline"

@@ -1,4 +1,5 @@
 import { SeasonOverlay } from "@/components/season/SeasonOverlay";
+import { HalloweenCardDecor } from "@/components/season/SnowCap";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -259,6 +260,8 @@ export default function CommunityScreen() {
               label="Community wins"
               action={{ label: "See more", onPress: () => router.push("/community/wins") }}
             />
+            <View style={{ position: "relative" }}>
+              <HalloweenCardDecor slot="Community wins" />
             <Card style={styles.winsCard}>
               {winsPreview.map((item, i) => (
                 <CommunityWinRow
@@ -269,6 +272,7 @@ export default function CommunityScreen() {
                 />
               ))}
             </Card>
+            </View>
           </View>
         ) : null}
 
@@ -377,6 +381,8 @@ export default function CommunityScreen() {
                   }
                 />
               ) : (
+                <View style={{ position: "relative" }}>
+                  <HalloweenCardDecor slot="Leaderboard" />
                 <Card style={styles.leaderboardCard}>
                   {buildLeaderboardRows(leaderboard.data.entries, leaderboard.data.myUserId).map((row, i) => (
                     <View key={row.userId} style={[styles.leaderboardRow, i > 0 && styles.leaderboardRowDivider]}>
@@ -395,6 +401,7 @@ export default function CommunityScreen() {
                     </View>
                   ))}
                 </Card>
+                </View>
               )}
             </>
           )}

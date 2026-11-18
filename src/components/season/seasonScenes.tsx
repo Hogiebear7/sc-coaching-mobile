@@ -1,4 +1,4 @@
-import { View } from "react-native";
+import { useWindowDimensions, View } from "react-native";
 import Svg, { Circle, Ellipse, G, Line, Path, Rect } from "react-native-svg";
 
 import { RemoteArt } from "@/components/season/RemoteArt";
@@ -204,8 +204,29 @@ function Strip({ kind }: { kind: "snow" | "grass" | "sand" | "leaves" | "night" 
   );
 }
 
+// Halloween (owner's placement, 2026-11-18): a row of autumn leaves along the bottom, laid end to end at the picture's own proportions, with the scarecrow
+// standing at the left end. Both are the owner's Canva pictures from the website; if they can't be loaded nothing is drawn.
+function HalloweenGround() {
+  const { width } = useWindowDimensions();
+  const rowHeight = 26;
+  const tileWidth = rowHeight * (800 / 210);
+  return (
+    <View pointerEvents="none" style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: 34 }}>
+      <View style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: rowHeight, flexDirection: "row", overflow: "hidden" }}>
+        {Array.from({ length: Math.ceil(width / tileWidth) }, (_, i) => (
+          <RemoteArt key={i} name="leaves-row" style={{ width: tileWidth, height: rowHeight }} />
+        ))}
+      </View>
+      <View style={{ position: "absolute", left: 6, bottom: 8 }}>
+        <RemoteArt name="scarecrow" style={{ width: 27, height: 38 }} />
+      </View>
+    </View>
+  );
+}
+
 /** The ground and the small drawings standing on it for a season. Draws nothing for a season with no scene. */
 export function SeasonGround({ season }: { season: string }) {
+  if (season === "halloween") return <HalloweenGround />;
   const scene = SCENES[season];
   if (!scene) return null;
   return (

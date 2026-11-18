@@ -197,6 +197,51 @@ export function Spider({ left, drop }: { left: `${number}%`; drop: number }) {
   );
 }
 
+// The owner's Halloween pieces (Canva artwork, loaded from the website), each fixed to one particular card or heading so it moves with it. `slot` is the card's
+// title. aspect is width / height. Nothing is drawn if a picture can't be loaded (these have no built-in drawing).
+type CornerFlip = "left" | "right";
+function Piece({ name, aspect, width, pos, flip }: { name: string; aspect: number; width: number; pos: Record<string, number | string>; flip?: CornerFlip }) {
+  return (
+    <View pointerEvents="none" style={{ position: "absolute", ...pos } as object}>
+      {/* web-corner is drawn for the top-right corner of a card; "left" mirrors it for the top-left. */}
+      <RemoteArt name={name} style={{ width, height: width / aspect, transform: flip === "left" ? [{ scaleX: -1 }] : undefined }} />
+    </View>
+  );
+}
+
+export function HalloweenCardArt({ slot }: { slot: string }) {
+  switch (slot) {
+    case "Up next":
+      return (
+        <>
+          <Piece name="web-corner" aspect={565 / 393} width={84} pos={{ left: 0, top: 0 }} flip="left" />
+          <Piece name="pumpkin" aspect={519 / 520} width={26} pos={{ left: "64%", top: -17 }} />
+        </>
+      );
+    case "Sleep":
+      return <Piece name="web-large" aspect={900 / 630} width={160} pos={{ right: 0, top: 0 }} />;
+    case "Training load":
+      return <Piece name="spiders" aspect={400 / 706} width={37} pos={{ right: 14, top: 0 }} />;
+    case "Weight":
+      return <Piece name="ghosts" aspect={516 / 520} width={49} pos={{ left: "62%", top: -35 }} />;
+    case "Nutrition":
+      return <Piece name="spiders" aspect={400 / 706} width={37} pos={{ left: "52%", top: "100%" }} />;
+    case "Club":
+      return <Piece name="ghostface" aspect={367 / 520} width={34} pos={{ left: "18%", top: -46 }} />;
+    case "Community wins":
+      return <Piece name="pumpkin" aspect={519 / 520} width={28} pos={{ right: "10%", top: -19 }} />;
+    case "Leaderboard":
+      return <Piece name="ghosts" aspect={516 / 520} width={46} pos={{ left: "58%", top: -33 }} />;
+    default:
+      return null;
+  }
+}
+
+/** The big cobweb in the top-right corner of the Home screen's top band. Halloween only. */
+export function HalloweenHeaderWeb() {
+  return <Piece name="web-corner" aspect={565 / 393} width={112} pos={{ right: 0, top: 0 }} />;
+}
+
 // ── Summer ─────────────────────────────────────────────────────────────────
 export function SummerSun() {
   const [spin] = useState(() => new Animated.Value(0));

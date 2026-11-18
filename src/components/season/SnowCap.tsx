@@ -1,5 +1,7 @@
 import { View } from "react-native";
 
+import { RemoteArt } from "@/components/season/RemoteArt";
+
 import { CardEdgeSprites, CardTopDecor } from "@/components/season/seasonArt";
 import { useSeason } from "@/lib/season";
 
@@ -13,6 +15,17 @@ export function SnowCap({ seed = 0 }: { seed?: number }) {
   return (
     <View pointerEvents="none" style={{ position: "absolute", left: snowy ? 6 : 0, right: snowy ? 6 : 0, top: snowy ? -11 : 0, height: snowy ? 30 : 0 }}>
       {snowy ? <CardTopDecor season={season.key} seed={seed} /> : <CardEdgeSprites season={season.key} seed={seed} />}
+    </View>
+  );
+}
+
+/** A string of Christmas lights hanging from the bottom edge of a box (the owner's Canva picture; nothing is drawn if it can't be loaded). Put it as a child of the box. */
+export function HangingLights() {
+  const { season } = useSeason();
+  if (season?.key !== "christmas") return null;
+  return (
+    <View pointerEvents="none" style={{ position: "absolute", left: 8, right: 8, top: "100%", marginTop: -7, height: 44, zIndex: 5 }}>
+      <RemoteArt name="lights" contentFit="fill" style={{ width: "100%", height: "100%" }} />
     </View>
   );
 }

@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AppRadius } from "@/constants/theme";
 import { tapFeedback } from "@/lib/haptics";
 import { makeStyles, useAppTheme } from "@/lib/theme";
+import { BlurBackdrop } from "@/components/ui/BlurBackdrop";
 
 type Action = { label: string; icon: keyof typeof Ionicons.glyphMap; href: string };
 
@@ -55,7 +56,9 @@ export function QuickActionSheet({ visible, onClose }: { visible: boolean; onClo
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose} statusBarTranslucent>
-      <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel="Close" />
+      <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel="Close">
+        <BlurBackdrop />
+      </Pressable>
       <View style={[styles.sheet, { paddingBottom: insets.bottom + 12 }]}>
         <View style={styles.grabber} />
         <View style={styles.header}>

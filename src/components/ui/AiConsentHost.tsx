@@ -5,6 +5,7 @@ import { Radius, Spacing } from "@/constants/theme";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 import { registerAiConsentHandler } from "@/lib/api-client";
 import { useSetAiConsent } from "@/lib/queries/ai-consent";
+import { BlurBackdrop } from "@/components/ui/BlurBackdrop";
 
 // Mounted once at the app root. When the server refuses an AI request because the member hasn't allowed AI features, api-client calls the handler registered
 // here: the member sees exactly what is shared and with whom, and chooses. "Allow" saves the consent and the original request is sent again; "Not now" leaves
@@ -46,6 +47,7 @@ export function AiConsentHost() {
   return (
     <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={() => settle(false)}>
       <View style={styles.backdrop}>
+        <BlurBackdrop />
         <View style={styles.card} accessibilityViewIsModal>
           <Text style={styles.title}>Allow AI features?</Text>
           <Text style={styles.body}>

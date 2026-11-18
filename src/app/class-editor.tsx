@@ -22,6 +22,7 @@ import {
   useStopClassSeries,
 } from "@/lib/queries/staff";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
+import { BlurBackdrop } from "@/components/ui/BlurBackdrop";
 
 const WEEKDAYS = [
   { value: 1, label: "Mon" },
@@ -366,6 +367,7 @@ export default function ClassEditorScreen() {
         </Pressable>
         <Modal visible={timeOpen} transparent animationType="fade" onRequestClose={() => setTimeOpen(false)}>
           <Pressable style={styles.wheelBackdrop} onPress={() => setTimeOpen(false)}>
+            <BlurBackdrop />
             <View style={styles.wheelCard} onStartShouldSetResponder={() => true}>
               <Text style={styles.wheelTitle}>Start time</Text>
               <TimeWheelPicker clock totalSecs={wheelSecs} onChange={setWheelSecs} />

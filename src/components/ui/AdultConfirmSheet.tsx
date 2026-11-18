@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/Button";
 import { Radius, Spacing } from "@/constants/theme";
 import { useConfirmAdult } from "@/lib/queries/community-groups";
 import { makeLegacyStyles } from "@/lib/theme";
+import { BlurBackdrop } from "@/components/ui/BlurBackdrop";
 
 // Groups and the gym community are for adults only (Community plan, owner decision 2026-11-08: minimum age 18). The member confirms once; the server
 // records it and refuses groups and the gym feed until then, so this sheet is how a refused member gets unblocked.
@@ -32,6 +33,7 @@ export function AdultConfirmSheet({
   return (
     <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={onClose}>
       <View style={styles.backdrop}>
+        <BlurBackdrop />
         <View style={styles.card}>
           <Text style={styles.title}>Are you 18 or over?</Text>
           <Text style={styles.body}>

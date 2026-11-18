@@ -43,6 +43,7 @@ import { CARDIO_LABEL, CARDIO_TYPES, hasLevel, type CardioType } from "@/lib/car
 import { formatDuration, parseDuration } from "@/lib/workout-formatters";
 import { entrySegments, insertEntry, orderedEntries } from "@/lib/entry-order";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
+import { BlurBackdrop } from "@/components/ui/BlurBackdrop";
 
 let keySeq = 0;
 function nextKey(): string {
@@ -978,6 +979,7 @@ export default function ClassWorkoutBuilderScreen() {
         </KeyboardAwareScroll>
       <Modal visible={timeTarget !== null} transparent animationType="fade" onRequestClose={() => setTimeTarget(null)}>
         <Pressable style={styles.timeBackdrop} onPress={() => setTimeTarget(null)}>
+          <BlurBackdrop />
           <View style={styles.timeCard} onStartShouldSetResponder={() => true}>
             <Text style={styles.timeTitle}>Set time</Text>
             {timeTarget ? (
@@ -1005,6 +1007,7 @@ export default function ClassWorkoutBuilderScreen() {
       </Modal>
       <Modal visible={cardioTimeTarget !== null} transparent animationType="fade" onRequestClose={() => setCardioTimeTarget(null)}>
         <Pressable style={styles.timeBackdrop} onPress={() => setCardioTimeTarget(null)}>
+          <BlurBackdrop />
           <View style={styles.timeCard} onStartShouldSetResponder={() => true}>
             <Text style={styles.timeTitle}>Cardio time</Text>
             {cardioTimeTarget ? (

@@ -21,6 +21,7 @@ import {
   type TabataConfig,
 } from "@/lib/workout-draft";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
+import { BlurBackdrop } from "@/components/ui/BlurBackdrop";
 
 type Phase = {
   label: string;
@@ -841,6 +842,7 @@ function ChipperMovementLive({ movement, onChange }: { movement: ChipperMovement
 
       <Modal visible={wheelOpen} transparent animationType="fade" onRequestClose={() => setWheelOpen(false)}>
         <Pressable style={styles.wheelBackdrop} onPress={() => setWheelOpen(false)}>
+          <BlurBackdrop />
           <View style={styles.wheelCard} onStartShouldSetResponder={() => true}>
             <Text style={styles.wheelTitle}>{movement.name || "Time done"}</Text>
             <TimeWheelPicker totalSecs={wheelSecs} onChange={setWheelSecs} />

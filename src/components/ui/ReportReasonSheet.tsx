@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { Radius, Spacing } from "@/constants/theme";
 import { MAX_GYM_REPORT_REASON } from "@/lib/community-groups-format";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
+import { BlurBackdrop } from "@/components/ui/BlurBackdrop";
 
 const QUICK_REASONS = ["Offensive or abusive", "Spam or fake", "Something else"] as const;
 
@@ -37,6 +38,7 @@ export function ReportReasonSheet({
   return (
     <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={close}>
       <KeyboardAvoidingView behavior="padding" style={styles.backdrop}>
+        <BlurBackdrop />
         <View style={styles.card}>
           <Text style={styles.title}>{heading}</Text>
           <Text style={styles.body}>Tell us what is wrong. A coach or admin will look at it.</Text>

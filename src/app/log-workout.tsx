@@ -83,6 +83,7 @@ import type { WorkoutSummaryData } from "@/app/workout-summary";
 import { setPendingWorkoutSummary } from "@/lib/workout-summary-handoff";
 import { setPendingWorkoutTemplateSeed } from "@/lib/workout-template-seed";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
+import { BlurBackdrop } from "@/components/ui/BlurBackdrop";
 
 const FORMAT_OPTIONS: { value: WorkoutFormat; label: string }[] = [
   { value: "standard", label: "Standard" },
@@ -607,6 +608,7 @@ function ChipperMovementRow({
       )}
       <Modal visible={wheelOpen} transparent animationType="fade" onRequestClose={() => setWheelOpen(false)}>
         <Pressable style={feelStyles.backdrop} onPress={() => setWheelOpen(false)}>
+          <BlurBackdrop />
           <View style={styles.timePickerCard} onStartShouldSetResponder={() => true}>
             <Text style={styles.timePickerTitle}>{movement.name || "Target time"}</Text>
             <TimeWheelPicker totalSecs={wheelSecs} onChange={setWheelSecs} />
@@ -782,6 +784,7 @@ function HowDidYouFeelModal({
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
       <Pressable style={feelStyles.backdrop} onPress={onSkip}>
+        <BlurBackdrop />
         <Pressable style={feelStyles.card} onPress={(e) => e.stopPropagation()}>
           <Text style={feelStyles.title}>How did that feel?</Text>
           <Text style={feelStyles.rpeDescription}>{RPE_DESCRIPTION}</Text>
@@ -2848,6 +2851,7 @@ export default function LogWorkoutScreen() {
 
       <Modal visible={cardioTimeTarget !== null} transparent animationType="fade" onRequestClose={() => setCardioTimeTarget(null)}>
         <Pressable style={feelStyles.backdrop} onPress={() => setCardioTimeTarget(null)}>
+          <BlurBackdrop />
           <View style={styles.timePickerCard} onStartShouldSetResponder={() => true}>
             <Text style={styles.timePickerTitle}>Cardio time</Text>
             {cardioTimeTarget ? (
@@ -2873,6 +2877,7 @@ export default function LogWorkoutScreen() {
 
       <Modal visible={timePickerTarget !== null} transparent animationType="fade" onRequestClose={() => setTimePickerTarget(null)}>
         <Pressable style={feelStyles.backdrop} onPress={() => setTimePickerTarget(null)}>
+          <BlurBackdrop />
           <View style={styles.timePickerCard} onStartShouldSetResponder={() => true}>
             <Text style={styles.timePickerTitle}>Set duration</Text>
             {timePickerTarget ? (

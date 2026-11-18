@@ -4,6 +4,7 @@ import { Modal, Pressable, ScrollView, StyleSheet, Text, View, type ViewStyle } 
 
 import { Radius, Spacing } from "@/constants/theme";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
+import { BlurBackdrop } from "@/components/ui/BlurBackdrop";
 
 const WEEKDAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const MONTH_LABELS = [
@@ -187,6 +188,7 @@ export function DateField({
 
       <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
         <Pressable style={styles.backdrop} onPress={() => setOpen(false)}>
+          <BlurBackdrop />
           <Pressable style={styles.card} onPress={(e) => e.stopPropagation()}>
             <View style={styles.calHeader}>
               <Pressable

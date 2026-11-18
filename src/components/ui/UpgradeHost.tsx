@@ -7,6 +7,7 @@ import { AppRadius } from "@/constants/theme";
 import { registerUpgradeHandler } from "@/lib/api-client";
 import { makeStyles } from "@/lib/theme";
 import { CAN_SELL_DIGITAL_PLAN, DIGITAL_PLAN_ROUTE } from "@/lib/upsell-config";
+import { BlurBackdrop } from "@/components/ui/BlurBackdrop";
 
 // Mounted once at the app root. When the server answers that a feature is part of the App Subscription (code "upgrade_required", or
 // "ai_upgrade_required" for AI), api-client calls the handler registered here and this sheet explains it, with a way to the subscribe screen in
@@ -26,6 +27,7 @@ export function UpgradeHost() {
   return (
     <Modal visible={message !== null} transparent animationType="fade" statusBarTranslucent onRequestClose={close}>
       <View style={styles.backdrop}>
+        <BlurBackdrop />
         <View style={styles.card} accessibilityViewIsModal>
           <Text style={styles.title}>{CAN_SELL_DIGITAL_PLAN ? "Part of the App Subscription" : "Not included in your plan"}</Text>
           <Text style={styles.body}>{message}</Text>

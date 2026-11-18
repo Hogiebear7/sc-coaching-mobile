@@ -4,6 +4,7 @@ import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, View } from "rea
 import { Radius, Spacing } from "@/constants/theme";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 import { useBlockMember, useReportWorkout } from "@/lib/queries/community";
+import { BlurBackdrop } from "@/components/ui/BlurBackdrop";
 
 const REPORT_REASONS = ["Offensive or abusive", "Spam or fake", "Something else"] as const;
 
@@ -69,6 +70,7 @@ export function MemberSafetySheet({
   return (
     <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={close}>
       <Pressable style={styles.backdrop} onPress={close}>
+        <BlurBackdrop />
         <Pressable style={styles.card} onPress={(e) => e.stopPropagation()}>
           {step === "menu" ? (
             <>

@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Radius, Spacing } from "@/constants/theme";
 import { selectionFeedback, tapFeedback } from "@/lib/haptics";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
+import { BlurBackdrop } from "@/components/ui/BlurBackdrop";
 
 const ROW_H = 52;
 const MAX_VISIBLE = 6.5;
@@ -82,6 +83,7 @@ export function OptionPicker<T extends string>({
 
       <Modal visible={open} transparent animationType="fade" statusBarTranslucent onRequestClose={() => setOpen(false)}>
         <Pressable style={styles.backdrop} onPress={() => setOpen(false)} accessibilityLabel="Close list" accessibilityRole="button">
+          <BlurBackdrop />
           <Pressable style={[styles.menu, { height: menuHeight, marginTop: Math.max(insets.top, 16) }]} onPress={(e) => e.stopPropagation()}>
             <Text style={styles.title}>{title}</Text>
             <View style={styles.menuViewport}>

@@ -28,6 +28,7 @@ import {
 } from "@/lib/queries/community-groups";
 import { useHasFeature } from "@/lib/queries/profile";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
+import { BlurBackdrop } from "@/components/ui/BlurBackdrop";
 
 type Panel = "none" | "create" | "join";
 
@@ -183,6 +184,7 @@ export default function CommunityGroupsScreen() {
 
       <Modal visible={panel !== "none"} transparent animationType="fade" statusBarTranslucent onRequestClose={() => setPanel("none")}>
         <KeyboardAvoidingView behavior="padding" style={styles.backdrop}>
+          <BlurBackdrop />
           <View style={styles.sheet}>
             {panel === "create" ? (
               <>

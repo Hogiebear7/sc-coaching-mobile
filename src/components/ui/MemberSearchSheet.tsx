@@ -9,6 +9,7 @@ import { useFollowUser, useMemberSearch, useUnfollowUser, type MemberSearchResul
 import { Button } from "./Button";
 import { TextField } from "./TextField";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
+import { BlurBackdrop } from "@/components/ui/BlurBackdrop";
 
 // Shared "find a member" search — used both for following someone
 // (mode="follow", shows a Follow/Following button per result) and for
@@ -41,6 +42,7 @@ export function MemberSearchSheet({
   return (
     <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={handleClose}>
       <Pressable style={styles.backdrop} onPress={handleClose}>
+        <BlurBackdrop />
         <Pressable style={styles.card} onPress={(e) => e.stopPropagation()}>
           <Text style={styles.title}>{mode === "mention" ? "Mention someone" : "Follow members"}</Text>
           <TextField

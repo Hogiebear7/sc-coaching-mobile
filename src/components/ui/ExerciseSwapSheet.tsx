@@ -14,6 +14,7 @@ import {
 import { Button } from "./Button";
 import { TextField } from "./TextField";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
+import { BlurBackdrop } from "@/components/ui/BlurBackdrop";
 
 // "I can't do / don't like this exercise" — AI-suggested swap, one exercise
 // at a time. A single shared instance lives in the Workouts tab and is
@@ -38,6 +39,7 @@ export function ExerciseSwapSheet({
   return (
     <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={onClose}>
       <Pressable style={styles.backdrop} onPress={onClose}>
+        <BlurBackdrop />
         {/* Keyed by exercise id so switching which exercise is open remounts
             this content with fresh state, rather than resetting it via an
             effect (which would cascade an extra render on every open). */}

@@ -11,6 +11,7 @@ import { formatCommunityDate } from "@/lib/community-formatters";
 import { tapFeedback } from "@/lib/haptics";
 import { useGymComments, usePostGymComment, useRemoveGymComment, useReportGymContent } from "@/lib/queries/community-groups";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
+import { BlurBackdrop } from "@/components/ui/BlurBackdrop";
 
 // Comments on one gym post, as a bottom sheet. Same plain-Modal pattern as the main CommentSheet; no @mentions here. Anyone can report a comment that
 // isn't theirs; the author and the gym's coaches and admins can remove it.
@@ -61,7 +62,9 @@ export function GymCommentSheet({ visible, onClose, postId }: { visible: boolean
 
   return (
     <Modal visible={visible} transparent animationType="slide" statusBarTranslucent onRequestClose={onClose}>
-      <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel="Close comments" />
+      <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel="Close comments">
+        <BlurBackdrop />
+      </Pressable>
       <KeyboardAvoidingView behavior="padding" style={styles.sheetWrap} pointerEvents="box-none">
         <View style={[styles.sheet, { maxHeight: windowHeight * 0.8, paddingBottom: insets.bottom + Spacing.md }]}>
           <View style={styles.titleRow}>

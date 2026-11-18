@@ -3,6 +3,7 @@ import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-nati
 
 import { Radius, Spacing } from "@/constants/theme";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
+import { BlurBackdrop } from "@/components/ui/BlurBackdrop";
 
 // Small reusable "what is this?" explainer — tap an (i) icon on a stat or
 // metric, get a short plain-language answer in a dismissible sheet. Generic
@@ -27,6 +28,7 @@ export function InfoModal({
           iPhone a Pressable wrapped around the ScrollView took the swipe, so
           long text was cut off and couldn't scroll. */}
       <View style={styles.backdrop}>
+        <BlurBackdrop />
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityRole="button" accessibilityLabel="Close" />
         <View style={styles.card}>
           <Text style={styles.title}>{title}</Text>

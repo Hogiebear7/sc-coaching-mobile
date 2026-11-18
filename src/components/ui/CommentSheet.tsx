@@ -20,6 +20,7 @@ import {
 import { MemberSafetySheet } from "./MemberSafetySheet";
 import { MemberSearchSheet } from "./MemberSearchSheet";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
+import { BlurBackdrop } from "@/components/ui/BlurBackdrop";
 
 // Comment thread + composer for one workout session, as a bottom sheet — a
 // single shared instance in the Community tab, re-opened for whichever feed
@@ -110,7 +111,9 @@ export function CommentSheet({
         navigationBarTranslucent
         onRequestClose={handleClose}
       >
-        <Pressable style={styles.backdrop} onPress={handleClose} accessibilityLabel="Close comments" />
+        <Pressable style={styles.backdrop} onPress={handleClose} accessibilityLabel="Close comments">
+          <BlurBackdrop />
+        </Pressable>
         <KeyboardAvoidingView behavior="padding" style={styles.avoidingView} pointerEvents="box-none">
           <View style={[styles.card, { maxHeight: windowHeight * 0.85, paddingBottom: insets.bottom + Spacing.md }]}>
             <View style={styles.handle} />

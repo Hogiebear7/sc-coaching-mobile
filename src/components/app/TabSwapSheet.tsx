@@ -6,6 +6,7 @@ import { AppRadius } from "@/constants/theme";
 import { selectionFeedback, tapFeedback } from "@/lib/haptics";
 import type { ChoosableTab } from "@/lib/tab-config";
 import { makeStyles, useAppTheme } from "@/lib/theme";
+import { BlurBackdrop } from "@/components/ui/BlurBackdrop";
 
 export const TAB_LABEL: Record<ChoosableTab, string> = { schedule: "Schedule", workouts: "Train", nutrition: "Nutrition" };
 const TAB_ICON: Record<ChoosableTab, keyof typeof import("@expo/vector-icons").Ionicons.glyphMap> = {
@@ -34,7 +35,9 @@ export function TabSwapSheet({
 
   return (
     <Modal visible={tab !== null} transparent animationType="slide" statusBarTranslucent navigationBarTranslucent onRequestClose={onClose}>
-      <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel="Close" />
+      <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel="Close">
+        <BlurBackdrop />
+      </Pressable>
       <View style={[styles.sheet, { paddingBottom: insets.bottom + 16 }]}>
         <View style={styles.handle} />
         <Text style={styles.title}>Change the {tab ? TAB_LABEL[tab] : ""} tab</Text>

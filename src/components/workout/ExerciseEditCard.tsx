@@ -233,8 +233,8 @@ export function ExerciseEditCard(props: ExerciseEditCardProps) {
               </View>
 
               <View style={styles.setColumnHeader}>
-                <Text style={[styles.setColumnLabel, { width: 36, textAlign: "center" }]}>Set</Text>
-                {mode === "log" ? <Text style={[styles.setColumnLabel, { width: 66 }]}>Previous</Text> : null}
+                <Text style={[styles.setColumnLabel, { width: 46, textAlign: "center" }]}>Set</Text>
+                {mode === "log" ? <Text style={[styles.setColumnLabel, { width: 56 }]}>Previous</Text> : null}
                 <Text style={[styles.setColumnLabel, { flex: 1, textAlign: "center" }]}>{unitModeColumnLabel(row.unitMode)}</Text>
                 {row.unitMode === "time" ? (
                   <Text style={[styles.setColumnLabel, { flex: 1, textAlign: "center" }]} />
@@ -270,7 +270,7 @@ export function ExerciseEditCard(props: ExerciseEditCardProps) {
                         <Text style={styles.setNumber}>{setIdx + 1}</Text>
                       </View>
                       {set.setType !== "standard" ? (
-                        <Text style={styles.setTypeTag} numberOfLines={1}>
+                        <Text style={styles.setTypeTag} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
                           {SET_TYPE_OPTIONS.find((o) => o.value === set.setType)?.label}
                         </Text>
                       ) : null}
@@ -297,6 +297,7 @@ export function ExerciseEditCard(props: ExerciseEditCardProps) {
                       </Pressable>
                     ) : (
                       row.unitMode === "weight" ? (
+                        <View style={{ flex: 1 }}>
                         <TextInput
                           value={focusedWeightKey === set.key ? stripWeightUnit(set.weight) : withWeightUnit(set.weight, weightUnit)}
                           onChangeText={(v) => typeWeight(row.key, set.key, v)}
@@ -307,8 +308,23 @@ export function ExerciseEditCard(props: ExerciseEditCardProps) {
                           placeholder={lastSet?.weight ? stripWeightUnit(lastSet.weight) : "60"}
                           placeholderTextColor={Color.textFaint}
                           accessibilityLabel={`Set ${setIdx + 1} weight in ${weightUnit}`}
-                          style={[styles.setInput, set.completed && styles.setInputCompleted, { flex: 1 }]}
+                          style={[styles.setInput, set.completed && styles.setInputCompleted, { flex: 1, paddingRight: 40 }]}
                         />
+                          <Pressable
+                            onPress={() => {
+                              selectionFeedback();
+                              // Bodyweight: "BW" goes in this set and every set below it, the same way a typed weight does; tap again to clear it.
+                              updateFirstSetField(row.key, set.key, "weight", set.weight.trim() === "BW" ? "" : "BW");
+                            }}
+                            hitSlop={6}
+                            accessibilityRole="button"
+                            accessibilityState={{ selected: set.weight.trim() === "BW" }}
+                            accessibilityLabel={`Set ${setIdx + 1} bodyweight`}
+                            style={[styles.bwPill, set.weight.trim() === "BW" && styles.bwPillOn]}
+                          >
+                            <Text style={[styles.bwPillText, set.weight.trim() === "BW" && styles.bwPillTextOn]}>BW</Text>
+                          </Pressable>
+                        </View>
                       ) : (
                         <TextInput
                           value={set.weight}

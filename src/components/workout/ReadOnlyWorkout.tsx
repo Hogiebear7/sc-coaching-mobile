@@ -19,7 +19,7 @@ import { computeExerciseSetTotals, formatExerciseSetLabels, formatRun, groupSetL
 import type { ExerciseRow, RunRow } from "@/lib/workout-draft";
 
 // A finished workout drawn with the same workout cards as a live one (WorkoutBlock): the focused view, one round or set at a time, and a "Details" switch for the
-// full list of sets, in the same coloured superset boxes. Read-only. Used for a workout in the history and for someone else's workout in Community.
+// full list of sets (the way it opens), in the same coloured superset boxes. Read-only. Used for a workout in the history and for someone else's workout in Community.
 const noop = () => {};
 
 export function ReadOnlyWorkout({
@@ -39,7 +39,8 @@ export function ReadOnlyWorkout({
   onOpenExercise?: (name: string) => void;
 }) {
   const styles = useStyles();
-  const [detailed, setDetailed] = useState<string[]>([]);
+  // Every block opens on its full details (all the sets); this holds the ones switched to the focused view.
+  const [focused, setFocused] = useState<string[]>([]);
 
   const built = useMemo(() => {
     const exerciseRows = exercises.map((e) => ({ row: entryToRow(e), entry: e }));
@@ -57,7 +58,7 @@ export function ReadOnlyWorkout({
   const numberOf = (key: string): number => ordered.findIndex((e) => e.row.key === key) + 1;
   const memberNumber = (key: string, group: string | null): number => (group ? ordered.filter((e) => e.row.supersetGroup === group).findIndex((e) => e.row.key === key) : 0);
 
-  const toggle = (blockKey: string) => setDetailed((prev) => (prev.includes(blockKey) ? prev.filter((k) => k !== blockKey) : [...prev, blockKey]));
+  const toggle = (blockKey: string) => setFocused((prev) => (prev.includes(blockKey) ? prev.filter((k) => k !== blockKey) : [...prev, blockKey]));
 
   const exerciseCard = (row: ExerciseRow) => {
     const entry = entryByKey.get(row.key)!;
@@ -137,7 +138,7 @@ export function ReadOnlyWorkout({
 
   const block = (opts: { blockKey: string; group: string | null; members: ({ kind: "exercise"; row: ExerciseRow } | { kind: "run"; row: RunRow })[]; headerText: string }) => {
     const colour = opts.group ? supersetColor(opts.group, allGroupLabels) : "#9FB3D1";
-    const open = detailed.includes(opts.blockKey);
+    const open = !focused.includes(opts.blockKey);
     const labels = opts.members.map((m) => (opts.group ? supersetMemberLabel(opts.group, allGroupLabels, memberNumber(m.row.key, opts.group)) : String(numberOf(m.row.key))));
     return (
       <WorkoutBlock

@@ -62,3 +62,19 @@ describe("carrying a weight down", () => {
     expect(normalizeWeights(sets, "kg").map((s) => s.weight)).toEqual(["40 kg", "40 kg", "40 kg", "40 kg"]);
   });
 });
+
+describe("bodyweight (BW)", () => {
+  it("is left alone when the unit is added or removed, and typing still keeps numbers only", () => {
+    expect(withWeightUnit("BW", "kg")).toBe("BW");
+    expect(stripWeightUnit("BW")).toBe("BW");
+    expect(sanitizeWeight("BW")).toBe("");
+    expect(sanitizeWeight("BW5")).toBe("5");
+  });
+
+  it("carries down to the sets below, like a typed weight, and never changes the ones above", () => {
+    const sets = [{ key: "a", weight: "40" }, { key: "b", weight: "40" }, { key: "c", weight: "40" }];
+    expect(applyWeightFrom(sets, "b", "BW").map((s) => s.weight)).toEqual(["40", "BW", "BW"]);
+    expect(normalizeWeights([{ weight: "BW" }, { weight: "40" }], "kg").map((s) => s.weight)).toEqual(["BW", "40 kg"]);
+  });
+});
+

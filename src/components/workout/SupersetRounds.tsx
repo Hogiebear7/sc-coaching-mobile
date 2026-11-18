@@ -299,6 +299,7 @@ export function SupersetRounds({
                     style={styles.box}
                   />
                 ) : (
+                  <View style={{ flex: 1 }}>
                   <TextInput
                     editable={!readOnly}
                     value={focusedKey === s.key ? stripWeightUnit(s.weight) : withWeightUnit(s.weight, weightUnit)}
@@ -313,8 +314,21 @@ export function SupersetRounds({
                     placeholder={weightUnit}
                     placeholderTextColor={Color.textFaint}
                     accessibilityLabel={`${label} weight`}
-                    style={styles.box}
+                    style={[styles.box, { flex: 0, width: "100%", paddingRight: readOnly ? 0 : 40 }]}
                   />
+                    {readOnly ? null : (
+                      <Pressable
+                        onPress={() => onChangeSet(row.key, s.key, { weight: s.weight.trim() === "BW" ? "" : "BW" })}
+                        hitSlop={6}
+                        accessibilityRole="button"
+                        accessibilityState={{ selected: s.weight.trim() === "BW" }}
+                        accessibilityLabel={`${label} bodyweight`}
+                        style={[styles.bwPill, s.weight.trim() === "BW" && { backgroundColor: Color.gold }]}
+                      >
+                        <Text style={[styles.bwPillText, s.weight.trim() === "BW" && { color: Color.goldForeground }]}>BW</Text>
+                      </Pressable>
+                    )}
+                  </View>
                 )}
                 {timed ? null : row.perSide ? (
                   <>
@@ -466,6 +480,8 @@ const useStyles = makeLegacyStyles((Color) =>
       fontSize: 18,
       color: Color.textPrimary,
     },
+    bwPill: { position: "absolute", right: 6, top: 12, minWidth: 30, height: 24, borderRadius: 12, paddingHorizontal: 6, alignItems: "center", justifyContent: "center", backgroundColor: Color.surface1 },
+    bwPillText: { fontSize: 11, fontWeight: "800", color: Color.textMuted },
     unitBtn: { minWidth: 44, height: 48, borderRadius: Radius.md, backgroundColor: Color.surface2, alignItems: "center", justifyContent: "center" },
     unitBtnText: { fontSize: 14, fontWeight: "700", color: Color.textPrimary },
     timerBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: Color.surface2, alignItems: "center", justifyContent: "center" },

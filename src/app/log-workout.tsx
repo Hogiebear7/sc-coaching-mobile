@@ -133,7 +133,7 @@ function newSetRow(setType: WorkoutSetType = "standard"): SetRow {
 // a generic "time's up".
 function formatCompletedSetSummary(row: ExerciseRow, sr: SetRow, setIdx: number): string {
   const parts = [`Set ${setIdx + 1}`];
-  if (sr.weight.trim()) parts.push(row.unitMode === "weight" ? `${sr.weight.trim()}kg` : sr.weight.trim());
+  if (sr.weight.trim()) parts.push(row.unitMode === "weight" && /^[\d.]+$/.test(sr.weight.trim()) ? `${sr.weight.trim()}kg` : sr.weight.trim());
   const repsLabel =
     sr.repsRight.trim() && sr.repsLeft.trim()
       ? `R${sr.repsRight.trim()}/L${sr.repsLeft.trim()}`

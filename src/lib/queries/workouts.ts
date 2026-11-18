@@ -39,6 +39,8 @@ export interface WorkoutExerciseEntry {
   perSide?: boolean | null;
   /** Place in the whole workout, exercises and cardio together. Absent on sessions saved before ordering existed. */
   order?: number | null;
+  /** The body part the member picked for an exercise of their own (not in the library). Absent otherwise and from older servers. */
+  muscleSection?: ExerciseSection | null;
   notes: string | null;
 }
 
@@ -131,6 +133,8 @@ export interface CreateWorkoutExerciseInput {
   perSide: boolean;
   /** Place in the whole workout, exercises and cardio together. Older servers ignore it. */
   order?: number | null;
+  /** The body part the member picked for an exercise of their own. Older servers ignore it. */
+  muscleSection?: ExerciseSection | null;
   notes: string | null;
 }
 

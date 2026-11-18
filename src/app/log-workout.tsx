@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { DateField } from "@/components/ui/DateField";
 import { ExerciseAutocomplete } from "@/components/ui/ExerciseAutocomplete";
+import { BodyPartPicker } from "@/components/workout/BodyPartPicker";
+import { personalMuscleSections } from "@/lib/exercise-muscles";
 import { KeyboardAwareScroll } from "@/components/ui/KeyboardAwareScroll";
 import { PbToast } from "@/components/ui/PbToast";
 import { RestTimerBar } from "@/components/ui/RestTimerBar";
@@ -53,6 +55,7 @@ import {
   useWorkouts,
   type CreateWorkoutExerciseInput,
   type CreateWorkoutRunInput,
+  type ExerciseSection,
   type WorkoutSessionSummary,
   type WorkoutSetType,
 } from "@/lib/queries/workouts";
@@ -901,6 +904,16 @@ export default function LogWorkoutScreen() {
     () => getPersonalExerciseNames(data?.sessions ?? [], data?.exerciseLibrary ?? [], libraryIndex?.items ?? []),
     [data?.sessions, data?.exerciseLibrary, libraryIndex?.items]
   );
+  // An exercise the member typed themselves (not in the library) gets asked which body part it is, then shows the same muscle picture as the rest; a name
+  // they have already given a body part to in an earlier workout is remembered.
+  const knownExerciseNames = useMemo(
+    () => new Set([...(data?.exerciseLibrary ?? []), ...(libraryIndex?.items ?? [])].map((e) => e.name.trim().toLowerCase())),
+    [data?.exerciseLibrary, libraryIndex?.items]
+  );
+  const rememberedSections = useMemo(() => personalMuscleSections(data?.sessions ?? []), [data?.sessions]);
+  const isOwnExercise = (row: { name: string; exerciseId: string | null }) => !!row.name.trim() && !row.exerciseId && !knownExerciseNames.has(row.name.trim().toLowerCase());
+  const ownSectionFor = (row: { name: string; exerciseId: string | null; muscleSection?: ExerciseSection | null }) =>
+    isOwnExercise(row) ? row.muscleSection ?? rememberedSections.get(row.name.trim().toLowerCase()) ?? null : null;
   const { data: program } = useMyProgram();
   const { data: templates } = useWorkoutTemplates();
   const create = useCreateWorkout();
@@ -1572,6 +1585,7 @@ export default function LogWorkoutScreen() {
           supersetGroup: savedGroup(r.key),
           perSide: r.perSide,
           order: orderToSave(r),
+          ...(ownSectionFor(r) ? { muscleSection: ownSectionFor(r) } : {}),
           notes: r.notes.trim() || null,
         };
       });
@@ -1918,6 +1932,15 @@ export default function LogWorkoutScreen() {
                 value={row.name}
                 onChange={(name, exerciseId) => updateRow(row.key, { name, exerciseId })}
               />
+
+              {libraryIndex && isOwnExercise(row) ? (
+                <BodyPartPicker
+                  name={row.name}
+                  section={ownSectionFor(row)}
+                  remembered={!row.muscleSection && !!ownSectionFor(row)}
+                  onPick={(muscleSection) => updateRow(row.key, { muscleSection })}
+                />
+              ) : null}
 
               {(() => {
                 if (!row.name.trim()) return null;
@@ -2830,7 +2853,7 @@ export default function LogWorkoutScreen() {
           {exerciseRows.some((r) => r.name.trim()) ? (
             <Pressable onPress={handleSaveAsTemplate} style={styles.saveTemplateRow}>
               <Ionicons name="bookmark-outline" size={14} color={Color.gold} />
-              <Text style={styles.saveTemplateText}>Save as template</Text>
+              <Text style={styles.saveTemplateText}>Save to my templates</Text>
             </Pressable>
           ) : null}
       </KeyboardAwareScroll>

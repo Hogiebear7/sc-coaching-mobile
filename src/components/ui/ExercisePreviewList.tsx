@@ -32,7 +32,7 @@ export function ExercisePreviewList({
     <View style={styles.list}>
       {shownExercises.map((ex, i) => {
         const section = ex.exerciseId ? sectionByExerciseId?.get(ex.exerciseId) : undefined;
-        const focus = muscleFocusFor(ex.name, section);
+        const focus = muscleFocusFor(ex.name, section, ex.muscleSection);
         return (
           <View key={`ex-${i}`} style={styles.row}>
             <View style={styles.icon}>

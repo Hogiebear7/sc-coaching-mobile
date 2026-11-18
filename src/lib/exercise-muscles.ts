@@ -40,7 +40,34 @@ const BY_NAME: [RegExp, MuscleFocus][] = [
   [/run|walk|bike|cycle|stair|cross[- ]?trainer|sled|carry|burpee|jump/i, BY_SECTION.cardio],
 ];
 
-export function muscleFocusFor(name: string, section?: ExerciseSection | null): MuscleFocus | null {
+/**
+ * The picture for an exercise. `chosen` is the body part the member picked for an exercise of their own, and it wins over everything else; otherwise the
+ * name rules, then the library section.
+ */
+export function muscleFocusFor(name: string, section?: ExerciseSection | null, chosen?: ExerciseSection | null): MuscleFocus | null {
+  if (chosen) return BY_SECTION[chosen];
   for (const [re, focus] of BY_NAME) if (re.test(name)) return focus;
   return section ? BY_SECTION[section] : null;
+}
+
+/** The body parts offered for an exercise the member typed themselves, in plain words. */
+export const BODY_PART_CHOICES: { section: ExerciseSection; label: string }[] = [
+  { section: "upper_push", label: "Chest, shoulders, triceps" },
+  { section: "upper_pull", label: "Back, biceps" },
+  { section: "lower_push", label: "Quads, legs" },
+  { section: "lower_pull", label: "Hamstrings, glutes" },
+  { section: "core", label: "Core" },
+  { section: "cardio", label: "Cardio, full body" },
+];
+
+/** The body part picked for each exercise name in the member's past workouts (newest first wins), so a name typed again is not asked about again. */
+export function personalMuscleSections(sessions: { exercises: { name: string; muscleSection?: ExerciseSection | null }[] }[]): Map<string, ExerciseSection> {
+  const out = new Map<string, ExerciseSection>();
+  for (const s of sessions) {
+    for (const ex of s.exercises) {
+      const key = ex.name.trim().toLowerCase();
+      if (key && ex.muscleSection && !out.has(key)) out.set(key, ex.muscleSection);
+    }
+  }
+  return out;
 }

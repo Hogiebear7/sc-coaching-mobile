@@ -13,7 +13,7 @@ import {
 } from "react";
 import { AppState, Platform } from "react-native";
 
-import type { WorkoutSetType } from "@/lib/queries/workouts";
+import type { ExerciseSection, WorkoutSetType } from "@/lib/queries/workouts";
 import { useRestTimer } from "@/lib/rest-timer";
 import { getLiveActivityPrefs, useLiveActivityPrefs, workoutActivityFromDraft } from "@/lib/widgets/live-activity";
 import { nativeBridge } from "@/lib/widgets/native-bridge";
@@ -53,6 +53,8 @@ export type ExerciseRow = {
   perSide: boolean;
   /** Place in the whole workout, exercises and cardio together (see lib/entry-order.ts). Absent on older drafts. */
   order?: number | null;
+  /** The body part the member picked for an exercise of their own that is not in the library. Absent on older drafts. */
+  muscleSection?: ExerciseSection | null;
 };
 
 export type RunRow = {

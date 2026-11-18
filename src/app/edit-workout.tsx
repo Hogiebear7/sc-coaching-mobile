@@ -23,6 +23,7 @@ import {
   useWorkouts,
   type CreateWorkoutExerciseInput,
   type CreateWorkoutRunInput,
+  type ExerciseSection,
   type WorkoutSetType,
 } from "@/lib/queries/workouts";
 import { formatAsKg, formatDuration, getPersonalExerciseNames, parseDuration, todayDateString } from "@/lib/workout-formatters";
@@ -64,6 +65,8 @@ type EditExerciseRow = {
   notes: string;
   supersetGroup: string | null;
   perSide: boolean;
+  /** Kept as saved, so editing a workout does not lose the body part picked for an exercise of the member's own. */
+  muscleSection?: ExerciseSection | null;
 };
 
 type EditRunRow = {
@@ -178,6 +181,7 @@ export default function EditWorkoutScreen() {
         notes: ex.notes ?? "",
         supersetGroup: ex.supersetGroup ?? null,
         perSide: ex.perSide ?? false,
+        muscleSection: ex.muscleSection ?? null,
       }))
     );
     setRunRows(
@@ -287,6 +291,7 @@ export default function EditWorkoutScreen() {
           setType: first && first.setType !== "standard" ? first.setType : null,
           supersetGroup: row.supersetGroup,
           perSide: row.perSide,
+          ...(row.muscleSection ? { muscleSection: row.muscleSection } : {}),
           notes: row.notes.trim() || null,
         };
       });

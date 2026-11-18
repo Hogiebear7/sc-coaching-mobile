@@ -125,7 +125,7 @@ export default function SessionDetailScreen() {
               onPress={handleSaveAsTemplate}
               style={styles.headerIconButton}
               accessibilityRole="button"
-              accessibilityLabel="Save as template"
+              accessibilityLabel="Save to my templates"
               disabled={session.exercises.length === 0}
             >
               <Ionicons
@@ -283,8 +283,8 @@ export default function SessionDetailScreen() {
                     >
                       <View style={styles.exerciseHead}>
                         <View style={styles.exerciseIcon}>
-                          {muscleFocusFor(ex.name, section) ? (
-                            <MuscleThumb focus={muscleFocusFor(ex.name, section)!} size={44} />
+                          {muscleFocusFor(ex.name, section, ex.muscleSection) ? (
+                            <MuscleThumb focus={muscleFocusFor(ex.name, section, ex.muscleSection)!} size={44} />
                           ) : (
                             <Text style={styles.exerciseIndex}>{idx + 1}</Text>
                           )}

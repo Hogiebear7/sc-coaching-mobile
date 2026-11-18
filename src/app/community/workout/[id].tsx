@@ -127,7 +127,7 @@ export default function CommunityWorkoutScreen() {
 
           {item.exercises.length > 0 ? (
             <>
-              <Button title="Save as my template" variant="secondary" onPress={handleSaveAsTemplate} style={{ marginTop: Spacing.md }} />
+              <Button title="Save to my templates" variant="secondary" onPress={handleSaveAsTemplate} style={{ marginTop: Spacing.md }} />
               <Text style={styles.hint}>Weights are left blank so you can set your own. You can change anything before you save.</Text>
             </>
           ) : null}
@@ -161,7 +161,7 @@ export default function CommunityWorkoutScreen() {
               const ex = entry.entry;
               const totals = computeExerciseSetTotals(ex);
               const groups = groupSetLabels(formatExerciseSetLabels(ex));
-              const focus = muscleFocusFor(ex.name, undefined);
+              const focus = muscleFocusFor(ex.name, undefined, ex.muscleSection);
               const note = shareableNote(ex.notes);
               return (
                 <View key={`ex-${idx}`} style={styles.exerciseCard}>

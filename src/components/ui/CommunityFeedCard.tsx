@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
@@ -29,6 +30,7 @@ export function CommunityFeedCard({ item, onOpenComments }: { item: CommunityFee
   const isLiking = toggleLike.isPending && toggleLike.variables === item.id;
   const { user } = useAuth();
   const [safetyOpen, setSafetyOpen] = useState(false);
+  const router = useRouter();
 
   return (
     <View style={styles.card}>
@@ -70,9 +72,18 @@ export function CommunityFeedCard({ item, onOpenComments }: { item: CommunityFee
         ) : null}
       </View>
 
-      <View style={styles.body}>
+      {/* Tapping the exercises (or "+N more exercises") opens the full workout, with its sets, supersets and type, and a way to save it as a template. */}
+      <Pressable
+        onPress={() => {
+          tapFeedback();
+          router.push({ pathname: "/community/workout/[id]", params: { id: item.id, comments: "0" } });
+        }}
+        style={styles.body}
+        accessibilityRole="button"
+        accessibilityLabel={`View the full workout, ${formatWorkoutTitle(item.title)}`}
+      >
         <ExercisePreviewList exercises={item.exercises} runs={item.runs} />
-      </View>
+      </Pressable>
 
       <View style={styles.actions}>
         <LikeButton

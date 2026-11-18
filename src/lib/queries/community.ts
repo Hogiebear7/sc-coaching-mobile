@@ -22,13 +22,13 @@ export interface LeaderboardEntry {
  * Who is ranked: "friends" (the people the member follows, plus the member), "global" (everyone in the gym who has not switched the leaderboard off), or
  * "auto" (the server picks friends when the member follows anyone it can show, otherwise global). The leaderboard is free for every member.
  */
-export type LeaderboardScope = "auto" | "friends" | "global";
+export type LeaderboardScope = "auto" | "friends" | "global" | "gym";
 
 export interface LeaderboardData {
   entries: LeaderboardEntry[];
   myUserId: string;
   /** The scope the server actually used (never "auto"). Older servers omit it, in which case the board is the whole gym. */
-  scope?: "friends" | "global";
+  scope?: "friends" | "global" | "gym";
   /** How many followed members could be shown. Older servers omit it. */
   followingCount?: number;
 }

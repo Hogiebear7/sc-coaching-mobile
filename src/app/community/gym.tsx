@@ -159,6 +159,26 @@ export default function CommunityGymScreen() {
           <Text style={styles.subhead}>Only members of your gym and its coaches can see this.</Text>
 
           <View style={styles.section}>
+            <SectionHeader label="Leaderboard" />
+            <Pressable
+              onPress={() => {
+                tapFeedback();
+                router.push({ pathname: "/community", params: { tab: "leaderboard", scope: "gym" } });
+              }}
+              style={({ pressed }) => [styles.leaderboardLink, pressed && { opacity: 0.85 }]}
+              accessibilityRole="button"
+              accessibilityLabel="Gym leaderboard. See where you rank among your gym's members."
+            >
+              <Ionicons name="podium-outline" size={22} color={Color.gold} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.leaderboardLinkTitle}>Gym leaderboard</Text>
+                <Text style={styles.leaderboardLinkSub}>Where you rank among your gym&apos;s members</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={Color.textFaint} />
+            </Pressable>
+          </View>
+
+          <View style={styles.section}>
             <SectionHeader
               label="Challenges"
               action={isStaff ? { label: "New challenge", onPress: () => router.push({ pathname: "/community/new-challenge", params: { scope: "gym" } }) } : undefined}
@@ -289,6 +309,9 @@ const useStyles = makeLegacyStyles((Color) =>
     headerTitle: { fontSize: 20, fontWeight: "600", color: Color.textPrimary },
     scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
     subhead: { fontSize: 14, color: Color.textMuted, marginBottom: Spacing.md },
+    leaderboardLink: { flexDirection: "row", alignItems: "center", gap: Spacing.md, backgroundColor: Color.surface1, borderRadius: Radius.lg, padding: Spacing.md },
+    leaderboardLinkTitle: { fontSize: 16, fontWeight: "600", color: Color.textPrimary },
+    leaderboardLinkSub: { fontSize: 13, color: Color.textMuted, marginTop: 1 },
     section: { marginBottom: Spacing.xl },
     quiet: { fontSize: 14, color: Color.textMuted },
     gateCard: { padding: Spacing.lg },

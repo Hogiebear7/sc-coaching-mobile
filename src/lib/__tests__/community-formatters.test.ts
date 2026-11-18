@@ -23,6 +23,7 @@ describe("the leaderboard is free for everyone", () => {
   it("says which board is showing", () => {
     expect(leaderboardScopeLabel("friends")).toBe("Friends");
     expect(leaderboardScopeLabel("global")).toBe("Everyone at your gym");
+    expect(leaderboardScopeLabel("gym")).toBe("Gym community");
   });
 });
 

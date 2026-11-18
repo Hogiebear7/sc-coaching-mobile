@@ -133,7 +133,7 @@ export default function CommunityScreen() {
   const { user } = useAuth();
   // The visibility notice waits until the page tour is out of the way, so it never opens on top of a tour step.
   const { holdTips } = useTour();
-  const params = useLocalSearchParams<{ tab?: string }>();
+  const params = useLocalSearchParams<{ tab?: string; scope?: string }>();
   const [metric, setMetric] = useState<LeaderboardMetric>("volume");
   const [range, setRange] = useState<LeaderboardRange>("all");
   const [customStart, setCustomStart] = useState("");
@@ -156,11 +156,17 @@ export default function CommunityScreen() {
   const wins = useCommunityWins(20);
   // The leaderboard is free for everyone. "auto" lets the server choose: the Friends board when the member follows anyone it can show, otherwise the
   // whole gym. The member can switch either way once they follow someone.
-  const [scope, setScope] = useState<LeaderboardScope>("auto");
+  const [scope, setScope] = useState<LeaderboardScope>(params.scope === "gym" ? "gym" : "auto");
   const leaderboard = useLeaderboard(metric, range, customStart || null, customEnd || null, scope);
   const shownScope = leaderboard.data?.scope ?? "global";
   const followingCount = leaderboard.data?.followingCount ?? 0;
   const hasGymCommunity = useGymCommunityAccess().allowed;
+  // Friends once the member follows someone (until then it would just be themselves), Everyone always, and the gym community board for gym members.
+  const scopeOptions: { key: "friends" | "global" | "gym"; label: string }[] = [
+    ...(followingCount > 0 ? [{ key: "friends" as const, label: "Friends" }] : []),
+    { key: "global" as const, label: "Everyone" },
+    ...(hasGymCommunity ? [{ key: "gym" as const, label: "Gym community" }] : []),
+  ];
   const suggested = useSuggestedMembers();
   const followUser = useFollowUser();
 
@@ -287,17 +293,17 @@ export default function CommunityScreen() {
           <SectionHeader label="Leaderboard" />
           <>
           {/* Only offered once the member follows someone, because until then Friends would just be themselves. */}
-          {followingCount > 0 ? (
+          {scopeOptions.length > 1 ? (
             <View style={styles.metricRow} accessibilityRole="tablist">
-              {(["friends", "global"] as const).map((s) => (
+              {scopeOptions.map((o) => (
                 <Pressable
-                  key={s}
-                  onPress={() => setScope(s)}
-                  style={[styles.metricChip, shownScope === s && styles.metricChipActive]}
+                  key={o.key}
+                  onPress={() => setScope(o.key)}
+                  style={[styles.metricChip, shownScope === o.key && styles.metricChipActive]}
                   accessibilityRole="tab"
-                  accessibilityState={{ selected: shownScope === s }}
+                  accessibilityState={{ selected: shownScope === o.key }}
                 >
-                  <Text style={[styles.metricChipText, shownScope === s && styles.metricChipTextActive]}>{s === "friends" ? "Friends" : "Everyone"}</Text>
+                  <Text style={[styles.metricChipText, shownScope === o.key && styles.metricChipTextActive]}>{o.label}</Text>
                 </Pressable>
               ))}
             </View>

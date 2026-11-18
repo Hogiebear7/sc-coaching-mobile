@@ -105,8 +105,8 @@ export type LeaderboardMetric = "volume" | "squat" | "bench" | "deadlift";
 export type LeaderboardRange = "week" | "month" | "year" | "all" | "custom";
 
 // Which board is showing: the people the member follows (plus themselves), or everyone in the gym who has not switched the leaderboard off.
-export function leaderboardScopeLabel(scope: "friends" | "global"): string {
-  return scope === "friends" ? "Friends" : "Everyone at your gym";
+export function leaderboardScopeLabel(scope: "friends" | "global" | "gym"): string {
+  return scope === "friends" ? "Friends" : scope === "gym" ? "Gym community" : "Everyone at your gym";
 }
 
 const METRIC_LABEL: Record<LeaderboardMetric, string> = {

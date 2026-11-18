@@ -43,6 +43,7 @@
     },
     "plugins": [
       "./plugins/withFixedLauncherIcons.js",
+      "./plugins/withOptionalPortrait.js",
       "expo-router",
       [
         "expo-splash-screen",

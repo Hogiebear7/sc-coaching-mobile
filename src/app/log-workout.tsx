@@ -1,26 +1,24 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { Alert, Image, InteractionManager, Keyboard, KeyboardAvoidingView, Modal, Platform, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { Alert, InteractionManager, Keyboard, KeyboardAvoidingView, Modal, Platform, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import type { KeyboardAwareScrollViewRef } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { DateField } from "@/components/ui/DateField";
-import { ExerciseAutocomplete } from "@/components/ui/ExerciseAutocomplete";
-import { BodyPartPicker } from "@/components/workout/BodyPartPicker";
 import { WorkoutBlock } from "@/components/workout/WorkoutBlock";
+import { ExerciseEditCard } from "@/components/workout/ExerciseEditCard";
 import { useLogStyles as useStyles } from "@/components/workout/log-styles";
-import { ExerciseDemoRow, ExerciseThumbnail, NoteControl, RirControl } from "@/components/workout/exercise-card-parts";
+import { RirControl } from "@/components/workout/exercise-card-parts";
 import { personalMuscleSections } from "@/lib/exercise-muscles";
 import { KeyboardAwareScroll } from "@/components/ui/KeyboardAwareScroll";
 import { PbToast } from "@/components/ui/PbToast";
 import { RestTimerBar } from "@/components/ui/RestTimerBar";
 import { TextField } from "@/components/ui/TextField";
 import { TimeWheelPicker } from "@/components/ui/TimeWheelPicker";
-import { DataColor, Radius, Spacing, type LegacyPalette } from "@/constants/theme";
-import { ExerciseDemoMedia } from "@/components/ui/ExerciseDemoMedia";
+import { DataColor, Radius, Spacing } from "@/constants/theme";
 import { OptionPicker, type PickerOption } from "@/components/ui/OptionPicker";
 import { setTimerTarget, takeTimerResult } from "@/lib/timer-result";
 import { describeCardio, usesFloors } from "@/lib/cardio";
@@ -30,9 +28,9 @@ import { supersetBadges } from "@/lib/superset-display";
 import { entryBlocks, orderedEntries, insertEntry, orderToSave, type EntrySegment } from "@/lib/entry-order";
 import { distinctGroups, supersetLetter, supersetMemberLabel } from "@/lib/superset-label";
 import { cleanLonelySupersets, tapSupersetLabel, ungroupAll } from "@/lib/superset-select";
-import { applyWeightFrom, normalizeWeights, sanitizeWeight, stripWeightUnit, weightUnitFor, withWeightUnit } from "@/lib/weight-input";
+import { applyWeightFrom, normalizeWeights, sanitizeWeight, weightUnitFor } from "@/lib/weight-input";
 import { FormatChoiceChip, FormatMiniField, FormatMovementCard } from "@/components/workout/FormatMovementCard";
-import { SupersetRounds, type RoundMember } from "@/components/workout/SupersetRounds";
+import type { RoundMember } from "@/components/workout/SupersetRounds";
 import { addRound, removeLastRound } from "@/lib/superset-rounds";
 import { CARDIO_LABEL, CARDIO_TYPES, hasLevel, hasPace, parseLevel, type CardioType } from "@/lib/cardio";
 import { selectionFeedback, successFeedback, tapFeedback, warningFeedback } from "@/lib/haptics";
@@ -40,10 +38,6 @@ import { ApiError } from "@/lib/api-client";
 import { useAdvanceProgram, useMyProgram, type PrescribedExercise } from "@/lib/queries/programs";
 import {
   findExerciseLibrarySlug,
-  pickHeroMedia,
-  pickOwnVideo,
-  pickThumbMedia,
-  useExerciseLibraryDetail,
   useExerciseLibraryNameIndex,
 } from "@/lib/queries/exercise-library";
 import { useProfile } from "@/lib/queries/profile";
@@ -52,7 +46,6 @@ import { tourTarget, useTourScroll } from "@/lib/tour-registry";
 import { useRestTimer } from "@/lib/rest-timer";
 import { useWorkoutTemplates } from "@/lib/queries/workout-templates";
 import {
-  SET_TYPE_OPTIONS,
   useCreateWorkout,
   useUpdateClassWorkout,
   useWorkouts,
@@ -63,12 +56,10 @@ import {
   type WorkoutSetType,
 } from "@/lib/queries/workouts";
 import {
-  formatAsMmSs,
   formatDuration,
   formatExerciseLoad,
   getExerciseStats,
   getLastExercisePerformance,
-  getLastSetForIndex,
   getPersonalExerciseNames,
   livePace,
   parseDuration,
@@ -136,18 +127,6 @@ function newSetRow(setType: WorkoutSetType = "standard"): SetRow {
   return { key: nextKey(), weight: "", reps: "", repsRight: "", repsLeft: "", setType, completed: false };
 }
 
-function unitModeLabel(mode: ExerciseRow["unitMode"]): string {
-  if (mode === "time") return "Time unit";
-  if (mode === "band") return "Band";
-  return "Weight unit";
-}
-
-function unitModeColumnLabel(mode: ExerciseRow["unitMode"]): string {
-  if (mode === "time") return "Time";
-  if (mode === "band") return "Band";
-  return "Weight";
-}
-
 // The rest-timer notification's body — "Set 3 60kg ×8 done" — so the
 // content on the lock screen actually says what was just lifted, not just
 // a generic "time's up".
@@ -186,24 +165,6 @@ function checkForLivePb(sessions: WorkoutSessionSummary[] | undefined, row: Exer
   const loadLabel = reps !== null && Number.isFinite(reps) ? `${w}kg × ${reps}` : `${w}kg`;
   return beatWeight ? `New PB on ${row.name} — ${loadLabel}` : `New estimated 1RM on ${row.name} — ${loadLabel}`;
 }
-
-function nextSetType(current: WorkoutSetType): WorkoutSetType {
-  const idx = SET_TYPE_OPTIONS.findIndex((opt) => opt.value === current);
-  return SET_TYPE_OPTIONS[(idx + 1) % SET_TYPE_OPTIONS.length].value;
-}
-
-// "Last time" for one set, shown beside the inputs (App v2: target next to
-// input, so the member never has to scroll up to remember what they did).
-function formatPreviousSet(prev: { weight: string | null; reps: number | null } | null, mode: ExerciseRow["unitMode"]): string {
-  if (!prev) return "—";
-  const w = prev.weight?.trim() || null;
-  if (mode === "time") return w ?? "—";
-  if (w && prev.reps != null) return `${w.replace(/\s?kg$/i, "")} × ${prev.reps}`;
-  if (w) return w;
-  if (prev.reps != null) return `${prev.reps} reps`;
-  return "—";
-}
-
 
 function newExerciseRow(): ExerciseRow {
   return {
@@ -1667,316 +1628,52 @@ export default function LogWorkoutScreen() {
             const allComplete = row.setRows.length > 0 && row.setRows.every((sr) => sr.completed);
             const last = getLastExercisePerformance(data?.sessions ?? [], row.name);
             return (
-            <Card
+            <ExerciseEditCard
               key={row.key}
-              style={[
-                isGrouped ? styles.entryCardGrouped : styles.entryCard,
-                isGrouped && (opts?.inMixed ? opts.notFirst : memberIdx > 0) && styles.entryCardGroupedDivider,
-              ]}
-            >
-              <View style={styles.entryHeader}>
-                <View style={styles.entryHeaderTitle}>
-                  <Pressable
-                    onPress={() => cycleSuperset(row)}
-                    hitSlop={6}
-                    accessibilityRole="button"
-                    accessibilityLabel={
-                      row.supersetGroup
-                        ? `Exercise ${idx + 1}, in superset ${supersetLetter(row.supersetGroup, allGroupLabels)}. Tap to change.`
-                        : `Exercise ${idx + 1}. Tap to put it in a superset.`
-                    }
-                    style={[
-                      styles.indexBadge,
-                      styles.indexBadgeButton,
-                      allComplete && styles.indexBadgeDone,
-                      row.supersetGroup
-                        ? { backgroundColor: supersetColor(row.supersetGroup, allGroupLabels), borderColor: "transparent" }
-                        : null,
-                    ]}
-                  >
-                    <Text style={[styles.indexBadgeText, (allComplete || row.supersetGroup) && { color: Color.bg0 }]}>
-                      {row.supersetGroup ? supersetMemberLabel(row.supersetGroup, allGroupLabels, memberNumber(row.key)) : idx + 1}
-                    </Text>
-                    {!row.supersetGroup ? <Ionicons name="link" size={9} color={Color.textMuted} style={styles.indexBadgeIcon} /> : null}
-                  </Pressable>
-                  <Text style={styles.entryLabel} numberOfLines={1}>
-                    {row.name.trim() || "New exercise"}
-                  </Text>
-                  {allComplete ? (
-                    <View style={styles.exerciseDoneBadge}>
-                      <Ionicons name="checkmark" size={12} color={Color.bg0} />
-                    </View>
-                  ) : null}
-                </View>
-                <View style={styles.entryHeaderActions}>
-                  <Pressable
-                    onPress={() => router.push({ pathname: "/plate-calculator" })}
-                    hitSlop={4}
-                    style={styles.roundTool}
-                    accessibilityRole="button"
-                    accessibilityLabel="Plate calculator"
-                  >
-                    <Ionicons name="barbell-outline" size={18} color={Color.textPrimary} />
-                  </Pressable>
-                  <Pressable
-                    onPress={() => {
-                      // Don't clobber a rest that's already counting down —
-                      // only reset to this exercise's rest duration when
-                      // there's nothing actively running.
-                      if (!restTimer.isRunning) restTimer.reset(restTimerSeconds, row.name || null);
-                      router.push({ pathname: "/rest-timer" });
-                    }}
-                    hitSlop={4}
-                    style={styles.roundTool}
-                    accessibilityRole="button"
-                    accessibilityLabel="Rest timer"
-                  >
-                    <Ionicons name="timer-outline" size={18} color={Color.textPrimary} />
-                  </Pressable>
-                  <Pressable
-                    onPress={() => removeRow(row.key)}
-                    hitSlop={4}
-                    style={styles.roundTool}
-                    accessibilityRole="button"
-                    accessibilityLabel="Remove exercise"
-                  >
-                    <Ionicons name="trash-outline" size={18} color={Color.danger} />
-                  </Pressable>
-                </View>
-              </View>
-
-              <Text style={styles.fieldLabel}>Exercise name</Text>
-              <ExerciseAutocomplete
-                exercises={data?.exerciseLibrary ?? []}
-                libraryNames={libraryIndex?.items ?? []}
-                personalNames={personalExerciseNames}
-                value={row.name}
-                onChange={(name, exerciseId) => updateRow(row.key, { name, exerciseId })}
-              />
-
-              {libraryIndex && isOwnExercise(row) ? (
-                <BodyPartPicker
-                  name={row.name}
-                  section={ownSectionFor(row)}
-                  remembered={!row.muscleSection && !!ownSectionFor(row)}
-                  onPick={(muscleSection) => updateRow(row.key, { muscleSection })}
-                />
-              ) : null}
-
-              {(() => {
-                if (!row.name.trim()) return null;
-                const slug = libraryIndex ? findExerciseLibrarySlug(row.name, libraryIndex) : null;
-                if (!slug && !last) return null;
-                return (
-                  <ExerciseDemoRow
-                    slug={slug}
-                    last={last}
-                    onOpenDemo={(demoSlug) => router.push({ pathname: "/exercise-demo" as never, params: { slug: demoSlug } })}
-                  />
-                );
-              })()}
-
-              <View style={styles.unitToggleRow}>
-                <Text style={styles.fieldLabel}>{unitModeLabel(row.unitMode)}</Text>
-                <View style={{ flexDirection: "row", gap: 4 }}>
-                  <Pressable onPress={() => { selectionFeedback(); changeUnitMode(row, "weight"); }} style={[styles.unitChip, row.unitMode === "weight" && styles.unitChipActive]}>
-                    <Text style={[styles.unitChipText, row.unitMode === "weight" && styles.unitChipTextActive]}>{weightUnit}</Text>
-                  </Pressable>
-                  <Pressable onPress={() => { selectionFeedback(); changeUnitMode(row, "time"); }} style={[styles.unitChip, row.unitMode === "time" && styles.unitChipActive]}>
-                    <Text style={[styles.unitChipText, row.unitMode === "time" && styles.unitChipTextActive]}>time</Text>
-                  </Pressable>
-                  <Pressable onPress={() => { selectionFeedback(); changeUnitMode(row, "band"); }} style={[styles.unitChip, row.unitMode === "band" && styles.unitChipActive]}>
-                    <Text style={[styles.unitChipText, row.unitMode === "band" && styles.unitChipTextActive]}>band</Text>
-                  </Pressable>
-                </View>
-              </View>
-
-              <View style={styles.setColumnHeader}>
-                <Text style={[styles.setColumnLabel, { width: 36, textAlign: "center" }]}>Set</Text>
-                <Text style={[styles.setColumnLabel, { width: 66 }]}>Previous</Text>
-                <Text style={[styles.setColumnLabel, { flex: 1, textAlign: "center" }]}>{unitModeColumnLabel(row.unitMode)}</Text>
-                {row.unitMode === "time" ? (
-                  <Text style={[styles.setColumnLabel, { flex: 1, textAlign: "center" }]} />
-                ) : (
-                  <Pressable
-                    onPress={() => toggleSplitReps(row)}
-                    hitSlop={8}
-                    accessibilityRole="button"
-                    accessibilityLabel={row.perSide ? "Reps are split into right and left. Tap to use one box." : "Reps. Tap to split into right and left."}
-                    style={styles.repsHeaderButton}
-                  >
-                    <Text style={styles.repsHeaderText}>{row.perSide ? "Reps R | L" : "Reps"}</Text>
-                    <Ionicons name={row.perSide ? "remove-circle-outline" : "git-compare-outline"} size={14} color={Color.gold} />
-                  </Pressable>
-                )}
-                <View style={{ width: 40 }} />
-              </View>
-
-              {row.setRows.map((set, setIdx) => {
-                const lastSet = getLastSetForIndex(last, setIdx);
-                return (
-                  <View key={set.key} style={[styles.setRow2, set.completed && styles.setRow2Completed]}>
-                    <Pressable
-                      onPress={() => {
-                        selectionFeedback();
-                        updateSetRow(row.key, set.key, { setType: nextSetType(set.setType) });
-                      }}
-                      style={styles.setNumberWrap}
-                      accessibilityRole="button"
-                      accessibilityLabel={`Set ${setIdx + 1}, ${SET_TYPE_OPTIONS.find((o) => o.value === set.setType)?.label ?? "standard"}. Tap to change set type.`}
-                    >
-                      <View style={[styles.setNumberBadge, set.completed && styles.setNumberBadgeDone]}>
-                        <Text style={styles.setNumber}>{setIdx + 1}</Text>
-                      </View>
-                      {set.setType !== "standard" ? (
-                        <Text style={styles.setTypeTag} numberOfLines={1}>
-                          {SET_TYPE_OPTIONS.find((o) => o.value === set.setType)?.label}
-                        </Text>
-                      ) : null}
-                    </Pressable>
-                    <Text style={styles.prevCell} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
-                      {formatPreviousSet(lastSet, row.unitMode)}
-                    </Text>
-                    {row.unitMode === "time" ? (
-                      // A wheel picker instead of a keyboard — typing "0:45"
-                      // on a phone keypad is fiddly; scrolling two columns
-                      // isn't.
-                      <Pressable
-                        onPress={() => {
-                          Keyboard.dismiss();
-                          setTimePickerTarget({ rowKey: row.key, setKey: set.key, secs: parseDuration(set.weight) ?? parseDuration(lastSet?.weight ?? "") ?? 90 });
-                        }}
-                        style={[styles.setInput, set.completed && styles.setInputCompleted, { flex: 1, justifyContent: "center" }]}
-                      >
-                        <Text style={set.weight ? styles.timePickerValue : styles.timePickerPlaceholder}>
-                          {set.weight || lastSet?.weight || "1:30"}
-                        </Text>
-                      </Pressable>
-                    ) : (
-                      row.unitMode === "weight" ? (
-                        <TextInput
-                          value={focusedWeightKey === set.key ? stripWeightUnit(set.weight) : withWeightUnit(set.weight, weightUnit)}
-                          onChangeText={(v) => typeWeight(row.key, set.key, v)}
-                          onFocus={() => setFocusedWeightKey(set.key)}
-                          onBlur={() => finishWeight(row.key)}
-                          keyboardType="decimal-pad"
-                          selectTextOnFocus
-                          placeholder={lastSet?.weight ? stripWeightUnit(lastSet.weight) : "60"}
-                          placeholderTextColor={Color.textFaint}
-                          accessibilityLabel={`Set ${setIdx + 1} weight in ${weightUnit}`}
-                          style={[styles.setInput, set.completed && styles.setInputCompleted, { flex: 1 }]}
-                        />
-                      ) : (
-                        <TextInput
-                          value={set.weight}
-                          onChangeText={(v) => updateFirstSetField(row.key, set.key, "weight", v)}
-                          placeholder="e.g. Purple"
-                          placeholderTextColor={Color.textFaint}
-                          style={[styles.setInput, set.completed && styles.setInputCompleted, { flex: 1 }]}
-                        />
-                      )
-                    )}
-                    {row.unitMode === "time" ? (
-                      // A timed hold/exercise has no rep count — this set's
-                      // own duration (the field to its left) drives a real
-                      // countdown, so the member gets an actual timer
-                      // instead of self-timing and typing in a guess after
-                      // the fact.
-                      <Pressable
-                        onPress={() => {
-                          const targetSecs = parseDuration(set.weight) || 60;
-                          setTimerTarget({ rowKey: row.key, setKey: set.key });
-                          router.push({
-                            pathname: "/rest-timer",
-                            params: {
-                              autostart: "1",
-                              seconds: String(targetSecs),
-                              label: row.name || undefined,
-                              // A timed exercise gets the 3-second get-ready
-                              // window (there's something to physically set
-                              // up for); resting between sets doesn't — see
-                              // lib/rest-timer.tsx's start().
-                              getReady: "1",
-                            },
-                          });
-                        }}
-                        style={[styles.startTimerButton, { flex: 1 }]}
-                      >
-                        <Ionicons name="play" size={13} color={Color.goldForeground} />
-                        <Text style={styles.startTimerButtonText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>Start</Text>
-                      </Pressable>
-                    ) : row.perSide ? (
-                      <View style={{ flex: 1, flexDirection: "row", gap: 4 }}>
-                        <TextInput
-                          value={set.repsRight ?? ""}
-                          onChangeText={(v) => updateFirstSetField(row.key, set.key, "repsRight", v)}
-                          keyboardType="number-pad"
-                          placeholder="R"
-                          placeholderTextColor={Color.textFaint}
-                          style={[styles.setInput, set.completed && styles.setInputCompleted, { flex: 1 }]}
-                        />
-                        <TextInput
-                          value={set.repsLeft ?? ""}
-                          onChangeText={(v) => updateFirstSetField(row.key, set.key, "repsLeft", v)}
-                          keyboardType="number-pad"
-                          placeholder="L"
-                          placeholderTextColor={Color.textFaint}
-                          style={[styles.setInput, set.completed && styles.setInputCompleted, { flex: 1 }]}
-                        />
-                      </View>
-                    ) : (
-                      <TextInput
-                        value={set.reps}
-                        onChangeText={(v) => updateFirstSetField(row.key, set.key, "reps", v)}
-                        keyboardType="number-pad"
-                        placeholder={lastSet?.reps != null ? String(lastSet.reps) : "8"}
-                        placeholderTextColor={Color.textFaint}
-                        style={[styles.setInput, set.completed && styles.setInputCompleted, { flex: 1 }]}
-                      />
-                    )}
-                    <Pressable
-                      onPress={() => toggleSetComplete(row.key, set.key, opts?.inMixed ? row.key === opts.lastKey : !isGrouped || memberIdx === grp.rows.length - 1)}
-                      hitSlop={6}
-                      style={styles.setCheckWrap}
-                      accessibilityRole="checkbox"
-                      accessibilityState={{ checked: set.completed }}
-                      accessibilityLabel={`Set ${setIdx + 1} done`}
-                    >
-                      <View style={[styles.setCheck, set.completed && styles.setCheckDone]}>
-                        {set.completed ? <Ionicons name="checkmark" size={20} color={Color.bg0} /> : null}
-                      </View>
-                    </Pressable>
-                  </View>
-                );
-              })}
-
-              <View style={styles.setRowActions}>
-                <Pressable
-                  onPress={() => {
-                    tapFeedback();
-                    addSetRow(row.key);
-                  }}
-                  style={styles.setPill}
-                  accessibilityRole="button"
-                >
-                  <Ionicons name="add" size={18} color={Color.textPrimary} />
-                  <Text style={styles.setPillText}>Add set</Text>
-                </Pressable>
-                {row.setRows.length > 1 ? (
-                  <Pressable
-                    onPress={() => removeSetRow(row.key, row.setRows[row.setRows.length - 1].key)}
-                    style={[styles.setPill, styles.setPillQuiet]}
-                    accessibilityRole="button"
-                  >
-                    <Ionicons name="remove" size={18} color={Color.textSecondary} />
-                    <Text style={[styles.setPillText, { color: Color.textSecondary }]}>Remove last</Text>
-                  </Pressable>
-                ) : null}
-              </View>
-
-              <RirControl value={row.rir} onChange={(v) => updateRow(row.key, { rir: v })} />
-              <NoteControl value={row.notes} onChange={(v) => updateRow(row.key, { notes: v })} />
-            </Card>
+              mode="log"
+              row={row}
+              index={idx}
+              grouped={isGrouped}
+              dividerBefore={isGrouped && !!(opts?.inMixed ? opts.notFirst : memberIdx > 0)}
+              badge={{
+                text: row.supersetGroup ? supersetMemberLabel(row.supersetGroup, allGroupLabels, memberNumber(row.key)) : String(idx + 1),
+                color: row.supersetGroup ? supersetColor(row.supersetGroup, allGroupLabels) : null,
+                a11y: row.supersetGroup
+                  ? `Exercise ${idx + 1}, in superset ${supersetLetter(row.supersetGroup, allGroupLabels)}. Tap to change.`
+                  : `Exercise ${idx + 1}. Tap to put it in a superset.`,
+              }}
+              allComplete={allComplete}
+              last={last}
+              weightUnit={weightUnit}
+              focusedWeightKey={focusedWeightKey}
+              setFocusedWeightKey={setFocusedWeightKey}
+              exercises={data?.exerciseLibrary ?? []}
+              libraryNames={libraryIndex?.items ?? []}
+              personalNames={personalExerciseNames}
+              bodyPart={libraryIndex && isOwnExercise(row) ? { section: ownSectionFor(row), remembered: !row.muscleSection && !!ownSectionFor(row) } : null}
+              demoSlug={libraryIndex ? findExerciseLibrarySlug(row.name, libraryIndex) : null}
+              onOpenDemo={(demoSlug) => router.push({ pathname: "/exercise-demo" as never, params: { slug: demoSlug } })}
+              onOpenPlateCalculator={() => router.push({ pathname: "/plate-calculator" })}
+              onOpenRestTimer={() => {
+                // Don't clobber a rest that's already counting down — only reset to this exercise's rest duration when there's nothing actively running.
+                if (!restTimer.isRunning) restTimer.reset(restTimerSeconds, row.name || null);
+                router.push({ pathname: "/rest-timer" });
+              }}
+              onCycleSuperset={cycleSuperset}
+              onRemove={removeRow}
+              updateRow={updateRow}
+              updateSetRow={updateSetRow}
+              updateFirstSetField={updateFirstSetField}
+              typeWeight={typeWeight}
+              finishWeight={finishWeight}
+              changeUnitMode={changeUnitMode}
+              toggleSplitReps={toggleSplitReps}
+              addSetRow={addSetRow}
+              removeSetRow={removeSetRow}
+              onToggleSetComplete={(setKey) => toggleSetComplete(row.key, setKey, opts?.inMixed ? row.key === opts.lastKey : !isGrouped || memberIdx === grp.rows.length - 1)}
+              onStartSetTimer={(setKey) => startSetTimer(row.key, setKey)}
+              onPickTime={(setKey, secs) => setTimePickerTarget({ rowKey: row.key, setKey, secs })}
+            />
             );
             });
             if (opts?.inMixed) return cards;

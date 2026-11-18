@@ -1,6 +1,6 @@
 import { StyleSheet } from "react-native";
 
-import { DataColor, Radius, Spacing } from "@/constants/theme";
+import { Radius, Spacing } from "@/constants/theme";
 import { makeLegacyStyles } from "@/lib/theme";
 
 // The styles of the logging screen's cards, in one place so every screen that draws the shared exercise cards (logging, templates, read-only views) uses exactly

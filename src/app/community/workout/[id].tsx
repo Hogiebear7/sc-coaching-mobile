@@ -9,19 +9,16 @@ import { MemberSafetySheet } from "@/components/ui/MemberSafetySheet";
 import { LikeButton } from "@/components/app/LikeButton";
 import { Card } from "@/components/ui/Card";
 import { CommentSheet } from "@/components/ui/CommentSheet";
-import { MuscleThumb } from "@/components/ui/MuscleThumb";
+import { ReadOnlyWorkout } from "@/components/workout/ReadOnlyWorkout";
 import { Spacing } from "@/constants/theme";
-import { CARDIO_LABEL } from "@/lib/cardio";
-import { shareableNote, toTemplateExercises, workoutKind } from "@/lib/community-workout";
+import { toTemplateExercises, workoutKind } from "@/lib/community-workout";
 import { formatCommunityDate, formatPbExerciseName, formatWorkoutTitle } from "@/lib/community-formatters";
 import { useAuth } from "@/lib/auth-context";
-import { mergeSavedEntries } from "@/lib/entry-order";
-import { muscleFocusFor } from "@/lib/exercise-muscles";
 import { tapFeedback } from "@/lib/haptics";
 import { useCommunityWorkoutItem, useToggleWorkoutLike } from "@/lib/queries/community";
-import { supersetBadges } from "@/lib/superset-display";
+import { useProfile } from "@/lib/queries/profile";
+import { weightUnitFor } from "@/lib/weight-input";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
-import { computeExerciseSetTotals, formatExerciseSetLabels, formatRun, groupSetLabels } from "@/lib/workout-formatters";
 import { setPendingWorkoutTemplateSeed } from "@/lib/workout-template-seed";
 
 // One workout from Community, in full: every exercise with its sets, the supersets and the type of workout (standard, AMRAP, EMOM, circuit, Tabata, chipper), and
@@ -39,8 +36,7 @@ export default function CommunityWorkoutScreen() {
   const [safetyOpen, setSafetyOpen] = useState(false);
   const pbExerciseName = item?.isPersonalBest ? formatPbExerciseName(item.personalBestExercise) : null;
   const kind = useMemo(() => workoutKind(item?.exercises ?? []), [item]);
-  const merged = useMemo(() => mergeSavedEntries(item?.exercises ?? [], item?.runs ?? []), [item]);
-  const badges = useMemo(() => supersetBadges(merged.map((m) => m.entry.supersetGroup ?? null)), [merged]);
+  const { data: profile } = useProfile();
 
   function handleSaveAsTemplate() {
     if (!item) return;
@@ -133,70 +129,7 @@ export default function CommunityWorkoutScreen() {
           ) : null}
 
           <View style={styles.exerciseList}>
-            {merged.map((entry, idx) => {
-              const badge = badges[idx];
-              if (entry.kind === "run") {
-                const run = entry.entry;
-                return (
-                  <View key={`run-${idx}`} style={styles.exerciseCard}>
-                    <View style={styles.exerciseHead}>
-                      <View style={styles.exerciseIcon}>
-                        <Ionicons name="walk-outline" size={18} color={Color.textMuted} />
-                      </View>
-                      <View style={{ flex: 1 }}>
-                        <Text style={styles.exerciseName}>{CARDIO_LABEL[run.cardioType ?? "run"]}</Text>
-                        <View style={styles.metaRow}>
-                          {badge ? (
-                            <View style={[styles.supersetBadge, { backgroundColor: badge.color }]}>
-                              <Text style={styles.supersetBadgeText}>{badge.label}</Text>
-                            </View>
-                          ) : null}
-                          <Text style={styles.exerciseMeta}>{formatRun(run) || "Cardio"}</Text>
-                        </View>
-                      </View>
-                    </View>
-                  </View>
-                );
-              }
-              const ex = entry.entry;
-              const totals = computeExerciseSetTotals(ex);
-              const groups = groupSetLabels(formatExerciseSetLabels(ex));
-              const focus = muscleFocusFor(ex.name, undefined, ex.muscleSection);
-              const note = shareableNote(ex.notes);
-              return (
-                <View key={`ex-${idx}`} style={styles.exerciseCard}>
-                  <View style={styles.exerciseHead}>
-                    <View style={styles.exerciseIcon}>
-                      {focus ? <MuscleThumb focus={focus} size={44} /> : <Ionicons name="barbell-outline" size={18} color={Color.textMuted} />}
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.exerciseName}>{ex.name.trim() || "Exercise"}</Text>
-                      <View style={styles.metaRow}>
-                        {badge ? (
-                          <View style={[styles.supersetBadge, { backgroundColor: badge.color }]}>
-                            <Text style={styles.supersetBadgeText}>{badge.label}</Text>
-                          </View>
-                        ) : null}
-                        <Text style={styles.exerciseMeta}>
-                          {totals.sets} set{totals.sets === 1 ? "" : "s"}
-                        </Text>
-                      </View>
-                    </View>
-                  </View>
-                  {groups.length > 0 ? (
-                    <View style={styles.setTable}>
-                      {groups.map((g, i) => (
-                        <View key={i} style={[styles.setRow, i > 0 && styles.setRowDivider]}>
-                          <Text style={styles.setNumber}>{g.from === g.to ? `Set ${g.from}` : `Sets ${g.from}–${g.to}`}</Text>
-                          <Text style={styles.setValue}>{g.label}</Text>
-                        </View>
-                      ))}
-                    </View>
-                  ) : null}
-                  {note ? <Text style={styles.formatNote}>{note}</Text> : null}
-                </View>
-              );
-            })}
+            <ReadOnlyWorkout exercises={item.exercises} runs={item.runs} weightUnit={weightUnitFor(profile?.preferredUnits)} ownWorkout={item.userId === user?.id} />
           </View>
 
           <Button title="View Community" variant="secondary" onPress={() => router.push("/community")} style={{ marginTop: Spacing.md }} />

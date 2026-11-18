@@ -5,20 +5,17 @@ import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
+import { ReadOnlyWorkout } from "@/components/workout/ReadOnlyWorkout";
+import { useProfile } from "@/lib/queries/profile";
+import { weightUnitFor } from "@/lib/weight-input";
 import { Card } from "@/components/ui/Card";
-import { MUSCLE_GROUP_LABEL } from "@/components/ui/MuscleMap";
-import { MuscleThumb } from "@/components/ui/MuscleThumb";
-import { muscleFocusFor } from "@/lib/exercise-muscles";
 import { StatCard } from "@/components/ui/StatCard";
 import { headline, Radius, Spacing } from "@/constants/theme";
 import { tapFeedback } from "@/lib/haptics";
 import type { PrescribedExercise } from "@/lib/queries/programs";
 import { useDeleteWorkoutSession, useSetWorkoutVisibility, useWorkouts, type WorkoutExerciseEntry } from "@/lib/queries/workouts";
 import { setPendingWorkoutTemplateSeed } from "@/lib/workout-template-seed";
-import { computeExerciseSetTotals, computeSessionTotals, formatExerciseSetLabels, formatRun, groupSetLabels } from "@/lib/workout-formatters";
-import { CARDIO_LABEL, describeCardio } from "@/lib/cardio";
-import { supersetBadges } from "@/lib/superset-display";
-import { mergeSavedEntries } from "@/lib/entry-order";
+import { computeSessionTotals } from "@/lib/workout-formatters";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 function formatLongDate(dateISO: string): string {
@@ -62,6 +59,7 @@ export default function SessionDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id?: string }>();
   const { data, isLoading } = useWorkouts();
+  const { data: profile } = useProfile();
   const deleteSession = useDeleteWorkoutSession();
   const setVisibility = useSetWorkoutVisibility();
 
@@ -207,133 +205,20 @@ export default function SessionDetailScreen() {
             </View>
           </View>
 
-          {session.exercises.length > 0 ? (
+          {session.exercises.length > 0 || session.runs.length > 0 ? (
             <>
-              <Text style={styles.sectionLabel}>Exercises</Text>
-              <View style={styles.exerciseList}>
-                {(() => {
-                  const merged = mergeSavedEntries(session.exercises, session.runs);
-                  const badges = supersetBadges(merged.map((m) => m.entry.supersetGroup ?? null));
-                  return merged.map((item, itemIdx) => {
-                  const badge = badges[itemIdx];
-                  // Cardio sits where it was done in the workout (older sessions have no order: exercises first, cardio after).
-                  if (item.kind === "run") {
-                    const run = item.entry;
-                    const desc = describeCardio({ cardioType: run.cardioType, distance: run.distance, durationSecs: run.durationSecs, sets: run.sets });
-                    return (
-                      <View key={`run-${itemIdx}`} style={styles.exerciseCard}>
-                        <View style={styles.exerciseHead}>
-                          <View style={{ flex: 1 }}>
-                            <Text style={styles.exerciseName}>{CARDIO_LABEL[run.cardioType ?? "run"]}</Text>
-                            <View style={styles.exerciseMetaRow}>
-                              {badge ? (
-                                <View style={[styles.supersetBadge, { backgroundColor: badge.color }]}>
-                                  <Text style={[styles.supersetBadgeText, { color: "#0a1526" }]}>{badge.label}</Text>
-                                </View>
-                              ) : null}
-                              <Text style={styles.exerciseMeta}>
-                                {desc.rounds > 1 ? `${desc.rounds} sets` : "Cardio"}
-                                {desc.total ? ` · ${desc.total} total` : ""}
-                              </Text>
-                            </View>
-                          </View>
-                        </View>
-                        {desc.perSet ? (
-                          <View style={styles.setTable}>
-                            <View style={styles.setRow}>
-                              <Text style={styles.setNumber}>{desc.rounds > 1 ? `Sets 1–${desc.rounds}` : "Set 1"}</Text>
-                              <Text style={styles.setValue}>{desc.perSet}</Text>
-                            </View>
-                            {desc.total ? (
-                              <View style={[styles.setRow, styles.setRowDivider]}>
-                                <Text style={styles.setNumber}>Total</Text>
-                                <Text style={styles.setValue}>{desc.total}</Text>
-                              </View>
-                            ) : null}
-                          </View>
-                        ) : (
-                          <Text style={styles.exerciseMeta}>{formatRun(run) || "Cardio"}</Text>
-                        )}
-                        {run.notes ? <Text style={styles.exerciseNote}>{run.notes}</Text> : null}
-                      </View>
-                    );
-                  }
-                  const ex = item.entry;
-                  const idx = session.exercises.indexOf(ex);
-                  const exTotals = computeExerciseSetTotals(ex);
-                  const groups = groupSetLabels(formatExerciseSetLabels(ex));
-                  const section = ex.exerciseId ? sectionByExerciseId.get(ex.exerciseId) : undefined;
-                  const meta = [
-                    section ? MUSCLE_GROUP_LABEL[section].primary : null,
-                    `${exTotals.sets} set${exTotals.sets === 1 ? "" : "s"}`,
-                    exTotals.volume > 0 ? `${Math.round(exTotals.volume).toLocaleString()} kg` : null,
-                  ]
-                    .filter(Boolean)
-                    .join(" · ");
-                  return (
-                    <Pressable
-                      key={idx}
-                      onPress={() => {
-                        tapFeedback();
-                        router.push({ pathname: "/exercise-detail", params: { name: ex.name } });
-                      }}
-                      style={({ pressed }) => [styles.exerciseCard, pressed && { opacity: 0.85 }]}
-                      accessibilityRole="button"
-                      accessibilityLabel={`${ex.name}, ${meta}`}
-                    >
-                      <View style={styles.exerciseHead}>
-                        <View style={styles.exerciseIcon}>
-                          {muscleFocusFor(ex.name, section, ex.muscleSection) ? (
-                            <MuscleThumb focus={muscleFocusFor(ex.name, section, ex.muscleSection)!} size={44} />
-                          ) : (
-                            <Text style={styles.exerciseIndex}>{idx + 1}</Text>
-                          )}
-                        </View>
-                        <View style={{ flex: 1 }}>
-                          <Text style={styles.exerciseName}>{ex.name}</Text>
-                          <View style={styles.exerciseMetaRow}>
-                            {badge ? (
-                              <View style={[styles.supersetBadge, { backgroundColor: badge.color }]}>
-                                <Text style={[styles.supersetBadgeText, { color: "#0a1526" }]}>{badge.label}</Text>
-                              </View>
-                            ) : null}
-                            <Text style={styles.exerciseMeta}>{meta}</Text>
-                          </View>
-                        </View>
-                        <Ionicons name="chevron-forward" size={18} color={Color.textFaint} />
-                      </View>
-                      {groups.length > 0 ? (
-                        <View style={styles.setTable}>
-                          {groups.map((g, i) => (
-                            <View key={i} style={[styles.setRow, i > 0 && styles.setRowDivider]}>
-                              <Text style={styles.setNumber}>
-                                {g.from === g.to ? `Set ${g.from}` : `Sets ${g.from}–${g.to}`}
-                              </Text>
-                              <Text style={styles.setValue}>{g.label}</Text>
-                            </View>
-                          ))}
-                        </View>
-                      ) : null}
-                      {ex.notes ? <Text style={styles.exerciseNote}>{ex.notes}</Text> : null}
-                    </Pressable>
-                  );
-                  });
-                })()}
-              </View>
-            </>
-          ) : null}
-
-          {session.runs.length > 0 && session.exercises.length === 0 ? (
-            <>
-              <Text style={styles.sectionLabel}>Cardio</Text>
-              <Card style={styles.list}>
-                {session.runs.map((run, idx) => (
-                  <View key={idx} style={[styles.row, idx > 0 && styles.rowDivider]}>
-                    <Text style={styles.rowTitle}>{formatRun(run) || "Run"}</Text>
-                    {run.notes ? <Text style={styles.rowSummary}>{run.notes}</Text> : null}
-                  </View>
-                ))}
-              </Card>
+              <Text style={styles.sectionLabel}>{session.exercises.length > 0 ? "Exercises" : "Cardio"}</Text>
+              <ReadOnlyWorkout
+                exercises={session.exercises}
+                runs={session.runs}
+                weightUnit={weightUnitFor(profile?.preferredUnits)}
+                ownWorkout
+                sectionByExerciseId={sectionByExerciseId}
+                onOpenExercise={(name) => {
+                  tapFeedback();
+                  router.push({ pathname: "/exercise-detail", params: { name } });
+                }}
+              />
             </>
           ) : null}
 

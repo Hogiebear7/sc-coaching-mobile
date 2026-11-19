@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("@react-native-async-storage/async-storage", () => ({ default: { getItem: vi.fn(() => Promise.resolve(null)), setItem: vi.fn(() => Promise.resolve()) } }));
 
-import { buildClassData, buildNutritionData, buildWaterData, describeClassTime, progress, waterToSync } from "../widgets/snapshot";
+import { buildClassData, buildNutritionData, buildWaterData, describeClassTime, describeCountdown, progress, waterToSync } from "../widgets/snapshot";
 import { validWaterAmount, waterQuickAdds } from "../water-amount";
 
 const NOW = new Date(2026, 9, 30, 12, 0);
@@ -31,8 +31,17 @@ describe("widget snapshot", () => {
       },
       NOW
     );
-    expect(data).toEqual({ next: { title: "Over 50s", date: "2026-10-31", startTime: "10:00" }, classesLeft: 3, canBook: true });
-    expect(buildClassData({ remainingSessions: null, noActiveMembership: true, upcomingBookings: [] }, NOW)).toEqual({ next: null, classesLeft: null, canBook: false });
+    expect(data).toEqual({ next: { title: "Over 50s", date: "2026-10-31", startTime: "10:00" }, classesLeft: 3, canBook: true, countdown: { value: 22, unit: "hrs to go" }, checkinDue: true });
+    expect(buildClassData({ remainingSessions: null, noActiveMembership: true, upcomingBookings: [] }, NOW)).toEqual({ next: null, classesLeft: null, canBook: false, countdown: null, checkinDue: false });
+  });
+
+  it("counts down to the next class and flags a check-in before it", () => {
+    const sched = { remainingSessions: null, noActiveMembership: false, upcomingBookings: [{ title: "Friday Class", date: "2026-10-31", startTime: "11:00" }] };
+    expect(buildClassData(sched, NOW)?.checkinDue).toBe(true);
+    expect(buildClassData(sched, NOW, true)?.checkinDue).toBe(false);
+    expect(describeCountdown("2026-10-30", "12:30", NOW)).toEqual({ value: 30, unit: "mins to go" });
+    expect(describeCountdown("2026-11-04", "10:00", NOW)).toEqual({ value: 5, unit: "days to go" });
+    expect(describeCountdown("2026-10-30", "09:00", NOW)).toBeNull();
   });
 
   it("describes the class time in plain words", () => {
@@ -79,7 +88,7 @@ describe("widget updates never blank real numbers", () => {
   it("keeps a section the widget already shows while the new data for it is still loading", () => {
     const water = { date: "2026-10-31", loggedMl: 500, targetMl: 2800, amountMl: 250 };
     const prev = { updatedAt: "a", style: "navy" as const, water, nutrition: null, classes: null };
-    const next = { updatedAt: "b", style: "glass" as const, water: null, nutrition: null, classes: { next: null, classesLeft: null, canBook: true } };
+    const next = { updatedAt: "b", style: "glass" as const, water: null, nutrition: null, classes: { next: null, classesLeft: null, canBook: true, countdown: null, checkinDue: false } };
     expect(mergeSnapshot(prev, next)).toEqual({ ...next, water });
     expect(mergeSnapshot(null, next)).toBe(next);
   });

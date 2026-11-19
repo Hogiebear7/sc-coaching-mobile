@@ -115,9 +115,21 @@ export function ClassWidgetAndroid({ data, look }: { data: ClassWidgetData | nul
           style={{ fontSize: 15, fontWeight: "600", color: next ? p.accent : p.muted }}
         />
         <FlexWidget style={{ flex: 1 }} />
-        {next && data.canBook ? <TextWidget text="Book another" style={{ fontSize: 12, fontWeight: "700", color: p.accent }} /> : null}
+        {next ? (
+          <TextWidget
+            text={[data.checkinDue ? "Do your check-in before class" : data.canBook ? "Book another" : null, data.classesLeft !== null ? `${data.classesLeft} ${data.classesLeft === 1 ? "class" : "classes"} left` : null].filter(Boolean).join("  ·  ")}
+            style={{ fontSize: 12, fontWeight: "700", color: p.accent }}
+            maxLines={1}
+            truncate="END"
+          />
+        ) : null}
       </FlexWidget>
-      {data.classesLeft !== null ? (
+      {next && data.countdown ? (
+        <FlexWidget style={{ backgroundColor: p.box, borderRadius: 14, paddingVertical: 10, paddingHorizontal: 14, alignItems: "center", marginLeft: 12 }}>
+          <TextWidget text={String(data.countdown.value)} style={{ fontSize: 28, fontWeight: "800", color: WHITE }} />
+          <TextWidget text={data.countdown.unit} style={{ fontSize: 11, fontWeight: "600", color: p.muted }} />
+        </FlexWidget>
+      ) : !next && data.classesLeft !== null ? (
         <FlexWidget style={{ backgroundColor: p.box, borderRadius: 14, paddingVertical: 10, paddingHorizontal: 14, alignItems: "center", marginLeft: 12 }}>
           <TextWidget text={String(data.classesLeft)} style={{ fontSize: 28, fontWeight: "800", color: WHITE }} />
           <TextWidget text={data.classesLeft === 1 ? "class left" : "classes left"} style={{ fontSize: 11, fontWeight: "600", color: p.muted }} />

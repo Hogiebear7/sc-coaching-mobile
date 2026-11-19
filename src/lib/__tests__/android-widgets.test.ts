@@ -18,7 +18,7 @@ import { ClassWidgetAndroid, NutritionWidgetAndroid, WaterWidgetAndroid } from "
 // data and without (before the app has saved any). A widget that throws here is a see-through, empty widget on the phone.
 const water = { date: "2026-10-30", loggedMl: 1250, targetMl: 2800, amountMl: 250 };
 const nutrition = { date: "2026-10-30", calories: 1520, targetCalories: 2400, proteinG: 98, targetProteinG: 160 };
-const classes = { next: { title: "Over 50s", date: "2026-10-31", startTime: "10:00" }, classesLeft: 3, canBook: true };
+const classes = { next: { title: "Over 50s", date: "2026-10-31", startTime: "10:00" }, classesLeft: 3, canBook: true, countdown: { value: 22, unit: "hrs to go" }, checkinDue: true };
 
 function colours(node: unknown, out: string[] = []): string[] {
   if (!node || typeof node !== "object") return out;

@@ -150,6 +150,21 @@ export interface SaveClassWorkoutInput {
   results: SaveClassWorkoutResult[];
 }
 
+// Saves an exercise the coach typed into a class workout to the shared exercise library (name + body part), so it autocompletes next time. The server answers
+// with a message only, so the class workout data is refetched and the new exercise's id read from it by name.
+export function useAddExerciseToLibrary(classId: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { name: string; section: ExerciseSection }): Promise<string | null> => {
+      await apiFetch<{ success: true; message: string }>("/api/staff/exercises", { method: "POST", body: { name: input.name.trim(), section: input.section } });
+      await qc.refetchQueries({ queryKey: ["class-workout", classId] });
+      const fresh = qc.getQueryData<ClassWorkoutData>(["class-workout", classId]);
+      const wanted = input.name.trim().toLowerCase();
+      return fresh?.libraryExercises.find((e) => e.name.trim().toLowerCase() === wanted && e.section === input.section)?.id ?? null;
+    },
+  });
+}
+
 // The coach finishes the class workout and sends the "well done today" recap to everyone who was checked in. Safe to press twice: the server
 // never notifies the same person twice for a class.
 export function useSendClassRecap() {

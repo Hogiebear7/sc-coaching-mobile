@@ -21,8 +21,10 @@ import { KeyboardAwareScroll } from "@/components/ui/KeyboardAwareScroll";
 import { LiveColor as Color, Radius, Spacing } from "@/constants/theme";
 import { ApiError } from "@/lib/api-client";
 import { useExerciseLibraryNameIndex } from "@/lib/queries/exercise-library";
+import { SaveToLibraryPrompt } from "@/components/class/SaveToLibraryPrompt";
 import { successFeedback, tapFeedback, warningFeedback } from "@/lib/haptics";
 import {
+  useAddExerciseToLibrary,
   useClassWorkout,
   useSaveClassWorkout,
   useSendClassRecap,
@@ -304,6 +306,7 @@ export default function ClassWorkoutBuilderScreen() {
   const { data, isLoading } = useClassWorkout(classId);
   const { data: libraryIndex } = useExerciseLibraryNameIndex();
   const saveWorkout = useSaveClassWorkout();
+  const addToLibrary = useAddExerciseToLibrary(classId);
 
   const [template, setTemplate] = useState<TemplateRow[]>([newTemplateRow()]);
   const [cardio, setCardio] = useState<CardioRow[]>([]);
@@ -627,12 +630,25 @@ export default function ClassWorkoutBuilderScreen() {
                   onRemove={() => setTemplate((prev) => prev.filter((r) => r.key !== row.key))}
                   onPickTime={(setKey, secs) => setTimeTarget({ rowKey: row.key, setKey, secs: secs ?? 90 })}
                   nameField={
-                    <ExerciseAutocomplete
-                      exercises={libraryExercises}
-                      libraryNames={libraryIndex?.items ?? []}
-                      value={row.name}
-                      onChange={(name, exerciseId) => updateTemplate(row.key, { name, exerciseId })}
-                    />
+                    <View>
+                      <ExerciseAutocomplete
+                        exercises={libraryExercises}
+                        libraryNames={libraryIndex?.items ?? []}
+                        value={row.name}
+                        onChange={(name, exerciseId) => updateTemplate(row.key, { name, exerciseId })}
+                      />
+                      <SaveToLibraryPrompt
+                        name={row.name}
+                        exerciseId={row.exerciseId}
+                        knownNames={[...libraryExercises.map((e) => e.name), ...(libraryIndex?.items ?? []).map((e) => e.name)]}
+                        saving={addToLibrary.isPending}
+                        onSave={async (section) => {
+                          const id = await addToLibrary.mutateAsync({ name: row.name, section });
+                          if (id) updateTemplate(row.key, { exerciseId: id });
+                          return true;
+                        }}
+                      />
+                    </View>
                   }
                 />
               )) : (() => { const c = seg.row; return (

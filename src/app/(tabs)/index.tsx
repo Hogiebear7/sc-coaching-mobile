@@ -160,6 +160,9 @@ export default function DashboardScreen() {
   const styles = useStyles();
   const router = useRouter();
   const { data, isLoading, isError, refetch, isRefetching } = useDashboard();
+  const { user: signedInUser, setViewMode } = useAuth();
+  // A coach or admin viewing the member side gets the same switch the coach Home has, to go straight back (it was only in Profile before).
+  const isStaffAccount = !!signedInUser && signedInUser.role !== "member";
   const { data: communityHighlight } = useCommunityHighlight();
   const { data: notifications } = useNotifications();
   const { data: weights } = useBodyWeightLogs();
@@ -245,6 +248,7 @@ export default function DashboardScreen() {
                 onPress={() => router.push("/notifications")}
               />
               <RoundIconButton icon="chatbubble-ellipses-outline" label="Messages" onPress={() => router.push("/messages")} />
+              {isStaffAccount ? <RoundIconButton icon="swap-horizontal" label="Switch to coach view" onPress={() => setViewMode("coach")} /> : null}
             </View>
           </View>
           <View style={styles.continueRow}>

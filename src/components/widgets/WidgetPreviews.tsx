@@ -138,14 +138,23 @@ export function ClassWidgetPreview({ data, now = new Date(), look = "navy" }: { 
             </>
           )}
         </View>
-        {data.classesLeft !== null ? (
+        {data.next && data.countdown ? (
+          <View style={[styles.leftBox, g && styles.glassBox]}>
+            <Text style={styles.leftNumber}>{data.countdown.value}</Text>
+            <Text style={[styles.leftLabel, g && styles.glassSub]}>{data.countdown.unit}</Text>
+          </View>
+        ) : data.classesLeft !== null ? (
           <View style={[styles.leftBox, g && styles.glassBox]}>
             <Text style={styles.leftNumber}>{data.classesLeft}</Text>
             <Text style={[styles.leftLabel, g && styles.glassSub]}>{data.classesLeft === 1 ? "class left" : "classes left"}</Text>
           </View>
         ) : null}
       </View>
-      {data.next && data.canBook ? <Text style={[styles.footer, g && styles.glassAccent]}>Book another</Text> : null}
+      {data.next ? (
+        <Text style={[styles.footer, g && styles.glassAccent]} numberOfLines={1}>
+          {[data.checkinDue ? "Do your check-in before class" : data.canBook ? "Book another" : null, data.classesLeft !== null ? `${data.classesLeft} ${data.classesLeft === 1 ? "class" : "classes"} left` : null].filter(Boolean).join("  ·  ")}
+        </Text>
+      ) : null}
     </Frame>
   );
 }

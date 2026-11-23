@@ -26,6 +26,10 @@ export interface ClassWidgetData {
   classesLeft: number | null;
   /** Whether the member can book at all (a gym Membership). */
   canBook: boolean;
+  /** How long until the next class, as a number and unit ("15" "hrs"). Worked out when the snapshot is built, so it is as fresh as the last app refresh. */
+  countdown: { value: number; unit: string } | null;
+  /** True when a class starts within the next day and today's morning check-in has not been done yet. */
+  checkinDue: boolean;
 }
 
 export interface WidgetSnapshot {
@@ -61,7 +65,8 @@ export function buildClassData(
   schedule:
     | { remainingSessions: number | null; noActiveMembership: boolean; upcomingBookings: { title: string; date: string; startTime: string }[] }
     | undefined,
-  now: Date = new Date()
+  now: Date = new Date(),
+  checkinDoneToday: boolean = false
 ): ClassWidgetData | null {
   if (!schedule) return null;
   const nowKey = `${localDate(now)} ${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
@@ -69,11 +74,33 @@ export function buildClassData(
     [...schedule.upcomingBookings]
       .filter((b) => `${b.date} ${b.startTime}` >= nowKey)
       .sort((a, b) => `${a.date} ${a.startTime}`.localeCompare(`${b.date} ${b.startTime}`))[0] ?? null;
+  const countdown = next ? describeCountdown(next.date, next.startTime, now) : null;
+  const msAway = next ? classStart(next.date, next.startTime).getTime() - now.getTime() : null;
   return {
     next: next ? { title: next.title, date: next.date, startTime: next.startTime } : null,
     classesLeft: schedule.noActiveMembership ? null : schedule.remainingSessions,
     canBook: !schedule.noActiveMembership,
+    countdown,
+    checkinDue: msAway !== null && msAway <= 24 * 3600 * 1000 && !checkinDoneToday,
   };
+}
+
+function classStart(date: string, startTime: string): Date {
+  const [h, m] = startTime.split(":").map(Number);
+  const d = new Date(`${date}T00:00:00`);
+  d.setHours(h || 0, m || 0, 0, 0);
+  return d;
+}
+
+/** Time until a class starts: minutes under an hour, hours under two days, otherwise days. Null once it has started. */
+export function describeCountdown(date: string, startTime: string, now: Date = new Date()): { value: number; unit: string } | null {
+  const mins = Math.round((classStart(date, startTime).getTime() - now.getTime()) / 60000);
+  if (!Number.isFinite(mins) || mins < 0) return null;
+  if (mins < 60) return { value: mins, unit: mins === 1 ? "min to go" : "mins to go" };
+  const hours = Math.round(mins / 60);
+  if (hours < 48) return { value: hours, unit: hours === 1 ? "hr to go" : "hrs to go" };
+  const days = Math.round(hours / 24);
+  return { value: days, unit: "days to go" };
 }
 
 export function localDate(d: Date): string {

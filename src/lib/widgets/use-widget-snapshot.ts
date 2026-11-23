@@ -1,4 +1,6 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
+
+import { isCheckinDoneToday } from "@/lib/checkin-reminder";
 
 import { useHydration, useMyNutritionTarget, useNutritionDiary } from "@/lib/queries/nutrition-diary";
 import { useSchedule } from "@/lib/queries/schedule";
@@ -15,6 +17,10 @@ export function useWidgetSnapshot(): WidgetSnapshot {
   const { data: diary } = useNutritionDiary(today);
   const { data: target } = useMyNutritionTarget(today);
   const { data: schedule } = useSchedule();
+  const [checkinDone, setCheckinDone] = useState(false);
+  useEffect(() => {
+    isCheckinDoneToday().then(setCheckinDone);
+  }, [today, schedule]);
 
   return useMemo(
     () => ({
@@ -22,9 +28,9 @@ export function useWidgetSnapshot(): WidgetSnapshot {
       style,
       water: buildWaterData(today, hydration, amountMl),
       nutrition: buildNutritionData(today, diary?.totals, target),
-      classes: buildClassData(schedule),
+      classes: buildClassData(schedule, new Date(), checkinDone),
     }),
-    [today, hydration, amountMl, style, diary, target, schedule]
+    [today, hydration, amountMl, style, diary, target, schedule, checkinDone]
   );
 }
 

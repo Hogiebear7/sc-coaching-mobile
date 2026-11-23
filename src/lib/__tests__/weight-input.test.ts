@@ -87,7 +87,7 @@ describe("bodyweightFrom keeps what was typed", () => {
   it("turning it off brings back each set's own number", () => {
     const off = bodyweightFrom(bodyweightFrom(sets(), "b"), "b");
     expect(off.map((s) => s.weight)).toEqual(["40 kg", "50 kg", ""]);
-    expect(off.every((s) => s.modeValues === undefined)).toBe(true);
+    expect(off.every((s) => (s as { modeValues?: unknown }).modeValues === undefined)).toBe(true);
   });
   it("turning it off on a later set leaves an earlier BW set alone", () => {
     const on = bodyweightFrom(sets(), "a");

@@ -71,6 +71,15 @@ export async function saveCheckinReminderPrefs(prefs: CheckinReminderPrefs): Pro
   await syncCheckinReminder();
 }
 
+/** True when today's morning check-in has already been saved on this phone. */
+export async function isCheckinDoneToday(): Promise<boolean> {
+  try {
+    return (await AsyncStorage.getItem(LAST_CHECKIN_KEY)) === localDateKey(new Date());
+  } catch {
+    return false;
+  }
+}
+
 /** Called when a check-in is saved: a check-in for today drops today's reminder. */
 export async function noteCheckinSaved(date: string): Promise<void> {
   if (date !== localDateKey(new Date())) return;

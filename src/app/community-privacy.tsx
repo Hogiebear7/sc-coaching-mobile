@@ -6,7 +6,15 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Card } from "@/components/ui/Card";
 import { Spacing } from "@/constants/theme";
 import { useAuth } from "@/lib/auth-context";
-import { useBlockedMembers, useCommunityPrivacy, useSetCommunityPrivacy, useUnblockMember } from "@/lib/queries/community";
+import { PROFILE_VISIBILITY_OPTIONS, WHO_CAN_FOLLOW_OPTIONS } from "@/lib/community-profile-format";
+import {
+  useBlockedMembers,
+  useCommunityPrivacy,
+  useSetCommunityPrivacy,
+  useUnblockMember,
+  type ProfileVisibility,
+  type WhoCanFollow,
+} from "@/lib/queries/community";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 export default function CommunityPrivacyScreen() {
@@ -33,6 +41,8 @@ export default function CommunityPrivacyScreen() {
   const leaderboardVisible = data?.leaderboardVisible ?? true;
   const showRealName = data?.showRealName ?? true;
   const communityOptIn = data?.communityOptIn ?? false;
+  const profileVisibility: ProfileVisibility = data?.profileVisibility ?? "followers";
+  const whoCanFollow: WhoCanFollow = data?.whoCanFollow ?? "anyone";
 
   function update(
     next: Partial<{
@@ -40,9 +50,11 @@ export default function CommunityPrivacyScreen() {
       leaderboardVisible: boolean;
       showRealName: boolean;
       communityOptIn: boolean;
+      profileVisibility: ProfileVisibility;
+      whoCanFollow: WhoCanFollow;
     }>
   ) {
-    setPrivacy.mutate({ discoverable, leaderboardVisible, showRealName, communityOptIn, ...next });
+    setPrivacy.mutate({ discoverable, leaderboardVisible, showRealName, communityOptIn, profileVisibility, whoCanFollow, ...next });
   }
 
   return (
@@ -140,6 +152,45 @@ export default function CommunityPrivacyScreen() {
           </Card>
           ) : null}
 
+          {(!isStaff || communityOptIn) ? (
+            <>
+              <Card style={[styles.card, styles.cardSpaced]}>
+                <Text style={styles.settingTitle}>Who sees my profile</Text>
+                <Text style={styles.settingSub}>
+                  Tap your name anywhere in Community to see a small profile card. This decides who also sees your training volume and your last
+                  activities. Everyone can still see your name (as set above) and a Follow button.
+                </Text>
+                {PROFILE_VISIBILITY_OPTIONS.map((o) => (
+                  <ChoiceRow
+                    key={o.value}
+                    title={o.title}
+                    sub={o.sub}
+                    selected={profileVisibility === o.value}
+                    disabled={setPrivacy.isPending}
+                    onPress={() => update({ profileVisibility: o.value })}
+                  />
+                ))}
+              </Card>
+
+              <Card style={[styles.card, styles.cardSpaced]}>
+                <Text style={styles.settingTitle}>Who can follow me</Text>
+                <Text style={styles.settingSub}>
+                  Choose who can start following you. People who already follow you are never removed by changing this.
+                </Text>
+                {WHO_CAN_FOLLOW_OPTIONS.map((o) => (
+                  <ChoiceRow
+                    key={o.value}
+                    title={o.title}
+                    sub={o.sub}
+                    selected={whoCanFollow === o.value}
+                    disabled={setPrivacy.isPending}
+                    onPress={() => update({ whoCanFollow: o.value })}
+                  />
+                ))}
+              </Card>
+            </>
+          ) : null}
+
           <Card style={[styles.card, styles.cardSpaced]}>
             <Text style={styles.settingTitle}>Blocked members</Text>
             <Text style={styles.settingSub}>
@@ -172,6 +223,26 @@ export default function CommunityPrivacyScreen() {
         </ScrollView>
       )}
     </SafeAreaView>
+  );
+}
+
+function ChoiceRow({ title, sub, selected, disabled, onPress }: { title: string; sub: string; selected: boolean; disabled: boolean; onPress: () => void }) {
+  const styles = useStyles();
+  const Color = useLegacyColors();
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      accessibilityRole="radio"
+      accessibilityState={{ selected, disabled }}
+      style={[styles.settingRow, styles.settingRowDivider]}
+    >
+      <View style={{ flex: 1 }}>
+        <Text style={styles.settingTitle}>{title}</Text>
+        <Text style={styles.settingSub}>{sub}</Text>
+      </View>
+      <Ionicons name={selected ? "radio-button-on" : "radio-button-off"} size={22} color={selected ? Color.success : Color.textMuted} />
+    </Pressable>
   );
 }
 

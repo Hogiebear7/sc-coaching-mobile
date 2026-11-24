@@ -69,22 +69,32 @@ const MAX_WINS_PREVIEW = 3;
 const MAX_ACTIVITY_PREVIEW = 5;
 
 function SuggestedMemberRow({
+  userId,
   fullName,
   isLast,
   onFollow,
   pending,
 }: {
+  userId: string;
   fullName: string;
   isLast: boolean;
   onFollow: () => void;
   pending: boolean;
 }) {
   const styles = useStyles();
+  const router = useRouter();
   return (
     <View style={[styles.suggestedRow, !isLast && styles.suggestedRowDivider]}>
-      <Text style={styles.suggestedName} numberOfLines={1}>
-        {fullName}
-      </Text>
+      <Pressable
+        style={{ flex: 1 }}
+        onPress={() => router.push({ pathname: "/community/profile/[userId]", params: { userId } })}
+        accessibilityRole="button"
+        accessibilityLabel={`Open ${fullName}'s profile`}
+      >
+        <Text style={styles.suggestedName} numberOfLines={1}>
+          {fullName}
+        </Text>
+      </Pressable>
       <Button title="Follow" onPress={onFollow} loading={pending} style={styles.suggestedFollowButton} />
     </View>
   );
@@ -393,9 +403,19 @@ export default function CommunityScreen() {
                   {buildLeaderboardRows(leaderboard.data.entries, leaderboard.data.myUserId).map((row, i) => (
                     <View key={row.userId} style={[styles.leaderboardRow, i > 0 && styles.leaderboardRowDivider]}>
                       <Text style={[styles.leaderboardRank, row.isMe && styles.leaderboardTextMe]}>{row.rank}</Text>
-                      <Text style={[styles.leaderboardName, row.isMe && styles.leaderboardTextMe]} numberOfLines={1}>
-                        {row.name}
-                      </Text>
+                      <Pressable
+                        style={{ flex: 1 }}
+                        onPress={() => {
+                          tapFeedback();
+                          router.push({ pathname: "/community/profile/[userId]", params: { userId: row.userId } });
+                        }}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Open ${row.name}'s profile`}
+                      >
+                        <Text style={[styles.leaderboardName, row.isMe && styles.leaderboardTextMe]} numberOfLines={1}>
+                          {row.name}
+                        </Text>
+                      </Pressable>
                       <View style={styles.leaderboardValueWrap}>
                         <Text style={[styles.leaderboardValue, row.isMe && styles.leaderboardTextMe]}>
                           {row.valueLabel}
@@ -440,6 +460,7 @@ export default function CommunityScreen() {
                   {suggested.data.map((r, i) => (
                     <SuggestedMemberRow
                       key={r.userId}
+                      userId={r.userId}
                       fullName={r.fullName}
                       isLast={i === suggested.data!.length - 1}
                       pending={followUser.isPending && followUser.variables === r.userId}

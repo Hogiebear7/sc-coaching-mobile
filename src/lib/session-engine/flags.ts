@@ -60,7 +60,7 @@ function stapleScore(name: string, equipment: string): number {
   return score;
 }
 
-type BaseFlags = Omit<ExerciseFlags, "avoidFor" | "pregnancy">;
+type BaseFlags = Omit<ExerciseFlags, "avoidFor" | "pregnancy" | "hidden">;
 
 function avoidAreas(f: BaseFlags, name: string, bodyPart: string, forceType: string, position: string, equipment: string, mechanic: string): InjuryArea[] {
   const out = new Set<InjuryArea>();
@@ -142,7 +142,7 @@ export function deriveFlags(exercise: LibraryExercise): ExerciseFlags {
     family: tax(t, "movementFamily") || bucket || "other",
   };
 
-  const flags: ExerciseFlags = { ...base, avoidFor: avoidAreas(base, name, bodyPart, forceType, position, equipment, mechanic), pregnancy: null };
+  const flags: ExerciseFlags = { ...base, avoidFor: avoidAreas(base, name, bodyPart, forceType, position, equipment, mechanic), pregnancy: null, hidden: false };
 
   const override = FLAG_OVERRIDES[name];
   const merged = override ? ({ ...flags, ...override } as ExerciseFlags) : flags;

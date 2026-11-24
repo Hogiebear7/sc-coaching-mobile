@@ -63,6 +63,8 @@ export interface ExerciseFlags {
   /** Areas this exercise should not be given for. */
   avoidFor: InjuryArea[];
   pregnancy: "ok" | "modify" | "avoid" | null;
+  /** Never offered (the audit marked it "remove"). */
+  hidden: boolean;
 }
 
 export interface SessionContext {

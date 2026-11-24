@@ -3,6 +3,6 @@
 
 import type { ExerciseFlags } from "./types";
 
-export type FlagOverride = Partial<Pick<ExerciseFlags, "level" | "hardness" | "grip" | "impact" | "spineLoaded" | "avoidFor" | "pregnancy" | "staple">>;
+export type FlagOverride = Partial<Pick<ExerciseFlags, "level" | "hardness" | "grip" | "impact" | "spineLoaded" | "avoidFor" | "pregnancy" | "staple" | "hidden">>;
 
 export const FLAG_OVERRIDES: Record<string, FlagOverride> = {};

@@ -206,7 +206,7 @@ export function generateSession(library: LibraryExercise[], request: SessionRequ
   for (const ex of library) {
     if (ex.approved === false || !matchesEquipment(ex, request.equipment)) continue;
     const f = deriveFlags(ex);
-    if (!f.bucket) continue;
+    if (!f.bucket || f.hidden) continue;
     if (!levelAllowed(f.level, level)) continue;
     if (stage) {
       const reason = pregnancyBlock(f, stage);

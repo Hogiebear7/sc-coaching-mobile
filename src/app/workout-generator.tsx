@@ -49,6 +49,8 @@ import { usePregnancyData } from "@/lib/queries/pregnancy";
 import { useWorkouts } from "@/lib/queries/workouts";
 import { generateSession, type InjuryArea, type Intent, type Level, type SessionFormat, type SessionPlan } from "@/lib/session-engine";
 import { localISODate, pregnancyStageFromTrimester, trainedBuckets } from "@/lib/session-engine/context";
+import { hasAnyBenchmark, toEngineBenchmarks } from "@/lib/benchmarks";
+import { useBenchmarks } from "@/lib/benchmarks/store";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 type GeneratorMode = "workout" | "programme";
@@ -338,6 +340,7 @@ export default function WorkoutGeneratorScreen() {
   const styles = useStyles();
   const Color = useLegacyColors();
   const router = useRouter();
+  const { values: benchmarkValues } = useBenchmarks();
   const { data, isLoading, isError, refetch } = useExerciseLibrary();
   const { data: gymProfilesData } = useGymProfiles();
   const { data: equipmentCatalogData } = useEquipmentCatalog();
@@ -567,6 +570,7 @@ export default function WorkoutGeneratorScreen() {
           trainedYesterday: trainedBuckets(workoutsData?.sessions ?? [], data.exercises, localISODate(1)),
           pregnancy: stage ? { stage } : null,
           injuries,
+          benchmarks: toEngineBenchmarks(benchmarkValues),
         },
       });
       if (plan.exercises.length === 0) {
@@ -1076,6 +1080,14 @@ export default function WorkoutGeneratorScreen() {
                 pregnancyData?.isPregnant ? ({ 1: "first trimester", 2: "second trimester", 3: "third trimester" } as Record<string, string>)[String(pregnancyData.estimate.trimester)] ?? null : null
               }
             />
+          ) : null}
+
+          {mode === "workout" && workoutStructure !== "chooseAreas" ? (
+            <Pressable onPress={() => router.push("/benchmarks")} style={{ paddingVertical: 10 }} accessibilityRole="button">
+              <Text style={[styles.chipText, { textDecorationLine: "underline" }]}>
+                {hasAnyBenchmark(benchmarkValues) ? "Edit your benchmarks (used for suggested weights)" : "Add your lifts to get suggested weights"}
+              </Text>
+            </Pressable>
           ) : null}
 
           {mode === "programme" ? <Text style={styles.groupHeader}>Practical constraints</Text> : null}

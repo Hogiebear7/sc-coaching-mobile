@@ -247,6 +247,7 @@ function AuthGate() {
       <Stack.Screen name="workout-archive" options={{ presentation: "card" }} />
       <Stack.Screen name="set-levels" options={{ presentation: "card" }} />
       <Stack.Screen name="targets" options={{ presentation: "card" }} />
+      <Stack.Screen name="benchmarks" options={{ presentation: "card" }} />
       <Stack.Screen name="target-edit" options={{ presentation: "card" }} />
       <Stack.Screen name="log-workout" options={{ presentation: "modal" }} />
       <Stack.Screen name="log-food" options={{ presentation: "modal" }} />

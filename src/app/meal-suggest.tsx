@@ -24,6 +24,7 @@ import { tapFeedback } from "@/lib/haptics";
 import { parseIngredientText } from "@/lib/ingredient-text";
 import { ApiError } from "@/lib/auth-context";
 import { MEAL_TYPE_OPTIONS, useCreateFoodEntry, type MealType } from "@/lib/queries/nutrition-diary";
+import { useAddFoodFavorite } from "@/lib/queries/food-favorites";
 import { useMealSuggest, type MealSuggestion } from "@/lib/queries/meal-suggest";
 import { useCreateRecipe } from "@/lib/queries/recipes";
 import { useReceiptScan } from "@/lib/queries/receipt-scan";
@@ -64,8 +65,10 @@ function SuggestionCard({ suggestion }: { suggestion: MealSuggestion }) {
   const [mealType, setMealType] = useState<MealType>(defaultMealType());
   const createEntry = useCreateFoodEntry();
   const createRecipe = useCreateRecipe();
+  const addFavorite = useAddFoodFavorite();
   const [logged, setLogged] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [favorited, setFavorited] = useState(false);
 
   async function handleLog() {
     tapFeedback();
@@ -83,6 +86,27 @@ function SuggestionCard({ suggestion }: { suggestion: MealSuggestion }) {
       trackEvent("meal_suggest_logged", { title: suggestion.title });
     } catch {
       // Swallow — the button reverts to its normal state and the member can retry.
+    }
+  }
+
+  // Adds the whole suggestion, with its estimated calories and macros, to the member's favourites under the meal they have picked, so it can be logged
+  // again in one tap from Log food. (Logging it already puts it in "Recent"; favouriting does not require logging first.)
+  async function handleFavorite() {
+    tapFeedback();
+    try {
+      await addFavorite.mutateAsync({
+        mealType,
+        name: suggestion.title,
+        calories: suggestion.estimatedCalories,
+        proteinG: suggestion.estimatedProteinG,
+        carbsG: suggestion.estimatedCarbsG,
+        fatG: suggestion.estimatedFatG,
+        servingLabel: "1 serving",
+      });
+      setFavorited(true);
+      trackEvent("meal_suggest_favorited", { title: suggestion.title });
+    } catch {
+      // Swallow: the button reverts and the member can retry.
     }
   }
 
@@ -182,6 +206,18 @@ function SuggestionCard({ suggestion }: { suggestion: MealSuggestion }) {
         <Pressable onPress={handleSaveRecipe} disabled={createRecipe.isPending} style={styles.saveRecipeRow}>
           <Ionicons name="bookmark-outline" size={14} color={Color.gold} />
           <Text style={styles.saveRecipeText}>{createRecipe.isPending ? "Saving…" : "Save recipe"}</Text>
+        </Pressable>
+      )}
+
+      {favorited ? (
+        <View style={styles.savedRow}>
+          <Ionicons name="heart" size={14} color={Color.gold} />
+          <Text style={styles.savedText}>Added to favourites ({mealType})</Text>
+        </View>
+      ) : (
+        <Pressable onPress={handleFavorite} disabled={addFavorite.isPending} style={styles.saveRecipeRow} accessibilityRole="button">
+          <Ionicons name="heart-outline" size={14} color={Color.gold} />
+          <Text style={styles.saveRecipeText}>{addFavorite.isPending ? "Adding…" : "Add to favourites"}</Text>
         </Pressable>
       )}
     </Card>

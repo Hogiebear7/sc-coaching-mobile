@@ -67,7 +67,7 @@ export function DayCompleteCard({
   return (
     <View style={styles.card}>
       <Text style={styles.title}>Logged everything you ate?</Text>
-      <Text style={styles.sub}>Complete days teach the app how much you really burn. Partial days are left out.</Text>
+      <Text style={styles.sub}>Complete days help the app learn how much you burn.</Text>
       <View style={styles.actions}>
         <Pressable
           onPress={() => mark("complete")}
@@ -75,7 +75,7 @@ export function DayCompleteCard({
           style={({ pressed }) => [styles.primary, pressed && { opacity: 0.85 }]}
           accessibilityRole="button"
         >
-          <Ionicons name="checkmark" size={18} color={colors.onPrimary} />
+          <Ionicons name="checkmark" size={16} color={colors.text} />
           <Text style={styles.primaryText}>Day complete</Text>
         </Pressable>
         <Pressable
@@ -95,16 +95,16 @@ export function DayCompleteCard({
 
 const useStyles = makeStyles((c) =>
   StyleSheet.create({
-    card: { backgroundColor: c.surface, borderRadius: AppRadius.card, padding: 16, marginTop: 10 },
+    card: { backgroundColor: c.surface, borderRadius: AppRadius.card, paddingHorizontal: 14, paddingVertical: 12, marginTop: 10 },
     row: { flexDirection: "row", alignItems: "center", gap: 12 },
-    title: { fontSize: 16, fontWeight: "600", color: c.text },
-    sub: { fontSize: 14, lineHeight: 20, color: c.textMuted, marginTop: 2 },
+    title: { fontSize: 15, fontWeight: "600", color: c.text },
+    sub: { fontSize: 13, lineHeight: 18, color: c.textMuted, marginTop: 2 },
     link: { fontSize: 15, fontWeight: "600", color: c.textSecondary, textDecorationLine: "underline" },
-    actions: { flexDirection: "row", gap: 10, marginTop: 12 },
-    primary: { flex: 1, minHeight: 48, borderRadius: AppRadius.control, backgroundColor: c.primary, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6 },
-    primaryText: { fontSize: 16, fontWeight: "600", color: c.onPrimary },
-    secondary: { minHeight: 48, paddingHorizontal: 18, borderRadius: AppRadius.control, backgroundColor: c.control, alignItems: "center", justifyContent: "center" },
-    secondaryText: { fontSize: 16, fontWeight: "600", color: c.text },
+    actions: { flexDirection: "row", gap: 8, marginTop: 10 },
+    primary: { minHeight: 36, paddingHorizontal: 14, borderRadius: AppRadius.control, backgroundColor: c.control, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6 },
+    primaryText: { fontSize: 14, fontWeight: "600", color: c.text },
+    secondary: { minHeight: 36, paddingHorizontal: 14, borderRadius: AppRadius.control, backgroundColor: c.control, alignItems: "center", justifyContent: "center" },
+    secondaryText: { fontSize: 14, fontWeight: "600", color: c.textSecondary },
     error: { fontSize: 14, color: c.danger, marginTop: 8 },
   })
 );

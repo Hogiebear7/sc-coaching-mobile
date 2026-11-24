@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("@react-native-async-storage/async-storage", () => ({ default: { getItem: vi.fn(() => Promise.resolve(null)), setItem: vi.fn(() => Promise.resolve()) } }));
 
 import { buildClassData, buildNutritionData, buildWaterData, describeClassTime, describeCountdown, progress, waterToSync } from "../widgets/snapshot";
-import { validWaterAmount, waterQuickAdds } from "../water-amount";
+import { validWaterAmount, waterChipLabel, waterQuickAdds } from "../water-amount";
 
 const NOW = new Date(2026, 9, 30, 12, 0);
 
@@ -75,10 +75,16 @@ describe("water amount", () => {
     expect(validWaterAmount(2001)).toBeNull();
   });
 
+  it("labels a litre as 1L", () => {
+    expect(waterChipLabel(1000)).toBe("+1L");
+    expect(waterChipLabel(250)).toBe("+250ml");
+  });
+
   it("puts the member's amount first on the Hydration card without repeating a size", () => {
-    expect(waterQuickAdds(250)).toEqual([250, 500, 750]);
+    expect(waterQuickAdds(250)).toEqual([250, 500, 1000]);
     expect(waterQuickAdds(330)).toEqual([330, 250, 500]);
-    expect(waterQuickAdds(500)).toEqual([500, 250, 750]);
+    expect(waterQuickAdds(500)).toEqual([500, 250, 1000]);
+    expect(waterQuickAdds(750)).toEqual([750, 250, 500]);
   });
 });
 

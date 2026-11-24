@@ -1,11 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { KeyboardAwareScroll } from "@/components/ui/KeyboardAwareScroll";
 import { Radius, Spacing } from "@/constants/theme";
 import { ApiError } from "@/lib/api-client";
 import { trackEvent } from "@/lib/analytics";
@@ -150,7 +151,7 @@ export default function DescribeFoodScreen() {
           <View style={{ width: 36 }} />
         </View>
 
-        <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+        <KeyboardAwareScroll contentContainerStyle={styles.scroll}>
           <Text style={styles.subhead}>
             {items.length === 1 ? "Here's what we found — check it over before logging." : `We found ${items.length} items — check them over before logging.`}
           </Text>
@@ -243,7 +244,7 @@ export default function DescribeFoodScreen() {
           >
             <Text style={styles.manualLinkQuietText}>Enter a food manually instead</Text>
           </Pressable>
-        </ScrollView>
+        </KeyboardAwareScroll>
       </SafeAreaView>
     );
   }

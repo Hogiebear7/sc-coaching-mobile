@@ -24,6 +24,7 @@ import { tapFeedback } from "@/lib/haptics";
 import { parseIngredientText } from "@/lib/ingredient-text";
 import { ApiError } from "@/lib/auth-context";
 import { MEAL_TYPE_OPTIONS, useCreateFoodEntry, type MealType } from "@/lib/queries/nutrition-diary";
+import { formatGrams, pickExtras, type NutrientExtras } from "@/lib/nutrient-extras";
 import { useAddFoodFavorite } from "@/lib/queries/food-favorites";
 import { useMealSuggest, type MealSuggestion } from "@/lib/queries/meal-suggest";
 import { useCreateRecipe } from "@/lib/queries/recipes";
@@ -59,6 +60,11 @@ function defaultMealType(): MealType {
   return "snack";
 }
 
+// Fibre and sugars, when the model gave them: logged and favourited with the rest. (Sodium and saturated fat are not estimated for meal ideas.)
+function suggestionExtras(s: MealSuggestion): NutrientExtras {
+  return pickExtras({ fiberG: s.estimatedFiberG, sugarG: s.estimatedSugarG }) ?? {};
+}
+
 function SuggestionCard({ suggestion }: { suggestion: MealSuggestion }) {
   const styles = useStyles();
   const Color = useLegacyColors();
@@ -81,6 +87,7 @@ function SuggestionCard({ suggestion }: { suggestion: MealSuggestion }) {
         proteinG: suggestion.estimatedProteinG,
         carbsG: suggestion.estimatedCarbsG,
         fatG: suggestion.estimatedFatG,
+        ...suggestionExtras(suggestion),
       });
       setLogged(true);
       trackEvent("meal_suggest_logged", { title: suggestion.title });
@@ -101,6 +108,7 @@ function SuggestionCard({ suggestion }: { suggestion: MealSuggestion }) {
         proteinG: suggestion.estimatedProteinG,
         carbsG: suggestion.estimatedCarbsG,
         fatG: suggestion.estimatedFatG,
+        ...suggestionExtras(suggestion),
         servingLabel: "1 serving",
       });
       setFavorited(true);
@@ -159,6 +167,22 @@ function SuggestionCard({ suggestion }: { suggestion: MealSuggestion }) {
           <Text style={styles.macroLabel}>fat</Text>
         </View>
       </View>
+      {suggestion.estimatedFiberG != null || suggestion.estimatedSugarG != null ? (
+        <View style={styles.macroRow}>
+          {suggestion.estimatedFiberG != null ? (
+            <View style={styles.macroStat}>
+              <Text style={styles.macroValue}>{formatGrams(suggestion.estimatedFiberG)}g</Text>
+              <Text style={styles.macroLabel}>fibre</Text>
+            </View>
+          ) : null}
+          {suggestion.estimatedSugarG != null ? (
+            <View style={styles.macroStat}>
+              <Text style={styles.macroValue}>{formatGrams(suggestion.estimatedSugarG)}g</Text>
+              <Text style={styles.macroLabel}>sugars</Text>
+            </View>
+          ) : null}
+        </View>
+      ) : null}
 
       {suggestion.crossSuggestion ? (
         <View style={styles.crossRow}>

@@ -26,6 +26,7 @@ import { WaterAdjuster } from "@/components/nutrition/WaterAdjuster";
 import { OptionPicker, type PickerOption } from "@/components/ui/OptionPicker";
 import { KeyboardAwareScroll } from "@/components/ui/KeyboardAwareScroll";
 import type { MacroKind } from "@/components/ui/MacroPieChart";
+import { ExtrasCard } from "@/components/nutrition/ExtrasCard";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { Segmented } from "@/components/ui/Segmented";
 import { UpsellCard } from "@/components/ui/Upsell";
@@ -643,6 +644,7 @@ export default function NutritionScreen() {
 
         <View style={styles.body}>
           <TrainingTipCard target={target} />
+          <ExtrasCard totals={diary?.extras} />
 
           {/* Diary */}
           <View style={styles.section} {...tourTarget("nutrition.diary")}>

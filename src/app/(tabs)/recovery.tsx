@@ -238,6 +238,31 @@ export default function RecoveryScreen() {
         </View>
 
         <View style={styles.body}>
+          <View style={styles.section} {...tourTarget("recovery.checkin")}>
+            <SectionTitle
+              title={editingDate === null ? "Check in" : "Edit check-in"}
+              action={editingDate === null && hasAccess(access, "trackerImport") ? "Import sleep" : undefined}
+              onAction={() => router.push("/tracker-import")}
+            />
+            {editingDate === null ? (
+              <CheckInForm
+                date={data.todayISO}
+                existingLog={todayLog}
+                isToday
+                healthNoteEnabled={!!data.healthNoteEnabled}
+                initialSleepHours={Number.isFinite(parsedPrefillSleepHours) ? parsedPrefillSleepHours : undefined}
+              />
+            ) : (
+              <CheckInForm
+                date={editingDate}
+                existingLog={editingLog}
+                isToday={editingDate === data.todayISO}
+                healthNoteEnabled={!!data.healthNoteEnabled}
+                onDone={() => setEditingDate(null)}
+              />
+            )}
+          </View>
+
           <View style={styles.section} {...tourTarget("recovery.week")}>
             <SectionTitle title="This week" action="Trend" onAction={() => router.push("/readiness" as never)} />
             <TileGrid>
@@ -303,31 +328,6 @@ export default function RecoveryScreen() {
               "actually shows up."
             }
           />
-
-          <View style={styles.section} {...tourTarget("recovery.checkin")}>
-            <SectionTitle
-              title={editingDate === null ? "Check in" : "Edit check-in"}
-              action={editingDate === null && hasAccess(access, "trackerImport") ? "Import sleep" : undefined}
-              onAction={() => router.push("/tracker-import")}
-            />
-            {editingDate === null ? (
-              <CheckInForm
-                date={data.todayISO}
-                existingLog={todayLog}
-                isToday
-                healthNoteEnabled={!!data.healthNoteEnabled}
-                initialSleepHours={Number.isFinite(parsedPrefillSleepHours) ? parsedPrefillSleepHours : undefined}
-              />
-            ) : (
-              <CheckInForm
-                date={editingDate}
-                existingLog={editingLog}
-                isToday={editingDate === data.todayISO}
-                healthNoteEnabled={!!data.healthNoteEnabled}
-                onDone={() => setEditingDate(null)}
-              />
-            )}
-          </View>
 
           <View style={styles.section}>
             <SectionTitle title="History" />

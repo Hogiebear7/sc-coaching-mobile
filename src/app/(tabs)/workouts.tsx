@@ -307,9 +307,11 @@ export default function WorkoutsScreen() {
   const pinnedBests = useMemo(() => {
     if (!data) return [];
     const byName = new Map(data.personalBests.map((pb) => [pb.exerciseName.toLowerCase(), pb]));
+    // At most 4, so the two-column grid is always full (someone who pinned 5 before this limit sees their first 4).
     return data.pinnedExercises
       .map((name) => byName.get(name.toLowerCase()))
-      .filter((pb): pb is PersonalBest => pb != null);
+      .filter((pb): pb is PersonalBest => pb != null)
+      .slice(0, 4);
   }, [data]);
 
   const scrollRef = useRef<ScrollView>(null);
@@ -609,7 +611,7 @@ export default function WorkoutsScreen() {
                   <EmptyState
                     icon="trophy-outline"
                     title="No personal bests yet"
-                    body="Pick up to 5 lifts to feature here and track them at a glance."
+                    body="Pick up to 4 lifts to feature here and track them at a glance."
                     actionLabel="Choose your lifts"
                     onAction={() => router.push("/personal-bests-edit")}
                   />

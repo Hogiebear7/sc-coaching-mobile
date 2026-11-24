@@ -52,7 +52,7 @@ export function BodyweightButton({ active, label, onConfirm }: { active: boolean
 
 const useStyles = makeLegacyStyles((Color) =>
   StyleSheet.create({
-    pill: { minWidth: 30, height: 26, borderRadius: 13, paddingHorizontal: 7, alignItems: "center", justifyContent: "center", backgroundColor: Color.surface1, borderWidth: 1, borderColor: "transparent" },
+    pill: { minWidth: 28, height: 26, borderRadius: 13, paddingHorizontal: 5, alignItems: "center", justifyContent: "center", backgroundColor: Color.surface1, borderWidth: 1, borderColor: "transparent" },
     pillOn: { backgroundColor: Color.gold },
     pillArmed: { borderColor: Color.gold },
     text: { fontSize: 11, fontWeight: "800", color: Color.textMuted },

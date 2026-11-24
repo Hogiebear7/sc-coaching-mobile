@@ -102,3 +102,14 @@ describe("bodyweightFrom keeps what was typed", () => {
   });
 });
 
+import { weightFontSize } from "../weight-input";
+
+describe("weightFontSize", () => {
+  it("steps the text down as the weight gets longer so the BW button never clips it", () => {
+    expect(weightFontSize("45 kg")).toBe(16);
+    expect(weightFontSize("100 kg")).toBe(15);
+    expect(weightFontSize("12.5 kg")).toBe(13.5);
+    expect(weightFontSize("102.5 kg")).toBe(12);
+    expect(weightFontSize("BW")).toBe(16);
+  });
+});

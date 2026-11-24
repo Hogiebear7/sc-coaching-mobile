@@ -11,7 +11,7 @@ import { selectionFeedback, tapFeedback } from "@/lib/haptics";
 import { SET_TYPE_OPTIONS, type ExerciseLibraryEntry, type ExerciseSection, type WorkoutSetType } from "@/lib/queries/workouts";
 import { useLegacyColors } from "@/lib/theme";
 import { getLastSetForIndex, getLastExercisePerformance, parseDuration } from "@/lib/workout-formatters";
-import { stripWeightUnit, withWeightUnit, type WeightUnit } from "@/lib/weight-input";
+import { stripWeightUnit, weightFontSize, withWeightUnit, type WeightUnit } from "@/lib/weight-input";
 import type { ExerciseRow, SetRow } from "@/lib/workout-draft";
 
 // The full details of one exercise: its name, body part, unit (kg, time or band), every set with its weight and reps, add and remove a set, reps in reserve and a
@@ -301,7 +301,7 @@ export function ExerciseEditCard(props: ExerciseEditCardProps) {
                       </Pressable>
                     ) : (
                       row.unitMode === "weight" ? (
-                        <View style={[styles.setInput, set.completed && styles.setInputCompleted, { flex: 1, flexDirection: "row", alignItems: "center", paddingHorizontal: 6, gap: 4 }]}>
+                        <View style={[styles.setInput, set.completed && styles.setInputCompleted, { flex: 1, flexDirection: "row", alignItems: "center", paddingHorizontal: 4, gap: 2 }]}>
                           <TextInput
                             value={focusedWeightKey === set.key ? stripWeightUnit(set.weight) : withWeightUnit(set.weight, weightUnit)}
                             onChangeText={(v) => typeWeight(row.key, set.key, v)}
@@ -312,7 +312,7 @@ export function ExerciseEditCard(props: ExerciseEditCardProps) {
                             placeholder={lastSet?.weight ? stripWeightUnit(lastSet.weight) : "60"}
                             placeholderTextColor={Color.textFaint}
                             accessibilityLabel={`Set ${setIdx + 1} weight in ${weightUnit}`}
-                            style={styles.setInputBare}
+                            style={[styles.setInputBare, { fontSize: weightFontSize(focusedWeightKey === set.key ? stripWeightUnit(set.weight) : withWeightUnit(set.weight, weightUnit)) }]}
                           />
                           <BodyweightButton active={set.weight.trim() === "BW"} label={`Set ${setIdx + 1} bodyweight`} onConfirm={() => onToggleBodyweight(set.key)} />
                         </View>

@@ -8,7 +8,7 @@ import { CARDIO_LABEL, usesFloors } from "@/lib/cardio";
 import { tourTarget } from "@/lib/tour-registry";
 import { isRoundComplete, roundCount } from "@/lib/superset-rounds";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
-import { sanitizeWeight, stripWeightUnit, withWeightUnit, type WeightUnit } from "@/lib/weight-input";
+import { sanitizeWeight, stripWeightUnit, weightFontSize, withWeightUnit, type WeightUnit } from "@/lib/weight-input";
 import { formatDuration, parseDuration } from "@/lib/workout-formatters";
 import type { ExerciseRow, RunRow, SetRow } from "@/lib/workout-draft";
 
@@ -303,7 +303,7 @@ export function SupersetRounds({
                     style={styles.box}
                   />
                 ) : (
-                  <View style={[styles.box, { flexDirection: "row", alignItems: "center", paddingHorizontal: 6, gap: 4 }]}>
+                  <View style={[styles.box, { flexDirection: "row", alignItems: "center", paddingHorizontal: 4, gap: 2 }]}>
                     <TextInput
                       editable={!readOnly}
                       value={focusedKey === s.key ? stripWeightUnit(s.weight) : withWeightUnit(s.weight, weightUnit)}
@@ -318,7 +318,7 @@ export function SupersetRounds({
                       placeholder={weightUnit}
                       placeholderTextColor={Color.textFaint}
                       accessibilityLabel={`${label} weight`}
-                      style={styles.boxBare}
+                      style={[styles.boxBare, { fontSize: weightFontSize(focusedKey === s.key ? stripWeightUnit(s.weight) : withWeightUnit(s.weight, weightUnit)) }]}
                     />
                     {readOnly || !onToggleBodyweight ? null : (
                       <BodyweightButton active={s.weight.trim() === "BW"} label={`${label} bodyweight`} onConfirm={() => onToggleBodyweight(row.key, s.key)} />

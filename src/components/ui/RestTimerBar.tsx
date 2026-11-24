@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { figure, Radius, Spacing } from "@/constants/theme";
@@ -8,6 +8,11 @@ import { useRestTimer } from "@/lib/rest-timer";
 import { getTimerTarget, setTimerTarget } from "@/lib/timer-result";
 import { useTickingValue } from "@/lib/use-ticker";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
+
+// Teko's digits sit tall and iOS clips their tops at a 1.05 line height (seen on iPhone), so on iOS give the line room with the extra above the glyphs.
+function iosTallLine(size: number) {
+  return Platform.OS === "ios" ? { lineHeight: Math.round(size * 1.25), paddingTop: Math.round(size * 0.12) } : null;
+}
 
 function formatClock(secs: number): string {
   const m = Math.floor(secs / 60);
@@ -119,7 +124,7 @@ const useStyles = makeLegacyStyles((Color) =>
     },
     barGetReady: { justifyContent: "center", gap: Spacing.sm },
     getReadyText: { fontSize: 14, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted },
-    getReadyClock: { ...figure(26, "700"), color: Color.gold },
+    getReadyClock: { ...figure(26, "700"), ...iosTallLine(26), color: Color.gold },
     adjustButton: {
       paddingHorizontal: Spacing.sm,
       paddingVertical: 6,
@@ -127,7 +132,7 @@ const useStyles = makeLegacyStyles((Color) =>
     adjustText: { fontSize: 14, fontWeight: "600", color: Color.textSecondary },
     clockWrap: { flex: 1, alignItems: "center" },
     label: { fontSize: 14, fontWeight: "600", color: Color.textMuted },
-    clock: { ...figure(26, "700"), color: Color.gold },
+    clock: { ...figure(26, "700"), ...iosTallLine(26), color: Color.gold },
     clockDone: { color: Color.success },
     iconButton: {
       width: 32,

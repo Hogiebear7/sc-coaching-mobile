@@ -5,7 +5,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
-import { figure, Radius, Spacing } from "@/constants/theme";
+import { figure, iosTallLine, Radius, Spacing } from "@/constants/theme";
 import { tapFeedback } from "@/lib/haptics";
 import { formatDuration } from "@/lib/workout-formatters";
 import { CARDIO_LABEL } from "@/lib/cardio";
@@ -143,7 +143,7 @@ const useStyles = makeLegacyStyles((Color) =>
     backButton: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center", marginLeft: -8 },
     headerTitle: { fontSize: 20, fontWeight: "600", color: Color.textPrimary, flexShrink: 1, textAlign: "center" },
     body: { flex: 1, alignItems: "center", paddingTop: Spacing.xxl, paddingHorizontal: Spacing.lg },
-    clock: { ...figure(64, "700"), color: Color.gold },
+    clock: { ...figure(64, "700"), ...iosTallLine(64), color: Color.gold },
     controlsRow: { flexDirection: "row", alignItems: "center", gap: Spacing.xl, marginTop: Spacing.xl },
     secondaryControl: { width: 60, height: 60, borderRadius: 30, alignItems: "center", justifyContent: "center", backgroundColor: Color.surface2 },
     primaryControl: { width: 120, height: 120, borderRadius: 60, alignItems: "center", justifyContent: "center", backgroundColor: Color.gold },

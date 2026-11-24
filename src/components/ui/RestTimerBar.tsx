@@ -1,18 +1,13 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { figure, Radius, Spacing } from "@/constants/theme";
+import { figure, iosTallLine, Radius, Spacing } from "@/constants/theme";
 import { tapFeedback } from "@/lib/haptics";
 import { useRestTimer } from "@/lib/rest-timer";
 import { getTimerTarget, setTimerTarget } from "@/lib/timer-result";
 import { useTickingValue } from "@/lib/use-ticker";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
-
-// Teko's digits sit tall and iOS clips their tops at a 1.05 line height (seen on iPhone), so on iOS give the line room with the extra above the glyphs.
-function iosTallLine(size: number) {
-  return Platform.OS === "ios" ? { lineHeight: Math.round(size * 1.25), paddingTop: Math.round(size * 0.12) } : null;
-}
 
 function formatClock(secs: number): string {
   const m = Math.floor(secs / 60);

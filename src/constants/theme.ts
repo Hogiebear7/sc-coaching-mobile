@@ -161,6 +161,12 @@ export function figure(size: number, weight: "600" | "700" = "600"): TextStyle {
   };
 }
 
+// Teko's digits sit tall, and iOS clips their tops at figure()'s 1.05 line height (seen on iPhone in the rest timer bar). Spread this after figure() on a big
+// ticking clock: on iOS it gives the line room with the extra above the glyphs (the same fix headline() uses); on Android it changes nothing.
+export function iosTallLine(size: number): TextStyle | null {
+  return Platform.OS === "ios" ? { lineHeight: Math.round(size * 1.25), paddingTop: Math.round(size * 0.12) } : null;
+}
+
 export const FontSize = {
   xs: 11,
   sm: 13,

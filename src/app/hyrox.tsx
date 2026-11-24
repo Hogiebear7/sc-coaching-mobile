@@ -4,7 +4,7 @@ import { ScrollView, StyleSheet, Text, View, Pressable } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
-import { figure, Radius, Spacing } from "@/constants/theme";
+import { figure, iosTallLine, Radius, Spacing } from "@/constants/theme";
 import { celebrateFeedback, successFeedback, tapFeedback } from "@/lib/haptics";
 import {
   HYROX_LAPS,
@@ -200,12 +200,12 @@ const useStyles = makeLegacyStyles((Color) =>
     headerTitle: { fontSize: 20, fontWeight: "600", color: Color.textPrimary },
     clockBlock: { alignItems: "center", paddingTop: Spacing.sm },
     clockLabel: { fontSize: 13, fontWeight: "700", letterSpacing: 1, color: Color.textMuted, textTransform: "uppercase" },
-    clock: { ...figure(72, "700"), color: Color.gold },
+    clock: { ...figure(72, "700"), ...iosTallLine(72), color: Color.gold },
     nowCard: { marginHorizontal: Spacing.lg, marginTop: Spacing.md, padding: Spacing.md, borderRadius: Radius.lg, backgroundColor: Color.surface1, alignItems: "center", gap: 4 },
     nowLabel: { fontSize: 12, fontWeight: "800", letterSpacing: 1, color: Color.gold },
     nowTitle: { fontSize: 22, fontWeight: "700", color: Color.textPrimary, textAlign: "center" },
     nowDetail: { fontSize: 15, color: Color.textMuted },
-    lapClock: { ...figure(34, "700"), color: Color.textPrimary, marginTop: 4 },
+    lapClock: { ...figure(34, "700"), ...iosTallLine(34), color: Color.textPrimary, marginTop: 4 },
     controls: { alignItems: "center", paddingHorizontal: Spacing.lg, marginTop: Spacing.md, gap: Spacing.sm },
     bigButton: { width: "100%", minHeight: 88, borderRadius: Radius.pill, backgroundColor: Color.gold, alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 10 },
     bigButtonText: { fontSize: 26, fontWeight: "800", color: Color.goldForeground },

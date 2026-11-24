@@ -30,6 +30,11 @@ import {
 import { useMemberAccess } from "@/lib/queries/profile";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 import { notInPlanCopy } from "@/lib/upsell-config";
+import { DateDivider } from "@/components/ui/DateDivider";
+import { InjuryIntakeSheet } from "@/components/workout/InjuryIntakeSheet";
+import { useSoreAreas } from "@/lib/sore-areas-store";
+import type { InjuryArea } from "@/lib/session-engine/types";
+import { withDateDividers } from "@/lib/chat-dates";
 
 type Tab = "ai" | "coach";
 
@@ -64,6 +69,9 @@ function AiCoachTab({
   const seeded = useRef(false);
   const scrollRef = useRef<ScrollView>(null);
   const access = useMemberAccess();
+  const router = useRouter();
+  const [injuryOpen, setInjuryOpen] = useState(false);
+  const sore = useSoreAreas();
 
   useEffect(() => {
     if (!seeded.current && initialMessages.length > 0) {
@@ -78,6 +86,13 @@ function AiCoachTab({
         <UpsellCard icon="chatbubble-ellipses-outline" title="Ask the app" body={notInPlanCopy("Chat with the app")} />
       </View>
     );
+  }
+
+  // From the "Sore or injured?" sheet: no advice and no AI. The areas are saved for a few days and the workout generator opens, working around them.
+  async function handleBuildSession(areas: InjuryArea[]) {
+    await sore.save(areas);
+    setInjuryOpen(false);
+    router.push("/workout-generator");
   }
 
   async function handleSend() {
@@ -146,7 +161,8 @@ function AiCoachTab({
             </Text>
           </View>
         ) : (
-          messages.map((m) => (
+          withDateDividers(messages, (m) => m.createdAt, (m) => m.id).map((item) =>
+            item.kind === "divider" ? (<DateDivider key={item.key} label={item.label} />) : ((m) => (
             <View key={m.id} style={[styles.bubble, m.role === "user" ? styles.bubbleUser : styles.bubbleAssistant]}>
               <Text style={m.role === "user" ? styles.bubbleUserText : styles.bubbleAssistantText}>{m.content}</Text>
               <Text style={[styles.bubbleTime, m.role === "user" && styles.bubbleTimeUser]}>
@@ -154,7 +170,8 @@ function AiCoachTab({
                 {formatTime(m.createdAt) ? ` · ${formatTime(m.createdAt)}` : ""}
               </Text>
             </View>
-          ))
+            ))(item.message),
+          )
         )}
         {send.isPending ? (
           <View style={[styles.bubble, styles.bubbleAssistant]}>
@@ -164,6 +181,11 @@ function AiCoachTab({
       </ScrollView>
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
+      <Pressable onPress={() => setInjuryOpen(true)} style={styles.injuryChip} accessibilityRole="button" accessibilityLabel="Sore or injured? Build a workout around it">
+        <Ionicons name="bandage-outline" size={16} color={Color.textPrimary} />
+        <Text style={styles.injuryChipText}>Sore or injured?</Text>
+      </Pressable>
+      <InjuryIntakeSheet visible={injuryOpen} onClose={() => setInjuryOpen(false)} onBuildSession={(a) => void handleBuildSession(a)} />
       <View style={styles.inputRow}>
         <TextInput
           value={input}
@@ -234,7 +256,8 @@ function CoachTab({ messages }: { messages: CoachMessage[] }) {
             <Text style={styles.emptySub}>Send your coach a message — they&apos;ll reply here.</Text>
           </View>
         ) : (
-          messages.map((m) => (
+          withDateDividers(messages, (m) => m.createdAt, (m) => m.id).map((item) =>
+            item.kind === "divider" ? (<DateDivider key={item.key} label={item.label} />) : ((m) => (
             <View key={m.id} style={[styles.bubble, m.senderRole === "member" ? styles.bubbleUser : styles.bubbleAssistant]}>
               <Text style={m.senderRole === "member" ? styles.bubbleUserText : styles.bubbleAssistantText}>{m.body}</Text>
               <Text style={[styles.bubbleTime, m.senderRole === "member" && styles.bubbleTimeUser]}>
@@ -242,7 +265,8 @@ function CoachTab({ messages }: { messages: CoachMessage[] }) {
                 {formatTime(m.createdAt) ? ` · ${formatTime(m.createdAt)}` : ""}
               </Text>
             </View>
-          ))
+            ))(item.message),
+          )
         )}
       </ScrollView>
 
@@ -364,6 +388,19 @@ const useStyles = makeLegacyStyles((Color) =>
     unavailableTitle: { fontSize: 14, fontWeight: "600", color: Color.textPrimary, marginTop: 4 },
     unavailableSub: { fontSize: 14, color: Color.textMuted, textAlign: "center" },
     error: { fontSize: 13, color: Color.danger, marginHorizontal: Spacing.lg, marginBottom: Spacing.xs },
+    injuryChip: {
+      flexDirection: "row",
+      alignItems: "center",
+      alignSelf: "flex-start",
+      gap: 6,
+      marginLeft: Spacing.lg,
+      marginBottom: Spacing.xs,
+      paddingHorizontal: 12,
+      paddingVertical: 7,
+      borderRadius: 999,
+      backgroundColor: Color.surface2,
+    },
+    injuryChipText: { fontSize: 13, fontWeight: "600", color: Color.textPrimary },
     inputRow: {
       flexDirection: "row",
       gap: Spacing.sm,

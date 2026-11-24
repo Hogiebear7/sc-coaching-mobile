@@ -3,6 +3,7 @@ import { AppState } from "react-native";
 
 import { apiFetch, ApiError, registerUnauthorizedHandler } from "./api-client";
 import { cancelCheckinReminder, syncCheckinReminder } from "./checkin-reminder";
+import { cancelTargetReminders } from "./targets/reminders";
 import { registerForPushNotificationsAsync, unregisterPushToken } from "./push-notifications";
 import { cacheUser, forgetCachedUser, readCachedUser, signInCheckFailure } from "./session-keeper";
 import { clearToken, getToken, setToken as persistToken } from "./token-store";
@@ -143,6 +144,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function logout() {
     await unregisterPushToken();
     await cancelCheckinReminder();
+    await cancelTargetReminders();
     await clearToken();
     await forgetCachedUser();
     setUser(null);

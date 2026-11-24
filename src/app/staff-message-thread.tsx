@@ -19,6 +19,8 @@ import { Radius, Spacing } from "@/constants/theme";
 import { ApiError } from "@/lib/api-client";
 import { useDraftAiReply, useSendStaffMessage, useStaffMessageThread } from "@/lib/queries/staff";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
+import { DateDivider } from "@/components/ui/DateDivider";
+import { withDateDividers } from "@/lib/chat-dates";
 
 function formatTime(iso: string): string {
   const d = new Date(iso);
@@ -103,7 +105,8 @@ export default function StaffMessageThreadScreen() {
                 <Text style={styles.emptySub}>Send {memberName ?? "this member"} a message to start the conversation.</Text>
               </View>
             ) : (
-              data.messages.map((m) => (
+              withDateDividers(data.messages, (m) => m.createdAt, (m) => m.id).map((item) =>
+                item.kind === "divider" ? (<DateDivider key={item.key} label={item.label} />) : ((m) => (
                 <View key={m.id} style={[styles.bubble, m.senderRole === "staff" ? styles.bubbleStaff : styles.bubbleMember]}>
                   <Text style={m.senderRole === "staff" ? styles.bubbleStaffText : styles.bubbleMemberText}>{m.body}</Text>
                   <Text style={[styles.bubbleTime, m.senderRole === "staff" && styles.bubbleTimeStaff]}>
@@ -111,7 +114,8 @@ export default function StaffMessageThreadScreen() {
                     {formatTime(m.createdAt) ? ` · ${formatTime(m.createdAt)}` : ""}
                   </Text>
                 </View>
-              ))
+                ))(item.message),
+              )
             )}
           </ScrollView>
         )}

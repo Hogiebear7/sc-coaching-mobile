@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import { useState } from "react";
 import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
@@ -33,6 +34,7 @@ export function MemberSearchSheet({
   const { data: results, isFetching } = useMemberSearch(query);
   const followUser = useFollowUser();
   const unfollowUser = useUnfollowUser();
+  const router = useRouter();
 
   function handleClose() {
     setQuery("");
@@ -56,9 +58,25 @@ export function MemberSearchSheet({
           <ScrollView style={styles.results} showsVerticalScrollIndicator={false}>
             {(results ?? []).map((r) => (
               <View key={r.userId} style={styles.row}>
-                <Text style={styles.name} numberOfLines={1}>
-                  {r.fullName}
-                </Text>
+                {mode === "follow" ? (
+                  <Pressable
+                    style={{ flex: 1 }}
+                    onPress={() => {
+                      handleClose();
+                      router.push({ pathname: "/community/profile/[userId]", params: { userId: r.userId } });
+                    }}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Open ${r.fullName}'s profile`}
+                  >
+                    <Text style={styles.name} numberOfLines={1}>
+                      {r.fullName}
+                    </Text>
+                  </Pressable>
+                ) : (
+                  <Text style={styles.name} numberOfLines={1}>
+                    {r.fullName}
+                  </Text>
+                )}
                 {mode === "mention" ? (
                   <Pressable
                     onPress={() => {
@@ -84,6 +102,7 @@ export function MemberSearchSheet({
                 )}
               </View>
             ))}
+            {followUser.isError ? <Text style={styles.empty}>{followUser.error?.message ?? "Couldn't follow that member."}</Text> : null}
             {!query.trim() ? (
               <Text style={styles.empty}>Start typing a name to search.</Text>
             ) : results && results.length === 0 && !isFetching ? (

@@ -6,7 +6,16 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Card } from "@/components/ui/Card";
 import { Spacing } from "@/constants/theme";
 import { useAuth } from "@/lib/auth-context";
-import { useBlockedMembers, useCommunityPrivacy, useSetCommunityPrivacy, useUnblockMember } from "@/lib/queries/community";
+import { LEADERBOARD_MODE_OPTIONS, PROFILE_VISIBILITY_OPTIONS, WHO_CAN_FOLLOW_OPTIONS } from "@/lib/community-profile-format";
+import {
+  useBlockedMembers,
+  useCommunityPrivacy,
+  useSetCommunityPrivacy,
+  useUnblockMember,
+  type LeaderboardMode,
+  type ProfileVisibility,
+  type WhoCanFollow,
+} from "@/lib/queries/community";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 export default function CommunityPrivacyScreen() {
@@ -33,6 +42,11 @@ export default function CommunityPrivacyScreen() {
   const leaderboardVisible = data?.leaderboardVisible ?? true;
   const showRealName = data?.showRealName ?? true;
   const communityOptIn = data?.communityOptIn ?? false;
+  const profileVisibility: ProfileVisibility = data?.profileVisibility ?? "followers";
+  const whoCanFollow: WhoCanFollow = data?.whoCanFollow ?? "anyone";
+  const leaderboardMode: LeaderboardMode = data?.leaderboardMode ?? (leaderboardVisible ? "named" : "hidden");
+  const leaderboardAlias = data?.leaderboardAlias ?? "Hidden user";
+  const aliases = data?.leaderboardAliases ?? ["Hidden user"];
 
   function update(
     next: Partial<{
@@ -40,9 +54,25 @@ export default function CommunityPrivacyScreen() {
       leaderboardVisible: boolean;
       showRealName: boolean;
       communityOptIn: boolean;
+      profileVisibility: ProfileVisibility;
+      whoCanFollow: WhoCanFollow;
+      leaderboardMode: LeaderboardMode;
+      leaderboardAlias: string;
     }>
   ) {
-    setPrivacy.mutate({ discoverable, leaderboardVisible, showRealName, communityOptIn, ...next });
+    const mode = next.leaderboardMode ?? leaderboardMode;
+    setPrivacy.mutate({
+      discoverable,
+      showRealName,
+      communityOptIn,
+      profileVisibility,
+      whoCanFollow,
+      leaderboardMode: mode,
+      leaderboardAlias,
+      ...next,
+      // Kept in step for servers that only know the old on/off switch.
+      leaderboardVisible: mode !== "hidden",
+    });
   }
 
   return (
@@ -107,22 +137,6 @@ export default function CommunityPrivacyScreen() {
             </View>
             <View style={[styles.settingRow, styles.settingRowDivider]}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.settingTitle}>Show me on leaderboards</Text>
-                <Text style={styles.settingSub}>
-                  Include your lifts and rankings in Community leaderboards. Turn this off to keep
-                  your numbers out of every leaderboard.
-                </Text>
-              </View>
-              <Switch
-                value={leaderboardVisible}
-                onValueChange={(v) => update({ leaderboardVisible: v })}
-                trackColor={{ false: Color.surface3, true: Color.success }}
-                thumbColor="#ffffff"
-                disabled={setPrivacy.isPending}
-              />
-            </View>
-            <View style={[styles.settingRow, styles.settingRowDivider]}>
-              <View style={{ flex: 1 }}>
                 <Text style={styles.settingTitle}>Show my full name</Text>
                 <Text style={styles.settingSub}>
                   Use your full name wherever you appear in Community — leaderboards, search,
@@ -138,6 +152,81 @@ export default function CommunityPrivacyScreen() {
               />
             </View>
           </Card>
+          ) : null}
+
+          {(!isStaff || communityOptIn) ? (
+            <>
+              <Card style={[styles.card, styles.cardSpaced]}>
+                <Text style={styles.settingTitle}>How I appear on leaderboards</Text>
+                <Text style={styles.settingSub}>
+                  Choose how you show up in rankings and challenges. Your coaches can always see everyone.
+                </Text>
+                {LEADERBOARD_MODE_OPTIONS.map((o) => (
+                  <ChoiceRow
+                    key={o.value}
+                    title={o.title}
+                    sub={o.sub}
+                    selected={leaderboardMode === o.value}
+                    disabled={setPrivacy.isPending}
+                    onPress={() => update({ leaderboardMode: o.value })}
+                  />
+                ))}
+                {leaderboardMode === "alias" ? (
+                  <View style={styles.aliasBlock}>
+                    <Text style={styles.settingSub}>Your alias</Text>
+                    <View style={styles.aliasWrap}>
+                      {aliases.map((a) => (
+                        <Pressable
+                          key={a}
+                          onPress={() => update({ leaderboardAlias: a })}
+                          disabled={setPrivacy.isPending}
+                          accessibilityRole="radio"
+                          accessibilityState={{ selected: leaderboardAlias === a }}
+                          style={[styles.aliasChip, leaderboardAlias === a && styles.aliasChipActive]}
+                        >
+                          <Text style={[styles.aliasChipText, leaderboardAlias === a && styles.aliasChipTextActive]}>{a}</Text>
+                        </Pressable>
+                      ))}
+                    </View>
+                  </View>
+                ) : null}
+              </Card>
+
+              <Card style={[styles.card, styles.cardSpaced]}>
+                <Text style={styles.settingTitle}>Who sees my profile</Text>
+                <Text style={styles.settingSub}>
+                  Tap your name anywhere in Community to see a small profile card. This decides who also sees your training volume and your last
+                  activities. Everyone can still see your name (as set above) and a Follow button.
+                </Text>
+                {PROFILE_VISIBILITY_OPTIONS.map((o) => (
+                  <ChoiceRow
+                    key={o.value}
+                    title={o.title}
+                    sub={o.sub}
+                    selected={profileVisibility === o.value}
+                    disabled={setPrivacy.isPending}
+                    onPress={() => update({ profileVisibility: o.value })}
+                  />
+                ))}
+              </Card>
+
+              <Card style={[styles.card, styles.cardSpaced]}>
+                <Text style={styles.settingTitle}>Who can follow me</Text>
+                <Text style={styles.settingSub}>
+                  Choose who can start following you. People who already follow you are never removed by changing this.
+                </Text>
+                {WHO_CAN_FOLLOW_OPTIONS.map((o) => (
+                  <ChoiceRow
+                    key={o.value}
+                    title={o.title}
+                    sub={o.sub}
+                    selected={whoCanFollow === o.value}
+                    disabled={setPrivacy.isPending}
+                    onPress={() => update({ whoCanFollow: o.value })}
+                  />
+                ))}
+              </Card>
+            </>
           ) : null}
 
           <Card style={[styles.card, styles.cardSpaced]}>
@@ -175,6 +264,26 @@ export default function CommunityPrivacyScreen() {
   );
 }
 
+function ChoiceRow({ title, sub, selected, disabled, onPress }: { title: string; sub: string; selected: boolean; disabled: boolean; onPress: () => void }) {
+  const styles = useStyles();
+  const Color = useLegacyColors();
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      accessibilityRole="radio"
+      accessibilityState={{ selected, disabled }}
+      style={[styles.settingRow, styles.settingRowDivider]}
+    >
+      <View style={{ flex: 1 }}>
+        <Text style={styles.settingTitle}>{title}</Text>
+        <Text style={styles.settingSub}>{sub}</Text>
+      </View>
+      <Ionicons name={selected ? "radio-button-on" : "radio-button-off"} size={22} color={selected ? Color.success : Color.textMuted} />
+    </Pressable>
+  );
+}
+
 const useStyles = makeLegacyStyles((Color) =>
   StyleSheet.create({
     safe: { flex: 1, backgroundColor: Color.bg0 },
@@ -198,5 +307,11 @@ const useStyles = makeLegacyStyles((Color) =>
     unblockButton: { minHeight: 40, justifyContent: "center", paddingHorizontal: Spacing.md, borderRadius: 999, backgroundColor: Color.surface2 },
     unblockText: { fontSize: 13, fontWeight: "600", color: Color.textPrimary },
     errorText: { fontSize: 12, color: Color.danger, marginTop: Spacing.sm },
+    aliasBlock: { marginTop: Spacing.sm, gap: Spacing.sm },
+    aliasWrap: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.sm },
+    aliasChip: { paddingHorizontal: Spacing.md, paddingVertical: 8, borderRadius: 999, backgroundColor: Color.surface2 },
+    aliasChipActive: { backgroundColor: Color.success },
+    aliasChipText: { fontSize: 13, fontWeight: "600", color: Color.textPrimary },
+    aliasChipTextActive: { color: "#ffffff" },
   })
 );

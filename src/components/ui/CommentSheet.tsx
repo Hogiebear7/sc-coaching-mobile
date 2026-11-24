@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import { useState } from "react";
 import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from "react-native";
 import { KeyboardAvoidingView } from "react-native-keyboard-controller";
@@ -8,6 +9,7 @@ import { Radius, Spacing } from "@/constants/theme";
 import { useAuth } from "@/lib/auth-context";
 import { formatCommunityDate } from "@/lib/community-formatters";
 import { tapFeedback } from "@/lib/haptics";
+import { openProfileFromModal } from "@/lib/open-profile";
 import {
   useDeleteComment,
   usePostComment,
@@ -39,6 +41,7 @@ export function CommentSheet({
   const styles = useStyles();
   const Color = useLegacyColors();
   const { user } = useAuth();
+  const router = useRouter();
   const insets = useSafeAreaInsets();
   const { height: windowHeight } = useWindowDimensions();
   const { data: comments, isLoading } = useWorkoutComments(workoutSessionId);
@@ -144,9 +147,19 @@ export function CommentSheet({
                   return (
                     <View key={c.id} style={styles.commentRow}>
                       <View style={styles.commentHeader}>
-                        <Text style={styles.commentAuthor} numberOfLines={1}>
-                          {c.authorName}
-                        </Text>
+                        <Pressable
+                          style={{ flex: 1 }}
+                          onPress={() => {
+                            tapFeedback();
+                            openProfileFromModal(router, c.userId, onClose);
+                          }}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Open ${c.authorName}'s profile`}
+                        >
+                          <Text style={styles.commentAuthor} numberOfLines={1}>
+                            {c.authorName}
+                          </Text>
+                        </Pressable>
                         <Text style={styles.commentDate}>{formatCommunityDate(c.createdAt, "compact")}</Text>
                       </View>
                       <Text style={styles.commentBody}>{c.body}</Text>

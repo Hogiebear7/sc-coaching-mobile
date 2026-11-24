@@ -632,6 +632,18 @@ export default function ProfileScreen() {
             </View>
 
 
+            <Text style={[styles.sectionLabel, styles.sectionLabelSpaced]}>Training</Text>
+            <Pressable onPress={() => router.push("/benchmarks")} style={styles.cycleRow}>
+              <View style={styles.cycleRowIcon}>
+                <Ionicons name="barbell-outline" size={18} color={Color.gold} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.settingTitle}>Benchmarks</Text>
+                <Text style={styles.settingSub}>Your best lifts, push-ups and run times. Used to suggest weights</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={Color.textFaint} />
+            </Pressable>
+
             <Text style={[styles.sectionLabel, styles.sectionLabelSpaced]}>Account</Text>
             <Pressable onPress={() => router.push("/settings")} style={styles.cycleRow} {...tourTarget("profile.settings")}>
               <View style={styles.cycleRowIcon}>

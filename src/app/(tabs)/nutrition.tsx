@@ -65,6 +65,8 @@ import { notInPlanCopy, CAN_SELL_DIGITAL_PLAN, DIGITAL_PLAN_ROUTE } from "@/lib/
 import { DEFAULT_DRINK, DRINK_TYPES, drinkNote, findDrink, waterEquivalentMl, type DrinkId } from "@/lib/drink-types";
 import { reportTouch } from "@/lib/outside-touch";
 import { useWaterAmount, waterQuickAdds } from "@/lib/water-amount";
+import { DateDivider } from "@/components/ui/DateDivider";
+import { withDateDividers } from "@/lib/chat-dates";
 
 function shiftDate(dateISO: string, days: number): string {
   const [y, m, d] = dateISO.split("-").map(Number);
@@ -353,7 +355,9 @@ function CoachChat({
         {messages.length === 0 ? (
           <Text style={styles.chatEmpty}>Ask about meal timing, fuelling for a session, or your macros — grounded in your own training and recovery data.</Text>
         ) : (
-          messages.slice(-12).map((m) => {
+          withDateDividers(messages.slice(-12), (m) => m.createdAt, (m) => m.id).map((item) => {
+            if (item.kind === "divider") return <DateDivider key={item.key} label={item.label} />;
+            const m = item.message;
             const { cleanText, proposal } = m.role === "assistant" ? extractTargetProposal(m.content) : { cleanText: m.content, proposal: null };
             const applied = appliedMsgIds.has(m.id);
             return (

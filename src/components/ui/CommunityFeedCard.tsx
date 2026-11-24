@@ -35,15 +35,25 @@ export function CommunityFeedCard({ item, onOpenComments }: { item: CommunityFee
   return (
     <View style={styles.card}>
       <View style={styles.header}>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>{initials(item.authorName)}</Text>
-        </View>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.authorName} numberOfLines={1}>
-            {item.authorName.replace(/\s+/g, " ")}
-          </Text>
-          <Text style={styles.date}>{formatCommunityDate(item.date, "compact")}</Text>
-        </View>
+        <Pressable
+          onPress={() => {
+            tapFeedback();
+            router.push({ pathname: "/community/profile/[userId]", params: { userId: item.userId } });
+          }}
+          style={styles.authorTap}
+          accessibilityRole="button"
+          accessibilityLabel={`Open ${item.authorName}'s profile`}
+        >
+          <View style={styles.avatar}>
+            <Text style={styles.avatarText}>{initials(item.authorName)}</Text>
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.authorName} numberOfLines={1}>
+              {item.authorName.replace(/\s+/g, " ")}
+            </Text>
+            <Text style={styles.date}>{formatCommunityDate(item.date, "compact")}</Text>
+          </View>
+        </Pressable>
         {item.userId !== user?.id ? (
           <Pressable
             onPress={() => setSafetyOpen(true)}
@@ -125,6 +135,7 @@ const useStyles = makeLegacyStyles((Color) =>
     moreButton: { width: 40, height: 40, alignItems: "center", justifyContent: "center" },
     card: { backgroundColor: Color.surface1, borderRadius: Radius.lg, padding: Spacing.md, marginBottom: Spacing.sm },
     header: { flexDirection: "row", alignItems: "center", gap: 10 },
+    authorTap: { flex: 1, flexDirection: "row", alignItems: "center", gap: 10 },
     avatar: { width: 36, height: 36, borderRadius: 18, backgroundColor: Color.surface2, alignItems: "center", justifyContent: "center" },
     avatarText: { fontSize: 13, fontWeight: "700", color: Color.textSecondary },
     authorName: { fontSize: 15, fontWeight: "600", color: Color.textPrimary },

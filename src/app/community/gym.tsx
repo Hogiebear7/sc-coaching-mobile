@@ -18,6 +18,7 @@ import { useAuth } from "@/lib/auth-context";
 import { formatCommunityDate } from "@/lib/community-formatters";
 import { MAX_GYM_POST } from "@/lib/community-groups-format";
 import { tapFeedback } from "@/lib/haptics";
+import { openProfile } from "@/lib/open-profile";
 import {
   isAdultConfirmationRequired,
   useAdultConfirmed,
@@ -228,10 +229,20 @@ export default function CommunityGymScreen() {
                   return (
                     <Card key={p.id} style={styles.post}>
                       <View style={styles.postHead}>
-                        <Text style={styles.author} numberOfLines={1}>
-                          {mine ? "You" : p.author.displayName}
-                          {p.author.isStaff ? "  ·  Coach" : ""}
-                        </Text>
+                        <Pressable
+                          style={{ flex: 1 }}
+                          onPress={() => {
+                            tapFeedback();
+                            openProfile(router, p.author.userId);
+                          }}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Open ${p.author.displayName}'s profile`}
+                        >
+                          <Text style={styles.author} numberOfLines={1}>
+                            {mine ? "You" : p.author.displayName}
+                            {p.author.isStaff ? "  ·  Coach" : ""}
+                          </Text>
+                        </Pressable>
                         <Text style={styles.when}>{formatCommunityDate(p.createdAt, "short")}</Text>
                       </View>
                       <Text style={styles.postBody}>{p.body}</Text>

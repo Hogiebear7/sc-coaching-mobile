@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { extraRows, formatGrams, formatSodium, noExtrasKnown, pickExtras, type ExtraTotals } from "../nutrient-extras";
+import { extraRows, formatGrams, formatSodium, noExtrasKnown, pickExtras, scaleExtras, type ExtraTotals } from "../nutrient-extras";
 
 const totals = (over: Partial<ExtraTotals> = {}): ExtraTotals => ({
   fiberG: 7.2,
@@ -59,5 +59,18 @@ describe("noExtrasKnown", () => {
     expect(noExtrasKnown(totals({ missing: { fiberG: 3, sugarG: 3, sodiumMg: 3, saturatedFatG: 3 } }))).toBe(true);
     expect(noExtrasKnown(totals())).toBe(false);
     expect(noExtrasKnown(totals({ totalEntries: 0, missing: { fiberG: 0, sugarG: 0, sodiumMg: 0, saturatedFatG: 0 } }))).toBe(false);
+  });
+});
+
+describe("scaleExtras", () => {
+  it("scales a portion, grams to one decimal and sodium to whole mg", () => {
+    expect(scaleExtras({ fiberG: 3, sugarG: 10.5, sodiumMg: 300, saturatedFatG: 1.2 }, 1.5)).toEqual({ fiberG: 4.5, sugarG: 15.8, sodiumMg: 450, saturatedFatG: 1.8 });
+  });
+  it("keeps only what is known, and returns null for nothing known or a bad factor", () => {
+    expect(scaleExtras({ fiberG: 2 }, 2)).toEqual({ fiberG: 4 });
+    expect(scaleExtras(null, 2)).toBeNull();
+    expect(scaleExtras({}, 2)).toBeNull();
+    expect(scaleExtras({ fiberG: 2 }, -1)).toBeNull();
+    expect(scaleExtras({ fiberG: 2 }, NaN)).toBeNull();
   });
 });

@@ -13,6 +13,7 @@ import { tapFeedback } from "@/lib/haptics";
 import { useDescribeFoodText, type IdentifiedFoodItem } from "@/lib/queries/food-catalog";
 import { useCreateFoodEntry, type MealType } from "@/lib/queries/nutrition-diary";
 import { todayDateString } from "@/lib/workout-formatters";
+import { pickExtras, type NutrientExtras } from "@/lib/nutrient-extras";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 type Stage = "input" | "interpreting" | "reviewing";
@@ -20,6 +21,8 @@ type Stage = "input" | "interpreting" | "reviewing";
 interface ReviewItem extends IdentifiedFoodItem {
   id: string;
   included: boolean;
+  /** Fibre and sugars the estimate gave for this portion. Cleared when a macro is typed over by hand, because they belonged to the old numbers. */
+  baseExtras: NutrientExtras | null;
 }
 
 function defaultMealTypeForNow(): MealType {
@@ -65,7 +68,7 @@ export default function DescribeFoodScreen() {
         return;
       }
       trackEvent("describe_food_items_identified", { count: res.items.length });
-      setItems(res.items.map((item, i) => ({ ...item, id: `item-${i}`, included: true })));
+      setItems(res.items.map((item, i) => ({ ...item, id: `item-${i}`, included: true, baseExtras: pickExtras(item) })));
       setStage("reviewing");
     } catch (e) {
       const message = e instanceof ApiError ? e.message : "Couldn't reach the server. Check your connection and try again.";
@@ -76,7 +79,8 @@ export default function DescribeFoodScreen() {
   }
 
   function updateItem(id: string, patch: Partial<Pick<ReviewItem, "name" | "calories" | "proteinG" | "carbsG" | "fatG">>) {
-    setItems((prev) => prev.map((it) => (it.id === id ? { ...it, ...patch } : it)));
+    const macroEdited = "calories" in patch || "proteinG" in patch || "carbsG" in patch || "fatG" in patch;
+    setItems((prev) => prev.map((it) => (it.id === id ? { ...it, ...patch, ...(macroEdited ? { baseExtras: null } : null) } : it)));
   }
 
   function toggleItem(id: string) {
@@ -109,6 +113,7 @@ export default function DescribeFoodScreen() {
           servingLabel: null,
           servingGrams: null,
           quantity: null,
+          ...(item.baseExtras ?? {}),
         });
       }
       tapFeedback();

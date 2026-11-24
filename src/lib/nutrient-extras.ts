@@ -80,3 +80,15 @@ export function extraRows(t: ExtraTotals | null | undefined): ExtraRow[] | null 
 export function noExtrasKnown(t: ExtraTotals): boolean {
   return t.totalEntries > 0 && KEYS.every((k) => t.missing[k] >= t.totalEntries);
 }
+
+/** The extras for a portion that is `factor` times the base one (1.5 = one and a half servings). Null stays null. */
+export function scaleExtras(extras: NutrientExtras | null | undefined, factor: number): NutrientExtras | null {
+  if (!extras || !Number.isFinite(factor) || factor < 0) return null;
+  const out: NutrientExtras = {};
+  for (const k of KEYS) {
+    const v = extras[k];
+    if (typeof v !== "number") continue;
+    out[k] = k === "sodiumMg" ? Math.round(v * factor) : Math.round(v * factor * 10) / 10;
+  }
+  return Object.keys(out).length > 0 ? out : null;
+}

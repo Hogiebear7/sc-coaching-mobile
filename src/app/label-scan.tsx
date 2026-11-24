@@ -17,6 +17,7 @@ import { tapFeedback } from "@/lib/haptics";
 import { useDescribeFoodText, usePhotoFoodScan, useSaveFoodIdentificationOverride, type IdentifiedFoodItem } from "@/lib/queries/food-catalog";
 import { useCreateFoodEntry, type MealType } from "@/lib/queries/nutrition-diary";
 import { todayDateString } from "@/lib/workout-formatters";
+import { pickExtras, scaleExtras, type NutrientExtras } from "@/lib/nutrient-extras";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 type Stage = "camera" | "scanning" | "reviewing";
@@ -40,6 +41,8 @@ interface ReviewItem extends IdentifiedFoodItem {
   baseProteinG: number;
   baseCarbsG: number;
   baseFatG: number;
+  /** Fibre, sugars, sodium and saturated fat for one portion (x1), when the scan or correction knew them. Cleared when a macro is typed by hand. */
+  baseExtras: NutrientExtras | null;
 }
 
 function defaultMealTypeForNow(): MealType {
@@ -150,6 +153,7 @@ export default function LabelScanScreen() {
           baseProteinG: item.proteinG,
           baseCarbsG: item.carbsG,
           baseFatG: item.fatG,
+          baseExtras: pickExtras(item),
         }))
       );
       setStage("reviewing");
@@ -241,6 +245,8 @@ export default function LabelScanScreen() {
           next.baseCarbsG = next.carbsG;
           next.baseFatG = next.fatG;
           next.quantity = 1;
+          // The extras belonged to the numbers that were just typed over, so they no longer apply.
+          next.baseExtras = null;
         }
         return next;
       })
@@ -333,6 +339,7 @@ export default function LabelScanScreen() {
                 baseProteinG: corrected.proteinG,
                 baseCarbsG: corrected.carbsG,
                 baseFatG: corrected.fatG,
+                baseExtras: pickExtras(corrected),
                 quantity: 1,
               }
             : it
@@ -378,6 +385,7 @@ export default function LabelScanScreen() {
           servingLabel: null,
           servingGrams: null,
           quantity: null,
+          ...(scaleExtras(item.baseExtras, item.quantity) ?? {}),
         });
       }
       tapFeedback();

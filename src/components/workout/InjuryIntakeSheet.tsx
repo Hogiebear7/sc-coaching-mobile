@@ -1,47 +1,36 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
-import { Modal, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from "react-native";
+import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { BlurBackdrop } from "@/components/ui/BlurBackdrop";
 import { Button } from "@/components/ui/Button";
 import { Radius, Spacing } from "@/constants/theme";
 import { tapFeedback } from "@/lib/haptics";
-import {
-  AREA_LABELS,
-  FEEL_OPTIONS,
-  STARTED_OPTIONS,
-  SORE_TTL_DAYS,
-  buildInjuryMessage,
-  canSubmitIntake,
-  type FeelValue,
-  type InjuryIntake,
-  type StartedValue,
-} from "@/lib/injury-intake";
+import { AREA_LABELS, DANGER_SIGNS, assessIntake, type IntakeOutcome } from "@/lib/injury-intake";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 import { INJURY_AREAS, type InjuryArea } from "@/lib/session-engine/types";
 
-// "I'm sore or injured": a few taps that become a plain message to the coach. It is general information only (the server limits what the coach may say and
-// catches serious symptoms first). It can also tell the workout generator to go easy on the area for a few days.
+// "Sore or injured?": gives no advice and does not use the AI. A danger-sign checklist first (any tick means "get checked" and no workout is offered), then the
+// area to work around. It cannot say whether the member should train; it only tells the workout generator what to leave out for a few days.
 export function InjuryIntakeSheet({
   visible,
   onClose,
-  onSubmit,
-  sending,
+  onBuildSession,
 }: {
   visible: boolean;
   onClose: () => void;
-  onSubmit: (message: string, goEasyAreas: InjuryArea[]) => void;
-  sending: boolean;
+  /** The member chose to build a session around these areas (they are saved for a few days by the caller). */
+  onBuildSession: (areas: InjuryArea[]) => void;
 }) {
   const styles = useStyles();
   const Color = useLegacyColors();
-  const [area, setArea] = useState<InjuryArea | null>(null);
-  const [started, setStarted] = useState<StartedValue | null>(null);
-  const [feel, setFeel] = useState<FeelValue | null>(null);
-  const [note, setNote] = useState("");
-  const [goEasy, setGoEasy] = useState(true);
+  const [areas, setAreas] = useState<InjuryArea[]>([]);
+  const [dangers, setDangers] = useState<string[]>([]);
+  const [outcome, setOutcome] = useState<IntakeOutcome | null>(null);
 
-  const intake: InjuryIntake = { area, started, feel, note };
+  function toggle<T>(list: T[], v: T): T[] {
+    return list.includes(v) ? list.filter((x) => x !== v) : [...list, v];
+  }
 
   function chip(key: string, label: string, active: boolean, onPress: () => void) {
     return (
@@ -49,6 +38,7 @@ export function InjuryIntakeSheet({
         key={key}
         onPress={() => {
           tapFeedback();
+          setOutcome(null);
           onPress();
         }}
         style={[styles.chip, active && styles.chipActive]}
@@ -60,64 +50,58 @@ export function InjuryIntakeSheet({
     );
   }
 
-  function submit() {
-    if (!canSubmitIntake(intake) || !area) return;
-    onSubmit(buildInjuryMessage(intake), goEasy ? [area] : []);
-    setArea(null);
-    setStarted(null);
-    setFeel(null);
-    setNote("");
+  function close() {
+    setOutcome(null);
+    onClose();
   }
 
   return (
-    <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={onClose}>
-      <Pressable style={styles.backdrop} onPress={onClose}>
+    <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={close}>
+      <Pressable style={styles.backdrop} onPress={close}>
         <BlurBackdrop />
         <Pressable style={styles.card} onPress={(e) => e.stopPropagation()}>
           <Text style={styles.title}>Sore or injured?</Text>
           <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-            <View style={styles.warning}>
-              <Ionicons name="warning-outline" size={18} color={Color.warning} />
-              <Text style={styles.warningText}>
-                If you had a fall or accident, can&apos;t put weight on it, or have chest pain, numbness, a head injury or feel unwell, call 112 or 999 or go to an emergency
-                department now. The coach gives general information only. It is not medical advice and it can&apos;t diagnose.
-              </Text>
-            </View>
+            <Text style={styles.sub}>This gives no advice. It only tells the workout generator which area to work around. It can&apos;t say whether you should train.</Text>
 
-            <Text style={styles.label}>WHERE?</Text>
-            <View style={styles.row}>{INJURY_AREAS.map((a) => chip(a, AREA_LABELS[a], area === a, () => setArea(area === a ? null : a)))}</View>
+            <Text style={styles.label}>ANY OF THESE?</Text>
+            <View style={styles.row}>{DANGER_SIGNS.map((d) => chip(d.id, d.label, dangers.includes(d.id), () => setDangers((cur) => toggle(cur, d.id))))}</View>
 
-            <Text style={styles.label}>WHEN DID IT START? — OPTIONAL</Text>
-            <View style={styles.row}>
-              {STARTED_OPTIONS.map((o) => chip(o.value, o.label, started === o.value, () => setStarted(started === o.value ? null : o.value)))}
-            </View>
+            <Text style={styles.label}>WHICH AREA IS SORE?</Text>
+            <View style={styles.row}>{INJURY_AREAS.map((a) => chip(a, AREA_LABELS[a], areas.includes(a), () => setAreas((cur) => toggle(cur, a))))}</View>
 
-            <Text style={styles.label}>WHAT DOES IT FEEL LIKE? — OPTIONAL</Text>
-            <View style={styles.row}>{FEEL_OPTIONS.map((o) => chip(o.value, o.label, feel === o.value, () => setFeel(feel === o.value ? null : o.value)))}</View>
-
-            <Text style={styles.label}>ANYTHING ELSE? — OPTIONAL</Text>
-            <TextInput
-              value={note}
-              onChangeText={setNote}
-              placeholder="For example: only when I squat"
-              placeholderTextColor={Color.textFaint}
-              maxLength={200}
-              multiline
-              style={styles.input}
-            />
-
-            <View style={styles.switchRow}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.switchTitle}>Go easy on this in my workouts</Text>
-                <Text style={styles.sub}>The workout generator leaves out exercises that load this area for the next {SORE_TTL_DAYS} days.</Text>
+            {outcome?.kind === "danger" ? (
+              <View style={[styles.result, styles.resultDanger]}>
+                <Ionicons name="warning-outline" size={20} color={Color.warning} />
+                <Text style={styles.resultText}>{outcome.reply}</Text>
               </View>
-              <Switch value={goEasy} onValueChange={setGoEasy} trackColor={{ false: Color.surface3, true: Color.success }} thumbColor="#ffffff" />
-            </View>
+            ) : null}
+            {outcome?.kind === "ok" ? (
+              <View style={styles.result}>
+                <Ionicons name="information-circle-outline" size={20} color={Color.textSecondary} />
+                <Text style={styles.resultText}>{outcome.message}</Text>
+              </View>
+            ) : null}
+            {outcome?.kind === "incomplete" ? <Text style={styles.sub}>Pick the area that is sore.</Text> : null}
           </ScrollView>
 
-          <Button title="Ask the coach" onPress={submit} disabled={!canSubmitIntake(intake) || sending} loading={sending} style={{ marginTop: Spacing.md }} />
-          <Pressable onPress={onClose} hitSlop={8} style={styles.cancel} accessibilityRole="button">
-            <Text style={styles.cancelText}>Cancel</Text>
+          {outcome?.kind === "ok" ? (
+            <Button
+              title="Build a session around it"
+              onPress={() => {
+                const o = outcome;
+                setOutcome(null);
+                setAreas([]);
+                setDangers([]);
+                onBuildSession(o.areas);
+              }}
+              style={{ marginTop: Spacing.md }}
+            />
+          ) : outcome?.kind === "danger" ? null : (
+            <Button title="Continue" onPress={() => setOutcome(assessIntake({ areas, dangers }))} style={{ marginTop: Spacing.md }} />
+          )}
+          <Pressable onPress={close} hitSlop={8} style={styles.cancel} accessibilityRole="button">
+            <Text style={styles.cancelText}>{outcome?.kind === "danger" ? "Close" : "Cancel"}</Text>
           </Pressable>
         </Pressable>
       </Pressable>
@@ -130,18 +114,16 @@ const useStyles = makeLegacyStyles((Color) =>
     backdrop: { flex: 1, justifyContent: "center", padding: Spacing.lg },
     card: { backgroundColor: Color.surface1, borderRadius: Radius.lg, padding: Spacing.lg, maxHeight: "90%" },
     title: { fontSize: 20, fontWeight: "700", color: Color.textPrimary, marginBottom: Spacing.sm },
-    warning: { flexDirection: "row", gap: Spacing.sm, padding: Spacing.md, borderRadius: Radius.md, backgroundColor: Color.surface2, marginBottom: Spacing.sm },
-    warningText: { flex: 1, fontSize: 13, lineHeight: 19, color: Color.textSecondary },
+    sub: { fontSize: 13, color: Color.textMuted, lineHeight: 19 },
     label: { fontSize: 12, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted, marginTop: Spacing.md, marginBottom: Spacing.xs },
     row: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.sm },
     chip: { paddingHorizontal: 14, paddingVertical: 9, borderRadius: 999, backgroundColor: Color.surface2 },
     chipActive: { backgroundColor: Color.textPrimary },
     chipText: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
     chipTextActive: { color: Color.bg0 },
-    input: { minHeight: 64, borderRadius: Radius.md, backgroundColor: Color.surface2, padding: Spacing.md, color: Color.textPrimary, fontSize: 15, textAlignVertical: "top" },
-    switchRow: { flexDirection: "row", alignItems: "center", gap: Spacing.md, marginTop: Spacing.md },
-    switchTitle: { fontSize: 14, fontWeight: "600", color: Color.textPrimary },
-    sub: { fontSize: 13, color: Color.textMuted, lineHeight: 19, marginTop: 2 },
+    result: { flexDirection: "row", gap: Spacing.sm, padding: Spacing.md, borderRadius: Radius.md, backgroundColor: Color.surface2, marginTop: Spacing.md },
+    resultDanger: { borderWidth: 1, borderColor: Color.warning },
+    resultText: { flex: 1, fontSize: 14, lineHeight: 20, color: Color.textPrimary },
     cancel: { alignItems: "center", paddingVertical: Spacing.md },
     cancelText: { fontSize: 14, fontWeight: "600", color: Color.textMuted },
   }),

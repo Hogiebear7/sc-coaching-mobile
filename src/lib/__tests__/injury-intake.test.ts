@@ -1,26 +1,52 @@
 import { describe, expect, it } from "vitest";
 
-import { SORE_TTL_DAYS, activeSoreAreas, buildInjuryMessage, canSubmitIntake, mergeAreas, rehabAreas } from "../injury-intake";
+import { DANGER_REPLIES, DANGER_SIGNS, SORE_TTL_DAYS, activeSoreAreas, assessIntake, dangerLevel, mergeAreas, rehabAreas } from "../injury-intake";
 
-describe("buildInjuryMessage", () => {
-  it("describes only what the member chose and asks for general information", () => {
-    const msg = buildInjuryMessage({ area: "lower_back", started: "days", feel: "tight", note: "after deadlifts" });
-    expect(msg).toBe(
-      "My lower back is sore. It started a few days ago. It feels tight. after deadlifts. I'd like to keep training if that is sensible. Please keep to general information and tell me when I should get it looked at."
-    );
+describe("dangerLevel", () => {
+  it("is null with nothing ticked and takes the most serious level otherwise", () => {
+    expect(dangerLevel([])).toBeNull();
+    expect(dangerLevel(["weight"])).toBe("urgent");
+    expect(dangerLevel(["weight", "chest"])).toBe("emergency");
+    expect(dangerLevel(["weight", "pregnancy"])).toBe("pregnancy");
+  });
+  it("has a sign for each kind of level, each with a unique id", () => {
+    expect(new Set(DANGER_SIGNS.map((s) => s.level))).toEqual(new Set(["emergency", "urgent", "pregnancy"]));
+    expect(new Set(DANGER_SIGNS.map((s) => s.id)).size).toBe(DANGER_SIGNS.length);
+  });
+});
+
+describe("assessIntake", () => {
+  it("any danger sign means get checked and no workout is offered, even with an area chosen", () => {
+    const out = assessIntake({ areas: ["knee"], dangers: ["weight"] });
+    expect(out.kind).toBe("danger");
+    if (out.kind === "danger") {
+      expect(out.reply).toMatch(/seen today/);
+      expect(out.reply).toMatch(/don't train the affected area/);
+    }
   });
 
-  it("leaves out what was not chosen and returns nothing without an area", () => {
-    expect(buildInjuryMessage({ area: "knee", started: null, feel: null, note: "" })).toMatch(/^My knee is sore\. I'd like to keep training/);
-    expect(buildInjuryMessage({ area: null, started: "today", feel: "sharp", note: "x" })).toBe("");
-    expect(canSubmitIntake({ area: null, started: null, feel: null, note: "" })).toBe(false);
-    expect(canSubmitIntake({ area: "hip", started: null, feel: null, note: "" })).toBe(true);
+  it("an emergency sign sends them to 112 or 999", () => {
+    const out = assessIntake({ areas: [], dangers: ["chest"] });
+    expect(out.kind === "danger" && out.reply).toMatch(/112 or 999/);
   });
 
-  it("caps a long note and never adds diagnostic wording of its own", () => {
-    const msg = buildInjuryMessage({ area: "shoulder", started: "today", feel: "sharp", note: "x".repeat(500) });
-    expect(msg.length).toBeLessThan(450);
-    expect(msg).not.toMatch(/\b(strain|sprain|tendon|tear|impingement|diagnos)/i);
+  it("needs an area when there are no danger signs", () => {
+    expect(assessIntake({ areas: [], dangers: [] })).toEqual({ kind: "incomplete" });
+  });
+
+  it("with only an area it makes no judgement about training, and gives no cause, treatment or timeline", () => {
+    const out = assessIntake({ areas: ["lower_back", "hip"], dangers: [] });
+    expect(out.kind).toBe("ok");
+    if (out.kind !== "ok") return;
+    expect(out.areas).toEqual(["lower_back", "hip"]);
+    expect(out.message).toMatch(/can't tell you whether you should train/);
+    expect(out.message).toMatch(/lower back, hip/);
+    expect(out.message).toMatch(/physio or GP/);
+    expect(out.message).not.toMatch(/\b(safe|strain|sprain|tendon|tear|heal|recover|rest it|ice)\b/i);
+  });
+
+  it("every fixed reply says it is not medical advice", () => {
+    for (const r of Object.values(DANGER_REPLIES)) expect(r).toMatch(/isn't medical advice/);
   });
 });
 

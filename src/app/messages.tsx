@@ -69,6 +69,7 @@ function AiCoachTab({
   const seeded = useRef(false);
   const scrollRef = useRef<ScrollView>(null);
   const access = useMemberAccess();
+  const router = useRouter();
   const [injuryOpen, setInjuryOpen] = useState(false);
   const sore = useSoreAreas();
 
@@ -87,22 +88,18 @@ function AiCoachTab({
     );
   }
 
-  async function handleSend() {
-    await sendContent(input.trim(), true);
-  }
-
-  // From the "Sore or injured?" sheet: the member's choices become one plain message, and (if they left it on) the workout generator is told to go easy on
-  // that area for a few days.
-  async function handleInjurySubmit(message: string, goEasyAreas: InjuryArea[]) {
-    if (goEasyAreas.length > 0) await sore.save(goEasyAreas);
+  // From the "Sore or injured?" sheet: no advice and no AI. The areas are saved for a few days and the workout generator opens, working around them.
+  async function handleBuildSession(areas: InjuryArea[]) {
+    await sore.save(areas);
     setInjuryOpen(false);
-    await sendContent(message, false);
+    router.push("/workout-generator");
   }
 
-  async function sendContent(content: string, clearInput: boolean) {
+  async function handleSend() {
+    const content = input.trim();
     if (!content || send.isPending) return;
     setError(null);
-    if (clearInput) setInput("");
+    setInput("");
     setMessages((prev) => [
       ...prev,
       { id: `local-${Date.now()}`, role: "user", content, createdAt: new Date().toISOString() },
@@ -184,11 +181,11 @@ function AiCoachTab({
       </ScrollView>
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
-      <Pressable onPress={() => setInjuryOpen(true)} style={styles.injuryChip} accessibilityRole="button" accessibilityLabel="Sore or injured? Get general guidance">
+      <Pressable onPress={() => setInjuryOpen(true)} style={styles.injuryChip} accessibilityRole="button" accessibilityLabel="Sore or injured? Build a workout around it">
         <Ionicons name="bandage-outline" size={16} color={Color.textPrimary} />
         <Text style={styles.injuryChipText}>Sore or injured?</Text>
       </Pressable>
-      <InjuryIntakeSheet visible={injuryOpen} onClose={() => setInjuryOpen(false)} onSubmit={(m, a) => void handleInjurySubmit(m, a)} sending={send.isPending} />
+      <InjuryIntakeSheet visible={injuryOpen} onClose={() => setInjuryOpen(false)} onBuildSession={(a) => void handleBuildSession(a)} />
       <View style={styles.inputRow}>
         <TextInput
           value={input}

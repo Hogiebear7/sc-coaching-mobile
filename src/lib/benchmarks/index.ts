@@ -10,6 +10,8 @@ export interface BenchmarkValues {
   maxPushUps?: number;
   maxPullUps?: number;
   plankSeconds?: number;
+  run100mSeconds?: number;
+  run400mSeconds?: number;
   run5kSeconds?: number;
   run10kSeconds?: number;
 }
@@ -24,6 +26,8 @@ export interface BenchmarkField {
   min: number;
   max: number;
   hint: string;
+  /** Where the time wheel opens the first time (time fields only). */
+  startSecs?: number;
 }
 
 // Ranges are sanity checks to catch a typo (an extra zero, grams for kilos), not coaching limits.
@@ -34,9 +38,11 @@ export const BENCHMARK_FIELDS: BenchmarkField[] = [
   { key: "bench5rmKg", label: "Bench press", group: "strength", kind: "kg", min: 5, max: 500, hint: "kg for 5 clean reps" },
   { key: "maxPushUps", label: "Push-ups", group: "bodyweight", kind: "count", min: 1, max: 500, hint: "most in one go" },
   { key: "maxPullUps", label: "Pull-ups", group: "bodyweight", kind: "count", min: 1, max: 100, hint: "most in one go" },
-  { key: "plankSeconds", label: "Plank", group: "bodyweight", kind: "time", min: 5, max: 7200, hint: "longest hold, mm:ss" },
-  { key: "run5kSeconds", label: "5 km run", group: "running", kind: "time", min: 600, max: 5400, hint: "best time, mm:ss" },
-  { key: "run10kSeconds", label: "10 km run", group: "running", kind: "time", min: 1200, max: 10800, hint: "best time, mm:ss" },
+  { key: "plankSeconds", label: "Plank", group: "bodyweight", kind: "time", min: 5, max: 7200, hint: "longest hold, mm:ss", startSecs: 60 },
+  { key: "run100mSeconds", label: "100 m sprint", group: "running", kind: "time", min: 8, max: 120, hint: "best time, mm:ss", startSecs: 15 },
+  { key: "run400mSeconds", label: "400 m run", group: "running", kind: "time", min: 40, max: 600, hint: "best time, mm:ss", startSecs: 90 },
+  { key: "run5kSeconds", label: "5 km run", group: "running", kind: "time", min: 600, max: 5400, hint: "best time, mm:ss", startSecs: 25 * 60 },
+  { key: "run10kSeconds", label: "10 km run", group: "running", kind: "time", min: 1200, max: 10800, hint: "best time, mm:ss", startSecs: 50 * 60 },
 ];
 
 /** "mm:ss", "h:mm:ss" or plain minutes ("25") to seconds. Bad input gives null. */

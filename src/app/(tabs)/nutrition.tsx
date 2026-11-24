@@ -427,6 +427,7 @@ export default function NutritionScreen() {
   const [macroInfo, setMacroInfo] = useState<MacroKind | null>(null);
   const [showCalorieWhy, setShowCalorieWhy] = useState(false);
   const [quickAddTab, setQuickAddTab] = useState<"recent" | "favourites">("recent");
+  const [quickAddOpen, setQuickAddOpen] = useState(false);
   // "Today's emphasis" sits under More tools and starts closed, to keep the page short.
   const [emphasisOpen, setEmphasisOpen] = useState(false);
   // Collapsed by default — a member who logs a lot of foods can otherwise
@@ -748,8 +749,22 @@ export default function NutritionScreen() {
               ) : null}
               {/* Quick add lives inside the Diary box, under the meals */}
               {(recentFoods && recentFoods.length > 0) || (favorites && favorites.length > 0) ? (
-                <View style={[styles.rowDivider, { padding: 14 }]}>
-                  <Text style={[styles.rowTitle, { marginBottom: 10 }]}>Quick add</Text>
+                <View style={styles.rowDivider}>
+                  <Pressable
+                    onPress={() => setQuickAddOpen((v) => !v)}
+                    style={styles.otherMealsRow}
+                    accessibilityRole="button"
+                    accessibilityState={{ expanded: quickAddOpen }}
+                    accessibilityLabel={quickAddOpen ? "Hide quick add" : "Show quick add"}
+                  >
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.rowTitle}>Quick add</Text>
+                      {!quickAddOpen ? <Text style={styles.rowSub}>Recent foods and favourites</Text> : null}
+                    </View>
+                    <Ionicons name={quickAddOpen ? "chevron-up" : "chevron-down"} size={18} color={colors.textMuted} />
+                  </Pressable>
+                  {quickAddOpen ? (
+                <View style={{ paddingHorizontal: 14, paddingBottom: 14 }}>
                   <View style={{ marginBottom: 12 }}>
                     <Segmented
                       options={["recent", "favourites"] as const}
@@ -810,6 +825,8 @@ export default function NutritionScreen() {
                   ) : (
                     <Text style={styles.quietText}>No favourites yet — save one from the star icon when adding a food.</Text>
                   )}
+                </View>
+                  ) : null}
                 </View>
               ) : null}
             </View>

@@ -44,6 +44,11 @@ import { useGenerateProgramme } from "@/lib/queries/programs";
 import { useProfile } from "@/lib/queries/profile";
 import { useWorkoutHelperTier, type SessionTier } from "@/lib/queries/workout-helper";
 import { generateStructuredWorkout, generateWorkout } from "@/lib/workout-generator";
+import { PlanPreview, SessionOptions } from "@/components/workout/SessionOptions";
+import { usePregnancyData } from "@/lib/queries/pregnancy";
+import { useWorkouts } from "@/lib/queries/workouts";
+import { generateSession, type InjuryArea, type Intent, type Level, type SessionFormat, type SessionPlan } from "@/lib/session-engine";
+import { localISODate, pregnancyStageFromTrimester, trainedBuckets } from "@/lib/session-engine/context";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 type GeneratorMode = "workout" | "programme";
@@ -402,6 +407,17 @@ export default function WorkoutGeneratorScreen() {
   const [bodyMode, setBodyMode] = useState<"primary" | "secondary">("primary");
   const [view, setView] = useState<"front" | "back">("front");
   const [timeMinutes, setTimeMinutes] = useState(45);
+  // Rules-based session options (src/lib/session-engine). Level starts at beginner and moves to intermediate once there is a real training history.
+  const [level, setLevel] = useState<Level>("beginner");
+  const [levelTouched, setLevelTouched] = useState(false);
+  const [intent, setIntent] = useState<Intent>("strength");
+  const [sessionFormat, setSessionFormat] = useState<SessionFormat>("standard");
+  const [injuries, setInjuries] = useState<InjuryArea[]>([]);
+  const [sessionNote, setSessionNote] = useState("");
+  const [preview, setPreview] = useState<SessionPlan | null>(null);
+  const { data: pregnancyData } = usePregnancyData(true);
+  const { data: workoutsData } = useWorkouts();
+  const levelValue: Level = levelTouched ? level : (workoutsData?.sessions.length ?? 0) >= 15 ? "intermediate" : "beginner";
   const [error, setError] = useState<string | null>(null);
   // Precision/accessibility fallback — the full option list, hidden by
   // default now that the collapsed summaries are the primary review
@@ -535,6 +551,32 @@ export default function WorkoutGeneratorScreen() {
       equipmentCatalogItems.some((item) => equipmentSlugMatchesVendorString(item, v))
     );
 
+    // Full Body and Upper / Lower use the rules-based engine and show the plan, with the reasons, before the workout starts.
+    if (workoutStructure !== "chooseAreas") {
+      const stage = pregnancyStageFromTrimester(pregnancyData?.isPregnant, pregnancyData?.estimate.trimester);
+      const plan = generateSession(data.exercises, {
+        level: levelValue,
+        intent,
+        format: sessionFormat,
+        split: workoutStructure === "upperLower" ? workoutHalf : "fullBody",
+        timeMinutes,
+        equipment: equipmentVendorValues,
+        note: sessionNote,
+        context: {
+          tier: tierData?.tier,
+          trainedYesterday: trainedBuckets(workoutsData?.sessions ?? [], data.exercises, localISODate(1)),
+          pregnancy: stage ? { stage } : null,
+          injuries,
+        },
+      });
+      if (plan.exercises.length === 0) {
+        setError(plan.notes[0] ?? "No matching exercises for that combination.");
+        return;
+      }
+      setPreview(plan);
+      return;
+    }
+
     const exercises =
       workoutStructure === "chooseAreas"
         ? generateWorkout({
@@ -565,6 +607,28 @@ export default function WorkoutGeneratorScreen() {
         generatedExercises: JSON.stringify(exercises),
       },
     });
+  }
+
+  function startPreview() {
+    if (!preview) return;
+    const exercises = preview.exercises.map((e) => ({
+      id: e.exerciseId,
+      exerciseId: e.exerciseId,
+      name: e.name,
+      muscleTags: e.bodyPart ? [e.bodyPart] : [],
+      targetSets: e.sets,
+      targetReps: e.reps,
+      targetWeight: e.weight,
+      setType: e.setType,
+      sets: null,
+      supersetGroup: e.supersetGroup,
+      notes: e.cue,
+    }));
+    router.push({ pathname: "/log-workout", params: { title: "Generated Workout", generatedExercises: JSON.stringify(exercises) } });
+  }
+
+  function toggleInjury(area: InjuryArea) {
+    setInjuries((prev) => (prev.includes(area) ? prev.filter((a) => a !== area) : [...prev, area]));
   }
 
   function handleGenerateProgramme() {
@@ -993,6 +1057,27 @@ export default function WorkoutGeneratorScreen() {
             </>
           )}
 
+          {mode === "workout" && workoutStructure !== "chooseAreas" ? (
+            <SessionOptions
+              level={levelValue}
+              onLevel={(v) => {
+                setLevelTouched(true);
+                setLevel(v);
+              }}
+              intent={intent}
+              onIntent={setIntent}
+              format={sessionFormat}
+              onFormat={setSessionFormat}
+              injuries={injuries}
+              onToggleInjury={toggleInjury}
+              note={sessionNote}
+              onNote={setSessionNote}
+              pregnancyLabel={
+                pregnancyData?.isPregnant ? ({ 1: "first trimester", 2: "second trimester", 3: "third trimester" } as Record<string, string>)[String(pregnancyData.estimate.trimester)] ?? null : null
+              }
+            />
+          ) : null}
+
           {mode === "programme" ? <Text style={styles.groupHeader}>Practical constraints</Text> : null}
 
           <Text style={mode === "programme" ? styles.fieldLabel : styles.sectionLabel}>
@@ -1104,6 +1189,15 @@ export default function WorkoutGeneratorScreen() {
           )}
         </KeyboardAwareScroll>
       )}
+          {preview ? (
+        <PlanPreview
+          exercises={preview.exercises}
+          notes={preview.notes}
+          onStart={startPreview}
+          onRegenerate={handleGenerate}
+          onClose={() => setPreview(null)}
+        />
+      ) : null}
     </SafeAreaView>
   );
 }

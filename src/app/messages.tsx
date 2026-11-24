@@ -30,6 +30,8 @@ import {
 import { useMemberAccess } from "@/lib/queries/profile";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 import { notInPlanCopy } from "@/lib/upsell-config";
+import { DateDivider } from "@/components/ui/DateDivider";
+import { withDateDividers } from "@/lib/chat-dates";
 
 type Tab = "ai" | "coach";
 
@@ -146,7 +148,8 @@ function AiCoachTab({
             </Text>
           </View>
         ) : (
-          messages.map((m) => (
+          withDateDividers(messages, (m) => m.createdAt, (m) => m.id).map((item) =>
+            item.kind === "divider" ? (<DateDivider key={item.key} label={item.label} />) : ((m) => (
             <View key={m.id} style={[styles.bubble, m.role === "user" ? styles.bubbleUser : styles.bubbleAssistant]}>
               <Text style={m.role === "user" ? styles.bubbleUserText : styles.bubbleAssistantText}>{m.content}</Text>
               <Text style={[styles.bubbleTime, m.role === "user" && styles.bubbleTimeUser]}>
@@ -154,7 +157,8 @@ function AiCoachTab({
                 {formatTime(m.createdAt) ? ` · ${formatTime(m.createdAt)}` : ""}
               </Text>
             </View>
-          ))
+            ))(item.message),
+          )
         )}
         {send.isPending ? (
           <View style={[styles.bubble, styles.bubbleAssistant]}>
@@ -234,7 +238,8 @@ function CoachTab({ messages }: { messages: CoachMessage[] }) {
             <Text style={styles.emptySub}>Send your coach a message — they&apos;ll reply here.</Text>
           </View>
         ) : (
-          messages.map((m) => (
+          withDateDividers(messages, (m) => m.createdAt, (m) => m.id).map((item) =>
+            item.kind === "divider" ? (<DateDivider key={item.key} label={item.label} />) : ((m) => (
             <View key={m.id} style={[styles.bubble, m.senderRole === "member" ? styles.bubbleUser : styles.bubbleAssistant]}>
               <Text style={m.senderRole === "member" ? styles.bubbleUserText : styles.bubbleAssistantText}>{m.body}</Text>
               <Text style={[styles.bubbleTime, m.senderRole === "member" && styles.bubbleTimeUser]}>
@@ -242,7 +247,8 @@ function CoachTab({ messages }: { messages: CoachMessage[] }) {
                 {formatTime(m.createdAt) ? ` · ${formatTime(m.createdAt)}` : ""}
               </Text>
             </View>
-          ))
+            ))(item.message),
+          )
         )}
       </ScrollView>
 

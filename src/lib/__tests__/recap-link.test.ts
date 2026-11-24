@@ -28,3 +28,11 @@ describe("mapLinkHrefToRoute: class recap", () => {
     expect(mapLinkHrefToRoute("/community/workout/9")).toBe("/community/workout/9");
   });
 });
+
+describe("mapLinkHrefToRoute: challenge notices", () => {
+  it("opens the challenge screen straight from a new-challenge or started notice, query and all", () => {
+    const link = "/community/challenge?scope=group&groupId=g1&challengeId=ch1";
+    expect(mapLinkHrefToRoute(link)).toBe(link);
+    expect(mapLinkHrefToRoute("/community/challenge?scope=gym&challengeId=ch2")).toBe("/community/challenge?scope=gym&challengeId=ch2");
+  });
+});

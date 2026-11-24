@@ -191,6 +191,35 @@ describe("formatLeaderboardContextLabel", () => {
   });
 });
 
+describe("buildLeaderboardRows: aliases", () => {
+  it("does not let anyone open an aliased row, and says what an aliased member sees for themselves", () => {
+    const rows = buildLeaderboardRows(
+      [
+        { userId: "alias-0", displayName: "Shadow user", value: 500, bodyweightPct: null, isAlias: true, alias: null },
+        { userId: "me", displayName: "Me", value: 400, bodyweightPct: null, isAlias: true, alias: "Shadow user" },
+        { userId: "u3", displayName: "Third", value: 300, bodyweightPct: null },
+      ],
+      "me"
+    );
+    expect(rows.map((r) => r.canOpenProfile)).toEqual([false, true, true]);
+    expect(rows[0].name).toBe("Shadow user");
+    expect(rows[1]).toMatchObject({ name: "You", note: 'Others see you as "Shadow user"' });
+    expect(rows[2].note).toBeNull();
+  });
+
+  it("tells staff who is hidden or aliased, while keeping real ids openable", () => {
+    const rows = buildLeaderboardRows(
+      [
+        { userId: "g", displayName: "Gone Away", value: 500, bodyweightPct: null, hiddenFromMembers: true },
+        { userId: "t", displayName: "Top Lifter", value: 400, bodyweightPct: null, isAlias: true, alias: "Hidden user" },
+      ],
+      "coach"
+    );
+    expect(rows.map((r) => r.note)).toEqual(["Hidden from members", 'Members see "Hidden user"']);
+    expect(rows.every((r) => r.canOpenProfile)).toBe(true);
+  });
+});
+
 describe("buildLeaderboardRows", () => {
   it("keeps two entries with the same display name as separate rows keyed by userId", () => {
     const rows = buildLeaderboardRows(

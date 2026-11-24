@@ -405,16 +405,18 @@ export default function CommunityScreen() {
                       <Text style={[styles.leaderboardRank, row.isMe && styles.leaderboardTextMe]}>{row.rank}</Text>
                       <Pressable
                         style={{ flex: 1 }}
+                        disabled={!row.canOpenProfile}
                         onPress={() => {
                           tapFeedback();
                           router.push({ pathname: "/community/profile/[userId]", params: { userId: row.userId } });
                         }}
-                        accessibilityRole="button"
-                        accessibilityLabel={`Open ${row.name}'s profile`}
+                        accessibilityRole={row.canOpenProfile ? "button" : undefined}
+                        accessibilityLabel={row.canOpenProfile ? `Open ${row.name}'s profile` : undefined}
                       >
                         <Text style={[styles.leaderboardName, row.isMe && styles.leaderboardTextMe]} numberOfLines={1}>
                           {row.name}
                         </Text>
+                        {row.note ? <Text style={styles.leaderboardPct}>{row.note}</Text> : null}
                       </Pressable>
                       <View style={styles.leaderboardValueWrap}>
                         <Text style={[styles.leaderboardValue, row.isMe && styles.leaderboardTextMe]}>

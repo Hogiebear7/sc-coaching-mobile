@@ -6,12 +6,13 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Card } from "@/components/ui/Card";
 import { Spacing } from "@/constants/theme";
 import { useAuth } from "@/lib/auth-context";
-import { PROFILE_VISIBILITY_OPTIONS, WHO_CAN_FOLLOW_OPTIONS } from "@/lib/community-profile-format";
+import { LEADERBOARD_MODE_OPTIONS, PROFILE_VISIBILITY_OPTIONS, WHO_CAN_FOLLOW_OPTIONS } from "@/lib/community-profile-format";
 import {
   useBlockedMembers,
   useCommunityPrivacy,
   useSetCommunityPrivacy,
   useUnblockMember,
+  type LeaderboardMode,
   type ProfileVisibility,
   type WhoCanFollow,
 } from "@/lib/queries/community";
@@ -43,6 +44,9 @@ export default function CommunityPrivacyScreen() {
   const communityOptIn = data?.communityOptIn ?? false;
   const profileVisibility: ProfileVisibility = data?.profileVisibility ?? "followers";
   const whoCanFollow: WhoCanFollow = data?.whoCanFollow ?? "anyone";
+  const leaderboardMode: LeaderboardMode = data?.leaderboardMode ?? (leaderboardVisible ? "named" : "hidden");
+  const leaderboardAlias = data?.leaderboardAlias ?? "Hidden user";
+  const aliases = data?.leaderboardAliases ?? ["Hidden user"];
 
   function update(
     next: Partial<{
@@ -52,9 +56,23 @@ export default function CommunityPrivacyScreen() {
       communityOptIn: boolean;
       profileVisibility: ProfileVisibility;
       whoCanFollow: WhoCanFollow;
+      leaderboardMode: LeaderboardMode;
+      leaderboardAlias: string;
     }>
   ) {
-    setPrivacy.mutate({ discoverable, leaderboardVisible, showRealName, communityOptIn, profileVisibility, whoCanFollow, ...next });
+    const mode = next.leaderboardMode ?? leaderboardMode;
+    setPrivacy.mutate({
+      discoverable,
+      showRealName,
+      communityOptIn,
+      profileVisibility,
+      whoCanFollow,
+      leaderboardMode: mode,
+      leaderboardAlias,
+      ...next,
+      // Kept in step for servers that only know the old on/off switch.
+      leaderboardVisible: mode !== "hidden",
+    });
   }
 
   return (
@@ -119,22 +137,6 @@ export default function CommunityPrivacyScreen() {
             </View>
             <View style={[styles.settingRow, styles.settingRowDivider]}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.settingTitle}>Show me on leaderboards</Text>
-                <Text style={styles.settingSub}>
-                  Include your lifts and rankings in Community leaderboards. Turn this off to keep
-                  your numbers out of every leaderboard.
-                </Text>
-              </View>
-              <Switch
-                value={leaderboardVisible}
-                onValueChange={(v) => update({ leaderboardVisible: v })}
-                trackColor={{ false: Color.surface3, true: Color.success }}
-                thumbColor="#ffffff"
-                disabled={setPrivacy.isPending}
-              />
-            </View>
-            <View style={[styles.settingRow, styles.settingRowDivider]}>
-              <View style={{ flex: 1 }}>
                 <Text style={styles.settingTitle}>Show my full name</Text>
                 <Text style={styles.settingSub}>
                   Use your full name wherever you appear in Community — leaderboards, search,
@@ -154,6 +156,42 @@ export default function CommunityPrivacyScreen() {
 
           {(!isStaff || communityOptIn) ? (
             <>
+              <Card style={[styles.card, styles.cardSpaced]}>
+                <Text style={styles.settingTitle}>How I appear on leaderboards</Text>
+                <Text style={styles.settingSub}>
+                  Choose how you show up in rankings and challenges. Your coaches can always see everyone.
+                </Text>
+                {LEADERBOARD_MODE_OPTIONS.map((o) => (
+                  <ChoiceRow
+                    key={o.value}
+                    title={o.title}
+                    sub={o.sub}
+                    selected={leaderboardMode === o.value}
+                    disabled={setPrivacy.isPending}
+                    onPress={() => update({ leaderboardMode: o.value })}
+                  />
+                ))}
+                {leaderboardMode === "alias" ? (
+                  <View style={styles.aliasBlock}>
+                    <Text style={styles.settingSub}>Your alias</Text>
+                    <View style={styles.aliasWrap}>
+                      {aliases.map((a) => (
+                        <Pressable
+                          key={a}
+                          onPress={() => update({ leaderboardAlias: a })}
+                          disabled={setPrivacy.isPending}
+                          accessibilityRole="radio"
+                          accessibilityState={{ selected: leaderboardAlias === a }}
+                          style={[styles.aliasChip, leaderboardAlias === a && styles.aliasChipActive]}
+                        >
+                          <Text style={[styles.aliasChipText, leaderboardAlias === a && styles.aliasChipTextActive]}>{a}</Text>
+                        </Pressable>
+                      ))}
+                    </View>
+                  </View>
+                ) : null}
+              </Card>
+
               <Card style={[styles.card, styles.cardSpaced]}>
                 <Text style={styles.settingTitle}>Who sees my profile</Text>
                 <Text style={styles.settingSub}>
@@ -269,5 +307,11 @@ const useStyles = makeLegacyStyles((Color) =>
     unblockButton: { minHeight: 40, justifyContent: "center", paddingHorizontal: Spacing.md, borderRadius: 999, backgroundColor: Color.surface2 },
     unblockText: { fontSize: 13, fontWeight: "600", color: Color.textPrimary },
     errorText: { fontSize: 12, color: Color.danger, marginTop: Spacing.sm },
+    aliasBlock: { marginTop: Spacing.sm, gap: Spacing.sm },
+    aliasWrap: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.sm },
+    aliasChip: { paddingHorizontal: Spacing.md, paddingVertical: 8, borderRadius: 999, backgroundColor: Color.surface2 },
+    aliasChipActive: { backgroundColor: Color.success },
+    aliasChipText: { fontSize: 13, fontWeight: "600", color: Color.textPrimary },
+    aliasChipTextActive: { color: "#ffffff" },
   })
 );

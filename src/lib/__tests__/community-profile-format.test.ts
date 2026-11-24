@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { PROFILE_VISIBILITY_OPTIONS, WHO_CAN_FOLLOW_OPTIONS, formatMemberSince, formatVolumeKg, sessionsLabel } from "../community-profile-format";
+import { LEADERBOARD_MODE_OPTIONS, PROFILE_VISIBILITY_OPTIONS, WHO_CAN_FOLLOW_OPTIONS, formatMemberSince, formatVolumeKg, sessionsLabel } from "../community-profile-format";
 
 describe("formatVolumeKg", () => {
   it("rounds and adds thousands separators", () => {
@@ -35,5 +35,6 @@ describe("labels", () => {
   it("lists every option once, in the agreed order", () => {
     expect(PROFILE_VISIBILITY_OPTIONS.map((o) => o.value)).toEqual(["followers", "followers_gym", "everyone"]);
     expect(WHO_CAN_FOLLOW_OPTIONS.map((o) => o.value)).toEqual(["anyone", "gym", "nobody"]);
+    expect(LEADERBOARD_MODE_OPTIONS.map((o) => o.value)).toEqual(["named", "alias", "hidden"]);
   });
 });

@@ -16,6 +16,12 @@ export interface LeaderboardEntry {
   displayName: string;
   value: number;
   bodyweightPct: number | null;
+  /** Shown under an alias. */
+  isAlias?: boolean;
+  /** The alias, only sent to that member and to gym staff. */
+  alias?: string | null;
+  /** Only sent to gym staff: hidden from other members. */
+  hiddenFromMembers?: boolean;
 }
 
 /**
@@ -355,7 +361,15 @@ export interface CommunityPrivacy {
   profileVisibility?: ProfileVisibility;
   /** Who may start following you. Older servers omit it (read as "anyone"). */
   whoCanFollow?: WhoCanFollow;
+  /** How you appear on leaderboards. Older servers omit it (then it follows leaderboardVisible). */
+  leaderboardMode?: LeaderboardMode;
+  /** The alias shown when the mode is "alias". */
+  leaderboardAlias?: string;
+  /** The aliases you may pick from (read-only, sent by the server). */
+  leaderboardAliases?: string[];
 }
+
+export type LeaderboardMode = "named" | "alias" | "hidden";
 
 export type ProfileVisibility = "followers" | "followers_gym" | "everyone";
 export type WhoCanFollow = "anyone" | "gym" | "nobody";
@@ -402,6 +416,8 @@ export interface CommunityProfile {
   canFollow: boolean;
   followBlockedReason: string | null;
   detailHidden: boolean;
+  /** True when the detail is private whatever you do (an alias or hidden member), so the card does not suggest following. */
+  detailLocked?: boolean;
   detail: { memberSince: string | null; stats: CommunityProfileStats | null; recent: CommunityProfileActivity[] } | null;
 }
 

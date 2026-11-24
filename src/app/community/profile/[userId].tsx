@@ -103,7 +103,7 @@ export default function CommunityProfileScreen() {
               <View style={styles.hidden}>
                 <Ionicons name="lock-closed-outline" size={22} color={colors.textMuted} />
                 <Text style={styles.muted}>
-                  {data.canFollow ? `${firstName} shares training details with followers. Follow to see them.` : `${firstName} keeps training details private.`}
+                  {data.canFollow && !data.detailLocked ? `${firstName} shares training details with followers. Follow to see them.` : `${firstName} keeps training details private.`}
                 </Text>
               </View>
             </Card>

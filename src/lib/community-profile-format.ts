@@ -1,6 +1,6 @@
 // Wording for the Community profile card and its two privacy settings. Pure, so it is unit tested.
 
-import type { ProfileVisibility, WhoCanFollow } from "@/lib/queries/community";
+import type { LeaderboardMode, ProfileVisibility, WhoCanFollow } from "@/lib/queries/community";
 
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
@@ -26,6 +26,12 @@ export const PROFILE_VISIBILITY_OPTIONS: { value: ProfileVisibility; title: stri
   { value: "followers", title: "Only my followers", sub: "Only people who follow you see your training numbers and recent workouts." },
   { value: "followers_gym", title: "Followers and my gym", sub: "Your followers, plus members of your gym, see them." },
   { value: "everyone", title: "Everyone in Community", sub: "Anyone in your Community sees them." },
+];
+
+export const LEADERBOARD_MODE_OPTIONS: { value: LeaderboardMode; title: string; sub: string }[] = [
+  { value: "named", title: "Show my name", sub: "You appear on leaderboards and challenges under your name." },
+  { value: "alias", title: "Use an alias", sub: "You stay ranked with your numbers showing, under an alias, so nobody can wrongly think they are first. Your profile card stays private." },
+  { value: "hidden", title: "Hide me completely", sub: "You are not shown on leaderboards or challenges at all." },
 ];
 
 export const WHO_CAN_FOLLOW_OPTIONS: { value: WhoCanFollow; title: string; sub: string }[] = [

@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { apiFetch } from "@/lib/api-client";
+import type { NutrientExtras } from "@/lib/nutrient-extras";
 import type { MealType } from "@/lib/queries/nutrition-diary";
 
 // Mirrors FoodFavoriteRecord in the main repo's lib/db.ts — a member's own
@@ -8,7 +9,7 @@ import type { MealType } from "@/lib/queries/nutrition-diary";
 // from the auto-populated "recent" shelf: this is a deliberate save action,
 // and (like a recent entry) a flat nutrition snapshot at save time rather
 // than a live reference back to the food catalog.
-export interface FoodFavorite {
+export interface FoodFavorite extends NutrientExtras {
   id: string;
   userId: string;
   mealType: MealType;
@@ -22,7 +23,7 @@ export interface FoodFavorite {
   createdAt: string;
 }
 
-export interface FoodFavoriteAddInput {
+export interface FoodFavoriteAddInput extends NutrientExtras {
   mealType: MealType;
   name: string;
   calories: number;

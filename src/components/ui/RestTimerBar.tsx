@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { figure, Radius, Spacing } from "@/constants/theme";
+import { figure, iosTallLine, Radius, Spacing } from "@/constants/theme";
 import { tapFeedback } from "@/lib/haptics";
 import { useRestTimer } from "@/lib/rest-timer";
 import { getTimerTarget, setTimerTarget } from "@/lib/timer-result";
@@ -119,7 +119,7 @@ const useStyles = makeLegacyStyles((Color) =>
     },
     barGetReady: { justifyContent: "center", gap: Spacing.sm },
     getReadyText: { fontSize: 14, fontWeight: "700", letterSpacing: 0.6, color: Color.textMuted },
-    getReadyClock: { ...figure(26, "700"), color: Color.gold },
+    getReadyClock: { ...figure(26, "700"), ...iosTallLine(26), color: Color.gold },
     adjustButton: {
       paddingHorizontal: Spacing.sm,
       paddingVertical: 6,
@@ -127,7 +127,7 @@ const useStyles = makeLegacyStyles((Color) =>
     adjustText: { fontSize: 14, fontWeight: "600", color: Color.textSecondary },
     clockWrap: { flex: 1, alignItems: "center" },
     label: { fontSize: 14, fontWeight: "600", color: Color.textMuted },
-    clock: { ...figure(26, "700"), color: Color.gold },
+    clock: { ...figure(26, "700"), ...iosTallLine(26), color: Color.gold },
     clockDone: { color: Color.success },
     iconButton: {
       width: 32,

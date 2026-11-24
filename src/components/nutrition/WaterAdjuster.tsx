@@ -1,11 +1,9 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { PanResponder, Pressable, StyleSheet, Text, View } from "react-native";
 import Svg, { Circle, Line, Polygon, Text as SvgText } from "react-native-svg";
 
 import { LIQUID_BOTTLE_BODY_H, LiquidBottle } from "@/components/ui/LiquidBottle";
-import { Segmented } from "@/components/ui/Segmented";
 import { AppRadius } from "@/constants/theme";
 import { selectionFeedback, successFeedback } from "@/lib/haptics";
 import { insideRect, onTouch, type Rect } from "@/lib/outside-touch";
@@ -27,7 +25,7 @@ import {
 // changes nothing. The +250 / +500 / +750 buttons stay as they were.
 
 type Mode = "bottle" | "dial";
-const MODE_KEY = "water-control-mode-v1";
+// The bottle is the only control now (the dial was dropped), but the dial drawing is kept in case it comes back.
 
 // Layout of the bottle (see LiquidBottle): a cap and neck above the body, which is the part the water fills.
 const BOTTLE_TOP_OFFSET = 9 + 14;
@@ -94,7 +92,7 @@ export function WaterAdjuster({
   const styles = useStyles();
   const { colors, data: dc } = useAppTheme();
 
-  const [mode, setMode] = useState<Mode>("bottle");
+  const mode = "bottle" as Mode;
   const [armed, setArmed] = useState(false);
   const [pending, setPending] = useState(0);
 
@@ -115,14 +113,6 @@ export function WaterAdjuster({
   }, [mode, armed, loggedMl, targetMl, share, onSave]);
   useEffect(() => {
     adj.setPending = setPending;
-  }, []);
-
-  useEffect(() => {
-    AsyncStorage.getItem(MODE_KEY)
-      .then((v) => {
-        if (v === "bottle" || v === "dial") setMode(v);
-      })
-      .catch(() => {});
   }, []);
 
   const canAdjust = !!targetMl && targetMl > 0;
@@ -184,12 +174,6 @@ export function WaterAdjuster({
       return () => finish();
     }, [finish])
   );
-
-  function chooseMode(next: Mode) {
-    finish();
-    setMode(next);
-    AsyncStorage.setItem(MODE_KEY, next).catch(() => {});
-  }
 
   const shown = totalAfter(loggedMl, pending, share);
   const goal = targetMl && targetMl > 0 ? targetMl : 0;
@@ -268,16 +252,6 @@ export function WaterAdjuster({
         ) : null}
       </View>
 
-      {canAdjust ? (
-        <View style={styles.modeRow}>
-          <Segmented<Mode>
-            options={["bottle", "dial"]}
-            value={mode}
-            onChange={chooseMode}
-            format={(m) => (m === "bottle" ? "Drag bottle" : "Dial")}
-          />
-        </View>
-      ) : null}
     </View>
   );
 }
@@ -345,6 +319,5 @@ const useStyles = makeStyles((c) =>
     help: { flex: 1, fontSize: 14, color: c.textSecondary },
     cancel: { minHeight: 36, justifyContent: "center", paddingHorizontal: 10 },
     cancelText: { fontSize: 14, fontWeight: "600", color: c.text, textDecorationLine: "underline" },
-    modeRow: { marginTop: 12 },
   })
 );

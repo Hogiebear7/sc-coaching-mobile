@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import type { ExtraTotals, NutrientExtras } from "@/lib/nutrient-extras";
 
 import { ApiError, apiFetch } from "@/lib/api-client";
 import { useHasFeature } from "@/lib/queries/profile";
@@ -125,7 +126,7 @@ export interface ResolvedNutritionWeek {
   days: ResolvedNutritionTarget[];
 }
 
-export interface FoodEntry {
+export interface FoodEntry extends NutrientExtras {
   id: string;
   userId: string;
   date: string;
@@ -176,7 +177,7 @@ export function useNutritionDiary(date: string) {
   return useQuery({
     queryKey: ["nutrition-diary", date],
     queryFn: () =>
-      apiFetch<{ success: true; data: { entries: FoodEntry[]; totals: DailyTotals; dayStatus?: DayLogStatus | null } }>(
+      apiFetch<{ success: true; data: { entries: FoodEntry[]; totals: DailyTotals; extras?: ExtraTotals; dayStatus?: DayLogStatus | null } }>(
         `/api/mobile/nutrition/diary?date=${encodeURIComponent(date)}`
       ).then((r) => r.data),
   });
@@ -189,7 +190,7 @@ export function useRecentFoods() {
   });
 }
 
-export interface FoodEntryInput {
+export interface FoodEntryInput extends NutrientExtras {
   date: string;
   mealType: MealType;
   name: string;

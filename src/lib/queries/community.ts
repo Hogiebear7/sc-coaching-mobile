@@ -16,6 +16,12 @@ export interface LeaderboardEntry {
   displayName: string;
   value: number;
   bodyweightPct: number | null;
+  /** Shown under an alias. */
+  isAlias?: boolean;
+  /** The alias, only sent to that member and to gym staff. */
+  alias?: string | null;
+  /** Only sent to gym staff: hidden from other members. */
+  hiddenFromMembers?: boolean;
 }
 
 /**
@@ -174,6 +180,7 @@ export function useSuggestedMembers() {
 
 function invalidateFeedAndSearch(qc: ReturnType<typeof useQueryClient>) {
   qc.invalidateQueries({ queryKey: ["community-feed"] });
+  qc.invalidateQueries({ queryKey: ["community-profile"] });
   qc.invalidateQueries({ queryKey: ["community-search"] });
   qc.invalidateQueries({ queryKey: ["community-suggested-members"] });
 }
@@ -350,7 +357,22 @@ export interface CommunityPrivacy {
   // Only meaningful for a staff account (coach/admin/admin_manager) — a
   // member is always Community-eligible and never reads this field.
   communityOptIn: boolean;
+  /** Who sees the detail on your profile card. Older servers omit it (read as "followers"). */
+  profileVisibility?: ProfileVisibility;
+  /** Who may start following you. Older servers omit it (read as "anyone"). */
+  whoCanFollow?: WhoCanFollow;
+  /** How you appear on leaderboards. Older servers omit it (then it follows leaderboardVisible). */
+  leaderboardMode?: LeaderboardMode;
+  /** The alias shown when the mode is "alias". */
+  leaderboardAlias?: string;
+  /** The aliases you may pick from (read-only, sent by the server). */
+  leaderboardAliases?: string[];
 }
+
+export type LeaderboardMode = "named" | "alias" | "hidden";
+
+export type ProfileVisibility = "followers" | "followers_gym" | "everyone";
+export type WhoCanFollow = "anyone" | "gym" | "nobody";
 
 export function useCommunityPrivacy() {
   return useQuery({
@@ -366,5 +388,44 @@ export function useSetCommunityPrivacy() {
     mutationFn: (input: CommunityPrivacy) =>
       apiFetch<{ success: true }>("/api/mobile/community/privacy", { method: "POST", body: input }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["community-privacy"] }),
+  });
+}
+
+// The card behind a tapped name (gym-app GET /api/mobile/community/profile/[userId]). `detail` is null when the person's own setting hides it from you.
+export interface CommunityProfileStats {
+  week: { volumeKg: number; sessions: number };
+  month: { volumeKg: number; sessions: number };
+  year: { volumeKg: number; sessions: number };
+}
+
+export interface CommunityProfileActivity {
+  id: string;
+  date: string;
+  title: string;
+  exerciseCount: number;
+  distanceKm: number | null;
+}
+
+export interface CommunityProfile {
+  userId: string;
+  displayName: string;
+  isSelf: boolean;
+  isStaff: boolean;
+  isFollowing: boolean;
+  followsYou: boolean;
+  canFollow: boolean;
+  followBlockedReason: string | null;
+  detailHidden: boolean;
+  /** True when the detail is private whatever you do (an alias or hidden member), so the card does not suggest following. */
+  detailLocked?: boolean;
+  detail: { memberSince: string | null; stats: CommunityProfileStats | null; recent: CommunityProfileActivity[] } | null;
+}
+
+export function useCommunityProfile(userId: string) {
+  return useQuery({
+    queryKey: ["community-profile", userId],
+    queryFn: () =>
+      apiFetch<{ success: true; data: CommunityProfile }>(`/api/mobile/community/profile/${encodeURIComponent(userId)}`).then((r) => r.data),
+    enabled: userId.length > 0,
   });
 }

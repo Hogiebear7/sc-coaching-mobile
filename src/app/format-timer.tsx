@@ -7,7 +7,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "@/components/ui/Button";
 import { KeyboardAwareScroll } from "@/components/ui/KeyboardAwareScroll";
 import { TimeWheelPicker } from "@/components/ui/TimeWheelPicker";
-import { figure, headline, Radius, Spacing } from "@/constants/theme";
+import { figure, headline, iosTallLine, Radius, Spacing } from "@/constants/theme";
 import { successFeedback, tapFeedback } from "@/lib/haptics";
 import { formatDuration, parseDuration } from "@/lib/workout-formatters";
 import {
@@ -1071,7 +1071,7 @@ const useStyles = makeLegacyStyles((Color) =>
     body: { flexGrow: 1, alignItems: "center", paddingTop: Spacing.xl, paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
     doneText: { fontSize: 14, color: Color.textMuted, textAlign: "center", marginTop: Spacing.xl },
     getReadyText: { fontSize: 16, fontWeight: "600", color: Color.textMuted, marginTop: Spacing.xxl },
-    countdownNumber: { ...figure(110, "700"), color: Color.gold, marginTop: Spacing.lg, },
+    countdownNumber: { ...figure(110, "700"), ...iosTallLine(110), color: Color.gold, marginTop: Spacing.lg },
     cardBody: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
     cardHint: { fontSize: 13, color: Color.textMuted, marginTop: Spacing.sm, lineHeight: 18 },
     cardList: {
@@ -1091,7 +1091,7 @@ const useStyles = makeLegacyStyles((Color) =>
     phaseKind: { fontSize: 14, fontWeight: "700", letterSpacing: 1, color: Color.gold },
     phaseLabel: { ...headline(30), color: Color.textPrimary, textAlign: "center", marginTop: Spacing.xs },
     phaseMeta: { fontSize: 14, color: Color.textMuted, marginTop: 4 },
-    clock: { ...figure(64, "700"), color: Color.gold, marginTop: Spacing.lg },
+    clock: { ...figure(64, "700"), ...iosTallLine(64), color: Color.gold, marginTop: Spacing.lg },
     ringWrap: {
       width: 240,
       height: 240,

@@ -1,8 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { Spacing } from "@/constants/theme";
 import { formatCommunityDate, formatPbHeadline } from "@/lib/community-formatters";
+import { openProfile } from "@/lib/open-profile";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 // Minimal shape either CommunityFeedItem or the dedicated wins endpoint's
@@ -10,6 +12,8 @@ import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 // so it doesn't force callers into one specific query's response type.
 export interface WinLike {
   id: string;
+  /** When present, tapping the name opens that member's profile card. */
+  userId?: string;
   authorName: string;
   date: string;
   personalBestExercise: string | null;
@@ -22,6 +26,7 @@ export interface WinLike {
 export function CommunityWinRow({ item, isLast, onPress }: { item: WinLike; isLast: boolean; onPress: () => void }) {
   const styles = useStyles();
   const Color = useLegacyColors();
+  const router = useRouter();
   const headline = formatPbHeadline(item.authorName, item.personalBestExercise);
   return (
     <Pressable onPress={onPress} style={[styles.row, !isLast && styles.rowDivider]}>
@@ -30,7 +35,10 @@ export function CommunityWinRow({ item, isLast, onPress }: { item: WinLike; isLa
       </View>
       <View style={{ flex: 1 }}>
         <Text style={styles.text}>
-          <Text style={styles.author}>{headline.author}</Text> {headline.rest}
+          <Text style={styles.author} onPress={item.userId ? () => openProfile(router, item.userId as string) : undefined}>
+            {headline.author}
+          </Text>{" "}
+          {headline.rest}
         </Text>
         <Text style={styles.date}>{formatCommunityDate(item.date, "short")}</Text>
       </View>

@@ -3,12 +3,13 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { manipulateAsync, SaveFormat } from "expo-image-manipulator";
 import { launchCameraAsync, launchImageLibraryAsync, useCameraPermissions } from "expo-image-picker";
 import { useState, useEffect } from "react";
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { CameraPermissionDenied } from "@/components/nutrition/CameraPermissionGate";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { KeyboardAwareScroll } from "@/components/ui/KeyboardAwareScroll";
 import { Stepper } from "@/components/ui/Stepper";
 import { Radius, Spacing } from "@/constants/theme";
 import { ApiError } from "@/lib/api-client";
@@ -17,6 +18,7 @@ import { tapFeedback } from "@/lib/haptics";
 import { useDescribeFoodText, usePhotoFoodScan, useSaveFoodIdentificationOverride, type IdentifiedFoodItem } from "@/lib/queries/food-catalog";
 import { useCreateFoodEntry, type MealType } from "@/lib/queries/nutrition-diary";
 import { todayDateString } from "@/lib/workout-formatters";
+import { pickExtras, scaleExtras, type NutrientExtras } from "@/lib/nutrient-extras";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
 type Stage = "camera" | "scanning" | "reviewing";
@@ -40,6 +42,8 @@ interface ReviewItem extends IdentifiedFoodItem {
   baseProteinG: number;
   baseCarbsG: number;
   baseFatG: number;
+  /** Fibre, sugars, sodium and saturated fat for one portion (x1), when the scan or correction knew them. Cleared when a macro is typed by hand. */
+  baseExtras: NutrientExtras | null;
 }
 
 function defaultMealTypeForNow(): MealType {
@@ -150,6 +154,7 @@ export default function LabelScanScreen() {
           baseProteinG: item.proteinG,
           baseCarbsG: item.carbsG,
           baseFatG: item.fatG,
+          baseExtras: pickExtras(item),
         }))
       );
       setStage("reviewing");
@@ -241,6 +246,8 @@ export default function LabelScanScreen() {
           next.baseCarbsG = next.carbsG;
           next.baseFatG = next.fatG;
           next.quantity = 1;
+          // The extras belonged to the numbers that were just typed over, so they no longer apply.
+          next.baseExtras = null;
         }
         return next;
       })
@@ -333,6 +340,7 @@ export default function LabelScanScreen() {
                 baseProteinG: corrected.proteinG,
                 baseCarbsG: corrected.carbsG,
                 baseFatG: corrected.fatG,
+                baseExtras: pickExtras(corrected),
                 quantity: 1,
               }
             : it
@@ -378,6 +386,7 @@ export default function LabelScanScreen() {
           servingLabel: null,
           servingGrams: null,
           quantity: null,
+          ...(scaleExtras(item.baseExtras, item.quantity) ?? {}),
         });
       }
       tapFeedback();
@@ -455,7 +464,7 @@ export default function LabelScanScreen() {
           <View style={{ width: 36 }} />
         </View>
 
-        <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+        <KeyboardAwareScroll contentContainerStyle={styles.scroll}>
           <Text style={styles.subhead}>
             {items.length === 1 ? "Here's what we found — check it over before logging." : `We found ${items.length} items — check them over before logging.`}
           </Text>
@@ -643,7 +652,7 @@ export default function LabelScanScreen() {
           <Pressable onPress={() => goToManualForm("label_scan_skipped")} style={styles.manualLinkQuiet}>
             <Text style={styles.manualLinkQuietText}>Enter a food manually instead</Text>
           </Pressable>
-        </ScrollView>
+        </KeyboardAwareScroll>
       </SafeAreaView>
     );
   }

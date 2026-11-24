@@ -6,7 +6,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { isBatteryOptimizationRelevant, openBatteryOptimizationSettings } from "@/lib/battery-optimization";
-import { figure, Radius, Spacing } from "@/constants/theme";
+import { figure, iosTallLine, Radius, Spacing } from "@/constants/theme";
 import { successFeedback, tapFeedback } from "@/lib/haptics";
 import { useRestTimer } from "@/lib/rest-timer";
 import { useTickingValue } from "@/lib/use-ticker";
@@ -378,11 +378,11 @@ const useStyles = makeLegacyStyles((Color) =>
     dialWrap: { width: 240, height: 240, alignItems: "center", justifyContent: "center" },
     dialCenter: { ...StyleSheet.absoluteFill, alignItems: "center", justifyContent: "center" },
     pickerWrap: { width: "100%", alignItems: "center", paddingVertical: Spacing.lg },
-    clockText: { ...figure(48, "700"), color: Color.gold },
+    clockText: { ...figure(48, "700"), ...iosTallLine(48), color: Color.gold },
     doneText: { fontSize: 14, color: Color.success, marginTop: 4, fontWeight: "600" },
     getReadyWrap: { flex: 1, alignItems: "center", justifyContent: "center" },
     getReadyLabel: { fontSize: 17, fontWeight: "500", color: Color.textMuted },
-    getReadyNumber: { ...figure(110, "700"), color: Color.gold, marginTop: Spacing.sm },
+    getReadyNumber: { ...figure(110, "700"), ...iosTallLine(110), color: Color.gold, marginTop: Spacing.sm },
     getReadyHint: { fontSize: 13, color: Color.textMuted, marginTop: Spacing.sm, textAlign: "center" },
     adjustRow: { flexDirection: "row", gap: Spacing.md, marginTop: Spacing.xl },
     adjustButton: { minHeight: 44, justifyContent: "center", paddingHorizontal: Spacing.lg, borderRadius: Radius.pill, backgroundColor: Color.surface2 },

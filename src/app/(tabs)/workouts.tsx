@@ -24,6 +24,8 @@ import { useRestTimer } from "@/lib/rest-timer";
 import { useTour } from "@/lib/tour-context";
 import { tourTarget, useTourScroll } from "@/lib/tour-registry";
 import { useWorkoutDraft } from "@/lib/workout-draft";
+import { hasActiveRehab } from "@/lib/targets/data";
+import { useTargets } from "@/lib/targets/store";
 import { type PersonalBest, useWorkouts } from "@/lib/queries/workouts";
 import {
   TREND_RANGES,
@@ -113,6 +115,8 @@ export default function WorkoutsScreen() {
   // even when tapping it would have resumed an in-progress session rather
   // than started a new one, confusing testers who'd left the app mid-workout.
   const { hasContent: hasActiveWorkout } = useWorkoutDraft();
+  const { targets: myTargets } = useTargets();
+  const moreRows = hasActiveRehab(myTargets) ? [...MORE_ROWS, REHAB_ROW] : MORE_ROWS;
   const { user } = useAuth();
   const restTimer = useRestTimer();
   const access = useMemberAccess();
@@ -307,9 +311,11 @@ export default function WorkoutsScreen() {
   const pinnedBests = useMemo(() => {
     if (!data) return [];
     const byName = new Map(data.personalBests.map((pb) => [pb.exerciseName.toLowerCase(), pb]));
+    // At most 4, so the two-column grid is always full (someone who pinned 5 before this limit sees their first 4).
     return data.pinnedExercises
       .map((name) => byName.get(name.toLowerCase()))
-      .filter((pb): pb is PersonalBest => pb != null);
+      .filter((pb): pb is PersonalBest => pb != null)
+      .slice(0, 4);
   }, [data]);
 
   const scrollRef = useRef<ScrollView>(null);
@@ -609,7 +615,7 @@ export default function WorkoutsScreen() {
                   <EmptyState
                     icon="trophy-outline"
                     title="No personal bests yet"
-                    body="Pick up to 5 lifts to feature here and track them at a glance."
+                    body="Pick up to 4 lifts to feature here and track them at a glance."
                     actionLabel="Choose your lifts"
                     onAction={() => router.push("/personal-bests-edit")}
                   />
@@ -727,7 +733,7 @@ export default function WorkoutsScreen() {
           <View style={styles.section}>
             <SectionTitle title="More training" />
             <View style={styles.list}>
-              {MORE_ROWS.map((r, i) => (
+              {moreRows.map((r, i) => (
                 <Pressable
                   key={r.href}
                   onPress={() => {
@@ -767,7 +773,11 @@ const MORE_ROWS: { href: string; icon: keyof typeof Ionicons.glyphMap; title: st
   { href: "/workout-library", icon: "albums-outline", title: "Workout library", sub: "Your saved, reusable workouts" },
   { href: "/workout-history", icon: "time-outline", title: "Workout history", sub: "Every session you've logged" },
   { href: "/set-levels", icon: "body-outline", title: "Set levels", sub: "Weekly sets by muscle group" },
+  { href: "/targets", icon: "flag-outline", title: "Goals", sub: "Daily, weekly and monthly targets, with reminders" },
 ];
+
+// Shown only while a rehab plan is switched on (owner decision 2026-11-24), so it is not clutter for everyone else.
+const REHAB_ROW = { href: "/targets?kind=rehab", icon: "medkit-outline" as keyof typeof Ionicons.glyphMap, title: "Rehab", sub: "Your rehab exercises and reminders" };
 
 function WeekFigure({ value, label, color }: { value: string; label: string; color: string }) {
   const styles = useStyles();

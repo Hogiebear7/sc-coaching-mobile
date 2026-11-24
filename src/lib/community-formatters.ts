@@ -145,6 +145,12 @@ export interface LeaderboardEntryInput {
   displayName: string;
   value: number;
   bodyweightPct: number | null;
+  /** Shown under an alias (the member chose to stay ranked without their name). */
+  isAlias?: boolean;
+  /** The alias, only sent to that member and to gym staff. */
+  alias?: string | null;
+  /** Only sent to gym staff: this member has hidden themselves from other members. */
+  hiddenFromMembers?: boolean;
 }
 
 export interface LeaderboardRow {
@@ -156,6 +162,10 @@ export interface LeaderboardRow {
   isMe: boolean;
   valueLabel: string;
   bodyweightLabel: string | null;
+  /** False for a row shown under an alias: there is no real member id behind it to open. */
+  canOpenProfile: boolean;
+  /** A small line under the name: what others see for you, or what staff should know about the row. */
+  note: string | null;
 }
 
 // Maps raw leaderboard entries to view rows, 1:1 by array position — no
@@ -165,12 +175,21 @@ export interface LeaderboardRow {
 // `Map<name, entry>`-style dedupe would silently pass everything else here
 // and only show up as one member's score overwriting another's.
 export function buildLeaderboardRows(entries: LeaderboardEntryInput[], myUserId: string | null): LeaderboardRow[] {
-  return entries.map((entry, i) => ({
-    userId: entry.userId,
-    rank: i + 1,
-    name: entry.userId === myUserId ? "You" : entry.displayName,
-    isMe: entry.userId === myUserId,
-    valueLabel: `${formatCount(entry.value)} kg`,
-    bodyweightLabel: entry.bodyweightPct !== null ? `${entry.bodyweightPct}% BW` : null,
-  }));
+  return entries.map((entry, i) => {
+    const isMe = entry.userId === myUserId;
+    let note: string | null = null;
+    if (isMe && entry.isAlias && entry.alias) note = `Others see you as "${entry.alias}"`;
+    else if (entry.hiddenFromMembers) note = "Hidden from members";
+    else if (entry.isAlias && entry.alias) note = `Members see "${entry.alias}"`;
+    return {
+      userId: entry.userId,
+      rank: i + 1,
+      name: isMe ? "You" : entry.displayName,
+      isMe,
+      valueLabel: `${formatCount(entry.value)} kg`,
+      bodyweightLabel: entry.bodyweightPct !== null ? `${entry.bodyweightPct}% BW` : null,
+      canOpenProfile: !(entry.isAlias && entry.userId.startsWith("alias-")),
+      note,
+    };
+  });
 }

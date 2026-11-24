@@ -24,6 +24,7 @@ export type NotificationType =
   // Community groups and the gym community: a coach's post in the member's gym, a comment on their gym post, a challenge starting or finishing.
   | "gym_post"
   | "gym_comment"
+  | "challenge_created"
   | "challenge_started"
   | "challenge_ended"
   | "nutrition_update"

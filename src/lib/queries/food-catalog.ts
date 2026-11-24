@@ -154,6 +154,11 @@ export interface IdentifiedFoodItem {
   proteinG: number;
   carbsG: number;
   fatG: number;
+  /** Fibre, total sugars, sodium and saturated fat when known (a label read, a catalogue match, or an estimate). Null or absent = not known. */
+  fiberG?: number | null;
+  sugarG?: number | null;
+  sodiumMg?: number | null;
+  saturatedFatG?: number | null;
   source: "label" | "estimate";
   /** true when a saved "Always use this instead" override swapped this
       item's fields in server-side, rather than a fresh vision-model read. */

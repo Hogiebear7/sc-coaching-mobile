@@ -1,3 +1,4 @@
+import { useRouter } from "expo-router";
 import { useState } from "react";
 import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from "react-native";
 import { KeyboardAvoidingView } from "react-native-keyboard-controller";
@@ -9,6 +10,7 @@ import { useAuth } from "@/lib/auth-context";
 import { MAX_GYM_COMMENT } from "@/lib/community-groups-format";
 import { formatCommunityDate } from "@/lib/community-formatters";
 import { tapFeedback } from "@/lib/haptics";
+import { openProfileFromModal } from "@/lib/open-profile";
 import { useGymComments, usePostGymComment, useRemoveGymComment, useReportGymContent } from "@/lib/queries/community-groups";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 import { BlurBackdrop } from "@/components/ui/BlurBackdrop";
@@ -19,6 +21,7 @@ export function GymCommentSheet({ visible, onClose, postId }: { visible: boolean
   const styles = useStyles();
   const Color = useLegacyColors();
   const { user } = useAuth();
+  const router = useRouter();
   const insets = useSafeAreaInsets();
   const { height: windowHeight } = useWindowDimensions();
   const comments = useGymComments(visible ? postId : "");
@@ -83,10 +86,20 @@ export function GymCommentSheet({ visible, onClose, postId }: { visible: boolean
               {list.map((c) => (
                 <View key={c.id} style={styles.comment}>
                   <View style={styles.commentHead}>
-                    <Text style={styles.author} numberOfLines={1}>
-                      {c.author.userId === user?.id ? "You" : c.author.displayName}
-                      {c.author.isStaff ? "  ·  Coach" : ""}
-                    </Text>
+                    <Pressable
+                      style={{ flex: 1 }}
+                      onPress={() => {
+                        tapFeedback();
+                        openProfileFromModal(router, c.author.userId, onClose);
+                      }}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Open ${c.author.displayName}'s profile`}
+                    >
+                      <Text style={styles.author} numberOfLines={1}>
+                        {c.author.userId === user?.id ? "You" : c.author.displayName}
+                        {c.author.isStaff ? "  ·  Coach" : ""}
+                      </Text>
+                    </Pressable>
                     <Text style={styles.when}>{formatCommunityDate(c.createdAt, "compact")}</Text>
                   </View>
                   <Text style={styles.body}>{c.body}</Text>

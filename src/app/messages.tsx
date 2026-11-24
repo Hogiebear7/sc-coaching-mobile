@@ -31,6 +31,9 @@ import { useMemberAccess } from "@/lib/queries/profile";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 import { notInPlanCopy } from "@/lib/upsell-config";
 import { DateDivider } from "@/components/ui/DateDivider";
+import { InjuryIntakeSheet } from "@/components/workout/InjuryIntakeSheet";
+import { useSoreAreas } from "@/lib/sore-areas-store";
+import type { InjuryArea } from "@/lib/session-engine/types";
 import { withDateDividers } from "@/lib/chat-dates";
 
 type Tab = "ai" | "coach";
@@ -66,6 +69,8 @@ function AiCoachTab({
   const seeded = useRef(false);
   const scrollRef = useRef<ScrollView>(null);
   const access = useMemberAccess();
+  const [injuryOpen, setInjuryOpen] = useState(false);
+  const sore = useSoreAreas();
 
   useEffect(() => {
     if (!seeded.current && initialMessages.length > 0) {
@@ -83,10 +88,21 @@ function AiCoachTab({
   }
 
   async function handleSend() {
-    const content = input.trim();
+    await sendContent(input.trim(), true);
+  }
+
+  // From the "Sore or injured?" sheet: the member's choices become one plain message, and (if they left it on) the workout generator is told to go easy on
+  // that area for a few days.
+  async function handleInjurySubmit(message: string, goEasyAreas: InjuryArea[]) {
+    if (goEasyAreas.length > 0) await sore.save(goEasyAreas);
+    setInjuryOpen(false);
+    await sendContent(message, false);
+  }
+
+  async function sendContent(content: string, clearInput: boolean) {
     if (!content || send.isPending) return;
     setError(null);
-    setInput("");
+    if (clearInput) setInput("");
     setMessages((prev) => [
       ...prev,
       { id: `local-${Date.now()}`, role: "user", content, createdAt: new Date().toISOString() },
@@ -168,6 +184,11 @@ function AiCoachTab({
       </ScrollView>
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
+      <Pressable onPress={() => setInjuryOpen(true)} style={styles.injuryChip} accessibilityRole="button" accessibilityLabel="Sore or injured? Get general guidance">
+        <Ionicons name="bandage-outline" size={16} color={Color.textPrimary} />
+        <Text style={styles.injuryChipText}>Sore or injured?</Text>
+      </Pressable>
+      <InjuryIntakeSheet visible={injuryOpen} onClose={() => setInjuryOpen(false)} onSubmit={(m, a) => void handleInjurySubmit(m, a)} sending={send.isPending} />
       <View style={styles.inputRow}>
         <TextInput
           value={input}
@@ -370,6 +391,19 @@ const useStyles = makeLegacyStyles((Color) =>
     unavailableTitle: { fontSize: 14, fontWeight: "600", color: Color.textPrimary, marginTop: 4 },
     unavailableSub: { fontSize: 14, color: Color.textMuted, textAlign: "center" },
     error: { fontSize: 13, color: Color.danger, marginHorizontal: Spacing.lg, marginBottom: Spacing.xs },
+    injuryChip: {
+      flexDirection: "row",
+      alignItems: "center",
+      alignSelf: "flex-start",
+      gap: 6,
+      marginLeft: Spacing.lg,
+      marginBottom: Spacing.xs,
+      paddingHorizontal: 12,
+      paddingVertical: 7,
+      borderRadius: 999,
+      backgroundColor: Color.surface2,
+    },
+    injuryChipText: { fontSize: 13, fontWeight: "600", color: Color.textPrimary },
     inputRow: {
       flexDirection: "row",
       gap: Spacing.sm,

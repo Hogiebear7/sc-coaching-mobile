@@ -50,6 +50,9 @@ import { useWorkouts } from "@/lib/queries/workouts";
 import { generateSession, type InjuryArea, type Intent, type Level, type SessionFormat, type SessionPlan } from "@/lib/session-engine";
 import { localISODate, pregnancyStageFromTrimester, trainedBuckets } from "@/lib/session-engine/context";
 import { hasAnyBenchmark, toEngineBenchmarks } from "@/lib/benchmarks";
+import { mergeAreas, rehabAreas } from "@/lib/injury-intake";
+import { useSoreAreas } from "@/lib/sore-areas-store";
+import { useTargets } from "@/lib/targets/store";
 import { useBenchmarks } from "@/lib/benchmarks/store";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
@@ -341,6 +344,8 @@ export default function WorkoutGeneratorScreen() {
   const Color = useLegacyColors();
   const router = useRouter();
   const { values: benchmarkValues } = useBenchmarks();
+  const { targets: myTargets } = useTargets();
+  const { areas: soreAreas } = useSoreAreas();
   const { data, isLoading, isError, refetch } = useExerciseLibrary();
   const { data: gymProfilesData } = useGymProfiles();
   const { data: equipmentCatalogData } = useEquipmentCatalog();
@@ -416,6 +421,9 @@ export default function WorkoutGeneratorScreen() {
   const [intent, setIntent] = useState<Intent>("strength");
   const [sessionFormat, setSessionFormat] = useState<SessionFormat>("standard");
   const [injuries, setInjuries] = useState<InjuryArea[]>([]);
+  // Areas added for the member: an active rehab plan, and a recent "sore or injured" note from the coach chat. These are always worked around.
+  const autoInjuries = mergeAreas(rehabAreas(myTargets), soreAreas);
+  const effectiveInjuries = mergeAreas(injuries, autoInjuries);
   const [sessionNote, setSessionNote] = useState("");
   const [preview, setPreview] = useState<SessionPlan | null>(null);
   const { data: pregnancyData } = usePregnancyData(true);
@@ -569,7 +577,7 @@ export default function WorkoutGeneratorScreen() {
           tier: tierData?.tier,
           trainedYesterday: trainedBuckets(workoutsData?.sessions ?? [], data.exercises, localISODate(1)),
           pregnancy: stage ? { stage } : null,
-          injuries,
+          injuries: effectiveInjuries,
           benchmarks: toEngineBenchmarks(benchmarkValues),
         },
       });
@@ -1074,6 +1082,7 @@ export default function WorkoutGeneratorScreen() {
               onFormat={setSessionFormat}
               injuries={injuries}
               onToggleInjury={toggleInjury}
+              lockedInjuries={autoInjuries}
               note={sessionNote}
               onNote={setSessionNote}
               pregnancyLabel={

@@ -49,6 +49,8 @@ export function SessionOptions(props: {
   onFormat: (v: SessionFormat) => void;
   injuries: InjuryArea[];
   onToggleInjury: (a: InjuryArea) => void;
+  /** Areas added for the member (an active rehab plan, or a recent "sore or injured" note). Shown as on, and not changed here. */
+  lockedInjuries?: InjuryArea[];
   note: string;
   onNote: (v: string) => void;
   pregnancyLabel: string | null;
@@ -84,8 +86,16 @@ export function SessionOptions(props: {
       <Text style={styles.label}>ANYTHING SORE OR INJURED? — OPTIONAL</Text>
       <Text style={styles.sub}>Exercises that load these areas are left out. It is not a diagnosis: see a physio or doctor for an injury.</Text>
       <View style={styles.row}>
-        {INJURY_AREAS.map((a) => chip(props.injuries.includes(a), AREA_LABELS[a], () => props.onToggleInjury(a), a))}
+        {INJURY_AREAS.map((a) => {
+          const locked = props.lockedInjuries?.includes(a) ?? false;
+          return chip(locked || props.injuries.includes(a), AREA_LABELS[a], () => (locked ? undefined : props.onToggleInjury(a)), a);
+        })}
       </View>
+      {props.lockedInjuries && props.lockedInjuries.length > 0 ? (
+        <Text style={styles.sub}>
+          {props.lockedInjuries.map((a) => AREA_LABELS[a].toLowerCase()).join(", ")} added from your rehab plan or a recent sore note. Pause the rehab exercise or wait a few days to clear it.
+        </Text>
+      ) : null}
 
       <Text style={styles.label}>NOTES — OPTIONAL</Text>
       <TextInput

@@ -19,7 +19,7 @@ const text = (c) => (c == null ? "" : String(c.text ?? c).trim());
     const head = {};
     ws.getRow(1).eachCell((cell, n) => (head[text(cell).toLowerCase()] = n));
     const col = (prefix) => Object.entries(head).find(([h]) => h.startsWith(prefix))?.[1];
-    const c = { level: col("right level"), preg: col("pregnancy"), inj: col("injury areas"), grip: col("grip demand"), impact: col("impact"), spine: col("spine"), hard: col("hardness"), staple: col("classic staple") };
+    const c = { level: col("right level"), preg: col("pregnancy"), inj: col("injury areas"), grip: col("grip demand"), impact: col("impact"), spine: col("spine"), hard: col("hardness"), staple: col("classic staple"), notes: col("notes") };
     ws.eachRow((row, i) => {
       if (i === 1) return;
       const name = text(row.getCell(1)).toLowerCase();
@@ -44,6 +44,12 @@ const text = (c) => (c == null ? "" : String(c.text ?? c).trim());
       if (hard >= 1 && hard <= 5) o.hardness = hard;
       const staple = c.staple ? text(row.getCell(c.staple)).toLowerCase() : "";
       if (staple) o.staple = staple.startsWith("y") ? 3 : -2;
+      else if (!c.staple && c.notes) {
+        // Fallback for a sheet without the staple column: "staple" in Notes marks a classic, "odd" or "not staple" an odd variation.
+        const note = text(row.getCell(c.notes)).toLowerCase();
+        if (/(not|no) staple|odd/.test(note)) o.staple = -2;
+        else if (/staple/.test(note)) o.staple = 3;
+      }
       for (const k of Object.keys(o)) if (o[k] === undefined) delete o[k];
       if (Object.keys(o).length) overrides[name] = o;
     });

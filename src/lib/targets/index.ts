@@ -29,6 +29,10 @@ export interface Target {
   days?: number[];
   reminders?: TargetReminders;
   active: boolean;
+  /** Free text: for rehab, the exercise detail or what the physio said. */
+  notes?: string;
+  /** Rehab only: the body area (an INJURY_AREAS key), so the workout generator can avoid it. */
+  area?: string;
 }
 
 export interface TargetEntry {

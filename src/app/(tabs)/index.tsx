@@ -21,6 +21,9 @@ import { useDashboard } from "@/lib/queries/dashboard";
 import { useMarkNotificationRead, useNotifications } from "@/lib/queries/notifications";
 import { mapLinkHrefToRoute } from "@/lib/push-notifications";
 import { useProfile } from "@/lib/queries/profile";
+import { progressFor } from "@/lib/targets";
+import { hasActiveRehab } from "@/lib/targets/data";
+import { useTargets } from "@/lib/targets/store";
 import { useTour } from "@/lib/tour-context";
 import { tourTarget, useTourScroll } from "@/lib/tour-registry";
 import { makeStyles, useAppTheme, useLegacyColors } from "@/lib/theme";
@@ -170,6 +173,12 @@ export default function DashboardScreen() {
   // The coach has finished a class workout and thanked the people who came: show it until they have opened it.
   const classRecap = notifications?.find((n) => n.type === "class_recap" && n.readAt === null && n.linkHref) ?? null;
   const markNotificationRead = useMarkNotificationRead();
+  // A rehab plan that is switched on gets its own card (owner decision 2026-11-24), so it is seen without digging into Train.
+  const { targets: myTargets, entries: targetEntries } = useTargets();
+  const rehabActive = hasActiveRehab(myTargets);
+  const rehabLeft = rehabActive
+    ? myTargets.filter((t) => t.kind === "rehab" && t.active && (t.period !== "day" || !t.days || t.days.length === 0 || t.days.includes(new Date().getDay())) && !progressFor(t, targetEntries, new Date()).complete).length
+    : 0;
   const { data: profile } = useProfile();
   const access = profile?.memberAccess ?? NO_ACCESS;
   const scrollRef = useRef<ScrollView>(null);
@@ -297,6 +306,25 @@ export default function DashboardScreen() {
               <View style={{ flex: 1 }}>
                 <Text style={styles.nextTitle}>Well done today</Text>
                 <Text style={styles.nextMeta}>View your class workout and tell us how it felt.</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+            </Pressable>
+          </View>
+        ) : null}
+
+        {rehabActive ? (
+          <View style={styles.section}>
+            <Pressable
+              onPress={() => router.push("/targets?kind=rehab" as never)}
+              style={styles.nextCard}
+              accessibilityRole="button"
+              accessibilityLabel="Open your rehab plan"
+            >
+              <View style={{ flex: 1 }}>
+                <Text style={styles.nextTitle}>Rehab</Text>
+                <Text style={styles.nextMeta}>
+                  {rehabLeft === 0 ? "All done for now. Nice work." : rehabLeft === 1 ? "1 exercise still to do." : `${rehabLeft} exercises still to do.`}
+                </Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
             </Pressable>

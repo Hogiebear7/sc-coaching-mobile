@@ -39,6 +39,40 @@ function rand(index: number, n: number): number {
 }
 const lerp = ([a, b]: [number, number], t: number) => a + (b - a) * t;
 
+/** Moves a value smoothly back and forth between 0 and 1 for ever (each leg is started by hand when the last ends). Returns a function that stops it. */
+function pingPong(value: Animated.Value, legMs: number, startAt: number): () => void {
+  let stopped = false;
+  const go = (to: 0 | 1) => {
+    if (stopped) return;
+    Animated.timing(value, { toValue: to, duration: legMs, easing: Easing.inOut(Easing.sin), useNativeDriver: true }).start(({ finished }) => {
+      if (finished) go(to === 1 ? 0 : 1);
+    });
+  };
+  value.setValue(startAt);
+  go(startAt > 0.5 ? 0 : 1);
+  return () => {
+    stopped = true;
+    value.stopAnimation();
+  };
+}
+
+/** Turns a value from 0 to 1 over and over, for ever. Returns a function that stops it. */
+function turnForever(value: Animated.Value, ms: number): () => void {
+  let stopped = false;
+  const go = () => {
+    if (stopped) return;
+    value.setValue(0);
+    Animated.timing(value, { toValue: 1, duration: ms, easing: Easing.linear, useNativeDriver: true }).start(({ finished }) => {
+      if (finished) go();
+    });
+  };
+  go();
+  return () => {
+    stopped = true;
+    value.stopAnimation();
+  };
+}
+
 function Crystal({ size }: { size: number }) {
   return (
     <Svg width={size} height={size} viewBox="-10 -10 20 20">
@@ -90,25 +124,25 @@ function Flake({ index, layer, layerIndex, width, height, wind }: { index: numbe
   const [spin] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
-    // Falls from where its phase says (so the screen is never empty at the start), finishes that pass, then repeats the full height.
-    const first = Animated.timing(fall, { toValue: 1, duration: spec.fallMs * (1 - spec.phase), easing: Easing.linear, useNativeDriver: true });
-    fall.setValue(spec.phase);
-    const run = Animated.sequence([first, Animated.loop(Animated.timing(fall, { toValue: 1, duration: spec.fallMs, easing: Easing.linear, useNativeDriver: true }))]);
-    run.start();
+    // Falls from where its phase says (so the screen is never empty at the start), then starts a fresh full fall every time one ends, for as long as the
+    // screen is open. Each pass is restarted by hand when it finishes, rather than with a loop, so it can never stall after the first fall.
+    let stopped = false;
+    const fallFrom = (from: number) => {
+      if (stopped) return;
+      fall.setValue(from);
+      Animated.timing(fall, { toValue: 1, duration: spec.fallMs * (1 - from), easing: Easing.linear, useNativeDriver: true }).start(({ finished }) => {
+        if (finished) fallFrom(0);
+      });
+    };
+    fallFrom(spec.phase);
     // Sways with a smooth ease at each end, like a pendulum.
-    const swayLoop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(sway, { toValue: 1, duration: spec.swayMs, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
-        Animated.timing(sway, { toValue: 0, duration: spec.swayMs, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
-      ])
-    );
-    swayLoop.start();
-    const spinLoop = spec.crystal ? Animated.loop(Animated.timing(spin, { toValue: 1, duration: spec.spinMs, easing: Easing.linear, useNativeDriver: true })) : null;
-    spinLoop?.start();
+    const stopSway = pingPong(sway, spec.swayMs, spec.swayStart);
+    const stopSpin = spec.crystal ? turnForever(spin, spec.spinMs) : null;
     return () => {
-      run.stop();
-      swayLoop.stop();
-      spinLoop?.stop();
+      stopped = true;
+      fall.stopAnimation();
+      stopSway();
+      stopSpin?.();
     };
   }, [fall, sway, spin, spec]);
 
@@ -146,14 +180,7 @@ export function SnowField({ width, height }: { width: number; height: number }) 
   // One slow gust shared by every flake: the whole field leans one way, then the other, over about 11 seconds.
   const [wind] = useState(() => new Animated.Value(0.5));
   useEffect(() => {
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(wind, { toValue: 1, duration: 5500, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
-        Animated.timing(wind, { toValue: 0, duration: 5500, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
-      ])
-    );
-    loop.start();
-    return () => loop.stop();
+    return pingPong(wind, 5500, 0.5);
   }, [wind]);
 
   return (

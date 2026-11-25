@@ -92,7 +92,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     Object.assign(LiveColor, scheme === "light" ? ColorLight : Color);
     return {
       scheme,
-      colors: applyAccent(scheme === "light" ? LightPalette : DarkPalette, SEASON_PREVIEW_ENABLED ? accentVariant : "none", scheme),
+      colors: applyAccent(scheme === "light" ? LightPalette : DarkPalette, "gold", scheme),
       data: scheme === "light" ? DataColorLight : DataColor,
       legacy: scheme === "light" ? ColorLight : Color,
       preference,

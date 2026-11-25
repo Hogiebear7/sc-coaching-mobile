@@ -1,8 +1,10 @@
 import { Image, type ImageStyle } from "expo-image";
-import { View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { RemoteArt } from "@/components/season/RemoteArt";
 import { LogoAccessory } from "@/components/season/seasonArt";
+import { useGymBranding } from "@/lib/gym-branding";
 import { useSeason } from "@/lib/season";
+import { useAppTheme } from "@/lib/theme";
 
 // The full brand wordmark (gym-app/public/brand/website-logo-v2.png), copied
 // into mobile assets so both apps ship the same logo. Transparent background,
@@ -15,7 +17,28 @@ const LOGO_ASPECT_RATIO = 975 / 480;
 
 export function BrandMark({ height = 36, style }: { height?: number; style?: ImageStyle }) {
   const { season } = useSeason();
+  const branding = useGymBranding();
+  const { colors } = useAppTheme();
   const width = height * LOGO_ASPECT_RATIO;
+
+  // A tenant gym that has set its own look shows it: its logo, or its name when it has no logo. S&C and any gym with nothing set keep the S&C wordmark below.
+  if (branding.custom) {
+    if (branding.logoUrl) {
+      return (
+        <View style={{ width, height }}>
+          <Image source={{ uri: branding.logoUrl }} style={[{ width, height }, style]} contentFit="contain" contentPosition="left" accessibilityLabel={branding.name} />
+        </View>
+      );
+    }
+    return (
+      <View style={[styles.nameBox, { width, height }]}>
+        <Text numberOfLines={1} style={[styles.name, { color: colors.text, fontSize: Math.max(14, height * 0.5) }]} accessibilityRole="header">
+          {branding.name}
+        </Text>
+      </View>
+    );
+  }
+
   const plain = (
     <>
       <Image source={LOGO} style={[{ width, height }, style]} contentFit="contain" accessibilityLabel="S&C Performance Coaching" />
@@ -32,3 +55,8 @@ export function BrandMark({ height = 36, style }: { height?: number; style?: Ima
   }
   return <View style={{ width, height }}>{plain}</View>;
 }
+
+const styles = StyleSheet.create({
+  nameBox: { justifyContent: "center" },
+  name: { fontWeight: "700" },
+});

@@ -15,6 +15,8 @@ import {
   type LegacyPalette,
 } from "@/constants/theme";
 import { ACCENT_STORAGE_KEY, applyAccent, isAccentVariant, type AccentVariant } from "@/lib/accent";
+import { accentForScheme, withBrand } from "@/lib/gym-accent";
+import { useGymBranding } from "@/lib/gym-branding";
 import { SEASON_PREVIEW_ENABLED } from "@/lib/season";
 import { resolveScheme, type ColorScheme, type ThemePreference } from "@/lib/theme-scheme";
 
@@ -57,6 +59,9 @@ const ThemeContext = createContext<ThemeContextValue>(DARK_VALUE);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const system = useColorScheme();
+  // A tenant gym's own colour (the server's branding), or null for S&C and any gym that set none: it replaces the gold accent for that gym's people.
+  const branding = useGymBranding();
+  const gymColour = branding.custom ? branding.accentColor : null;
   const [preference, setPreferenceState] = useState<ThemePreference>("dark");
   const [accentVariant, setAccentState] = useState<AccentVariant>("none");
 
@@ -89,18 +94,19 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<ThemeContextValue>(() => {
     const scheme = resolveScheme(preference, system, LIGHT_MODE_AVAILABLE);
-    Object.assign(LiveColor, scheme === "light" ? ColorLight : Color);
+    const legacy = withBrand(scheme === "light" ? ColorLight : Color, accentForScheme(gymColour, scheme), scheme);
+    Object.assign(LiveColor, legacy);
     return {
       scheme,
-      colors: applyAccent(scheme === "light" ? LightPalette : DarkPalette, "gold", scheme),
+      colors: applyAccent(scheme === "light" ? LightPalette : DarkPalette, "gold", scheme, gymColour),
       data: scheme === "light" ? DataColorLight : DataColor,
-      legacy: scheme === "light" ? ColorLight : Color,
+      legacy,
       preference,
       setPreference,
       accentVariant,
       setAccentVariant,
     };
-  }, [preference, system, setPreference, accentVariant, setAccentVariant]);
+  }, [preference, system, setPreference, accentVariant, setAccentVariant, gymColour]);
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }

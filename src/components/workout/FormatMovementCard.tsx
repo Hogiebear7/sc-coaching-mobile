@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, Text, TextInput, View, type KeyboardTypeOptions 
 
 import { Radius, Spacing } from "@/constants/theme";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
+import { SnowBox } from "@/components/season/SnowBox";
 
 // One movement (or station) of a workout format, in the same card style as an exercise: a numbered badge, the name, a remove button, and the
 // target fields underneath with a small label each. The five formats (circuit, EMOM, AMRAP, tabata, chipper) all set up their movements with this.
@@ -26,7 +27,7 @@ export function FormatMovementCard({
   const styles = useStyles();
   const Color = useLegacyColors();
   return (
-    <View style={styles.card}>
+    <SnowBox style={styles.card}>
       <View style={styles.head}>
         <View style={styles.badge}>
           <Text style={styles.badgeText}>{index + 1}</Text>
@@ -44,7 +45,7 @@ export function FormatMovementCard({
         </Pressable>
       </View>
       {children ? <View style={styles.fields}>{children}</View> : null}
-    </View>
+    </SnowBox>
   );
 }
 

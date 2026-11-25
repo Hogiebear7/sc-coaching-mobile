@@ -7,6 +7,7 @@ import { selectionFeedback, tapFeedback } from "@/lib/haptics";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 import { distinctGroups, supersetLetter, supersetMemberLabel } from "@/lib/superset-label";
 import { applyWeightFrom, normalizeWeights, sanitizeWeight, stripWeightUnit, withWeightUnit, type WeightUnit } from "@/lib/weight-input";
+import { SnowBox } from "@/components/season/SnowBox";
 
 // One exercise of a class workout, drawn the way a member's own exercise card is: a numbered badge you tap to make a superset, kg / time / band,
 // and a table of sets with weight and reps (tap "Reps" to split it into right and left). The coach is planning rather than logging, so there is no
@@ -89,7 +90,7 @@ export function PlanExerciseCard<R extends PlanExercise>({
   }
 
   return (
-    <View style={styles.card}>
+    <SnowBox style={styles.card}>
       <View style={styles.header}>
         <Pressable
           onPress={onCycleSuperset}
@@ -243,7 +244,7 @@ export function PlanExerciseCard<R extends PlanExercise>({
           </Pressable>
         ) : null}
       </View>
-    </View>
+    </SnowBox>
   );
 }
 

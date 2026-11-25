@@ -8,6 +8,7 @@ import { AppRadius } from "@/constants/theme";
 import { tapFeedback } from "@/lib/haptics";
 import { makeStyles, useAppTheme } from "@/lib/theme";
 import { BlurBackdrop } from "@/components/ui/BlurBackdrop";
+import { SnowCap } from "@/components/season/SnowCap";
 
 type Action = { label: string; icon: keyof typeof Ionicons.glyphMap; href: string };
 
@@ -60,6 +61,7 @@ export function QuickActionSheet({ visible, onClose }: { visible: boolean; onClo
         <BlurBackdrop />
       </Pressable>
       <View style={[styles.sheet, { paddingBottom: insets.bottom + 12 }]}>
+        <SnowCap seed={7} />
         <View style={styles.grabber} />
         <View style={styles.header}>
           <Pressable onPress={onClose} hitSlop={10} accessibilityRole="button" accessibilityLabel="Close">

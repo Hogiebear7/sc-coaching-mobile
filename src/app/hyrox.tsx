@@ -24,6 +24,7 @@ import {
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 import { useTickingValue } from "@/lib/use-ticker";
 import { useWorkoutDraft } from "@/lib/workout-draft";
+import { SnowBox } from "@/components/season/SnowBox";
 
 // The live Hyrox screen: one overall clock, and a lap at the end of every run and station. The last station's lap stops the clock and ends the
 // race. Everything is kept in the workout draft, so leaving the screen (or the app) never loses the race.
@@ -92,21 +93,21 @@ export default function HyroxScreen() {
       </View>
 
       {session.finished ? (
-        <View style={styles.resultCard}>
+        <SnowBox style={styles.resultCard}>
           <ResultLine label="Run total" value={hyroxClock(result.runTotal)} />
           <ResultLine label="Stations total" value={hyroxClock(result.stationTotal)} />
           <ResultLine label="Best run lap" value={result.bestRun !== null ? hyroxClock(result.bestRun) : "—"} />
           <ResultLine label="Roxzone time" value={hyroxClock(result.roxzone)} />
           <Text style={styles.savedHint}>Go back and press Log workout to save every run and station.</Text>
           <Button title="Done" onPress={() => router.back()} style={{ marginTop: Spacing.md }} />
-        </View>
+        </SnowBox>
       ) : current ? (
-        <View style={styles.nowCard}>
+        <SnowBox style={styles.nowCard}>
           <Text style={styles.nowLabel}>{session.started ? "NOW" : "FIRST UP"}</Text>
           <Text style={styles.nowTitle}>{current.kind === "station" ? `${current.stationNumber}. ${current.title}` : current.title}</Text>
           <Text style={styles.nowDetail}>{current.detail}</Text>
           {session.started ? <Text style={styles.lapClock}>{hyroxClock(Math.max(0, total - lapStart))}</Text> : null}
-        </View>
+        </SnowBox>
       ) : null}
 
       {session.finished ? null : (

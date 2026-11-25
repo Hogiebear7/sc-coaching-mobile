@@ -20,6 +20,7 @@ import {
   type ExerciseMetricKey,
 } from "@/lib/workout-formatters";
 import { makeStyles, useAppTheme } from "@/lib/theme";
+import { SnowBox } from "@/components/season/SnowBox";
 
 function formatShortDate(dateISO: string): string {
   return new Date(`${dateISO}T00:00:00`).toLocaleDateString(undefined, { day: "numeric", month: "short" });
@@ -116,9 +117,9 @@ export default function ExerciseDetailScreen() {
                 );
               })}
             </ScrollView>
-            <View style={styles.card}>
+            <SnowBox style={styles.card}>
               <TrendChart points={filteredTrendPoints} formatValue={formatTrendValue} />
-            </View>
+            </SnowBox>
             <View style={{ marginTop: 12 }}>
               <RangePills options={TREND_RANGES.map((r) => r.key)} value={trendRange} onChange={setTrendRange} />
             </View>
@@ -127,7 +128,7 @@ export default function ExerciseDetailScreen() {
           {/* History */}
           <View style={styles.section}>
             <SectionTitle title="History" />
-            <View style={styles.list}>
+            <SnowBox style={styles.list}>
               {stats.history.map((h, idx) => (
                 <Pressable
                   key={`${h.sessionId}-${idx}`}
@@ -145,7 +146,7 @@ export default function ExerciseDetailScreen() {
                   <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
                 </Pressable>
               ))}
-            </View>
+            </SnowBox>
           </View>
         </ScrollView>
       )}

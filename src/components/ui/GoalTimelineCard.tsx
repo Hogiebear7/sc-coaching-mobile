@@ -9,6 +9,7 @@ import { selectionFeedback, successFeedback, tapFeedback } from "@/lib/haptics";
 import { useGoalTimeline, useSaveGoal, type GoalTimelineResult } from "@/lib/queries/goal-timeline";
 import { makeStyles, useAppTheme } from "@/lib/theme";
 import { todayDateString } from "@/lib/workout-formatters";
+import { SnowBox } from "@/components/season/SnowBox";
 
 function shiftDate(iso: string, days: number): string {
   const d = new Date(`${iso}T00:00:00`);
@@ -202,7 +203,7 @@ export function GoalTimelineCard({ collapsible = false }: { collapsible?: boolea
   const goal = data?.goalWeightKg ?? null;
 
   return (
-    <View style={styles.card}>
+    <SnowBox style={styles.card}>
       <Text style={styles.title}>Goal timeline</Text>
       <Text style={styles.intro}>
         Optional. Set a goal and your training days, then generate a timeline — your calorie target adjusts to match it, capped at a safe rate.
@@ -349,7 +350,7 @@ export function GoalTimelineCard({ collapsible = false }: { collapsible?: boolea
       ) : null}
       </>
       ) : null}
-    </View>
+    </SnowBox>
   );
 }
 

@@ -16,6 +16,7 @@ import {
   type ResolvedNutritionTarget,
 } from "@/lib/queries/nutrition-diary";
 import { makeStyles, useAppTheme } from "@/lib/theme";
+import { SnowBox } from "@/components/season/SnowBox";
 
 const kcal = (n: number) => n.toLocaleString("en-GB");
 
@@ -51,7 +52,7 @@ export function NutritionPlanPanel({ target }: { target: ResolvedNutritionTarget
       {hasWeek && target ? (
         <View style={styles.section}>
           <SectionTitle title="This week" />
-          <View style={styles.card}>
+          <SnowBox style={styles.card}>
             <View style={styles.figures}>
               <Figure label="Weekly budget" value={`${kcal(target.weekBudgetKcal!)}`} unit="kcal" />
               <Figure label="Daily average" value={`${kcal(target.dailyAverageKcal!)}`} unit="kcal" />
@@ -78,7 +79,7 @@ export function NutritionPlanPanel({ target }: { target: ResolvedNutritionTarget
               </View>
             ) : null}
             <Text style={styles.footnote}>Reviewed every Monday. Eating over one day is never taken off the next.</Text>
-          </View>
+          </SnowBox>
         </View>
       ) : null}
 
@@ -87,13 +88,13 @@ export function NutritionPlanPanel({ target }: { target: ResolvedNutritionTarget
           <View style={styles.section}>
             <SectionTitle title="Calorie distribution" />
             {locked ? (
-              <View style={[styles.card, styles.lockedRow]}>
+              <SnowBox style={[styles.card, styles.lockedRow]}>
                 <Ionicons name="lock-closed-outline" size={18} color={colors.textSecondary} />
                 <View style={{ flex: 1 }}>
                   <Text style={styles.rowTitle}>{DISTRIBUTION_OPTIONS.find((o) => o.value === distribution)?.label}</Text>
                   <Text style={styles.rowSub}>Set by your coach</Text>
                 </View>
-              </View>
+              </SnowBox>
             ) : (
               <>
                 <Segmented
@@ -113,7 +114,7 @@ export function NutritionPlanPanel({ target }: { target: ResolvedNutritionTarget
           <View style={styles.section}>
             <SectionTitle title="Weekly pace" />
             {pacePaused ? (
-              <View style={[styles.card, styles.lockedRow]}>
+              <SnowBox style={[styles.card, styles.lockedRow]}>
                 <Ionicons name="pause-circle-outline" size={18} color={colors.textSecondary} />
                 <View style={{ flex: 1 }}>
                   <Text style={styles.rowTitle}>Paused</Text>
@@ -123,7 +124,7 @@ export function NutritionPlanPanel({ target }: { target: ResolvedNutritionTarget
                       : "Your target maintains your weight for the first 12 weeks after the birth."}
                   </Text>
                 </View>
-              </View>
+              </SnowBox>
             ) : (
             <>
             <View style={styles.chips}>
@@ -160,7 +161,7 @@ export function NutritionPlanPanel({ target }: { target: ResolvedNutritionTarget
 
           <View style={styles.section}>
             <SectionTitle title="Outside training" />
-            <View style={styles.list}>
+            <SnowBox style={styles.list}>
               {ACTIVITY_OPTIONS.map((o, i) => {
                 const active = prefs.activityLevel === o.value;
                 return (
@@ -187,7 +188,7 @@ export function NutritionPlanPanel({ target }: { target: ResolvedNutritionTarget
                   </Pressable>
                 );
               })}
-            </View>
+            </SnowBox>
             <Text style={styles.helper}>Sets your starting burn until the app has learned it from your logs.</Text>
           </View>
 

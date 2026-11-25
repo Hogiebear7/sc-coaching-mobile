@@ -6,6 +6,7 @@ import { tapFeedback } from "@/lib/haptics";
 import type { ExerciseSection, WorkoutSessionSummary } from "@/lib/queries/workouts";
 import { makeLegacyStyles } from "@/lib/theme";
 import { computeSessionTotals } from "@/lib/workout-formatters";
+import { SnowBox } from "@/components/season/SnowBox";
 
 function formatDate(dateISO: string): string {
   return new Date(`${dateISO.slice(0, 10)}T00:00:00`).toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" });
@@ -38,7 +39,7 @@ export function SessionCard({
   ].filter(Boolean) as string[];
 
   const content = (
-    <View style={styles.card}>
+    <SnowBox style={styles.card}>
       <View style={styles.header}>
         <Text style={styles.title} numberOfLines={1}>
           {session.title}
@@ -57,7 +58,7 @@ export function SessionCard({
           <ExercisePreviewList exercises={session.exercises} runs={session.runs} sectionByExerciseId={sectionByExerciseId} />
         </View>
       ) : null}
-    </View>
+    </SnowBox>
   );
 
   if (!onPress) return content;

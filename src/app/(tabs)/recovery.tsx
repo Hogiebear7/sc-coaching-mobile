@@ -20,6 +20,7 @@ import { useMemberAccess } from "@/lib/queries/profile";
 import { useLogRecovery, useRecovery, type RecoveryLogSummary } from "@/lib/queries/recovery";
 import { makeStyles, useAppTheme } from "@/lib/theme";
 import { tourTarget, useTourScroll } from "@/lib/tour-registry";
+import { SnowBox } from "@/components/season/SnowBox";
 
 const WEEK_LETTERS = ["S", "M", "T", "W", "T", "F", "S"];
 
@@ -99,7 +100,7 @@ function CheckInForm({
   }
 
   return (
-    <View style={styles.card}>
+    <SnowBox style={styles.card}>
       <View style={styles.formHeader}>
         <Text style={styles.formTitle}>{isToday ? "Today's check-in" : `Check-in for ${formatDate(date)}`}</Text>
         {!isToday && onDone ? (
@@ -130,7 +131,7 @@ function CheckInForm({
       {error ? <Text style={styles.error}>{error}</Text> : null}
       {saved && !error ? <Text style={styles.saved}>Saved.</Text> : null}
       <Button title={existingLog ? "Update check-in" : "Save check-in"} onPress={submit} loading={logRecovery.isPending} style={{ marginTop: 12 }} />
-    </View>
+    </SnowBox>
   );
 }
 
@@ -332,11 +333,11 @@ export default function RecoveryScreen() {
           <View style={styles.section}>
             <SectionTitle title="History" />
             {data.logs.length === 0 ? (
-              <View style={styles.card}>
+              <SnowBox style={styles.card}>
                 <EmptyState icon="moon-outline" title="No check-ins logged yet" body="Log a check-in above to start building your recovery history." />
-              </View>
+              </SnowBox>
             ) : (
-              <View style={styles.list}>
+              <SnowBox style={styles.list}>
                 {data.logs.slice(0, 7).map((log, i) => {
                   const active = log.date === editingDate;
                   return (
@@ -364,12 +365,12 @@ export default function RecoveryScreen() {
                     </Pressable>
                   );
                 })}
-              </View>
+              </SnowBox>
             )}
           </View>
 
           <View style={styles.section}>
-            <View style={styles.card}>
+            <SnowBox style={styles.card}>
               <Collapsible title="How your score works">
                 <Text style={styles.help}>
                   Four inputs from today&apos;s check-in, each worth up to 25 points: last night&apos;s sleep duration (more is better,
@@ -385,10 +386,10 @@ export default function RecoveryScreen() {
                   · Under 40 — Low. Prioritise rest, mobility, or a light session — pushing hard now adds risk without much benefit.
                 </Text>
               </Collapsible>
-            </View>
+            </SnowBox>
           </View>
 
-          <View style={styles.explainer}>
+          <SnowBox style={styles.explainer}>
             <View style={styles.explainerHead}>
               <Ionicons name="bulb-outline" size={22} color={colors.text} />
               <Text style={styles.explainerTitle}>What helps recovery</Text>
@@ -399,7 +400,7 @@ export default function RecoveryScreen() {
               and back-to-back hard sessions with no easy day between them.
             </Text>
             <Text style={styles.disclaimer}>Coaching guidance only, not medical advice. Consult a healthcare provider for any health concerns.</Text>
-          </View>
+          </SnowBox>
         </View>
       </ScrollView>
     </SafeAreaView>

@@ -5,6 +5,7 @@ import { AppRadius } from "@/constants/theme";
 import { errorFeedback, successFeedback, tapFeedback } from "@/lib/haptics";
 import { useSetDayStatus, type DayLogStatus } from "@/lib/queries/nutrition-diary";
 import { makeStyles, useAppTheme } from "@/lib/theme";
+import { SnowBox } from "@/components/season/SnowBox";
 
 // The diary's "Day complete" mark (nutrition targets v2). A complete day
 // teaches the app the member's real burn; an incomplete one never does.
@@ -36,7 +37,7 @@ export function DayCompleteCard({
 
   if (dayStatus === "complete") {
     return (
-      <View style={[styles.card, styles.row]}>
+      <SnowBox style={[styles.card, styles.row]}>
         <Ionicons name="checkmark-circle" size={24} color={colors.success} />
         <View style={{ flex: 1 }}>
           <Text style={styles.title}>Day complete</Text>
@@ -45,13 +46,13 @@ export function DayCompleteCard({
         <Pressable onPress={() => mark(null)} hitSlop={10} accessibilityRole="button" accessibilityLabel="Undo day complete">
           <Text style={styles.link}>Undo</Text>
         </Pressable>
-      </View>
+      </SnowBox>
     );
   }
 
   if (dayStatus === "incomplete") {
     return (
-      <View style={[styles.card, styles.row]}>
+      <SnowBox style={[styles.card, styles.row]}>
         <Ionicons name="remove-circle-outline" size={24} color={colors.textMuted} />
         <View style={{ flex: 1 }}>
           <Text style={styles.title}>Marked incomplete</Text>
@@ -60,12 +61,12 @@ export function DayCompleteCard({
         <Pressable onPress={() => mark(null)} hitSlop={10} accessibilityRole="button" accessibilityLabel="Clear incomplete mark">
           <Text style={styles.link}>Undo</Text>
         </Pressable>
-      </View>
+      </SnowBox>
     );
   }
 
   return (
-    <View style={styles.card}>
+    <SnowBox style={styles.card}>
       <Text style={styles.title}>Logged everything you ate?</Text>
       <Text style={styles.sub}>Complete days help the app learn how much you burn.</Text>
       <View style={styles.actions}>
@@ -89,7 +90,7 @@ export function DayCompleteCard({
         </Pressable>
       </View>
       {setStatus.isError ? <Text style={styles.error}>Couldn&apos;t save that — try again.</Text> : null}
-    </View>
+    </SnowBox>
   );
 }
 

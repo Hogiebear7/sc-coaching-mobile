@@ -67,6 +67,7 @@ import { reportTouch } from "@/lib/outside-touch";
 import { useWaterAmount, waterChipLabel, waterQuickAdds } from "@/lib/water-amount";
 import { DateDivider } from "@/components/ui/DateDivider";
 import { withDateDividers } from "@/lib/chat-dates";
+import { SnowBox } from "@/components/season/SnowBox";
 
 function shiftDate(dateISO: string, days: number): string {
   const [y, m, d] = dateISO.split("-").map(Number);
@@ -666,7 +667,7 @@ export default function NutritionScreen() {
           {/* Diary */}
           <View style={[styles.section, styles.diarySection]} {...tourTarget("nutrition.diary")}>
             <SectionTitle title="Diary" action="Add food" onAction={() => addFood()} />
-            <View style={styles.list}>
+            <SnowBox style={styles.list}>
               {diaryMeals.map((meal, mealIdx) => {
                 const mealEntries = (diary?.entries ?? []).filter((e) => e.mealType === meal.value);
                 const mealCals = mealEntries.reduce((s, e) => s + e.calories, 0);
@@ -829,7 +830,7 @@ export default function NutritionScreen() {
                   ) : null}
                 </View>
               ) : null}
-            </View>
+            </SnowBox>
             <DayCompleteCard
               date={selectedDate}
               dayStatus={diary?.dayStatus}
@@ -860,7 +861,7 @@ export default function NutritionScreen() {
           <View style={styles.section}>
             <SectionTitle title="More tools" />
             {hasAccess(access, "nutritionMoreTools") ? (
-              <View style={styles.list}>
+              <SnowBox style={styles.list}>
                 {TOOL_ROWS.map((r, i) => (
                   <Pressable
                     key={r.href}
@@ -879,7 +880,7 @@ export default function NutritionScreen() {
                     <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
                   </Pressable>
                 ))}
-              </View>
+              </SnowBox>
             ) : (
               <UpsellCard icon="construct-outline" title="More Tools" body="Sports drink calculator, weekly training, meal ideas, and shopping list" />
             )}
@@ -901,7 +902,7 @@ export default function NutritionScreen() {
               <Ionicons name={emphasisOpen ? "chevron-up" : "chevron-down"} size={20} color={colors.textMuted} />
             </Pressable>
             {emphasisOpen ? (
-              <View style={styles.list}>
+              <SnowBox style={styles.list}>
                 <EmphasisRow icon="water-outline" tone="hydration" title="Hydration" text={hydrationLine} />
                 <EmphasisRow icon="flash-outline" tone="fuel" title="Training fuel" text={trainingLine} divider />
                 <EmphasisRow
@@ -911,7 +912,7 @@ export default function NutritionScreen() {
                   text="Spread protein across 3–4 meals, get colour on every plate for micronutrients, and keep the last big meal 2–3 hours before sleep. Repair happens between sessions, not during them."
                   divider
                 />
-              </View>
+              </SnowBox>
             ) : null}
           </View>
 

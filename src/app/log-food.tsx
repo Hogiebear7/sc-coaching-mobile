@@ -31,6 +31,7 @@ import { MEAL_TYPE_OPTIONS, useCreateFoodEntry, useRecentFoods, type MealType } 
 import { useMemberAccess } from "@/lib/queries/profile";
 import { todayDateString } from "@/lib/workout-formatters";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
+import { SnowBox } from "@/components/season/SnowBox";
 
 function defaultMealTypeForNow(): MealType {
   const hour = new Date().getHours();
@@ -94,10 +95,10 @@ function PhotoCallout({ visible, onDismiss }: { visible: boolean; onDismiss: () 
   return (
     <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={onDismiss}>
       <View style={styles.calloutBackdrop}>
-        <View style={styles.calloutCard}>
+        <SnowBox style={styles.calloutCard}>
           <Text style={styles.calloutBody}>Snap a photo — we&apos;ll work out what&apos;s on the plate.</Text>
           <Button title="Got it" onPress={onDismiss} style={{ marginTop: Spacing.md }} />
-        </View>
+        </SnowBox>
       </View>
     </Modal>
   );

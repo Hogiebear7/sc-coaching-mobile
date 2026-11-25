@@ -9,6 +9,7 @@ import { AppRadius, AppSpace, appTitle } from "@/constants/theme";
 import { useAuth } from "@/lib/auth-context";
 import { useProfile } from "@/lib/queries/profile";
 import { makeStyles, useAppTheme } from "@/lib/theme";
+import { SnowBox } from "@/components/season/SnowBox";
 
 type Row = { label: string; icon: keyof typeof Ionicons.glyphMap; href: string };
 
@@ -84,7 +85,7 @@ export default function MoreScreen() {
         {GROUPS.map((g) => (
           <View key={g.title} style={styles.group}>
             <Text style={styles.groupTitle}>{g.title}</Text>
-            <View style={styles.list}>
+            <SnowBox style={styles.list}>
               {g.rows.map((r, i) => (
                 <Pressable
                   key={r.label}
@@ -97,7 +98,7 @@ export default function MoreScreen() {
                   <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
                 </Pressable>
               ))}
-            </View>
+            </SnowBox>
           </View>
         ))}
       </ScrollView>

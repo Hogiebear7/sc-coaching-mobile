@@ -14,6 +14,7 @@ import { todayDateString } from "@/lib/workout-formatters";
 import { formatVolumeKg } from "@/lib/format-volume";
 import { computeMuscleSetLevels, SET_LEVEL_SECTIONS, type SetLevelTier } from "@/lib/workout-set-levels";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
+import { SnowBox } from "@/components/season/SnowBox";
 
 const WINDOW_OPTIONS: { days: number | null; label: string }[] = [
   { days: 7, label: "1 week" },
@@ -79,7 +80,7 @@ export default function SetLevelsScreen() {
           </View>
 
           {totalSets === 0 ? (
-            <View style={styles.emptyCard}>
+            <SnowBox style={styles.emptyCard}>
               <Text style={styles.emptyTitle}>
                 {sessionsInWindow === 0 ? "No sessions logged in this window" : "No library-linked sets in this window"}
               </Text>
@@ -88,7 +89,7 @@ export default function SetLevelsScreen() {
                   ? "Log a session to start seeing your set levels."
                   : "Pick exercises from the library when logging to track them here — free-text entries aren't matched to a muscle group."}
               </Text>
-            </View>
+            </SnowBox>
           ) : (
             <>
               <Card style={styles.diagramCard}>

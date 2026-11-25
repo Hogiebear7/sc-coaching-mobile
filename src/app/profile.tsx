@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Image, type ImageStyle } from "expo-image";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import {
@@ -39,7 +39,7 @@ import {
   type PrimaryGoal,
 } from "@/lib/queries/profile";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
-import { tourTarget, useTourScroll } from "@/lib/tour-registry";
+import { scrollTourTargetIntoView, tourTarget, useTourScroll } from "@/lib/tour-registry";
 
 const GENDERS: Gender[] = ["Male", "Female", "Other"];
 const GOALS: PrimaryGoal[] = [
@@ -134,6 +134,15 @@ export default function ProfileScreen() {
   const requestEmailChange = useRequestEmailChange();
   const scrollRef = useRef<ScrollView>(null);
   useTourScroll("profile", scrollRef);
+  // Opened from the Log menu's Weigh-in (or "Log a weigh-in"): go straight to the Body metrics section instead of the top of the page.
+  const { section } = useLocalSearchParams<{ section?: string }>();
+  const loaded = !!data;
+  useEffect(() => {
+    if (section !== "body" || !loaded) return;
+    // Wait for the page to lay out, then again in case the first try ran before it had.
+    const timers = [350, 900].map((ms) => setTimeout(() => void scrollTourTargetIntoView("profile", "profile.body"), ms));
+    return () => timers.forEach(clearTimeout);
+  }, [section, loaded]);
 
   const [isChangingEmail, setIsChangingEmail] = useState(false);
   const [newEmailInput, setNewEmailInput] = useState("");

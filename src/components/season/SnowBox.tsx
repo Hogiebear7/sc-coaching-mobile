@@ -23,15 +23,19 @@ const LAYOUT_KEYS = new Set([
 /** Boxes shorter than this are chips and rows, not cards. */
 const MIN_HEIGHT_FOR_SNOW = 64;
 
+/** How far the snow rises above the box, and how far the icicles hang into it, in points. */
+const SNOW_RISE = 6;
+const SNOW_DROP = 22;
+
 let nextSeed = 1;
 
-export function SnowBox({ style, children, seed, slot, ...rest }: ViewProps & { style?: StyleProp<ViewStyle>; children?: ReactNode; seed?: number; slot?: string }) {
+export function SnowBox({ style, children, seed, slot, snow = true, ...rest }: ViewProps & { style?: StyleProp<ViewStyle>; children?: ReactNode; seed?: number; slot?: string; snow?: boolean }) {
   const { season } = useSeason();
   const nested = useContext(SnowNested);
   const [ownSeed] = useState(() => nextSeed++);
   const [tall, setTall] = useState(false);
 
-  if (season?.key !== "christmas" || nested) {
+  if (season?.key !== "christmas" || nested || !snow) {
     return (
       <View style={style} {...rest}>
         {children}
@@ -44,6 +48,13 @@ export function SnowBox({ style, children, seed, slot, ...rest }: ViewProps & { 
   const inner: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(flat)) (LAYOUT_KEYS.has(k) ? outer : inner)[k] = v;
   const absolute = outer.position === "absolute";
+
+  // Make room for the snow so it never sits on top of text: the lumps rise a little above the box (a label just above it gets a few points more space) and the icicles
+  // hang down into it (content that starts right at the top, such as a list of rows with no padding, is pushed down below them). Only in season.
+  const num = (v: unknown) => (typeof v === "number" ? v : 0);
+  outer.marginTop = num(outer.marginTop ?? outer.marginVertical ?? outer.margin) + SNOW_RISE;
+  const topPad = inner.paddingTop ?? inner.paddingVertical ?? inner.padding;
+  if (num(topPad) < SNOW_DROP) inner.paddingTop = SNOW_DROP;
 
   const onLayout = (e: LayoutChangeEvent) => {
     const big = e.nativeEvent.layout.height >= MIN_HEIGHT_FOR_SNOW;

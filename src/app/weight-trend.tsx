@@ -33,7 +33,7 @@ export default function WeightTrendScreen() {
           "Day-to-day scale weight swings with water, salt, carbs and timing. The trend line smooths those swings out so you can see where your weight is really heading. Weigh in at the same time each day, ideally in the morning, for the cleanest trend.",
       }}
       emptyText="No weigh-ins yet. Add one from your profile."
-      action={{ label: "Log a weigh-in", onPress: () => router.push("/profile") }}
+      action={{ label: "Log a weigh-in", onPress: () => router.push("/profile?section=body") }}
       defaultRange="3M"
     />
   );

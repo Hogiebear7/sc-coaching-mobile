@@ -140,8 +140,9 @@ export default function WorkoutHistoryScreen() {
                 <Text style={styles.emptyText}>{selectedDate ? "Nothing logged this day." : "Tap a day to see what you logged."}</Text>
               </Card>
             ) : (
-              selectedSessions.map((s) => (
+              selectedSessions.map((s, i) => (
                 <SessionCard
+                  snow={i === 0}
                   key={s.id}
                   session={s}
                   onPress={() => router.push({ pathname: "/session-detail", params: { id: s.id } })}
@@ -171,8 +172,9 @@ export default function WorkoutHistoryScreen() {
             groups.map(([label, sessions]) => (
               <View key={label} style={styles.monthGroup}>
                 <Text style={styles.monthLabel}>{label}</Text>
-                {sessions.map((s) => (
+                {sessions.map((s, i) => (
                   <SessionCard
+                    snow={i === 0}
                     key={s.id}
                     session={s}
                     onPress={() => router.push({ pathname: "/session-detail", params: { id: s.id } })}

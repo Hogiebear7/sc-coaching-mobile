@@ -388,8 +388,9 @@ export default function WorkoutsScreen() {
           <View style={styles.section}>
             <SectionTitle title={selectedDate === today ? "Today" : formatLongDate(selectedDate)} />
             {sessionsForSelectedDate.length > 0 ? (
-              sessionsForSelectedDate.map((s) => (
+              sessionsForSelectedDate.map((s, i) => (
                 <SessionCard
+                  snow={i === 0}
                   key={s.id}
                   session={s}
                   showDate={false}
@@ -719,8 +720,9 @@ export default function WorkoutsScreen() {
             ) : (
               data.sessions
                 .slice(0, 5)
-                .map((s) => (
+                .map((s, i) => (
                   <SessionCard
+                    snow={i === 0}
                     key={s.id}
                     session={s}
                     onPress={() => router.push({ pathname: "/session-detail", params: { id: s.id } })}

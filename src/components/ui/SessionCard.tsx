@@ -21,6 +21,7 @@ export function SessionCard({
   showDate = true,
   onPress,
   sectionByExerciseId,
+  snow = true,
 }: {
   session: WorkoutSessionSummary;
   showDate?: boolean;
@@ -29,6 +30,8 @@ export function SessionCard({
       optional so callers that don't have it handy still render fine, just
       without the muscle-map icon per line. */
   sectionByExerciseId?: Map<string, ExerciseSection>;
+  /** False for the cards below the first in a stack, so only the top one wears snow. */
+  snow?: boolean;
 }) {
   const styles = useStyles();
   const totals = computeSessionTotals(session.exercises);
@@ -39,7 +42,7 @@ export function SessionCard({
   ].filter(Boolean) as string[];
 
   const content = (
-    <SnowBox style={styles.card}>
+    <SnowBox snow={snow} style={styles.card}>
       <View style={styles.header}>
         <Text style={styles.title} numberOfLines={1}>
           {session.title}

@@ -166,6 +166,9 @@ export default function RecoveryScreen() {
   }, [data]);
 
   const scrollRef = useRef<ScrollView>(null);
+  // Where the check-in form sits, so tapping a History row can bring the edit form into view (it is above the history, often off screen).
+  const checkinY = useRef(0);
+  const bodyY = useRef(0);
   useTourScroll("recovery", scrollRef);
 
   if (isLoading) {
@@ -238,8 +241,8 @@ export default function RecoveryScreen() {
           </View>
         </View>
 
-        <View style={styles.body}>
-          <View style={styles.section} {...tourTarget("recovery.checkin")}>
+        <View style={styles.body} onLayout={(e) => { bodyY.current = e.nativeEvent.layout.y; }}>
+          <View style={styles.section} onLayout={(e) => { checkinY.current = e.nativeEvent.layout.y; }} {...tourTarget("recovery.checkin")}>
             <SectionTitle
               title={editingDate === null ? "Check in" : "Edit check-in"}
               action={editingDate === null && hasAccess(access, "trackerImport") ? "Import sleep" : undefined}
@@ -346,6 +349,7 @@ export default function RecoveryScreen() {
                       onPress={() => {
                         tapFeedback();
                         setEditingDate(active ? null : log.date);
+                        if (!active) scrollRef.current?.scrollTo({ y: Math.max(0, bodyY.current + checkinY.current - 12), animated: true });
                       }}
                       style={({ pressed }) => [styles.row, i > 0 && styles.rowDivider, active && styles.rowActive, pressed && { opacity: 0.8 }]}
                       accessibilityRole="button"

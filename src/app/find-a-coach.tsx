@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { TextField } from "@/components/ui/TextField";
 import { headline, Radius, Spacing } from "@/constants/theme";
+import { API_BASE_URL } from "@/constants/config";
 import { ApiError } from "@/lib/api-client";
 import {
   ALLOWED_RADIUS_KM,
@@ -316,6 +317,17 @@ export default function FindACoachScreen() {
             )}
           </View>
         ) : null}
+
+        {/* Gym owners set a gym up on the website (the staff tools live there), so this opens the sign-up page in the browser. */}
+        <Pressable
+          onPress={() => void Linking.openURL(`${API_BASE_URL.replace(/\/$/, "")}/gym-signup`)}
+          style={styles.ownerLink}
+          accessibilityRole="link"
+          accessibilityLabel="Own a gym? Set it up on our website"
+        >
+          <Text style={styles.ownerLinkTitle}>Own a gym?</Text>
+          <Text style={styles.ownerLinkSub}>Set it up on our website: your own logo, colours, classes, community and coach messaging.</Text>
+        </Pressable>
       </ScrollView>
     </SafeAreaView>
   );
@@ -403,6 +415,9 @@ const useStyles = makeLegacyStyles((Color) =>
     candidatesBackText: { fontSize: 13, fontWeight: "600", color: Color.textMuted },
     noResultsSecondary: { marginTop: Spacing.sm },
     noResultsSecondaryText: { fontSize: 13, fontWeight: "600", color: Color.gold },
+    ownerLink: { marginTop: Spacing.xl, padding: Spacing.lg, borderRadius: Radius.md, backgroundColor: Color.surface1 },
+    ownerLinkTitle: { fontSize: 15, fontWeight: "700", color: Color.gold },
+    ownerLinkSub: { fontSize: 13, color: Color.textMuted, marginTop: 4, lineHeight: 18 },
     gymList: { gap: Spacing.md },
     gymCard: { padding: Spacing.lg },
     recommendedBadge: {

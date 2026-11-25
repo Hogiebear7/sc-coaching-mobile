@@ -22,10 +22,11 @@ import { hapticsEnabled, setHapticsEnabled, tapFeedback } from "@/lib/haptics";
 import { hasAccess, tierFromAccess } from "@/lib/member-access";
 import { useAiConsent, useSetAiConsent } from "@/lib/queries/ai-consent";
 import { useEmailPrefs, useSetEmailPrefs } from "@/lib/queries/email-preferences";
+import { ACCENT_CHOICES } from "@/lib/accent";
 import { PREVIEW_CHOICES, SEASON_PREVIEW_ENABLED, useSeasonPrefs } from "@/lib/season";
 import { setTabChoice, useTabChoice } from "@/lib/tab-choice";
 import { canChooseTabs, normaliseChoice, TAB_PAIR_OPTIONS } from "@/lib/tab-config";
-import { LIGHT_MODE_AVAILABLE, makeLegacyStyles, useLegacyColors } from "@/lib/theme";
+import { LIGHT_MODE_AVAILABLE, makeLegacyStyles, useAppTheme, useLegacyColors } from "@/lib/theme";
 import { setWaterAmount, useWaterAmount, validWaterAmount, WATER_AMOUNT_MAX_ML, WATER_AMOUNT_MIN_ML, WATER_AMOUNT_PRESETS } from "@/lib/water-amount";
 import { useTour } from "@/lib/tour-context";
 import { tourTarget, useTourScroll } from "@/lib/tour-registry";
@@ -175,6 +176,7 @@ export default function SettingsScreen() {
   const access = useMemberAccess();
   const aiConsent = useAiConsent();
   const seasonPrefs = useSeasonPrefs();
+  const { accentVariant, setAccentVariant } = useAppTheme();
   const emailPrefs = useEmailPrefs();
   const setEmailPrefs = useSetEmailPrefs();
   const setAiConsent = useSetAiConsent();
@@ -453,6 +455,23 @@ export default function SettingsScreen() {
                     <Text style={{ color: seasonPrefs.preview === p ? Color.goldForeground : Color.textMuted, fontWeight: "600" }}>
                       {label}
                     </Text>
+                  </Pressable>
+                ))}
+              </View>
+            ) : null}
+            {SEASON_PREVIEW_ENABLED ? (
+              <View style={[styles.row, { flexWrap: "wrap", gap: 8 }]}>
+                <Text style={[styles.rowTitle, { width: "100%" }]}>Colour accent (test builds only)</Text>
+                <Text style={[styles.rowSub, { width: "100%" }]}>Preview four options for a touch of colour on the tab bar, section links and the calorie bar.</Text>
+                {ACCENT_CHOICES.map(({ key, label }) => (
+                  <Pressable
+                    key={key}
+                    onPress={() => setAccentVariant(key)}
+                    style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, backgroundColor: accentVariant === key ? Color.gold : Color.surface2 }}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: accentVariant === key }}
+                  >
+                    <Text style={{ color: accentVariant === key ? Color.goldForeground : Color.textMuted, fontWeight: "600" }}>{label}</Text>
                   </Pressable>
                 ))}
               </View>

@@ -80,7 +80,7 @@ export default function TabsLayout() {
   const router = useRouter();
   const pathname = usePathname();
   const tier = useMemberTier();
-  const { colors } = useAppTheme();
+  const { colors, accentVariant } = useAppTheme();
   const styles = useStyles();
   const insets = useSafeAreaInsets();
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -109,7 +109,7 @@ export default function TabsLayout() {
         screenOptions={({ route }) => ({
           headerShown: false,
           sceneStyle: { backgroundColor: colors.bg },
-          tabBarActiveTintColor: colors.text,
+          tabBarActiveTintColor: colors.areas[route.name] ?? colors.accent,
           tabBarInactiveTintColor: colors.textMuted,
           tabBarStyle: {
             backgroundColor: colors.bg,
@@ -129,7 +129,7 @@ export default function TabsLayout() {
             return pair ? (
               <View style={{ alignItems: "center" }}>
                 <Ionicons name={focused ? pair[1] : pair[0]} size={24} color={color} />
-                {focused ? <View style={styles.brandDot} /> : null}
+                {focused ? <View style={[styles.brandDot, accentVariant !== "none" && { backgroundColor: color }]} /> : null}
               </View>
             ) : null;
           },

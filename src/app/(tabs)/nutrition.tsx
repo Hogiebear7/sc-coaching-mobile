@@ -619,7 +619,7 @@ export default function NutritionScreen() {
                   {remaining >= 0 ? `${remaining.toLocaleString()} kcal remaining` : `${Math.abs(remaining).toLocaleString()} kcal over`}
                 </Text>
                 <View style={{ marginTop: 10 }}>
-                  <ProgressBar pct={(consumed / target!.calories!) * 100} color={colors.text} />
+                  <ProgressBar pct={(consumed / target!.calories!) * 100} color={colors.areas.nutrition ?? colors.accent} />
                 </View>
                 <Pressable
                   onPress={() => {

@@ -240,7 +240,7 @@ const useStyles = makeStyles((c) =>
   StyleSheet.create({
     sectionRow: { flexDirection: "row", alignItems: "baseline", justifyContent: "space-between", marginBottom: 12 },
     sectionTitle: { fontSize: 21, fontWeight: "600", color: c.text },
-    sectionAction: { fontSize: 15, color: c.textSecondary, textDecorationLine: "underline" },
+    sectionAction: { fontSize: 15, color: c.accentLink, textDecorationLine: "underline" },
 
     roundBtn: { width: 48, height: 48, borderRadius: 24, backgroundColor: c.control, alignItems: "center", justifyContent: "center" },
     badge: { position: "absolute", top: 6, right: 6, minWidth: 16, height: 16, borderRadius: 8, paddingHorizontal: 3, backgroundColor: c.brand, alignItems: "center", justifyContent: "center" },

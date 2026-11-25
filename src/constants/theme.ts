@@ -204,6 +204,12 @@ export type AppPalette = {
   success: string;
   warning: string;
   scrim: string;
+  /** Optional colour accent (lib/accent.ts). By default it is the text colour, so nothing changes. */
+  accent: string;
+  /** Colour of small links such as a section's "Add food". By default the same as textSecondary. */
+  accentLink: string;
+  /** Per-area accent colours keyed by tab route name, only in the "By area" option. Empty by default. */
+  areas: Record<string, string>;
 };
 
 export const DarkPalette: AppPalette = {
@@ -222,6 +228,9 @@ export const DarkPalette: AppPalette = {
   success: "#7ccf9d",
   warning: "#e9b452",
   scrim: "rgba(0,0,0,0.55)",
+  accent: "#fcfeff",
+  accentLink: "rgba(255,255,255,0.72)",
+  areas: {},
 };
 
 export const LightPalette: AppPalette = {
@@ -240,6 +249,9 @@ export const LightPalette: AppPalette = {
   success: "#2e8a57",
   warning: "#a86f0c",
   scrim: "rgba(10,21,38,0.35)",
+  accent: "#0a1526",
+  accentLink: "rgba(10,21,38,0.74)",
+  areas: {},
 };
 
 // Static dark alias for screens not yet reading the theme context.

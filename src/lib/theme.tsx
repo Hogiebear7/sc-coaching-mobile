@@ -14,6 +14,8 @@ import {
   type DataPalette,
   type LegacyPalette,
 } from "@/constants/theme";
+import { ACCENT_STORAGE_KEY, applyAccent, isAccentVariant, type AccentVariant } from "@/lib/accent";
+import { SEASON_PREVIEW_ENABLED } from "@/lib/season";
 import { resolveScheme, type ColorScheme, type ThemePreference } from "@/lib/theme-scheme";
 
 // App theme (App v2). Components read colours from here instead of importing
@@ -35,6 +37,9 @@ type ThemeContextValue = {
   legacy: LegacyPalette;
   preference: ThemePreference;
   setPreference: (p: ThemePreference) => void;
+  /** Test builds only: which colour accent is previewed (lib/accent.ts). "none" is the normal look. */
+  accentVariant: AccentVariant;
+  setAccentVariant: (v: AccentVariant) => void;
 };
 
 const DARK_VALUE: ThemeContextValue = {
@@ -44,6 +49,8 @@ const DARK_VALUE: ThemeContextValue = {
   legacy: Color,
   preference: "dark",
   setPreference: () => {},
+  accentVariant: "none",
+  setAccentVariant: () => {},
 };
 
 const ThemeContext = createContext<ThemeContextValue>(DARK_VALUE);
@@ -51,6 +58,7 @@ const ThemeContext = createContext<ThemeContextValue>(DARK_VALUE);
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const system = useColorScheme();
   const [preference, setPreferenceState] = useState<ThemePreference>("dark");
+  const [accentVariant, setAccentState] = useState<AccentVariant>("none");
 
   useEffect(() => {
     AsyncStorage.getItem(STORAGE_KEY)
@@ -58,6 +66,20 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         if (v === "system" || v === "light" || v === "dark") setPreferenceState(v);
       })
       .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (!SEASON_PREVIEW_ENABLED) return;
+    AsyncStorage.getItem(ACCENT_STORAGE_KEY)
+      .then((v) => {
+        if (isAccentVariant(v)) setAccentState(v);
+      })
+      .catch(() => {});
+  }, []);
+
+  const setAccentVariant = useCallback((v: AccentVariant) => {
+    setAccentState(v);
+    AsyncStorage.setItem(ACCENT_STORAGE_KEY, v).catch(() => {});
   }, []);
 
   const setPreference = useCallback((p: ThemePreference) => {
@@ -70,13 +92,15 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     Object.assign(LiveColor, scheme === "light" ? ColorLight : Color);
     return {
       scheme,
-      colors: scheme === "light" ? LightPalette : DarkPalette,
+      colors: applyAccent(scheme === "light" ? LightPalette : DarkPalette, SEASON_PREVIEW_ENABLED ? accentVariant : "none", scheme),
       data: scheme === "light" ? DataColorLight : DataColor,
       legacy: scheme === "light" ? ColorLight : Color,
       preference,
       setPreference,
+      accentVariant,
+      setAccentVariant,
     };
-  }, [preference, system, setPreference]);
+  }, [preference, system, setPreference, accentVariant, setAccentVariant]);
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }

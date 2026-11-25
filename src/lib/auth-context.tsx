@@ -7,6 +7,7 @@ import { cancelTargetReminders } from "./targets/reminders";
 import { registerForPushNotificationsAsync, unregisterPushToken } from "./push-notifications";
 import { cacheUser, forgetCachedUser, readCachedUser, signInCheckFailure } from "./session-keeper";
 import { clearToken, getToken, setToken as persistToken } from "./token-store";
+import { resetTenantStatus, setTenantStatus } from "@/lib/tenant-status";
 
 export interface AuthUser {
   id: string;
@@ -43,7 +44,8 @@ const START_CHECK_LIMIT_MS = 6000;
 
 /** Checks the saved sign-in with the server, saves the renewed one it hands back, and returns the account. Throws when it can't. */
 async function checkIn(): Promise<AuthUser> {
-  const me = await apiFetch<{ user: AuthUser; token?: string }>("/api/mobile/auth/me");
+  const me = await apiFetch<{ user: AuthUser; token?: string; tenant?: unknown }>("/api/mobile/auth/me");
+  setTenantStatus(me.tenant);
   if (me.token) await persistToken(me.token);
   await cacheUser(me.user);
   return me.user;
@@ -56,6 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     registerUnauthorizedHandler(() => {
+      resetTenantStatus();
       void forgetCachedUser();
       setUser(null);
       setStatus("signedOut");
@@ -147,6 +150,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await cancelTargetReminders();
     await clearToken();
     await forgetCachedUser();
+    resetTenantStatus();
     setUser(null);
     setStatus("signedOut");
     setViewMode("coach");

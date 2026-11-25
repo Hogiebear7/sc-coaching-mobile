@@ -27,6 +27,7 @@ import { RestTimerProvider } from "@/lib/rest-timer";
 import { ThemeProvider, useAppTheme, makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 import { TourProvider } from "@/lib/tour-context";
 import { WorkoutDraftProvider } from "@/lib/workout-draft";
+import { TenantLockHost } from "@/components/ui/TenantLockHost";
 
 SplashScreen.preventAutoHideAsync();
 // Some OEM Android skins (Huawei/EMUI confirmed) apply their own, often
@@ -366,6 +367,7 @@ export default function RootLayout() {
                       <TourHost />
                       <AiConsentHost />
                       <UpgradeHost />
+                      <TenantLockHost />
                     </View>
                   </WorkoutDraftProvider>
                 </RestTimerProvider>

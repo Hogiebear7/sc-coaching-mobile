@@ -26,6 +26,7 @@ import { successFeedback, tapFeedback } from "@/lib/haptics";
 import { useProvisionMemberProfile } from "@/lib/queries/profile";
 import { useMarkAttendance, useRemoveBooking, useStaffClasses, type StaffClassSummary } from "@/lib/queries/staff";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
+import { TenantGraceBanner } from "@/components/ui/TenantGraceBanner";
 
 function formatClassDate(dateISO: string): string {
   const d = new Date(`${dateISO}T00:00:00`);
@@ -429,6 +430,7 @@ export default function StaffOperationsScreen() {
           contentContainerStyle={styles.scroll}
           refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => refetch()} tintColor={Color.gold} />}
         >
+          <TenantGraceBanner />
           {view === "list" ? <StaffTodayCard /> : null}
           {view === "calendar" ? (
             <StaffClassesCalendar classesByDate={classesByDate} />

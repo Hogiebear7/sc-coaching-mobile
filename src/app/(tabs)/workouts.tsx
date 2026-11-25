@@ -38,6 +38,7 @@ import {
 } from "@/lib/workout-formatters";
 import { makeStyles, useAppTheme } from "@/lib/theme";
 import { CAN_SELL_DIGITAL_PLAN, DIGITAL_PLAN_ROUTE } from "@/lib/upsell-config";
+import { SnowBox } from "@/components/season/SnowBox";
 
 // A deliberately narrow slice of the full EXERCISE_METRICS list (which also
 // has Volume/Best Set Vol./Sets) — this compact widget covers just
@@ -387,8 +388,9 @@ export default function WorkoutsScreen() {
           <View style={styles.section}>
             <SectionTitle title={selectedDate === today ? "Today" : formatLongDate(selectedDate)} />
             {sessionsForSelectedDate.length > 0 ? (
-              sessionsForSelectedDate.map((s) => (
+              sessionsForSelectedDate.map((s, i) => (
                 <SessionCard
+                  snow={i === 0}
                   key={s.id}
                   session={s}
                   showDate={false}
@@ -397,7 +399,7 @@ export default function WorkoutsScreen() {
                 />
               ))
             ) : (
-              <View style={styles.card}>
+              <SnowBox style={styles.card}>
                 <EmptyState
                   icon={hasActiveWorkout ? "play-circle-outline" : "barbell-outline"}
                   title={
@@ -408,7 +410,7 @@ export default function WorkoutsScreen() {
                   onAction={() => router.push({ pathname: "/log-workout", params: { date: selectedDate } })}
                   variant="primary"
                 />
-              </View>
+              </SnowBox>
             )}
           </View>
 
@@ -416,7 +418,7 @@ export default function WorkoutsScreen() {
           {program && program.status === "paused" ? (
             <View style={styles.section} {...tourTarget("train.programme")}>
               <SectionTitle title="Your programme" />
-              <View style={styles.card}>
+              <SnowBox style={styles.card}>
                 <View style={styles.programHeaderRow}>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.programName}>{program.name}</Text>
@@ -426,12 +428,12 @@ export default function WorkoutsScreen() {
                 </View>
                 <Text style={styles.programHint}>Resume when you&apos;re ready to pick back up where you left off.</Text>
                 <Button title="Resume programme" onPress={handleResumeProgramme} loading={setProgramStatus.isPending} style={{ marginTop: 16 }} />
-              </View>
+              </SnowBox>
             </View>
           ) : program && currentDay ? (
             <View style={styles.section} {...tourTarget("train.programme")}>
               <SectionTitle title="Your programme" />
-              <View style={styles.card}>
+              <SnowBox style={styles.card}>
                 <View style={styles.programHeaderRow}>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.programName}>{program.name}</Text>
@@ -521,7 +523,7 @@ export default function WorkoutsScreen() {
                     </Pressable>
                   </>
                 )}
-              </View>
+              </SnowBox>
             </View>
           ) : null}
 
@@ -561,7 +563,7 @@ export default function WorkoutsScreen() {
                 action={allRecentRecords.length > 3 ? "See more" : undefined}
                 onAction={() => router.push({ pathname: "/workout-records" })}
               />
-              <View style={styles.list}>
+              <SnowBox style={styles.list}>
                 {recentRecords.map((r, idx) => (
                   <Pressable
                     key={`${r.exerciseName}-${r.type}-${r.date}`}
@@ -583,7 +585,7 @@ export default function WorkoutsScreen() {
                     <Text style={styles.rowValue}>{r.value}</Text>
                   </Pressable>
                 ))}
-              </View>
+              </SnowBox>
             </View>
           ) : null}
 
@@ -611,7 +613,7 @@ export default function WorkoutsScreen() {
                   ))}
                 </TileGrid>
               ) : (
-                <View style={styles.card}>
+                <SnowBox style={styles.card}>
                   <EmptyState
                     icon="trophy-outline"
                     title="No personal bests yet"
@@ -619,7 +621,7 @@ export default function WorkoutsScreen() {
                     actionLabel="Choose your lifts"
                     onAction={() => router.push("/personal-bests-edit")}
                   />
-                </View>
+                </SnowBox>
               )}
             </View>
           )}
@@ -628,13 +630,13 @@ export default function WorkoutsScreen() {
           {data.sessions.length > 0 && trendCandidates.length === 0 ? (
             <View style={styles.section}>
               <SectionTitle title="Progression" />
-              <View style={styles.card}>
+              <SnowBox style={styles.card}>
                 <EmptyState
                   icon="trending-up-outline"
                   title="Not enough data yet"
                   body="Log the same exercise a couple more times to unlock your progression trend."
                 />
-              </View>
+              </SnowBox>
             </View>
           ) : null}
 
@@ -665,7 +667,7 @@ export default function WorkoutsScreen() {
                   <Text style={styles.chipText}>Search</Text>
                 </Pressable>
               </ScrollView>
-              <View style={styles.card}>
+              <SnowBox style={styles.card}>
                 <View style={styles.trendHead}>
                   <Text style={styles.trendTitle} numberOfLines={1}>
                     {activeTrendExercise}
@@ -685,7 +687,7 @@ export default function WorkoutsScreen() {
                 <View style={{ marginTop: 12 }}>
                   <RangePills options={TREND_RANGES.map((r) => r.key)} value={trendRange} onChange={setTrendRange} />
                 </View>
-              </View>
+              </SnowBox>
               <Pressable
                 onPress={() => router.push({ pathname: "/exercise-detail", params: { name: activeTrendExercise } })}
                 style={styles.linkRow}
@@ -705,7 +707,7 @@ export default function WorkoutsScreen() {
               onAction={() => router.push("/workout-history")}
             />
             {data.sessions.length === 0 ? (
-              <View style={styles.card}>
+              <SnowBox style={styles.card}>
                 <EmptyState
                   icon={hasActiveWorkout ? "play-circle-outline" : "barbell-outline"}
                   title={hasActiveWorkout ? "Workout in progress" : "No workouts logged yet"}
@@ -714,12 +716,13 @@ export default function WorkoutsScreen() {
                   onAction={() => router.push("/log-workout")}
                   variant="primary"
                 />
-              </View>
+              </SnowBox>
             ) : (
               data.sessions
                 .slice(0, 5)
-                .map((s) => (
+                .map((s, i) => (
                   <SessionCard
+                    snow={i === 0}
                     key={s.id}
                     session={s}
                     onPress={() => router.push({ pathname: "/session-detail", params: { id: s.id } })}
@@ -732,7 +735,7 @@ export default function WorkoutsScreen() {
           {/* More */}
           <View style={styles.section}>
             <SectionTitle title="More training" />
-            <View style={styles.list}>
+            <SnowBox style={styles.list}>
               {moreRows.map((r, i) => (
                 <Pressable
                   key={r.href}
@@ -751,7 +754,7 @@ export default function WorkoutsScreen() {
                   <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
                 </Pressable>
               ))}
-            </View>
+            </SnowBox>
           </View>
         </View>
       </ScrollView>

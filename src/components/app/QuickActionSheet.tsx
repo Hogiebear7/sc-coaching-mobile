@@ -8,6 +8,7 @@ import { AppRadius } from "@/constants/theme";
 import { tapFeedback } from "@/lib/haptics";
 import { makeStyles, useAppTheme } from "@/lib/theme";
 import { BlurBackdrop } from "@/components/ui/BlurBackdrop";
+import { SnowCap } from "@/components/season/SnowCap";
 
 type Action = { label: string; icon: keyof typeof Ionicons.glyphMap; href: string };
 
@@ -20,7 +21,7 @@ const QUICK: Action[] = [
 ];
 
 const ROWS: Action[] = [
-  { label: "Weigh-in", icon: "scale-outline", href: "/profile" },
+  { label: "Weigh-in", icon: "scale-outline", href: "/profile?section=body" },
   { label: "Add water", icon: "water-outline", href: "/(tabs)/nutrition" },
   { label: "Rest timer", icon: "timer-outline", href: "/rest-timer" },
   { label: "Message your coach", icon: "chatbubble-ellipses-outline", href: "/messages" },
@@ -60,6 +61,10 @@ export function QuickActionSheet({ visible, onClose }: { visible: boolean; onClo
         <BlurBackdrop />
       </Pressable>
       <View style={[styles.sheet, { paddingBottom: insets.bottom + 12 }]}>
+        {/* Inset from the sheet's rounded corners so the snow sits on the top edge rather than running past it. */}
+        <View pointerEvents="none" style={styles.snowWrap}>
+          <SnowCap seed={7} />
+        </View>
         <View style={styles.grabber} />
         <View style={styles.header}>
           <Pressable onPress={onClose} hitSlop={10} accessibilityRole="button" accessibilityLabel="Close">
@@ -103,7 +108,8 @@ const useStyles = makeStyles((c) =>
   StyleSheet.create({
     backdrop: { flex: 1, backgroundColor: c.scrim },
     sheet: { backgroundColor: c.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingHorizontal: 16 },
-    grabber: { alignSelf: "center", width: 40, height: 4, borderRadius: 2, backgroundColor: c.hairline, marginTop: 10 },
+    snowWrap: { position: "absolute", left: 14, right: 14, top: 0, height: 0 },
+    grabber: { alignSelf: "center", width: 40, height: 4, borderRadius: 2, backgroundColor: c.hairline, marginTop: 26 },
     header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 14 },
     title: { fontSize: 20, fontWeight: "600", color: c.text },
     quickRow: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 12 },

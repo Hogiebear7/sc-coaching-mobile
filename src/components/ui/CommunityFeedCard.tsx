@@ -12,6 +12,7 @@ import { formatCommunityDate, formatWorkoutTitle } from "@/lib/community-formatt
 import { tapFeedback } from "@/lib/haptics";
 import { useToggleWorkoutLike, type CommunityFeedItem } from "@/lib/queries/community";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
+import { SnowBox } from "@/components/season/SnowBox";
 
 function initials(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -33,7 +34,7 @@ export function CommunityFeedCard({ item, onOpenComments }: { item: CommunityFee
   const router = useRouter();
 
   return (
-    <View style={styles.card}>
+    <SnowBox style={styles.card}>
       <View style={styles.header}>
         <Pressable
           onPress={() => {
@@ -126,7 +127,7 @@ export function CommunityFeedCard({ item, onOpenComments }: { item: CommunityFee
           workoutId={item.id}
         />
       ) : null}
-    </View>
+    </SnowBox>
   );
 }
 

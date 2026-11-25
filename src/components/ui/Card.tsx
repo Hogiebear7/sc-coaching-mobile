@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
-import { StyleSheet, View, type StyleProp, type ViewStyle } from "react-native";
+import { StyleSheet, type StyleProp, type ViewStyle } from "react-native";
+
+import { SnowBox } from "@/components/season/SnowBox";
 
 import { AppRadius } from "@/constants/theme";
 import { makeStyles } from "@/lib/theme";
@@ -23,14 +25,18 @@ export function Card({
   style,
   accent = false,
   tier = "standard",
+  snow = true,
 }: {
   children: ReactNode;
   style?: StyleProp<ViewStyle>;
   accent?: boolean;
   tier?: CardTier;
+  /** False for the cards below the first in a stack, so only the top box wears snow. */
+  snow?: boolean;
 }) {
   const styles = useStyles();
-  return <View style={[styles.card, styles[tier], accent && styles.accent, style]}>{children}</View>;
+  // SnowBox is a plain View except at Christmas, when the card wears snow on its top edge.
+  return <SnowBox snow={snow} style={[styles.card, styles[tier], accent && styles.accent, style]}>{children}</SnowBox>;
 }
 
 const useStyles = makeStyles((c) =>

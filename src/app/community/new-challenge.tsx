@@ -31,6 +31,7 @@ import {
 import { useCreateChallenge, type CustomMeasure, type ChallengeScope } from "@/lib/queries/community-groups";
 import { todayDateString } from "@/lib/workout-formatters";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
+import { SnowBox } from "@/components/season/SnowBox";
 
 const EMPTY_CUSTOM: CustomForm = { measure: null, exercise: "", cardioType: null, distanceText: "" };
 
@@ -126,7 +127,7 @@ export default function NewChallengeScreen() {
         </View>
 
         {isCustom ? (
-          <View style={styles.builder}>
+          <SnowBox style={styles.builder}>
             <Text style={styles.builderTitle}>Build your own</Text>
 
             <Text style={styles.label}>What to measure</Text>
@@ -206,7 +207,7 @@ export default function NewChallengeScreen() {
             ) : (
               <Text style={styles.hint}>Pick what to measure, then name the exercise or choose the activity.</Text>
             )}
-          </View>
+          </SnowBox>
         ) : null}
 
         <Text style={styles.orLabel}>Or pick a ready-made one</Text>

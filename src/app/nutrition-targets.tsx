@@ -12,7 +12,7 @@ import { LiveColor as Color, figure, Radius, Spacing } from "@/constants/theme";
 import { useNutritionDiary, useMyNutritionTarget, useWeeklyNutritionTargets, type ResolvedNutritionTarget } from "@/lib/queries/nutrition-diary";
 import { selectionFeedback } from "@/lib/haptics";
 import { todayDateString } from "@/lib/workout-formatters";
-import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
+import { makeLegacyStyles, useAppTheme, useLegacyColors } from "@/lib/theme";
 import { useHasFeature } from "@/lib/queries/profile";
 import { LockedScreen } from "@/components/ui/LockedScreen";
 
@@ -111,6 +111,7 @@ function sourceLine(target: ResolvedNutritionTarget): string {
 export default function NutritionTargetsScreen() {
   const styles = useStyles();
   const Color = useLegacyColors();
+  const { data: dc } = useAppTheme();
   const router = useRouter();
   const today = todayDateString();
   const [view, setView] = useState<"day" | "week">("day");
@@ -192,9 +193,9 @@ export default function NutritionTargetsScreen() {
                       <>
                         <Text style={styles.sourceText}>{sourceLine(dayTarget)}</Text>
                         <View style={styles.macroBlock}>
-                          <MacroBar label="Protein" consumed={diary?.totals.proteinG ?? 0} target={dayTarget.proteinG} tone={Color.accentData} />
-                          <MacroBar label="Carbs" consumed={diary?.totals.carbsG ?? 0} target={dayTarget.carbsG} tone={Color.gold} />
-                          <MacroBar label="Fat" consumed={diary?.totals.fatG ?? 0} target={dayTarget.fatG} tone={Color.success} />
+                          <MacroBar label="Protein" consumed={diary?.totals.proteinG ?? 0} target={dayTarget.proteinG} tone={dc.protein} />
+                          <MacroBar label="Carbs" consumed={diary?.totals.carbsG ?? 0} target={dayTarget.carbsG} tone={dc.carbs} />
+                          <MacroBar label="Fat" consumed={diary?.totals.fatG ?? 0} target={dayTarget.fatG} tone={dc.fat} />
                         </View>
                         {dayTarget.notes ? <Text style={styles.notesText}>Coach&apos;s note: {dayTarget.notes}</Text> : null}
                         {dayTarget.rationale && dayTarget.rationale.length > 0 ? (

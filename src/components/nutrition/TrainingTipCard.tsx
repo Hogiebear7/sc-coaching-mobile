@@ -10,6 +10,7 @@ import { useWorkouts } from "@/lib/queries/workouts";
 import { makeStyles, useAppTheme } from "@/lib/theme";
 import { shouldSuggestTrainingSplit } from "@/lib/training-tip";
 import { todayDateString } from "@/lib/workout-formatters";
+import { SnowBox } from "@/components/season/SnowBox";
 
 const DISMISSED_KEY = "sc.trainingTipDismissed";
 
@@ -50,7 +51,7 @@ export function TrainingTipCard({ target }: { target: ResolvedNutritionTarget | 
   }
 
   return (
-    <View style={styles.card}>
+    <SnowBox style={styles.card}>
       <View style={styles.head}>
         <View style={styles.icon}>
           <Ionicons name="flash-outline" size={18} color={colors.text} />
@@ -90,7 +91,7 @@ export function TrainingTipCard({ target }: { target: ResolvedNutritionTarget | 
       >
         <Text style={styles.buttonText}>{save.isPending ? "Switching…" : "Match my training"}</Text>
       </Pressable>
-    </View>
+    </SnowBox>
   );
 }
 

@@ -20,6 +20,7 @@ import { useMemberAccess } from "@/lib/queries/profile";
 import { useLogRecovery, useRecovery, type RecoveryLogSummary } from "@/lib/queries/recovery";
 import { makeStyles, useAppTheme } from "@/lib/theme";
 import { tourTarget, useTourScroll } from "@/lib/tour-registry";
+import { SnowBox } from "@/components/season/SnowBox";
 
 const WEEK_LETTERS = ["S", "M", "T", "W", "T", "F", "S"];
 
@@ -99,7 +100,7 @@ function CheckInForm({
   }
 
   return (
-    <View style={styles.card}>
+    <SnowBox style={styles.card}>
       <View style={styles.formHeader}>
         <Text style={styles.formTitle}>{isToday ? "Today's check-in" : `Check-in for ${formatDate(date)}`}</Text>
         {!isToday && onDone ? (
@@ -130,7 +131,7 @@ function CheckInForm({
       {error ? <Text style={styles.error}>{error}</Text> : null}
       {saved && !error ? <Text style={styles.saved}>Saved.</Text> : null}
       <Button title={existingLog ? "Update check-in" : "Save check-in"} onPress={submit} loading={logRecovery.isPending} style={{ marginTop: 12 }} />
-    </View>
+    </SnowBox>
   );
 }
 
@@ -165,6 +166,9 @@ export default function RecoveryScreen() {
   }, [data]);
 
   const scrollRef = useRef<ScrollView>(null);
+  // Where the check-in form sits, so tapping a History row can bring the edit form into view (it is above the history, often off screen).
+  const checkinY = useRef(0);
+  const bodyY = useRef(0);
   useTourScroll("recovery", scrollRef);
 
   if (isLoading) {
@@ -188,6 +192,12 @@ export default function RecoveryScreen() {
     );
   }
 
+  // Only today's and yesterday's check-ins can be edited; older days are a record.
+  const yesterdayISO = (() => {
+    const d = isoToDate(data.todayISO);
+    d.setDate(d.getDate() - 1);
+    return isoOf(d);
+  })();
   const todayLog = data.logs.find((l) => l.date === data.todayISO) ?? null;
   const editingLog = editingDate ? (data.logs.find((l) => l.date === editingDate) ?? null) : null;
   // latestReadinessScore/latestGuidance are the most recent check-in EVER,
@@ -237,8 +247,8 @@ export default function RecoveryScreen() {
           </View>
         </View>
 
-        <View style={styles.body}>
-          <View style={styles.section} {...tourTarget("recovery.checkin")}>
+        <View style={styles.body} onLayout={(e) => { bodyY.current = e.nativeEvent.layout.y; }}>
+          <View style={styles.section} onLayout={(e) => { checkinY.current = e.nativeEvent.layout.y; }} {...tourTarget("recovery.checkin")}>
             <SectionTitle
               title={editingDate === null ? "Check in" : "Edit check-in"}
               action={editingDate === null && hasAccess(access, "trackerImport") ? "Import sleep" : undefined}
@@ -331,24 +341,28 @@ export default function RecoveryScreen() {
 
           <View style={styles.section}>
             <SectionTitle title="History" />
+            <Text style={styles.rowSub}>You can edit today&apos;s and yesterday&apos;s check-in. Older days are kept as a record.</Text>
             {data.logs.length === 0 ? (
-              <View style={styles.card}>
+              <SnowBox style={styles.card}>
                 <EmptyState icon="moon-outline" title="No check-ins logged yet" body="Log a check-in above to start building your recovery history." />
-              </View>
+              </SnowBox>
             ) : (
-              <View style={styles.list}>
+              <SnowBox style={styles.list}>
                 {data.logs.slice(0, 7).map((log, i) => {
                   const active = log.date === editingDate;
+                  const editable = log.date === data.todayISO || log.date === yesterdayISO;
                   return (
                     <Pressable
                       key={log.id}
+                      disabled={!editable}
                       onPress={() => {
                         tapFeedback();
                         setEditingDate(active ? null : log.date);
+                        if (!active) scrollRef.current?.scrollTo({ y: Math.max(0, bodyY.current + checkinY.current - 12), animated: true });
                       }}
                       style={({ pressed }) => [styles.row, i > 0 && styles.rowDivider, active && styles.rowActive, pressed && { opacity: 0.8 }]}
                       accessibilityRole="button"
-                      accessibilityLabel={`${formatDate(log.date)}, readiness ${log.readinessScore ?? "not scored"}. Tap to edit.`}
+                      accessibilityLabel={`${formatDate(log.date)}, readiness ${log.readinessScore ?? "not scored"}. ${editable ? "Tap to edit." : ""}`}
                     >
                       <View style={{ flex: 1 }}>
                         <Text style={styles.rowTitle}>{formatDate(log.date)}</Text>
@@ -360,16 +374,16 @@ export default function RecoveryScreen() {
                       </View>
                       <View style={[styles.dot, { backgroundColor: readinessColor(log.readinessScore, dc, colors.textMuted) }]} />
                       <Text style={styles.rowScore}>{log.readinessScore ?? "—"}</Text>
-                      <Ionicons name={active ? "create" : "create-outline"} size={18} color={colors.textMuted} />
+                      {editable ? <Ionicons name={active ? "create" : "create-outline"} size={18} color={colors.textMuted} /> : <View style={{ width: 18 }} />}
                     </Pressable>
                   );
                 })}
-              </View>
+              </SnowBox>
             )}
           </View>
 
           <View style={styles.section}>
-            <View style={styles.card}>
+            <SnowBox style={styles.card}>
               <Collapsible title="How your score works">
                 <Text style={styles.help}>
                   Four inputs from today&apos;s check-in, each worth up to 25 points: last night&apos;s sleep duration (more is better,
@@ -385,10 +399,10 @@ export default function RecoveryScreen() {
                   · Under 40 — Low. Prioritise rest, mobility, or a light session — pushing hard now adds risk without much benefit.
                 </Text>
               </Collapsible>
-            </View>
+            </SnowBox>
           </View>
 
-          <View style={styles.explainer}>
+          <SnowBox style={styles.explainer}>
             <View style={styles.explainerHead}>
               <Ionicons name="bulb-outline" size={22} color={colors.text} />
               <Text style={styles.explainerTitle}>What helps recovery</Text>
@@ -399,7 +413,7 @@ export default function RecoveryScreen() {
               and back-to-back hard sessions with no easy day between them.
             </Text>
             <Text style={styles.disclaimer}>Coaching guidance only, not medical advice. Consult a healthcare provider for any health concerns.</Text>
-          </View>
+          </SnowBox>
         </View>
       </ScrollView>
     </SafeAreaView>

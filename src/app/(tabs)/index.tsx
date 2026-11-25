@@ -468,7 +468,6 @@ export default function DashboardScreen() {
         <View style={styles.section} {...tourTarget("home.club")}>
           <SectionTitle title="Club" />
           <View style={{ position: "relative" }}>
-          <SnowCap seed={5} slot="Club" />
           <View style={styles.list}>
             <ListRow
               icon="card-outline"
@@ -486,6 +485,8 @@ export default function DashboardScreen() {
               divider
             />
           </View>
+          {/* After the list, so the snow sits ON TOP of the card (before it, the card painted over the hanging lumps and only a flat strip showed). */}
+          <SnowCap seed={5} slot="Club" />
           </View>
         </View>
       </ScrollView>

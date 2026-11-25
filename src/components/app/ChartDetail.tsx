@@ -10,6 +10,7 @@ import { AppRadius, AppSpace } from "@/constants/theme";
 import { smoothTrend } from "@/lib/chart-math";
 import { tapFeedback } from "@/lib/haptics";
 import { makeStyles, useAppTheme } from "@/lib/theme";
+import { SnowBox } from "@/components/season/SnowBox";
 
 export type ChartPoint = { id: string; date: string; value: number };
 
@@ -228,7 +229,7 @@ export function ChartDetail({
         </View>
 
         <Text style={styles.listTitle}>Entries</Text>
-        <View style={styles.list}>
+        <SnowBox style={styles.list}>
           {[...shown]
             .reverse()
             .slice(0, showAllEntries ? undefined : COLLAPSED_ENTRIES)
@@ -263,7 +264,7 @@ export function ChartDetail({
               <Ionicons name={showAllEntries ? "chevron-up" : "chevron-down"} size={18} color={colors.textSecondary} />
             </Pressable>
           ) : null}
-        </View>
+        </SnowBox>
         {action ? <PillButton title={action.label} onPress={action.onPress} style={{ marginTop: 20 }} /> : null}
       </ScrollView>
     );

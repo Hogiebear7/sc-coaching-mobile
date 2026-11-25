@@ -216,13 +216,16 @@ export default function ProfileScreen() {
     dietaryPreference, allergies, intolerancesOrMedical, dietaryNotes,
   ]);
   const baselineRef = useRef<string | null>(null);
+  const dirtyRef = useRef(false);
   useEffect(() => {
     if (hydrated && baselineRef.current === null) baselineRef.current = currentSig;
+    dirtyRef.current = hydrated && baselineRef.current !== null && currentSig !== baselineRef.current;
   });
-  const dirtyRef = useRef(false);
-  dirtyRef.current = hydrated && baselineRef.current !== null && currentSig !== baselineRef.current;
   const handleSaveRef = useRef<() => Promise<boolean>>(async () => false);
   const allowLeaveRef = useRef(false);
+  useEffect(() => {
+    handleSaveRef.current = handleSave;
+  });
   const navigation = useNavigation();
   useEffect(() => {
     return navigation.addListener("beforeRemove", (e) => {
@@ -317,8 +320,6 @@ export default function ProfileScreen() {
       return false;
     }
   }
-
-  handleSaveRef.current = handleSave;
 
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>

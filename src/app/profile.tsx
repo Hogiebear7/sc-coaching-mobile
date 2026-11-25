@@ -1,10 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Image, type ImageStyle } from "expo-image";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams, useNavigation, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -208,6 +209,37 @@ export default function ProfileScreen() {
     setHydrated(true);
   }, [data, hydrated]);
 
+  // Unsaved-changes guard: a snapshot of the form when it loaded (or was last saved) is compared with what is on screen now.
+  const currentSig = JSON.stringify([
+    fullName, phone, dateOfBirth, gender, primaryGoal, secondaryGoal, sportPlayed, heightCm, country, additionalInfo,
+    emergencyContactName, emergencyContactPhone, emergencyContact2Name, emergencyContact2Phone,
+    dietaryPreference, allergies, intolerancesOrMedical, dietaryNotes,
+  ]);
+  const baselineRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (hydrated && baselineRef.current === null) baselineRef.current = currentSig;
+  });
+  const dirtyRef = useRef(false);
+  dirtyRef.current = hydrated && baselineRef.current !== null && currentSig !== baselineRef.current;
+  const handleSaveRef = useRef<() => Promise<boolean>>(async () => false);
+  const allowLeaveRef = useRef(false);
+  const navigation = useNavigation();
+  useEffect(() => {
+    return navigation.addListener("beforeRemove", (e) => {
+      if (!dirtyRef.current || allowLeaveRef.current) return;
+      e.preventDefault();
+      const leave = () => {
+        allowLeaveRef.current = true;
+        navigation.dispatch(e.data.action);
+      };
+      Alert.alert("Save your changes?", "You have changes on your profile that haven't been saved.", [
+        { text: "Keep editing", style: "cancel" },
+        { text: "Discard", style: "destructive", onPress: leave },
+        { text: "Save", onPress: () => void handleSaveRef.current().then((ok) => ok && leave()) },
+      ]);
+    });
+  }, [navigation]);
+
   function toggleListValue(list: string[], setList: (v: string[]) => void, value: string) {
     setList(list.includes(value) ? list.filter((v) => v !== value) : [...list, value]);
   }
@@ -225,29 +257,29 @@ export default function ProfileScreen() {
 
   if (blockedStaffRole) return null;
 
-  async function handleSave() {
+  async function handleSave(): Promise<boolean> {
     setError(null);
     setSaved(false);
 
     if (!fullName.trim() || !phone.trim() || !dateOfBirth.trim()) {
       setError("Please fill in every required field.");
-      return;
+      return false;
     }
     if (!/^\d{4}-\d{2}-\d{2}$/.test(dateOfBirth.trim())) {
       setError("Enter a valid date of birth.");
-      return;
+      return false;
     }
     if (!gender) {
       setError("Select a gender.");
-      return;
+      return false;
     }
     if (!primaryGoal) {
       setError("Select a primary goal.");
-      return;
+      return false;
     }
     if (primaryGoal === "Sports Performance" && !sportPlayed.trim()) {
       setError("Sport played is required for a sports performance goal.");
-      return;
+      return false;
     }
 
     try {
@@ -277,11 +309,16 @@ export default function ProfileScreen() {
         intolerancesOrMedical,
         dietaryNotes: dietaryNotes.trim() || undefined,
       });
+      baselineRef.current = currentSig;
       setSaved(true);
+      return true;
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Something went wrong. Try again.");
+      return false;
     }
   }
+
+  handleSaveRef.current = handleSave;
 
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
@@ -621,14 +658,8 @@ export default function ProfileScreen() {
               )}
             </Card>
 
-            {error ? <Text style={styles.error}>{error}</Text> : null}
-            {saved && !error ? <Text style={styles.saved}>Saved.</Text> : null}
-
-            <Button title="Save changes" onPress={handleSave} loading={update.isPending} style={{ marginTop: Spacing.md }} />
-
             {/* Closes off the editable form before the quieter reference
-                section below, rather than letting Body Metrics run straight
-                on from Save with only a section-label's worth of spacing. */}
+                section below. Save changes sits at the bottom of the page. */}
             <View style={styles.closingDivider} />
 
             <View {...tourTarget("profile.body")}>
@@ -704,6 +735,10 @@ export default function ProfileScreen() {
                 ) : null}
               </>
             ) : null}
+
+            {error ? <Text style={[styles.error, { marginTop: Spacing.xl }]}>{error}</Text> : null}
+            {saved && !error ? <Text style={[styles.saved, { marginTop: Spacing.xl }]}>Saved.</Text> : null}
+            <Button title="Save changes" onPress={handleSave} loading={update.isPending} style={{ marginTop: error || saved ? Spacing.md : Spacing.xl }} />
 
             {isStaffRole ? (
               <Button

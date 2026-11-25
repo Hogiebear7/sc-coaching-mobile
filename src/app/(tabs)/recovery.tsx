@@ -192,6 +192,12 @@ export default function RecoveryScreen() {
     );
   }
 
+  // Only today's and yesterday's check-ins can be edited; older days are a record.
+  const yesterdayISO = (() => {
+    const d = isoToDate(data.todayISO);
+    d.setDate(d.getDate() - 1);
+    return isoOf(d);
+  })();
   const todayLog = data.logs.find((l) => l.date === data.todayISO) ?? null;
   const editingLog = editingDate ? (data.logs.find((l) => l.date === editingDate) ?? null) : null;
   // latestReadinessScore/latestGuidance are the most recent check-in EVER,
@@ -335,6 +341,7 @@ export default function RecoveryScreen() {
 
           <View style={styles.section}>
             <SectionTitle title="History" />
+            <Text style={styles.rowSub}>You can edit today&apos;s and yesterday&apos;s check-in. Older days are kept as a record.</Text>
             {data.logs.length === 0 ? (
               <SnowBox style={styles.card}>
                 <EmptyState icon="moon-outline" title="No check-ins logged yet" body="Log a check-in above to start building your recovery history." />
@@ -343,9 +350,11 @@ export default function RecoveryScreen() {
               <SnowBox style={styles.list}>
                 {data.logs.slice(0, 7).map((log, i) => {
                   const active = log.date === editingDate;
+                  const editable = log.date === data.todayISO || log.date === yesterdayISO;
                   return (
                     <Pressable
                       key={log.id}
+                      disabled={!editable}
                       onPress={() => {
                         tapFeedback();
                         setEditingDate(active ? null : log.date);
@@ -353,7 +362,7 @@ export default function RecoveryScreen() {
                       }}
                       style={({ pressed }) => [styles.row, i > 0 && styles.rowDivider, active && styles.rowActive, pressed && { opacity: 0.8 }]}
                       accessibilityRole="button"
-                      accessibilityLabel={`${formatDate(log.date)}, readiness ${log.readinessScore ?? "not scored"}. Tap to edit.`}
+                      accessibilityLabel={`${formatDate(log.date)}, readiness ${log.readinessScore ?? "not scored"}. ${editable ? "Tap to edit." : ""}`}
                     >
                       <View style={{ flex: 1 }}>
                         <Text style={styles.rowTitle}>{formatDate(log.date)}</Text>
@@ -365,7 +374,7 @@ export default function RecoveryScreen() {
                       </View>
                       <View style={[styles.dot, { backgroundColor: readinessColor(log.readinessScore, dc, colors.textMuted) }]} />
                       <Text style={styles.rowScore}>{log.readinessScore ?? "—"}</Text>
-                      <Ionicons name={active ? "create" : "create-outline"} size={18} color={colors.textMuted} />
+                      {editable ? <Ionicons name={active ? "create" : "create-outline"} size={18} color={colors.textMuted} /> : <View style={{ width: 18 }} />}
                     </Pressable>
                   );
                 })}

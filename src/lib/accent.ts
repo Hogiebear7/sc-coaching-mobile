@@ -1,4 +1,5 @@
 import type { AppPalette } from "@/constants/theme";
+import { accentForScheme } from "@/lib/gym-accent";
 
 // Colour-accent options for the app (owner request 2026-11-25: "a touch of subtle colour, like MacroFactor"). TEST BUILDS ONLY for now: the picker in Settings is
 // hidden unless EXPO_PUBLIC_SEASON_PREVIEW is on, and the default, "none", is exactly how the app looks today. One accent is used in a few small places (the
@@ -26,18 +27,21 @@ const AREAS_LIGHT: Record<string, string> = { index: "#2c66d6", schedule: "#6352
 const cache = new Map<string, AppPalette>();
 
 /** The palette with an accent applied. Cached so the same inputs always give the same object (styles are cached per palette). */
-export function applyAccent(base: AppPalette, variant: AccentVariant, scheme: "dark" | "light"): AppPalette {
+export function applyAccent(base: AppPalette, variant: AccentVariant, scheme: "dark" | "light", gymColour?: string | null): AppPalette {
   if (variant === "none") return base;
-  const key = `${scheme}:${variant}`;
+  const key = `${scheme}:${variant}:${gymColour ?? ""}`;
   const hit = cache.get(key);
   if (hit) return hit;
   const light = scheme === "light";
-  const single = variant === "gold" ? (light ? "#9c7631" : "#c6a15b") : light ? "#2c66d6" : "#6fb1ff";
+  // A gym with its own colour (lib/gym-accent.ts) uses it in place of the S&C gold: for the accent, the links and the brand dots and badges.
+  const gym = variant === "gold" ? accentForScheme(gymColour, scheme) : null;
+  const single = gym ?? (variant === "gold" ? (light ? "#9c7631" : "#c6a15b") : light ? "#2c66d6" : "#6fb1ff");
   const areas = variant === "areas" ? (light ? AREAS_LIGHT : AREAS_DARK) : {};
   const next: AppPalette = {
     ...base,
     accent: variant === "areas" ? base.text : single,
     accentLink: variant === "areas" ? (light ? "#2c66d6" : "#7fa8ff") : single,
+    ...(gym ? { brand: gym } : {}),
     areas,
   };
   cache.set(key, next);

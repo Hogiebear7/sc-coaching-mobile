@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -47,6 +48,11 @@ export default function CommunityPrivacyScreen() {
   const leaderboardMode: LeaderboardMode = data?.leaderboardMode ?? (leaderboardVisible ? "named" : "hidden");
   const leaderboardAlias = data?.leaderboardAlias ?? "Hidden user";
   const aliases = data?.leaderboardAliases ?? ["Hidden user"];
+  // The alias picker can be filtered to male or female names; the neutral ones (Hidden user, Shadow user) always show. Starts on the group the chosen alias is in.
+  const groups = data?.leaderboardAliasGroups;
+  const [aliasFilter, setAliasFilter] = useState<"all" | "male" | "female" | null>(null);
+  const activeFilter = aliasFilter ?? (groups?.male.includes(leaderboardAlias) ? "male" : groups?.female.includes(leaderboardAlias) ? "female" : "all");
+  const visibleAliases = !groups || activeFilter === "all" ? aliases : [...groups.general, ...(activeFilter === "male" ? groups.male : groups.female)];
 
   function update(
     next: Partial<{
@@ -174,8 +180,23 @@ export default function CommunityPrivacyScreen() {
                 {leaderboardMode === "alias" ? (
                   <View style={styles.aliasBlock}>
                     <Text style={styles.settingSub}>Your alias</Text>
+                    {groups ? (
+                      <View style={styles.aliasWrap}>
+                        {(["all", "male", "female"] as const).map((f) => (
+                          <Pressable
+                            key={f}
+                            onPress={() => setAliasFilter(f)}
+                            accessibilityRole="button"
+                            accessibilityState={{ selected: activeFilter === f }}
+                            style={[styles.aliasChip, activeFilter === f && styles.aliasChipActive]}
+                          >
+                            <Text style={[styles.aliasChipText, activeFilter === f && styles.aliasChipTextActive]}>{f === "all" ? "All" : f === "male" ? "Male names" : "Female names"}</Text>
+                          </Pressable>
+                        ))}
+                      </View>
+                    ) : null}
                     <View style={styles.aliasWrap}>
-                      {aliases.map((a) => (
+                      {visibleAliases.map((a) => (
                         <Pressable
                           key={a}
                           onPress={() => update({ leaderboardAlias: a })}

@@ -23,8 +23,12 @@ const LAYOUT_KEYS = new Set([
 /** Boxes shorter than this are chips and rows, not cards. */
 const MIN_HEIGHT_FOR_SNOW = 64;
 
-/** How far the snow rises above the box, and how far the icicles hang into it, in points. */
-const SNOW_RISE = 6;
+/**
+ * How far the snow rises above the box, and how far the icicles hang into it, in points. SNOW_RISE has to match how far the cap really rises (SnowCap draws it 11 points
+ * above the box), because that room is the box's own top margin: with less, a card that is the first thing in a scroll view had the top of its snow cut off by the
+ * scroll view's edge (seen on the Community screen and any screen that opens with a card).
+ */
+const SNOW_RISE = 11;
 const SNOW_DROP = 22;
 
 let nextSeed = 1;

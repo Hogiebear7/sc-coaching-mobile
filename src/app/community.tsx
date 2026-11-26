@@ -1,5 +1,6 @@
 import { SeasonOverlay } from "@/components/season/SeasonOverlay";
 import { HalloweenCardDecor, SnowCap } from "@/components/season/SnowCap";
+import { useSeason } from "@/lib/season";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -138,6 +139,7 @@ function DiscoverabilityNotice({
 
 export default function CommunityScreen() {
   const styles = useStyles();
+  const { season } = useSeason();
   const Color = useLegacyColors();
   const router = useRouter();
   const { user } = useAuth();
@@ -243,7 +245,8 @@ export default function CommunityScreen() {
       >
         {/* Private groups (App tier) and the gym's own community (gym Membership). The gym entry is shown only to members who have it: the
             gym Membership is never sold or linked to from inside the app. */}
-        <View style={styles.entryRow}>
+        {/* The snow on these two tiles rises 11 points above them, and the scroll view clips at its top edge, so at Christmas the row gets that much room above it. */}
+        <View style={[styles.entryRow, season?.key === "christmas" ? { marginTop: 12 } : null]}>
           <Pressable
             onPress={() => router.push("/community/groups")}
             style={styles.entryCard}

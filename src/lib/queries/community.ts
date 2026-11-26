@@ -367,6 +367,8 @@ export interface CommunityPrivacy {
   leaderboardAlias?: string;
   /** The aliases you may pick from (read-only, sent by the server). */
   leaderboardAliases?: string[];
+  /** The same names split for the picker's All / Male / Female filter; `general` names show under every filter. */
+  leaderboardAliasGroups?: { general: string[]; male: string[]; female: string[] };
 }
 
 export type LeaderboardMode = "named" | "alias" | "hidden";

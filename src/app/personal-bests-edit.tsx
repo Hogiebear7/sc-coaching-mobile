@@ -11,7 +11,7 @@ import { tapFeedback } from "@/lib/haptics";
 import { useUpdatePinnedExercises, useWorkouts } from "@/lib/queries/workouts";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
 
-const MAX_PINNED = 5;
+const MAX_PINNED = 4;
 
 // Search-to-add picker for the Personal Bests card. The pinnable list is
 // data.personalBests itself (every exercise the member has ever logged a
@@ -27,7 +27,8 @@ export default function PersonalBestsEditScreen() {
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<string[] | null>(null);
 
-  const picked = selected ?? data?.pinnedExercises ?? [];
+  // Someone who pinned 5 before the limit became 4 starts with their first 4.
+  const picked = (selected ?? data?.pinnedExercises ?? []).slice(0, MAX_PINNED);
   const pickedLower = useMemo(() => new Set(picked.map((n) => n.toLowerCase())), [picked]);
 
   const results = useMemo(() => {

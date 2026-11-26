@@ -26,10 +26,12 @@ import {
 import { selectionFeedback, tapFeedback } from "@/lib/haptics";
 import { hasAccess } from "@/lib/member-access";
 import { useAddFoodFavorite, useFoodFavorites, useRemoveFoodFavorite, type FoodFavorite } from "@/lib/queries/food-favorites";
+import { pickExtras, type NutrientExtras } from "@/lib/nutrient-extras";
 import { MEAL_TYPE_OPTIONS, useCreateFoodEntry, useRecentFoods, type MealType } from "@/lib/queries/nutrition-diary";
 import { useMemberAccess } from "@/lib/queries/profile";
 import { todayDateString } from "@/lib/workout-formatters";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
+import { SnowBox } from "@/components/season/SnowBox";
 
 function defaultMealTypeForNow(): MealType {
   const hour = new Date().getHours();
@@ -93,10 +95,10 @@ function PhotoCallout({ visible, onDismiss }: { visible: boolean; onDismiss: () 
   return (
     <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={onDismiss}>
       <View style={styles.calloutBackdrop}>
-        <View style={styles.calloutCard}>
+        <SnowBox style={styles.calloutCard}>
           <Text style={styles.calloutBody}>Snap a photo — we&apos;ll work out what&apos;s on the plate.</Text>
           <Button title="Got it" onPress={onDismiss} style={{ marginTop: Spacing.md }} />
-        </View>
+        </SnowBox>
       </View>
     </Modal>
   );
@@ -197,6 +199,8 @@ export default function LogFoodScreen() {
   const [proteinG, setProteinG] = useState("");
   const [carbsG, setCarbsG] = useState("");
   const [fatG, setFatG] = useState("");
+  // Fibre, sugars, sodium and saturated fat for the food being logged: known from the catalog, a recent or a favourite, absent for a hand-typed food.
+  const [extras, setExtras] = useState<NutrientExtras | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [justLogged, setJustLogged] = useState(false);
   // Manual entry (typed name + macros from scratch) is the lowest-frequency
@@ -213,6 +217,7 @@ export default function LogFoodScreen() {
     setProteinG("");
     setCarbsG("");
     setFatG("");
+    setExtras(null);
     setAppliedFrom(null);
     setFavoriteJustSaved(false);
   }
@@ -225,6 +230,7 @@ export default function LogFoodScreen() {
     setProteinG(String(f.proteinG));
     setCarbsG(String(f.carbsG));
     setFatG(String(f.fatG));
+    setExtras(pickExtras(f));
     // Log it back into the meal it was actually eaten as, not whichever
     // meal tab happens to be selected right now (which otherwise defaults
     // by time of day) — a breakfast item tapped from Recents at 9pm should
@@ -242,6 +248,7 @@ export default function LogFoodScreen() {
     setProteinG(String(f.proteinG));
     setCarbsG(String(f.carbsG));
     setFatG(String(f.fatG));
+    setExtras(pickExtras(f));
     // Same reasoning as applyRecent — restore the meal it was saved under,
     // not whatever's currently selected.
     setMealType(f.mealType);
@@ -269,6 +276,7 @@ export default function LogFoodScreen() {
         fatG: fatG.trim() ? parseInt(fatG, 10) : 0,
         servingLabel: selectedFood ? servingLabel : null,
         servingGrams: selectedFood ? (overrideGrams ?? gramsForServing(selectedFood.food, servingLabel, 1)) : null,
+        ...(extras ?? {}),
       },
       { onSuccess: () => setFavoriteJustSaved(true) }
     );
@@ -332,10 +340,12 @@ export default function LogFoodScreen() {
     setProteinG(String(nutrition.proteinG));
     setCarbsG(String(nutrition.carbsG));
     setFatG(String(nutrition.fatG));
+    setExtras(pickExtras(nutrition));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedFood, servingLabel, quantity, overrideGrams]);
 
   function clearSelection() {
+    setExtras(null);
     setSelectedFood(null);
     setServingLabel(null);
     setQuantity(1);
@@ -375,6 +385,7 @@ export default function LogFoodScreen() {
         servingLabel: selectedFood ? servingLabel : null,
         servingGrams: selectedFood ? (overrideGrams ?? gramsForServing(selectedFood.food, servingLabel, 1)) : null,
         quantity: qty,
+        ...(extras ?? {}),
       });
       tapFeedback();
       setJustLogged(true);

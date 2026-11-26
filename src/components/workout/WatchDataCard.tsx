@@ -5,6 +5,7 @@ import { PillButton, SectionTitle } from "@/components/app/primitives";
 import { AppRadius, AppSpace } from "@/constants/theme";
 import { useSaveWatchData } from "@/lib/queries/workouts";
 import { makeStyles, useAppTheme } from "@/lib/theme";
+import { SnowBox } from "@/components/season/SnowBox";
 
 // Optional numbers from the member's watch after a session. Half of the
 // calories count towards today's target if the session went beyond their
@@ -23,7 +24,7 @@ export function WatchDataCard({ sessionId }: { sessionId: string }) {
   return (
     <View style={styles.section}>
       <SectionTitle title="From your watch (optional)" />
-      <View style={styles.card}>
+      <SnowBox style={styles.card}>
         <View style={styles.row}>
           <Field label="Calories" value={calories} onChange={setCalories} placeholder="e.g. 420" />
           <Field label="Avg HR" value={avgHr} onChange={setAvgHr} placeholder="e.g. 138" />
@@ -43,7 +44,7 @@ export function WatchDataCard({ sessionId }: { sessionId: string }) {
           }}
           style={{ marginTop: 12 }}
         />
-      </View>
+      </SnowBox>
     </View>
   );
 }

@@ -1,4 +1,5 @@
 import { API_BASE_URL } from "@/constants/config";
+import { TENANT_LOCKED_CODE, markTenantLocked } from "./tenant-status";
 import { clearToken, getToken } from "./token-store";
 
 export class ApiError extends Error {
@@ -90,6 +91,8 @@ export async function apiFetch<T>(
         : `Request failed (${res.status}).`;
     const code = json && typeof json === "object" && "code" in json && typeof json.code === "string" ? json.code : null;
     if (res.status === 403 && code && UPGRADE_CODES.has(code)) onUpgradeRequired?.(message);
+    // The gym is paused for an unpaid platform subscription: show the unavailable screen (lib/tenant-status.ts).
+    if (res.status === 423 && code === TENANT_LOCKED_CODE) markTenantLocked();
     throw new ApiError(res.status, message, code);
   }
 

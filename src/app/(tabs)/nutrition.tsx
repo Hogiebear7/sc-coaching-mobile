@@ -26,6 +26,7 @@ import { WaterAdjuster } from "@/components/nutrition/WaterAdjuster";
 import { OptionPicker, type PickerOption } from "@/components/ui/OptionPicker";
 import { KeyboardAwareScroll } from "@/components/ui/KeyboardAwareScroll";
 import type { MacroKind } from "@/components/ui/MacroPieChart";
+import { ExtrasCard } from "@/components/nutrition/ExtrasCard";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { Segmented } from "@/components/ui/Segmented";
 import { UpsellCard } from "@/components/ui/Upsell";
@@ -63,9 +64,10 @@ import { tourTarget, useTourScroll } from "@/lib/tour-registry";
 import { notInPlanCopy, CAN_SELL_DIGITAL_PLAN, DIGITAL_PLAN_ROUTE } from "@/lib/upsell-config";
 import { DEFAULT_DRINK, DRINK_TYPES, drinkNote, findDrink, waterEquivalentMl, type DrinkId } from "@/lib/drink-types";
 import { reportTouch } from "@/lib/outside-touch";
-import { useWaterAmount, waterQuickAdds } from "@/lib/water-amount";
+import { useWaterAmount, waterChipLabel, waterQuickAdds } from "@/lib/water-amount";
 import { DateDivider } from "@/components/ui/DateDivider";
 import { withDateDividers } from "@/lib/chat-dates";
+import { SnowBox } from "@/components/season/SnowBox";
 
 function shiftDate(dateISO: string, days: number): string {
   const [y, m, d] = dateISO.split("-").map(Number);
@@ -210,7 +212,7 @@ function HydrationCard({ date }: { date: string }) {
               ]}
             >
               <Text style={[styles.hydrationChipText, isRecommended && styles.hydrationChipTextPrimary]}>
-                +{ml}ml
+                {waterChipLabel(ml)}
               </Text>
             </Pressable>
           );
@@ -426,6 +428,7 @@ export default function NutritionScreen() {
   const [macroInfo, setMacroInfo] = useState<MacroKind | null>(null);
   const [showCalorieWhy, setShowCalorieWhy] = useState(false);
   const [quickAddTab, setQuickAddTab] = useState<"recent" | "favourites">("recent");
+  const [quickAddOpen, setQuickAddOpen] = useState(false);
   // "Today's emphasis" sits under More tools and starts closed, to keep the page short.
   const [emphasisOpen, setEmphasisOpen] = useState(false);
   // Collapsed by default — a member who logs a lot of foods can otherwise
@@ -434,6 +437,7 @@ export default function NutritionScreen() {
   // all (tapping one always means "add"), so this only ever tracks meals
   // that actually have entries.
   const [expandedMeals, setExpandedMeals] = useState<Set<MealType>>(new Set());
+  const [showOtherMeals, setShowOtherMeals] = useState(false);
 
   const { data, isLoading, isError, refetch, isRefetching } = useNutrition();
   const { data: target } = useMyNutritionTarget();
@@ -533,6 +537,17 @@ export default function NutritionScreen() {
   const hasTarget = !!target && target.mode !== "disabled" && target.calories !== null;
   const remaining = hasTarget ? target!.calories! - consumed : 0;
   const atToday = selectedDate === today;
+  // Today the diary leads with the meal for this time of day (the rest are one tap away); other days show all four.
+  const nowMeal: MealType = defaultMealTypeForNow();
+  const orderedMeals = atToday ? [...MEAL_TYPE_OPTIONS].sort((a, b) => (a.value === nowMeal ? -1 : b.value === nowMeal ? 1 : 0)) : MEAL_TYPE_OPTIONS;
+  const otherMeals = atToday ? orderedMeals.slice(1) : [];
+  const diaryMeals = atToday && !showOtherMeals ? orderedMeals.slice(0, 1) : orderedMeals;
+  const otherMealsSummary = otherMeals
+    .map((m) => {
+      const kcal = (diary?.entries ?? []).filter((e) => e.mealType === m.value).reduce((s, e) => s + e.calories, 0);
+      return kcal > 0 ? `${m.label} ${kcal} kcal` : m.label;
+    })
+    .join(" · ");
 
   return (
     // Every touch is reported so the water bottle, when switched on for dragging, can save when the member taps anywhere else.
@@ -605,7 +620,7 @@ export default function NutritionScreen() {
                   {remaining >= 0 ? `${remaining.toLocaleString()} kcal remaining` : `${Math.abs(remaining).toLocaleString()} kcal over`}
                 </Text>
                 <View style={{ marginTop: 10 }}>
-                  <ProgressBar pct={(consumed / target!.calories!) * 100} color={colors.text} />
+                  <ProgressBar pct={(consumed / target!.calories!) * 100} color={colors.areas.nutrition ?? colors.accent} />
                 </View>
                 <Pressable
                   onPress={() => {
@@ -647,12 +662,13 @@ export default function NutritionScreen() {
 
         <View style={styles.body}>
           <TrainingTipCard target={target} />
+          <ExtrasCard totals={diary?.extras} />
 
           {/* Diary */}
-          <View style={styles.section} {...tourTarget("nutrition.diary")}>
+          <View style={[styles.section, styles.diarySection]} {...tourTarget("nutrition.diary")}>
             <SectionTitle title="Diary" action="Add food" onAction={() => addFood()} />
-            <View style={styles.list}>
-              {MEAL_TYPE_OPTIONS.map((meal, mealIdx) => {
+            <SnowBox style={styles.list}>
+              {diaryMeals.map((meal, mealIdx) => {
                 const mealEntries = (diary?.entries ?? []).filter((e) => e.mealType === meal.value);
                 const mealCals = mealEntries.reduce((s, e) => s + e.calories, 0);
                 const hasEntries = mealEntries.length > 0;
@@ -716,10 +732,40 @@ export default function NutritionScreen() {
                   </View>
                 );
               })}
+              {/* Today: only the meal for this time of day shows; the rest sit behind one row. */}
+              {otherMeals.length > 0 ? (
+                <Pressable
+                  onPress={() => setShowOtherMeals((v) => !v)}
+                  style={[styles.rowDivider, styles.otherMealsRow]}
+                  accessibilityRole="button"
+                  accessibilityState={{ expanded: showOtherMeals }}
+                  accessibilityLabel={showOtherMeals ? "Hide other meals" : "Show other meals"}
+                >
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.rowTitle}>{showOtherMeals ? "Hide other meals" : "Other meals"}</Text>
+                    {!showOtherMeals ? <Text style={styles.rowSub}>{otherMealsSummary}</Text> : null}
+                  </View>
+                  <Ionicons name={showOtherMeals ? "chevron-up" : "chevron-down"} size={18} color={colors.textMuted} />
+                </Pressable>
+              ) : null}
               {/* Quick add lives inside the Diary box, under the meals */}
               {(recentFoods && recentFoods.length > 0) || (favorites && favorites.length > 0) ? (
-                <View style={[styles.rowDivider, { padding: 14 }]}>
-                  <Text style={[styles.rowTitle, { marginBottom: 10 }]}>Quick add</Text>
+                <View style={styles.rowDivider}>
+                  <Pressable
+                    onPress={() => setQuickAddOpen((v) => !v)}
+                    style={styles.otherMealsRow}
+                    accessibilityRole="button"
+                    accessibilityState={{ expanded: quickAddOpen }}
+                    accessibilityLabel={quickAddOpen ? "Hide quick add" : "Show quick add"}
+                  >
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.rowTitle}>Quick add</Text>
+                      {!quickAddOpen ? <Text style={styles.rowSub}>Recent foods and favourites</Text> : null}
+                    </View>
+                    <Ionicons name={quickAddOpen ? "chevron-up" : "chevron-down"} size={18} color={colors.textMuted} />
+                  </Pressable>
+                  {quickAddOpen ? (
+                <View style={{ paddingHorizontal: 14, paddingBottom: 14 }}>
                   <View style={{ marginBottom: 12 }}>
                     <Segmented
                       options={["recent", "favourites"] as const}
@@ -781,8 +827,10 @@ export default function NutritionScreen() {
                     <Text style={styles.quietText}>No favourites yet — save one from the star icon when adding a food.</Text>
                   )}
                 </View>
+                  ) : null}
+                </View>
               ) : null}
-            </View>
+            </SnowBox>
             <DayCompleteCard
               date={selectedDate}
               dayStatus={diary?.dayStatus}
@@ -813,7 +861,7 @@ export default function NutritionScreen() {
           <View style={styles.section}>
             <SectionTitle title="More tools" />
             {hasAccess(access, "nutritionMoreTools") ? (
-              <View style={styles.list}>
+              <SnowBox style={styles.list}>
                 {TOOL_ROWS.map((r, i) => (
                   <Pressable
                     key={r.href}
@@ -832,7 +880,7 @@ export default function NutritionScreen() {
                     <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
                   </Pressable>
                 ))}
-              </View>
+              </SnowBox>
             ) : (
               <UpsellCard icon="construct-outline" title="More Tools" body="Sports drink calculator, weekly training, meal ideas, and shopping list" />
             )}
@@ -854,7 +902,7 @@ export default function NutritionScreen() {
               <Ionicons name={emphasisOpen ? "chevron-up" : "chevron-down"} size={20} color={colors.textMuted} />
             </Pressable>
             {emphasisOpen ? (
-              <View style={styles.list}>
+              <SnowBox style={styles.list}>
                 <EmphasisRow icon="water-outline" tone="hydration" title="Hydration" text={hydrationLine} />
                 <EmphasisRow icon="flash-outline" tone="fuel" title="Training fuel" text={trainingLine} divider />
                 <EmphasisRow
@@ -864,7 +912,7 @@ export default function NutritionScreen() {
                   text="Spread protein across 3–4 meals, get colour on every plate for micronutrients, and keep the last big meal 2–3 hours before sleep. Repair happens between sessions, not during them."
                   divider
                 />
-              </View>
+              </SnowBox>
             ) : null}
           </View>
 
@@ -985,6 +1033,8 @@ const useStyles = makeStyles((c, dc) =>
 
     body: { paddingHorizontal: AppSpace.gutter, paddingTop: AppSpace.section },
     section: { marginBottom: AppSpace.section },
+    diarySection: { marginTop: 8 },
+    otherMealsRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 14 },
     list: { backgroundColor: c.surface, borderRadius: AppRadius.card, overflow: "hidden" },
     row: { flexDirection: "row", alignItems: "center", gap: 14, minHeight: 62, paddingHorizontal: 16, paddingVertical: 10 },
     rowDivider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: c.hairline },
@@ -1046,11 +1096,11 @@ const useStyles = makeStyles((c, dc) =>
     hydrationDrinkText: { fontSize: 14, color: c.textMuted },
     hydrationDrinkTextActive: { color: c.text, fontWeight: "600" },
     hydrationDrinkNote: { fontSize: 13, color: c.textMuted, marginTop: 8 },
-    hydrationQuickAddRow: { flexDirection: "row", gap: 8, marginTop: 12 },
-    hydrationChip: { flex: 1, alignItems: "center", justifyContent: "center", minHeight: 44, borderRadius: AppRadius.control, backgroundColor: c.control },
+    hydrationQuickAddRow: { flexDirection: "row", gap: 8, marginTop: 12, paddingHorizontal: 24 },
+    hydrationChip: { flex: 1, alignItems: "center", justifyContent: "center", minHeight: 36, paddingHorizontal: 8, borderRadius: AppRadius.control, backgroundColor: c.control },
     // The recommended +500ml is the one solid pill.
     hydrationChipPrimary: { backgroundColor: c.primary },
-    hydrationChipText: { fontSize: 15, fontWeight: "600", color: c.text },
+    hydrationChipText: { fontSize: 14, fontWeight: "600", color: c.text },
     hydrationChipTextPrimary: { color: c.onPrimary },
     hydrationManualDivider: { height: StyleSheet.hairlineWidth, backgroundColor: c.hairline, marginTop: 16 },
     hydrationManualLabel: { fontSize: 14, color: c.textMuted, marginTop: 12, marginBottom: 6 },

@@ -26,6 +26,18 @@ export function withWeightUnit(value: string, unit: WeightUnit): string {
   return /^\d+(\.\d+)?$/.test(bare) ? `${bare} ${unit}` : value.trim();
 }
 
+/**
+ * Font size for a weight box that shares its width with the BW button. The box is narrow, so "45 kg" at the full 17 was clipped on the left; longer text
+ * ("102.5 kg") steps down further so the whole number always shows.
+ */
+export function weightFontSize(shown: string): number {
+  const n = shown.trim().length;
+  if (n <= 5) return 16;
+  if (n === 6) return 15;
+  if (n === 7) return 13.5;
+  return 12;
+}
+
 /** The unit to show, from the member's measurement setting. */
 export function weightUnitFor(preferredUnits: string | null | undefined): WeightUnit {
   return preferredUnits === "imperial" ? "lbs" : "kg";

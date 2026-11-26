@@ -8,7 +8,12 @@ export const DEFAULT_WATER_AMOUNT_ML = 250;
 export const WATER_AMOUNT_MIN_ML = 50;
 export const WATER_AMOUNT_MAX_ML = 2000;
 export const WATER_AMOUNT_PRESETS = [150, 250, 330, 500, 750];
-const OTHER_QUICK_ADDS = [250, 500, 750];
+const OTHER_QUICK_ADDS = [250, 500, 1000];
+
+/** "+250ml", but "+1L" for a litre. */
+export function waterChipLabel(ml: number): string {
+  return ml === 1000 ? "+1L" : `+${ml}ml`;
+}
 const STORAGE_KEY = "sc.waterAmountMl";
 
 let current = DEFAULT_WATER_AMOUNT_ML;

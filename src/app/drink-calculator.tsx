@@ -389,7 +389,7 @@ export default function DrinkCalculatorScreen() {
               { label: "Nitrate", value: `${drink.nitrateMg} mg` },
               { label: "Energy", value: `${drink.calories} kcal` },
             ].map((cell) => (
-              <Card key={cell.label} style={styles.totalCell}>
+              <Card key={cell.label} snow={false} style={styles.totalCell}>
                 <Text style={styles.totalLabel}>{cell.label}</Text>
                 <Text style={[styles.totalValue, cell.gold && { color: Color.gold }]}>{cell.value}</Text>
               </Card>
@@ -411,7 +411,7 @@ export default function DrinkCalculatorScreen() {
           </Text>
           <View style={styles.phasesGrid}>
             {plan.phases.map((cell) => (
-              <Card key={cell.label} style={styles.phaseCell}>
+              <Card key={cell.label} snow={false} style={styles.phaseCell}>
                 <Text style={styles.phaseLabel}>{cell.label}</Text>
                 <Text style={styles.phaseAmount}>{cell.amount}</Text>
                 <Text style={styles.phaseTip}>{cell.tip}</Text>
@@ -435,7 +435,7 @@ export default function DrinkCalculatorScreen() {
             ? INGREDIENT_BENEFITS.map((item) => {
                 const open = openBenefit === item.name;
                 return (
-                  <Card key={item.name} style={styles.benefitCard}>
+                  <Card key={item.name} snow={false} style={styles.benefitCard}>
                     <Pressable onPress={() => setOpenBenefit(open ? null : item.name)} style={styles.benefitRow}>
                       <View style={{ flex: 1 }}>
                         <View style={styles.benefitNameRow}>

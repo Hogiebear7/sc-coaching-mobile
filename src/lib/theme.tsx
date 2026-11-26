@@ -14,6 +14,10 @@ import {
   type DataPalette,
   type LegacyPalette,
 } from "@/constants/theme";
+import { ACCENT_STORAGE_KEY, applyAccent, isAccentVariant, type AccentVariant } from "@/lib/accent";
+import { accentForScheme, withBrand } from "@/lib/gym-accent";
+import { useGymBranding } from "@/lib/gym-branding";
+import { SEASON_PREVIEW_ENABLED } from "@/lib/season";
 import { resolveScheme, type ColorScheme, type ThemePreference } from "@/lib/theme-scheme";
 
 // App theme (App v2). Components read colours from here instead of importing
@@ -35,6 +39,9 @@ type ThemeContextValue = {
   legacy: LegacyPalette;
   preference: ThemePreference;
   setPreference: (p: ThemePreference) => void;
+  /** Test builds only: which colour accent is previewed (lib/accent.ts). "none" is the normal look. */
+  accentVariant: AccentVariant;
+  setAccentVariant: (v: AccentVariant) => void;
 };
 
 const DARK_VALUE: ThemeContextValue = {
@@ -44,13 +51,19 @@ const DARK_VALUE: ThemeContextValue = {
   legacy: Color,
   preference: "dark",
   setPreference: () => {},
+  accentVariant: "none",
+  setAccentVariant: () => {},
 };
 
 const ThemeContext = createContext<ThemeContextValue>(DARK_VALUE);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const system = useColorScheme();
+  // A tenant gym's own colour (the server's branding), or null for S&C and any gym that set none: it replaces the gold accent for that gym's people.
+  const branding = useGymBranding();
+  const gymColour = branding.custom ? branding.accentColor : null;
   const [preference, setPreferenceState] = useState<ThemePreference>("dark");
+  const [accentVariant, setAccentState] = useState<AccentVariant>("none");
 
   useEffect(() => {
     AsyncStorage.getItem(STORAGE_KEY)
@@ -60,6 +73,20 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       .catch(() => {});
   }, []);
 
+  useEffect(() => {
+    if (!SEASON_PREVIEW_ENABLED) return;
+    AsyncStorage.getItem(ACCENT_STORAGE_KEY)
+      .then((v) => {
+        if (isAccentVariant(v)) setAccentState(v);
+      })
+      .catch(() => {});
+  }, []);
+
+  const setAccentVariant = useCallback((v: AccentVariant) => {
+    setAccentState(v);
+    AsyncStorage.setItem(ACCENT_STORAGE_KEY, v).catch(() => {});
+  }, []);
+
   const setPreference = useCallback((p: ThemePreference) => {
     setPreferenceState(p);
     AsyncStorage.setItem(STORAGE_KEY, p).catch(() => {});
@@ -67,16 +94,19 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<ThemeContextValue>(() => {
     const scheme = resolveScheme(preference, system, LIGHT_MODE_AVAILABLE);
-    Object.assign(LiveColor, scheme === "light" ? ColorLight : Color);
+    const legacy = withBrand(scheme === "light" ? ColorLight : Color, accentForScheme(gymColour, scheme), scheme);
+    Object.assign(LiveColor, legacy);
     return {
       scheme,
-      colors: scheme === "light" ? LightPalette : DarkPalette,
+      colors: applyAccent(scheme === "light" ? LightPalette : DarkPalette, "gold", scheme, gymColour),
       data: scheme === "light" ? DataColorLight : DataColor,
-      legacy: scheme === "light" ? ColorLight : Color,
+      legacy,
       preference,
       setPreference,
+      accentVariant,
+      setAccentVariant,
     };
-  }, [preference, system, setPreference]);
+  }, [preference, system, setPreference, accentVariant, setAccentVariant, gymColour]);
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }

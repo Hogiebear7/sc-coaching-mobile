@@ -9,6 +9,7 @@ import { tapFeedback } from "@/lib/haptics";
 import { openMembershipOnWeb } from "@/lib/membership-web";
 import { useMembership } from "@/lib/queries/membership";
 import { makeStyles, useAppTheme } from "@/lib/theme";
+import { SnowBox } from "@/components/season/SnowBox";
 
 // S&C's own gym page: who we are, what we offer, and the way in. Replaces
 // Find a coach while S&C is the only gym (multi-gym search returns in
@@ -82,7 +83,7 @@ export default function GymScreen() {
 
         <View style={styles.section}>
           <SectionTitle title="What we offer" />
-          <View style={styles.card}>
+          <SnowBox style={styles.card}>
             {OFFERS.map((o, i) => (
               <View key={o.name} style={[styles.row, i > 0 && styles.divider]}>
                 <View style={styles.icon}>
@@ -94,28 +95,28 @@ export default function GymScreen() {
                 </View>
               </View>
             ))}
-          </View>
+          </SnowBox>
         </View>
 
         <View style={styles.section}>
           <SectionTitle title="How we coach" />
-          <View style={styles.card}>
+          <SnowBox style={styles.card}>
             {HOW.map((h, i) => (
               <View key={h.title} style={[styles.rowPlain, i > 0 && styles.divider]}>
                 <Text style={styles.rowTitle}>{h.title}</Text>
                 <Text style={styles.rowText}>{h.text}</Text>
               </View>
             ))}
-          </View>
+          </SnowBox>
         </View>
 
         <View style={styles.section}>
           <SectionTitle title="Find us" />
-          <View style={styles.card}>
+          <SnowBox style={styles.card}>
             <ContactRow icon="location-outline" label={GYM.location} sub="Open in Maps" onPress={() => open(`https://maps.google.com/?q=${encodeURIComponent(GYM.mapsQuery)}`)} />
             <ContactRow icon="call-outline" label={GYM.phone} sub="Call us" onPress={() => open(`tel:${GYM.phoneHref}`)} divider />
             <ContactRow icon="mail-outline" label={GYM.email} sub="Email us" onPress={() => open(`mailto:${GYM.email}`)} divider />
-          </View>
+          </SnowBox>
         </View>
       </ScrollView>
     </SafeAreaView>

@@ -7,6 +7,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "@/components/ui/Button";
 import { KeyboardAwareScroll } from "@/components/ui/KeyboardAwareScroll";
 import { TextField } from "@/components/ui/TextField";
+import { TimeField } from "@/components/ui/TimeField";
 import { AppRadius, AppSpace, appTitle } from "@/constants/theme";
 import { INJURY_AREAS } from "@/lib/session-engine/types";
 import { selectionFeedback } from "@/lib/haptics";
@@ -246,7 +247,7 @@ function TargetForm({ kind, existing }: { kind: TargetKind; existing: Target | n
           {times.map((t, i) => (
             <View key={i} style={styles.timeRow}>
               <View style={{ flex: 1 }}>
-                <TextField label={`Time ${i + 1}`} value={t} onChangeText={(v) => setTimes((cur) => cur.map((x, j) => (j === i ? v : x)))} placeholder="09:00" keyboardType="numbers-and-punctuation" maxLength={5} />
+                <TimeField label={`Time ${i + 1}`} value={t} onChange={(v) => setTimes((cur) => cur.map((x, j) => (j === i ? v : x)))} />
               </View>
               {times.length > 1 ? (
                 <Pressable onPress={() => setTimes((cur) => cur.filter((_, j) => j !== i))} hitSlop={10} accessibilityRole="button" accessibilityLabel={`Remove time ${i + 1}`}>
@@ -269,10 +270,10 @@ function TargetForm({ kind, existing }: { kind: TargetKind; existing: Target | n
           </View>
           <View style={styles.row2}>
             <View style={{ flex: 1 }}>
-              <TextField label="From" value={everyStart} onChangeText={setEveryStart} placeholder="09:00" keyboardType="numbers-and-punctuation" maxLength={5} />
+              <TimeField label="From" value={everyStart} onChange={setEveryStart} />
             </View>
             <View style={{ flex: 1 }}>
-              <TextField label="Until" value={everyEnd} onChangeText={setEveryEnd} placeholder="20:00" keyboardType="numbers-and-punctuation" maxLength={5} />
+              <TimeField label="Until" value={everyEnd} onChange={setEveryEnd} />
             </View>
           </View>
         </View>

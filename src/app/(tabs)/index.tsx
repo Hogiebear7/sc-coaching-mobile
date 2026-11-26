@@ -29,6 +29,7 @@ import { tourTarget, useTourScroll } from "@/lib/tour-registry";
 import { makeStyles, useAppTheme, useLegacyColors } from "@/lib/theme";
 import { NO_ACCESS } from "@/lib/member-access";
 import { CAN_SELL_DIGITAL_PLAN } from "@/lib/upsell-config";
+import { TenantGraceBanner } from "@/components/ui/TenantGraceBanner";
 
 // Shown once, right after a member's very first signup — offers the two
 // setup steps that meaningfully improve day-one use of Workouts (an
@@ -236,6 +237,8 @@ export default function DashboardScreen() {
         contentContainerStyle={styles.scroll}
         refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={onRefresh} tintColor={colors.text} />}
       >
+        {/* Staff only, and only while the gym's platform payment is overdue (not paused yet). */}
+        <TenantGraceBanner />
         {/* Top band: title, inbox buttons, the week, today's one action */}
         <View style={styles.band}>
           <HalloweenHeaderDecor />
@@ -468,7 +471,6 @@ export default function DashboardScreen() {
         <View style={styles.section} {...tourTarget("home.club")}>
           <SectionTitle title="Club" />
           <View style={{ position: "relative" }}>
-          <SnowCap seed={5} slot="Club" />
           <View style={styles.list}>
             <ListRow
               icon="card-outline"
@@ -486,6 +488,8 @@ export default function DashboardScreen() {
               divider
             />
           </View>
+          {/* After the list, so the snow sits ON TOP of the card (before it, the card painted over the hanging lumps and only a flat strip showed). */}
+          <SnowCap seed={5} slot="Club" />
           </View>
         </View>
       </ScrollView>

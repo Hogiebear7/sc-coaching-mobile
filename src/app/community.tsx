@@ -1,5 +1,5 @@
 import { SeasonOverlay } from "@/components/season/SeasonOverlay";
-import { HalloweenCardDecor } from "@/components/season/SnowCap";
+import { HalloweenCardDecor, SnowCap } from "@/components/season/SnowCap";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -251,6 +251,7 @@ export default function CommunityScreen() {
             accessibilityLabel="Groups. Private groups with invite codes and challenges."
             {...tourTarget("community.groups")}
           >
+            <SnowCap seed={2} />
             <Ionicons name="people-circle-outline" size={26} color={Color.gold} />
             <Text style={styles.entryTitle}>Groups</Text>
             <Text style={styles.entrySub}>Private, with challenges</Text>
@@ -263,6 +264,7 @@ export default function CommunityScreen() {
               accessibilityLabel="Your gym. Your gym's members-only community."
               {...tourTarget("community.gym")}
             >
+              <SnowCap seed={4} />
               <Ionicons name="barbell-outline" size={26} color={Color.gold} />
               <Text style={styles.entryTitle}>Your gym</Text>
               <Text style={styles.entrySub}>Members only</Text>

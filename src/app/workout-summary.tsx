@@ -15,6 +15,7 @@ import { useMemberAccess } from "@/lib/queries/profile";
 import { makeStyles, useAppTheme } from "@/lib/theme";
 import { notInPlanCopy } from "@/lib/upsell-config";
 import { takePendingWorkoutSummary } from "@/lib/workout-summary-handoff";
+import { SnowBox } from "@/components/season/SnowBox";
 
 // Built entirely from the payload the logging screen just submitted, plus
 // the personalBests it already had in memory — no server round-trip, no
@@ -118,7 +119,7 @@ export default function WorkoutSummaryScreen() {
         {summary.exercises.length > 0 ? (
           <View style={styles.section}>
             <SectionTitle title="Exercises" />
-            <View style={styles.list}>
+            <SnowBox style={styles.list}>
               {summary.exercises.map((ex, idx) => (
                 <View key={`${ex.name}-${idx}`} style={[styles.row, idx > 0 && styles.rowDivider]}>
                   <View style={{ flex: 1 }}>
@@ -147,7 +148,7 @@ export default function WorkoutSummaryScreen() {
                   )}
                 </View>
               ))}
-            </View>
+            </SnowBox>
           </View>
         ) : null}
 

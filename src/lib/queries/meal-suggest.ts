@@ -11,6 +11,9 @@ export interface MealSuggestion {
   estimatedProteinG: number;
   estimatedCarbsG: number;
   estimatedFatG: number;
+  /** Estimates like the rest. Absent or null when the server or model did not give one. */
+  estimatedFiberG?: number | null;
+  estimatedSugarG?: number | null;
   crossSuggestion: string | null;
 }
 

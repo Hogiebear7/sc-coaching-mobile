@@ -11,12 +11,15 @@ import { LiveColor as Color, Radius, Spacing } from "@/constants/theme";
 import { useProfile } from "@/lib/queries/profile";
 import { useWorkouts } from "@/lib/queries/workouts";
 import { todayDateString } from "@/lib/workout-formatters";
+import { formatVolumeKg } from "@/lib/format-volume";
 import { computeMuscleSetLevels, SET_LEVEL_SECTIONS, type SetLevelTier } from "@/lib/workout-set-levels";
 import { makeLegacyStyles, useLegacyColors } from "@/lib/theme";
+import { SnowBox } from "@/components/season/SnowBox";
 
-const WINDOW_OPTIONS: { days: number; label: string }[] = [
+const WINDOW_OPTIONS: { days: number | null; label: string }[] = [
   { days: 7, label: "1 week" },
   { days: 28, label: "4 weeks" },
+  { days: null, label: "All time" },
 ];
 
 const TIER_LABEL: Record<SetLevelTier, string> = { none: "None", low: "Low", moderate: "Moderate", high: "High" };
@@ -28,7 +31,7 @@ export default function SetLevelsScreen() {
   const router = useRouter();
   const { data, isLoading } = useWorkouts();
   const { data: profileData } = useProfile();
-  const [windowDays, setWindowDays] = useState(7);
+  const [windowDays, setWindowDays] = useState<number | null>(7);
   const diagramSex: "male" | "female" = profileData?.gender === "Female" ? "female" : "male";
 
   const sectionByExerciseId = useMemo(
@@ -36,7 +39,7 @@ export default function SetLevelsScreen() {
     [data]
   );
 
-  const { levels, sessionsInWindow, resolvedSessions } = useMemo(
+  const { levels, sessionsInWindow, resolvedSessions, totalVolumeKg } = useMemo(
     () => computeMuscleSetLevels(data?.sessions ?? [], sectionByExerciseId, windowDays, todayDateString()),
     [data, sectionByExerciseId, windowDays]
   );
@@ -60,12 +63,12 @@ export default function SetLevelsScreen() {
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.scroll}>
-          <Text style={styles.intro}>Average weekly sets by muscle group, from exercises picked off the library.</Text>
+          <Text style={styles.intro}>Average weekly sets, total volume and share of volume by muscle group, from exercises picked off the library.</Text>
 
           <View style={styles.windowRow}>
             {WINDOW_OPTIONS.map((opt) => (
               <Pressable
-                key={opt.days}
+                key={String(opt.days)}
                 onPress={() => setWindowDays(opt.days)}
                 style={[styles.windowChip, windowDays === opt.days && styles.windowChipActive]}
               >
@@ -77,7 +80,7 @@ export default function SetLevelsScreen() {
           </View>
 
           {totalSets === 0 ? (
-            <View style={styles.emptyCard}>
+            <SnowBox style={styles.emptyCard}>
               <Text style={styles.emptyTitle}>
                 {sessionsInWindow === 0 ? "No sessions logged in this window" : "No library-linked sets in this window"}
               </Text>
@@ -86,7 +89,7 @@ export default function SetLevelsScreen() {
                   ? "Log a session to start seeing your set levels."
                   : "Pick exercises from the library when logging to track them here — free-text entries aren't matched to a muscle group."}
               </Text>
-            </View>
+            </SnowBox>
           ) : (
             <>
               <Card style={styles.diagramCard}>
@@ -102,10 +105,18 @@ export default function SetLevelsScreen() {
                 </View>
               </Card>
 
+              <Text style={styles.totalVolume}>
+                Total volume <Text style={styles.totalVolumeValue}>{formatVolumeKg(totalVolumeKg)}</Text>
+              </Text>
               <View style={styles.sectionList}>
                 {SET_LEVEL_SECTIONS.map((section, idx) => (
                   <View key={section} style={[styles.sectionRow, idx > 0 && styles.sectionRowDivider]}>
-                    <Text style={styles.sectionLabel}>{SECTION_LABELS[section]}</Text>
+                    <View style={{ flexShrink: 1 }}>
+                      <Text style={styles.sectionLabel}>{SECTION_LABELS[section]}</Text>
+                      <Text style={styles.sectionVolume}>
+                        {formatVolumeKg(levels[section].volumeKg)} · {levels[section].volumeSharePct}%
+                      </Text>
+                    </View>
                     <View style={styles.sectionMeta}>
                       <Text style={styles.sectionSets}>{levels[section].weeklySets} sets/wk</Text>
                       <View style={[styles.tierBadge, tierBadgeStyle(levels[section].tier)]}>
@@ -214,6 +225,9 @@ const useStyles = makeLegacyStyles((Color) =>
     },
     sectionRowDivider: { borderTopWidth: 1, borderTopColor: Color.borderSubtle },
     sectionLabel: { fontSize: 19, fontWeight: "600", color: Color.textPrimary },
+    sectionVolume: { fontSize: 13, color: Color.textMuted, marginTop: 2, fontVariant: ["tabular-nums"] },
+    totalVolume: { fontSize: 14, color: Color.textMuted, marginTop: Spacing.lg },
+    totalVolumeValue: { color: Color.textPrimary, fontWeight: "700", fontVariant: ["tabular-nums"] },
     sectionMeta: { flexDirection: "row", alignItems: "center", gap: Spacing.sm },
     sectionSets: { fontSize: 13, color: Color.textMuted, fontVariant: ["tabular-nums"] },
     tierBadge: { borderRadius: Radius.pill, paddingHorizontal: Spacing.xs, paddingVertical: 2 },

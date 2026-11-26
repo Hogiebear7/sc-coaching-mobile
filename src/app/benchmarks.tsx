@@ -6,17 +6,18 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { DurationField } from "@/components/ui/DurationField";
 import { KeyboardAwareScroll } from "@/components/ui/KeyboardAwareScroll";
 import { TextField } from "@/components/ui/TextField";
 import { AppSpace, appTitle } from "@/constants/theme";
-import { BENCHMARK_FIELDS, displayValue, parseField, type BenchmarkField, type BenchmarkValues } from "@/lib/benchmarks";
+import { BENCHMARK_FIELDS, displayValue, formatDuration, parseDuration, parseField, type BenchmarkField, type BenchmarkValues } from "@/lib/benchmarks";
 import { useBenchmarks } from "@/lib/benchmarks/store";
 import { makeStyles, useAppTheme } from "@/lib/theme";
 
 const GROUPS: { key: BenchmarkField["group"]; title: string; note: string }[] = [
   { key: "strength", title: "Strength", note: "Your heaviest weight for 5 clean reps, in kg. Not a one-rep max." },
   { key: "bodyweight", title: "Bodyweight", note: "Most reps in one go, and your longest plank." },
-  { key: "running", title: "Running", note: "Your best times. Minutes and seconds, like 24:30." },
+  { key: "running", title: "Running", note: "Your best times. Tap one and spin the wheel to set it." },
 ];
 
 // Optional personal benchmarks. The workout generator uses the four lifts to suggest starting weights; with none entered it gives effort targets instead.
@@ -82,17 +83,27 @@ function BenchmarksForm({ initial, onSave, onDone }: { initial: BenchmarkValues;
           <View style={styles.cardBody}>
             <Text style={styles.cardTitle}>{g.title}</Text>
             <Text style={styles.muted}>{g.note}</Text>
-            {BENCHMARK_FIELDS.filter((f) => f.group === g.key).map((f) => (
+            {BENCHMARK_FIELDS.filter((f) => f.group === g.key).map((f) =>
+              f.kind === "time" ? (
+                <DurationField
+                  key={f.key}
+                  label={`${f.label} (${f.hint})`}
+                  valueSecs={parseDuration(text[f.key] ?? "")}
+                  startSecs={f.startSecs ?? 60}
+                  onChange={(secs) => setText((cur) => ({ ...cur, [f.key]: secs === null ? "" : formatDuration(secs) }))}
+                />
+              ) : (
               <TextField
                 key={f.key}
                 label={`${f.label} (${f.hint})`}
                 value={text[f.key] ?? ""}
                 onChangeText={(v) => setText((cur) => ({ ...cur, [f.key]: v }))}
-                keyboardType={f.kind === "time" ? "numbers-and-punctuation" : "decimal-pad"}
+                keyboardType="decimal-pad"
                 placeholder="Not set"
                 maxLength={8}
               />
-            ))}
+              )
+            )}
           </View>
         </Card>
       ))}

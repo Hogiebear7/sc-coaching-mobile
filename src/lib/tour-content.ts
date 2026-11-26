@@ -156,16 +156,16 @@ export const TOUR_PAGES: TourPage[] = [
         body: "Your readiness score for today and what it means for training. It gets smarter the more you check in.",
       },
       {
-        id: "week",
-        target: "recovery.week",
-        title: "This week",
-        body: "Readiness, training load, sleep and check-ins side by side. Tap a tile to dig into it.",
-      },
-      {
         id: "checkin",
         target: "recovery.checkin",
         title: "Check in",
         body: "Sleep, soreness and fatigue take a few taps. Injured or feeling unwell? Add a note at the bottom and your coach and the app will take it into account.",
+      },
+      {
+        id: "week",
+        target: "recovery.week",
+        title: "This week",
+        body: "Readiness, training load, sleep and check-ins side by side. Tap a tile to dig into it.",
       },
     ],
   },

@@ -132,7 +132,7 @@ export const useLogStyles = makeLegacyStyles((Color) =>
       fontSize: 13,
       color: Color.textPrimary,
     },
-    unitToggleRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 4 },
+    unitToggleRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: Spacing.md, marginBottom: Spacing.sm },
     unitChip: { paddingHorizontal: 12, minHeight: 32, justifyContent: "center", borderRadius: Radius.pill, backgroundColor: Color.surface2 },
     unitChipActive: { backgroundColor: Color.gold },
     unitChipText: { fontSize: 14, fontWeight: "600", color: Color.textSecondary },

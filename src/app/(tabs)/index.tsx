@@ -189,6 +189,16 @@ export default function DashboardScreen() {
     refetch();
   }, [refetch]);
 
+  // The home screen stays mounted behind the other tabs, so what it drew earlier (the week's check-in bars) can be out of date by the time you come back
+  // to it, for example after signing in to another account or logging a check-in. Reload whenever it comes back into view (not on the first show).
+  const shownBefore = useRef(false);
+  useFocusEffect(
+    useCallback(() => {
+      if (shownBefore.current) refetch();
+      shownBefore.current = true;
+    }, [refetch])
+  );
+
   // "Today" and "Tomorrow" are worked out while drawing, so the screen has to redraw when the day changes or the app returns to the front
   // (an app left open overnight kept showing yesterday's date and a class booked for today as "Tomorrow"). The day's data is also reloaded.
   const dayKey = useDayKey();

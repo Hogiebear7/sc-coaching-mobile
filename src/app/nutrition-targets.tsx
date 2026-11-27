@@ -6,6 +6,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import Svg, { Circle } from "react-native-svg";
 
 import { Card } from "@/components/ui/Card";
+import { ExtrasCard } from "@/components/nutrition/ExtrasCard";
+import { MicronutrientsCard } from "@/components/nutrition/MicronutrientsCard";
 import { NutritionPlanPanel } from "@/components/nutrition/NutritionPlanPanel";
 import { Collapsible } from "@/components/ui/Collapsible";
 import { LiveColor as Color, figure, Radius, Spacing } from "@/constants/theme";
@@ -132,7 +134,7 @@ export default function NutritionTargetsScreen() {
     return Math.round(withTargets.reduce((sum, d) => sum + (d.calories ?? 0), 0) / withTargets.length);
   }, [week]);
 
-  if (!allowed) return <LockedScreen title="Calorie and macro targets" icon="nutrition-outline" body="A daily calorie and macro target that adapts to your training, with a weekly budget and a plain explanation of every number." />;
+  if (!allowed) return <LockedScreen title="Calorie, macro & micro targets" icon="nutrition-outline" body="A daily calorie and macro target that adapts to your training, with a weekly budget and a plain explanation of every number." />;
 
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
@@ -140,7 +142,7 @@ export default function NutritionTargetsScreen() {
         <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backButton} accessibilityRole="button" accessibilityLabel="Back">
           <Ionicons name="chevron-back" size={26} color={Color.textPrimary} />
         </Pressable>
-        <Text style={styles.headerTitle}>Calorie and macro targets</Text>
+        <Text style={styles.headerTitle}>Calorie, macro &amp; micro targets</Text>
         <View style={{ width: 36 }} />
       </View>
 
@@ -215,6 +217,14 @@ export default function NutritionTargetsScreen() {
                 )}
               </Card>
             )}
+
+            {/* The extra nutrients and the vitamins and minerals live here with the targets, not on the Nutrition tab. */}
+            {dayTarget?.mode !== "disabled" ? (
+              <View style={{ gap: Spacing.md, marginTop: Spacing.md }}>
+                <ExtrasCard totals={diary?.extras} />
+                <MicronutrientsCard date={selectedDate} totals={diary?.micros} />
+              </View>
+            ) : null}
           </>
         ) : weekLoading ? (
           <ActivityIndicator color={Color.gold} size="large" style={{ marginTop: Spacing.xxl }} />

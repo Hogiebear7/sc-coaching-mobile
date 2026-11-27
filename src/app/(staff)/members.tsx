@@ -212,8 +212,9 @@ const useStyles = makeLegacyStyles((Color) =>
       marginBottom: Spacing.md,
     },
     sortLabel: { fontSize: 13, color: Color.textFaint, marginRight: 2 },
-    groupScroll: { flexGrow: 0, marginBottom: Spacing.sm },
-    groupRow: { gap: Spacing.xs, paddingHorizontal: Spacing.lg },
+    // minHeight / paddingVertical: the row was measured a little short on some phones, which clipped the bottom of the chips.
+    groupScroll: { flexGrow: 0, flexShrink: 0, minHeight: 52, marginBottom: Spacing.sm },
+    groupRow: { gap: Spacing.xs, paddingHorizontal: Spacing.lg, paddingVertical: 4, alignItems: "center" },
     star: { width: 32, minHeight: 44, alignItems: "flex-start", justifyContent: "center" },
     hint: { color: Color.textFaint, fontSize: 13, textAlign: "center", marginTop: Spacing.lg },
     sortChip: { borderRadius: Radius.pill, paddingHorizontal: Spacing.sm, paddingVertical: 6, backgroundColor: Color.surface2, minHeight: 40, justifyContent: "center" },

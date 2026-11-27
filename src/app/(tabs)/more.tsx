@@ -64,7 +64,7 @@ export default function MoreScreen() {
       <ScrollView contentContainerStyle={styles.scroll}>
         <View style={styles.titleRow}>
           <Text style={appTitle(34, colors.text)}>More</Text>
-          <BrandMark height={20} />
+          <BrandMark height={34} />
         </View>
 
         <Pressable onPress={() => router.push("/profile")} style={styles.profile} accessibilityRole="button">

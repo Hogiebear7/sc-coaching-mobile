@@ -99,3 +99,28 @@ export function formatAmount(value: number, unit: string): string {
   const r = Math.round(value * 100) / 100;
   return `${Number.isInteger(r) ? r : String(r)} ${unit}`;
 }
+
+/** A plain-English line for each tracked nutrient: what it does for the body, and where it is found. Kept to well-established, widely published facts (the same ground as NHS and EFSA
+ *  guidance); no claims about treating or preventing illness. Shown when a nutrient row is opened. */
+export interface MicroInfo {
+  does: string;
+  foods: string;
+}
+
+export const MICRO_INFO: Record<string, MicroInfo> = {
+  ironMg: { does: "Helps your blood carry oxygen around the body, and helps reduce tiredness.", foods: "Red meat, beans and lentils, dark green leafy vegetables, fortified cereals." },
+  calciumMg: { does: "Keeps bones and teeth strong, and helps muscles and nerves work normally.", foods: "Milk, cheese, yoghurt, tofu, tinned fish with bones, fortified plant milks." },
+  magnesiumMg: { does: "Helps muscles and nerves work normally and helps release energy from food.", foods: "Nuts, seeds, wholegrains, beans, leafy greens." },
+  potassiumMg: { does: "Helps muscles and nerves work normally and supports normal blood pressure.", foods: "Bananas, potatoes, beans, spinach, fish, yoghurt." },
+  zincMg: { does: "Supports your immune system, skin, hair and nails.", foods: "Meat, shellfish, dairy, nuts, seeds, wholegrains." },
+  iodineUg: { does: "Needed for a healthy thyroid, which helps control your energy use.", foods: "White fish, shellfish, milk, dairy, eggs." },
+  seleniumUg: { does: "Supports your immune system and thyroid, and helps protect cells from damage.", foods: "Fish, eggs, meat, Brazil nuts, wholegrains." },
+  vitaminAUg: { does: "Helps your eyes see normally, and supports your immune system and skin.", foods: "Liver, eggs, cheese, oily fish, carrots, sweet potato, spinach." },
+  vitaminCMg: { does: "Supports your immune system, helps make collagen for skin and joints, and helps your body take in iron.", foods: "Citrus fruit, berries, peppers, broccoli, kiwi, potatoes." },
+  vitaminDUg: { does: "Helps your body take in calcium and keeps bones, teeth and muscles healthy.", foods: "Oily fish, eggs, fortified foods and sunlight on your skin. Many people in Ireland and the UK need a supplement in winter." },
+  vitaminEMg: { does: "Helps protect your cells from damage.", foods: "Nuts, seeds, vegetable oils, avocado, wheatgerm." },
+  vitaminKUg: { does: "Needed for normal blood clotting and for healthy bones.", foods: "Leafy greens, broccoli, cabbage, some vegetable oils. Few foods are tested for it, so this often shows as not listed." },
+  vitaminB12Ug: { does: "Helps make red blood cells, keeps your nervous system healthy and helps reduce tiredness.", foods: "Meat, fish, eggs, dairy, fortified foods. Plant-based diets usually need a fortified food or supplement." },
+  folateUg: { does: "Helps make healthy blood cells and is important in early pregnancy.", foods: "Leafy greens, broccoli, peas, beans, fortified breakfast cereals." },
+  omega3G: { does: "A healthy fat that supports the heart, brain and eyes.", foods: "Oily fish such as salmon, mackerel and sardines, plus flaxseed, chia and walnuts. Few foods list it, so this often shows as not listed." },
+};

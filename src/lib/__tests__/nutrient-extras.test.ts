@@ -46,11 +46,12 @@ describe("extraRows", () => {
       ["Sat. fat", "2 g", true],
     ]);
   });
-  it("adds everyday guideline notes for fibre and sodium only", () => {
+  it("adds guideline notes for fibre and sodium, and says sugars include natural sugar", () => {
     const rows = extraRows(totals())!;
     expect(rows[0].note).toBe("Guide 25 g+");
     expect(rows[2].note).toBe("Guide under 2,000 mg");
-    expect(rows[1].note).toBeNull();
+    expect(rows[1].note).toBe("Includes natural sugar from fruit and milk");
+    expect(rows[3].note).toBeNull();
   });
 });
 

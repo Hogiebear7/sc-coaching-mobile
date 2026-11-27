@@ -7,7 +7,9 @@ import { cancelTargetReminders } from "./targets/reminders";
 import { registerForPushNotificationsAsync, unregisterPushToken } from "./push-notifications";
 import { cacheUser, forgetCachedUser, readCachedUser, signInCheckFailure } from "./session-keeper";
 import { clearToken, getToken, setToken as persistToken } from "./token-store";
-import { resetGymBranding, setGymBranding } from "@/lib/gym-branding";
+import { resetSelfCheckin, setSelfCheckin } from "@/lib/gym-checkin";
+import { getGymBranding, resetGymBranding, setGymBranding } from "@/lib/gym-branding";
+import { rememberGymSplash, splashFromBranding } from "@/lib/gym-splash";
 import { resetTenantStatus, setTenantStatus } from "@/lib/tenant-status";
 
 export interface AuthUser {
@@ -43,11 +45,24 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 const START_CHECK_LIMIT_MS = 6000;
 
+/** The gym's look and how its members check in, from the session check. The logo is also remembered for the next launch's splash fade. */
+function applyGymLook(me: { branding?: unknown; selfCheckin?: unknown }) {
+  setGymBranding(me.branding);
+  setSelfCheckin(me.selfCheckin);
+  rememberGymSplash(splashFromBranding(getGymBranding()));
+}
+
+function clearGymLook() {
+  resetGymBranding();
+  resetSelfCheckin();
+  rememberGymSplash(null);
+}
+
 /** Checks the saved sign-in with the server, saves the renewed one it hands back, and returns the account. Throws when it can't. */
 async function checkIn(): Promise<AuthUser> {
-  const me = await apiFetch<{ user: AuthUser; token?: string; tenant?: unknown; branding?: unknown }>("/api/mobile/auth/me");
+  const me = await apiFetch<{ user: AuthUser; token?: string; tenant?: unknown; branding?: unknown; selfCheckin?: unknown }>("/api/mobile/auth/me");
   setTenantStatus(me.tenant);
-  setGymBranding(me.branding);
+  applyGymLook(me);
   if (me.token) await persistToken(me.token);
   await cacheUser(me.user);
   return me.user;
@@ -56,9 +71,9 @@ async function checkIn(): Promise<AuthUser> {
 /** Right after a fresh sign-in: learn the gym's state and look (a failure just leaves the defaults; the next launch asks again). */
 async function refreshGymState() {
   try {
-    const me = await apiFetch<{ tenant?: unknown; branding?: unknown }>("/api/mobile/auth/me");
+    const me = await apiFetch<{ tenant?: unknown; branding?: unknown; selfCheckin?: unknown }>("/api/mobile/auth/me");
     setTenantStatus(me.tenant);
-    setGymBranding(me.branding);
+    applyGymLook(me);
   } catch {
     // keep the defaults
   }
@@ -72,7 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     registerUnauthorizedHandler(() => {
       resetTenantStatus();
-      resetGymBranding();
+      clearGymLook();
       void forgetCachedUser();
       setUser(null);
       setStatus("signedOut");
@@ -167,7 +182,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await clearToken();
     await forgetCachedUser();
     resetTenantStatus();
-    resetGymBranding();
+    clearGymLook();
     setUser(null);
     setStatus("signedOut");
     setViewMode("coach");

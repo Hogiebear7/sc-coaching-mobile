@@ -2,7 +2,7 @@ import { Image, type ImageStyle } from "expo-image";
 import { StyleSheet, Text, View } from "react-native";
 import { RemoteArt } from "@/components/season/RemoteArt";
 import { LogoAccessory } from "@/components/season/seasonArt";
-import { useGymBranding } from "@/lib/gym-branding";
+import { LOGO_BACKGROUND_DARK, LOGO_BACKGROUND_LIGHT, useGymBranding } from "@/lib/gym-branding";
 import { useSeason } from "@/lib/season";
 import { useAppTheme } from "@/lib/theme";
 
@@ -18,12 +18,23 @@ const LOGO_ASPECT_RATIO = 975 / 480;
 export function BrandMark({ height = 36, style }: { height?: number; style?: ImageStyle }) {
   const { season } = useSeason();
   const branding = useGymBranding();
-  const { colors } = useAppTheme();
+  const { colors, scheme } = useAppTheme();
   const width = height * LOGO_ASPECT_RATIO;
 
   // A tenant gym that has set its own look shows it: its logo, or its name when it has no logo. S&C and any gym with nothing set keep the S&C wordmark below.
   if (branding.custom) {
     if (branding.logoUrl) {
+      // The gym chose the background its logo looks right on. When that is not the colour of the screen behind it (a white-background logo on the dark app, or the reverse),
+      // the logo sits on a small rounded plate of its own background so it never disappears.
+      const needsPlate = branding.logoBackground !== (scheme === "light" ? LOGO_BACKGROUND_LIGHT : LOGO_BACKGROUND_DARK);
+      if (needsPlate) {
+        const pad = Math.max(3, Math.round(height * 0.12));
+        return (
+          <View style={{ backgroundColor: branding.logoBackground, borderRadius: Math.max(6, Math.round(height * 0.22)), padding: pad, alignSelf: "flex-start" }}>
+            <Image source={{ uri: branding.logoUrl }} style={[{ width: width - pad * 2, height: height - pad * 2 }, style]} contentFit="contain" accessibilityLabel={branding.name} />
+          </View>
+        );
+      }
       return (
         <View style={{ width, height }}>
           <Image source={{ uri: branding.logoUrl }} style={[{ width, height }, style]} contentFit="contain" contentPosition="left" accessibilityLabel={branding.name} />

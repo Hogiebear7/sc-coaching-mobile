@@ -8,10 +8,22 @@ export interface GymBranding {
   accentColor: string;
   onAccent: string;
   logoUrl: string | null;
+  /** The colour the logo sits on at launch and in headers: the gym's choice, always a #RRGGBB (the app's navy unless the gym picked white or a colour of its own). */
+  logoBackground: string;
   custom: boolean;
 }
 
-export const DEFAULT_BRANDING: GymBranding = { name: "S&C Performance Coaching", accentColor: "#C9A24B", onAccent: "#0A1526", logoUrl: null, custom: false };
+export const LOGO_BACKGROUND_DARK = "#0A1526";
+export const LOGO_BACKGROUND_LIGHT = "#FFFFFF";
+
+/** What the server sent as the logo background: a #RRGGBB, or (an older server) "light" or "dark". Anything else is the app's navy. */
+export function parseLogoBackground(raw: unknown): string {
+  if (raw === "light") return LOGO_BACKGROUND_LIGHT;
+  if (typeof raw === "string" && /^#[0-9a-fA-F]{6}$/.test(raw)) return raw.toUpperCase();
+  return LOGO_BACKGROUND_DARK;
+}
+
+export const DEFAULT_BRANDING: GymBranding = { name: "S&C Performance Coaching", accentColor: "#C9A24B", onAccent: "#0A1526", logoUrl: null, logoBackground: LOGO_BACKGROUND_DARK, custom: false };
 
 let current: GymBranding = DEFAULT_BRANDING;
 const listeners = new Set<() => void>();
@@ -28,6 +40,7 @@ export function parseBranding(raw: unknown): GymBranding {
     accentColor: typeof r.accentColor === "string" && HEX.test(r.accentColor) ? r.accentColor : DEFAULT_BRANDING.accentColor,
     onAccent: typeof r.onAccent === "string" && HEX.test(r.onAccent) ? r.onAccent : DEFAULT_BRANDING.onAccent,
     logoUrl,
+    logoBackground: parseLogoBackground(r.logoBackground),
     custom: true,
   };
 }

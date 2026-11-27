@@ -4,7 +4,7 @@ import * as Linking from "expo-linking";
 import { Stack, usePathname, useRouter, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect, useRef, useState } from "react";
-import { AppState, Image, ScrollView, StatusBar, StyleSheet, Text, useWindowDimensions, View } from "react-native";
+import { Animated, AppState, Image, ScrollView, StatusBar, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import type { AppStateStatus } from "react-native";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -20,6 +20,7 @@ import { routeFromAppLink } from "@/lib/widgets/app-links";
 import { useNativeWidgets } from "@/lib/widgets/use-native-widgets";
 import { clearLastCrash, getLastCrash, installGlobalCrashHandler, type CrashRecord } from "@/lib/crash-log";
 import { isEmergencyContactReminderDismissed } from "@/lib/emergency-contact-reminder";
+import { useGymSplash } from "@/lib/gym-splash";
 import { hasGymMembership } from "@/lib/member-access";
 import { addNotificationTapListener, mapLinkHrefToRoute } from "@/lib/push-notifications";
 import { useProfile, useProvisionMemberProfile } from "@/lib/queries/profile";
@@ -66,9 +67,30 @@ const SPLASH_LOGO_ASPECT_RATIO = 975 / 378; // matches assets/images/splash-logo
 // How much longer the branded splash stays up after auth status has actually
 // resolved, so the logo isn't just a flash on fast/cached loads.
 const SPLASH_MIN_HOLD_MS = 2000;
+// A member of a gym with its own logo sees the S&C splash first, then it fades into their gym's logo, which then stays up a moment before the app opens.
+const GYM_SPLASH_MIN_HOLD_MS = 3400;
+const GYM_FADE_START_MS = 900;
+const GYM_FADE_MS = 600;
 
 function CustomSplashScreen() {
   const styles = useStyles();
+  const gym = useGymSplash();
+  // The S&C logo fades out and the gym's fades in, once the gym's logo has actually loaded. If it never loads (no signal, bad link) the S&C splash simply stays.
+  const [gymLoaded, setGymLoaded] = useState(false);
+  const [timeReady, setTimeReady] = useState(false);
+  const gymOpacity = useRef(new Animated.Value(0)).current;
+  const scOpacity = useRef(new Animated.Value(1)).current;
+  useEffect(() => {
+    const timer = setTimeout(() => setTimeReady(true), GYM_FADE_START_MS);
+    return () => clearTimeout(timer);
+  }, []);
+  useEffect(() => {
+    if (!gym || !gymLoaded || !timeReady) return;
+    Animated.parallel([
+      Animated.timing(scOpacity, { toValue: 0, duration: GYM_FADE_MS, useNativeDriver: true }),
+      Animated.timing(gymOpacity, { toValue: 1, duration: GYM_FADE_MS, useNativeDriver: true }),
+    ]).start();
+  }, [gym, gymLoaded, timeReady, scOpacity, gymOpacity]);
   // Percentage width + aspectRatio in style can fail to resolve on the very
   // first render before Yoga has settled the parent's size — confirmed
   // on-device: the logo rendered at its raw source-pixel width instead of
@@ -80,11 +102,24 @@ function CustomSplashScreen() {
 
   return (
     <View style={styles.splashRoot}>
-      <Image
-        source={require("../../assets/images/splash-logo-crop-v2.png")}
-        style={{ width: logoWidth, height: logoHeight }}
-        resizeMode="contain"
-      />
+      <Animated.View style={{ opacity: scOpacity }}>
+        <Image
+          source={require("../../assets/images/splash-logo-crop-v2.png")}
+          style={{ width: logoWidth, height: logoHeight }}
+          resizeMode="contain"
+        />
+      </Animated.View>
+      {gym ? (
+        <Animated.View pointerEvents="none" style={[styles.splashGym, { opacity: gymOpacity, backgroundColor: gym.background }]}>
+          <Image
+            source={{ uri: gym.logoUrl }}
+            accessibilityLabel={gym.name}
+            style={{ width: logoWidth, height: Math.round(logoWidth * 0.55) }}
+            resizeMode="contain"
+            onLoad={() => setGymLoaded(true)}
+          />
+        </Animated.View>
+      ) : null}
       <SeasonOverlay surface="splash" />
     </View>
   );
@@ -124,11 +159,13 @@ function AuthGate() {
   // minimum hold *after* status stops being "loading", independent of how
   // long auth resolution itself took.
   const [splashHoldElapsed, setSplashHoldElapsed] = useState(false);
+  const gymSplash = useGymSplash();
+  const holdMs = gymSplash ? GYM_SPLASH_MIN_HOLD_MS : SPLASH_MIN_HOLD_MS;
   useEffect(() => {
     if (status === "loading") return;
-    const timer = setTimeout(() => setSplashHoldElapsed(true), SPLASH_MIN_HOLD_MS);
+    const timer = setTimeout(() => setSplashHoldElapsed(true), holdMs);
     return () => clearTimeout(timer);
-  }, [status]);
+  }, [status, holdMs]);
 
   useEffect(() => {
     if (status === "loading") return;
@@ -248,6 +285,7 @@ function AuthGate() {
       <Stack.Screen name="workout-archive" options={{ presentation: "card" }} />
       <Stack.Screen name="set-levels" options={{ presentation: "card" }} />
       <Stack.Screen name="nutrients" options={{ presentation: "card" }} />
+      <Stack.Screen name="checkin-scan" options={{ presentation: "card" }} />
       <Stack.Screen name="targets" options={{ presentation: "card" }} />
       <Stack.Screen name="benchmarks" options={{ presentation: "card" }} />
       <Stack.Screen name="target-edit" options={{ presentation: "card" }} />
@@ -393,6 +431,7 @@ const useStyles = makeLegacyStyles((Color) =>
       flex: 1,
       backgroundColor: Color.bg0,
     },
+    splashGym: { ...StyleSheet.absoluteFill, alignItems: "center", justifyContent: "center" },
     splashRoot: {
       flex: 1,
       alignItems: "center",

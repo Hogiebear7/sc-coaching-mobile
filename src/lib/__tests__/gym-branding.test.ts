@@ -11,8 +11,14 @@ describe("gym branding", () => {
 
   it("takes a gym's own name, colour and https logo", () => {
     expect(parseBranding({ custom: true, name: "Gym B", accentColor: "#4DA3FF", onAccent: "#0A1526", logoUrl: "https://cdn.example.test/b.png" })).toEqual({
-      name: "Gym B", accentColor: "#4DA3FF", onAccent: "#0A1526", logoUrl: "https://cdn.example.test/b.png", custom: true,
+      name: "Gym B", accentColor: "#4DA3FF", onAccent: "#0A1526", logoUrl: "https://cdn.example.test/b.png", logoBackground: "dark", custom: true,
     });
+  });
+
+  it("reads the logo background the gym chose, dark by default", () => {
+    expect(parseBranding({ custom: true, name: "G", logoUrl: "https://x.test/a.png", logoBackground: "light" }).logoBackground).toBe("light");
+    expect(parseBranding({ custom: true, name: "G", logoUrl: "https://x.test/a.png" }).logoBackground).toBe("dark");
+    expect(parseBranding({ custom: true, name: "G", logoBackground: "purple" }).logoBackground).toBe("dark");
   });
 
   it("never uses a logo that is not https, or a colour that is not a hex", () => {

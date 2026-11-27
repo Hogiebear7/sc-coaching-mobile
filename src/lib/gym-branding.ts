@@ -8,10 +8,15 @@ export interface GymBranding {
   accentColor: string;
   onAccent: string;
   logoUrl: string | null;
+  /** The colour the logo sits on at launch and in headers: the gym's choice ("dark" is the app's navy, "light" is white). */
+  logoBackground: "light" | "dark";
   custom: boolean;
 }
 
-export const DEFAULT_BRANDING: GymBranding = { name: "S&C Performance Coaching", accentColor: "#C9A24B", onAccent: "#0A1526", logoUrl: null, custom: false };
+/** The two logo backgrounds a gym can choose. */
+export const LOGO_BACKGROUND_COLOUR: Record<"light" | "dark", string> = { light: "#FFFFFF", dark: "#0A1526" };
+
+export const DEFAULT_BRANDING: GymBranding = { name: "S&C Performance Coaching", accentColor: "#C9A24B", onAccent: "#0A1526", logoUrl: null, logoBackground: "dark", custom: false };
 
 let current: GymBranding = DEFAULT_BRANDING;
 const listeners = new Set<() => void>();
@@ -28,6 +33,7 @@ export function parseBranding(raw: unknown): GymBranding {
     accentColor: typeof r.accentColor === "string" && HEX.test(r.accentColor) ? r.accentColor : DEFAULT_BRANDING.accentColor,
     onAccent: typeof r.onAccent === "string" && HEX.test(r.onAccent) ? r.onAccent : DEFAULT_BRANDING.onAccent,
     logoUrl,
+    logoBackground: r.logoBackground === "light" ? "light" : "dark",
     custom: true,
   };
 }

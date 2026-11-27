@@ -9,12 +9,13 @@ import { parseGymSplash, splashFromBranding } from "../gym-splash";
 
 describe("gym splash", () => {
   it("keeps only an https logo", () => {
-    expect(parseGymSplash({ logoUrl: "https://cdn.example.test/a.png", name: "Iron Works" })).toEqual({ logoUrl: "https://cdn.example.test/a.png", name: "Iron Works" });
-    expect(parseGymSplash(JSON.stringify({ logoUrl: "https://x.test/a.png", name: " " }))).toEqual({ logoUrl: "https://x.test/a.png", name: "Your gym" });
+    expect(parseGymSplash({ logoUrl: "https://cdn.example.test/a.png", name: "Iron Works" })).toEqual({ logoUrl: "https://cdn.example.test/a.png", name: "Iron Works", background: "dark" });
+    expect(parseGymSplash(JSON.stringify({ logoUrl: "https://x.test/a.png", name: " " }))).toEqual({ logoUrl: "https://x.test/a.png", name: "Your gym", background: "dark" });
     for (const bad of [null, undefined, "nonsense", 5, {}, { logoUrl: "http://x.test/a.png" }, { logoUrl: "data:image/png;base64,AAA" }]) expect(parseGymSplash(bad)).toBeNull();
   });
   it("remembers a logo only for a gym with its own look and logo", () => {
-    expect(splashFromBranding({ custom: true, logoUrl: "https://x.test/a.png", name: "G" })).toEqual({ logoUrl: "https://x.test/a.png", name: "G" });
+    expect(splashFromBranding({ custom: true, logoUrl: "https://x.test/a.png", name: "G" })).toEqual({ logoUrl: "https://x.test/a.png", name: "G", background: "dark" });
+    expect(splashFromBranding({ custom: true, logoUrl: "https://x.test/a.png", name: "G", logoBackground: "light" })?.background).toBe("light");
     expect(splashFromBranding({ custom: true, logoUrl: null, name: "G" })).toBeNull();
     expect(splashFromBranding({ custom: false, logoUrl: "https://x.test/a.png", name: "S&C" })).toBeNull();
   });

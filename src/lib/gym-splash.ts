@@ -8,6 +8,8 @@ import { useSyncExternalStore } from "react";
 export interface GymSplash {
   logoUrl: string;
   name: string;
+  /** The background the gym chose for its logo. */
+  background: "light" | "dark";
 }
 
 const KEY = "gym.splash.v1";
@@ -25,12 +27,12 @@ export function parseGymSplash(raw: unknown): GymSplash | null {
   const r = value as Partial<GymSplash> | null | undefined;
   if (!r || typeof r !== "object") return null;
   if (typeof r.logoUrl !== "string" || !r.logoUrl.startsWith("https://")) return null;
-  return { logoUrl: r.logoUrl, name: typeof r.name === "string" && r.name.trim() ? r.name : "Your gym" };
+  return { logoUrl: r.logoUrl, name: typeof r.name === "string" && r.name.trim() ? r.name : "Your gym", background: r.background === "light" ? "light" : "dark" };
 }
 
 /** What to remember for a branding the server reported: the gym's own logo, or nothing when the gym has no logo of its own (or is S&C). */
-export function splashFromBranding(branding: { custom: boolean; logoUrl: string | null; name: string }): GymSplash | null {
-  return branding.custom && branding.logoUrl ? parseGymSplash({ logoUrl: branding.logoUrl, name: branding.name }) : null;
+export function splashFromBranding(branding: { custom: boolean; logoUrl: string | null; name: string; logoBackground?: "light" | "dark" }): GymSplash | null {
+  return branding.custom && branding.logoUrl ? parseGymSplash({ logoUrl: branding.logoUrl, name: branding.name, background: branding.logoBackground }) : null;
 }
 
 // undefined = not read from storage yet.

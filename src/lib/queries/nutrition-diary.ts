@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ExtraTotals, NutrientExtras } from "@/lib/nutrient-extras";
-import type { MicroTotalView } from "@/lib/micronutrients";
+import type { MicroReference, MicroTotalView } from "@/lib/micronutrients";
 
 import { ApiError, apiFetch } from "@/lib/api-client";
 import { useHasFeature } from "@/lib/queries/profile";
@@ -180,7 +180,7 @@ export function useNutritionDiary(date: string) {
   return useQuery({
     queryKey: ["nutrition-diary", date],
     queryFn: () =>
-      apiFetch<{ success: true; data: { entries: FoodEntry[]; totals: DailyTotals; extras?: ExtraTotals; micros?: MicroTotalView[]; dayStatus?: DayLogStatus | null } }>(
+      apiFetch<{ success: true; data: { entries: FoodEntry[]; totals: DailyTotals; extras?: ExtraTotals; micros?: MicroTotalView[]; references?: MicroReference[]; referenceSource?: string; dayStatus?: DayLogStatus | null } }>(
         `/api/mobile/nutrition/diary?date=${encodeURIComponent(date)}`
       ).then((r) => r.data),
   });

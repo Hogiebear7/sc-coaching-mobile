@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { anyMicrosKnown, contributors, formatAmount, groupMicros, topKnownMicros, type MicroTotalView } from "../micronutrients";
+import { anyMicrosKnown, contributors, formatAmount, groupMicros, topKnownMicros, type MicroTotalView, referenceFor, shareOfReference, shareText } from "../micronutrients";
 
 const t = (key: string, group: MicroTotalView["group"], listedBy: number, patch: Partial<MicroTotalView> = {}): MicroTotalView => ({
   key, label: key, unit: "mg", group, total: listedBy, listedBy, entryCount: 4, atLeast: listedBy < 4, coverage: "", display: listedBy ? `${listedBy} mg` : "No data", ...patch,
@@ -52,5 +52,25 @@ describe("formatAmount", () => {
     expect(formatAmount(12.5, "mg")).toBe("12.5 mg");
     expect(formatAmount(190, "µg")).toBe("190 µg");
     expect(formatAmount(0.456, "g")).toBe("0.46 g");
+  });
+});
+
+describe("reference amounts", () => {
+  const iron = { key: "ironMg", amount: 11, kind: "PRI" as const, text: "EFSA population reference intake." };
+  it("finds the reference for a nutrient", () => {
+    expect(referenceFor([iron], "ironMg")).toEqual(iron);
+    expect(referenceFor([iron], "zincMg")).toBeNull();
+    expect(referenceFor(undefined, "ironMg")).toBeNull();
+  });
+  it("works out the share only when there is a figure and a food listed it", () => {
+    expect(shareOfReference(5.5, 2, iron)).toBe(0.5);
+    expect(shareOfReference(22, 1, iron)).toBe(2);
+    expect(shareOfReference(5, 0, iron)).toBeNull();
+    expect(shareOfReference(5, 1, { key: "omega3G", amount: null, kind: null, text: "x" })).toBeNull();
+    expect(shareOfReference(5, 1, null)).toBeNull();
+  });
+  it("says 'at least' when some foods did not list the nutrient", () => {
+    expect(shareText(0.4, true)).toBe("at least 40% of the reference");
+    expect(shareText(0.404, false)).toBe("40% of the reference");
   });
 });

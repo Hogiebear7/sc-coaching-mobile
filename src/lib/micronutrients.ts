@@ -62,6 +62,38 @@ export function contributors(entries: readonly EntryWithMicros[] | null | undefi
     .slice(0, limit);
 }
 
+/** The EU reference amount the server worked out for this member for one nutrient (server: lib/micronutrient-references.ts). `amount` is null when no single figure applies (omega-3). */
+export interface MicroReference {
+  key: string;
+  amount: number | null;
+  kind: "PRI" | "AI" | null;
+  /** Plain explanation, for example "EFSA adequate intake. For a typical mixed diet." */
+  text: string;
+}
+
+export function referenceFor(references: readonly MicroReference[] | null | undefined, key: string): MicroReference | null {
+  return references?.find((r) => r.key === key) ?? null;
+}
+
+/**
+ * How much of the reference the day's total has reached, 0 and up (it can pass 1). Null when there is no single figure or no food listed the nutrient. Because only foods that list a nutrient
+ * count, this is a MINIMUM share: the screen says "at least".
+ */
+export function shareOfReference(total: number, listedBy: number, reference: MicroReference | null | undefined): number | null {
+  if (!reference || reference.amount === null || reference.amount <= 0 || listedBy <= 0 || !Number.isFinite(total) || total < 0) return null;
+  return total / reference.amount;
+}
+
+/** "at least 40% of the reference" (or "40%" when every food listed it). */
+export function shareText(share: number, atLeast: boolean): string {
+  const pct = Math.round(share * 100);
+  return `${atLeast ? "at least " : ""}${pct}% of the reference`;
+}
+
+export const REFERENCE_CREDIT = "Reference amounts: EFSA Dietary Reference Values (2017).";
+export const COFID_CREDIT =
+  "Vitamin and mineral values for common foods, where shown: contains public sector information licensed under the Open Government Licence v3.0. McCance and Widdowson's The Composition of Foods Integrated Dataset (CoFID), 2021.";
+
 /** "12.5" or "190": at most two decimals, no trailing zeros. */
 export function formatAmount(value: number, unit: string): string {
   const r = Math.round(value * 100) / 100;

@@ -15,7 +15,7 @@ const NATIVE_H = 400;
 const REGION_TOP: Record<MuscleFocus["region"], number> = { upper: 0.16, middle: 0.25, lower: 0.44 };
 
 export function MuscleThumb({ focus, size = 40 }: { focus: MuscleFocus; size?: number }) {
-  const { colors, data } = useAppTheme();
+  const { colors, data, scheme } = useAppTheme();
   const { data: profile } = useProfile();
   const sex = profile?.gender === "Female" ? "female" : "male";
 
@@ -23,6 +23,12 @@ export function MuscleThumb({ focus, size = 40 }: { focus: MuscleFocus; size?: n
   const bodyH = size * 2.1;
   const scale = bodyH / NATIVE_H;
   const bodyW = NATIVE_W * scale;
+
+  // In light mode the pale body barely differed from the pale circle, so the muscles being worked did not stand out. Give the body a clearly
+  // darker grey there so the worked muscles (dark ink, and the blue helpers) read at a glance.
+  const light = scheme === "light";
+  const bodyFill = light ? "#c3ccd9" : colors.control;
+  const bodyEdge = light ? "rgba(10,21,38,0.30)" : colors.hairline;
 
   const parts: ExtendedBodyPart[] = [
     ...focus.secondary.map((slug) => ({ slug, color: data.load })),
@@ -36,7 +42,7 @@ export function MuscleThumb({ focus, size = 40 }: { focus: MuscleFocus; size?: n
       importantForAccessibility="no-hide-descendants"
     >
       <View style={{ position: "absolute", top: -bodyH * REGION_TOP[focus.region], left: (size - bodyW) / 2, width: bodyW, height: bodyH }}>
-        <Body data={parts} gender={sex} side={focus.side} scale={scale} border={colors.hairline} defaultFill={colors.control} />
+        <Body data={parts} gender={sex} side={focus.side} scale={scale} border={bodyEdge} defaultFill={bodyFill} />
       </View>
     </View>
   );

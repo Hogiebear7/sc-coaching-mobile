@@ -102,7 +102,7 @@ export default function CommunityProfileScreen() {
             <Card tier="quiet">
               <View style={styles.hidden}>
                 <Ionicons name="lock-closed-outline" size={22} color={colors.textMuted} />
-                <Text style={styles.muted}>
+                <Text style={[styles.muted, styles.hiddenText]}>
                   {data.canFollow && !data.detailLocked ? `${firstName} shares training details with followers. Follow to see them.` : `${firstName} keeps training details private.`}
                 </Text>
               </View>
@@ -175,6 +175,7 @@ const useStyles = makeStyles((c) =>
     avatarText: { color: c.text, fontSize: 26, fontWeight: "700" },
     name: { color: c.text, fontSize: 22, fontWeight: "700", textAlign: "center" },
     hidden: { flexDirection: "row", alignItems: "center", gap: 12, padding: 16 },
+    hiddenText: { flex: 1, flexShrink: 1 },
     statRow: { flexDirection: "row", gap: AppSpace.gap },
     statCard: { flex: 1 },
     statBody: { padding: 12, gap: 4 },

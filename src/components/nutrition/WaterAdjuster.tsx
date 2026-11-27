@@ -56,7 +56,7 @@ const waterPan = PanResponder.create({
   onPanResponderMove: (_e, g) => {
     const delta =
       adj.mode === "bottle"
-        ? bottleDeltaFromDrag(g.dy, LIQUID_BOTTLE_BODY_H, adj.goal ?? FALLBACK_GOAL_ML)
+        ? bottleDeltaFromDrag(g.dy, LIQUID_BOTTLE_BODY_H, adj.goal || FALLBACK_GOAL_ML)
         : dialDeltaFromDrag(g.dy);
     const next = clampPending(adj.start + delta, adj.logged, adj.share);
     if (next !== adj.pending) {
@@ -115,7 +115,8 @@ export function WaterAdjuster({
     adj.setPending = setPending;
   }, []);
 
-  const canAdjust = !!targetMl && targetMl > 0;
+  // Water can always be adjusted: with no daily target the bottle is simply scaled to a typical day.
+  const canAdjust = true;
 
   const measureActive = useCallback((which: Mode) => {
     const node = which === "bottle" ? bottleRef.current : dialRef.current;
@@ -177,9 +178,10 @@ export function WaterAdjuster({
 
   const shown = totalAfter(loggedMl, pending, share);
   const goal = targetMl && targetMl > 0 ? targetMl : 0;
-  const fillPct = goal > 0 ? Math.max(0, Math.min(100, (shown / goal) * 100)) : 0;
-  const startPct = goal > 0 ? Math.max(0, Math.min(100, (loggedMl / goal) * 100)) : 0;
-  const showStartLine = armed && pending !== 0 && goal > 0;
+  const scaleMl = goal > 0 ? goal : FALLBACK_GOAL_ML;
+  const fillPct = Math.max(0, Math.min(100, (shown / scaleMl) * 100));
+  const startPct = Math.max(0, Math.min(100, (loggedMl / scaleMl) * 100));
+  const showStartLine = armed && pending !== 0;
   const startLineTop = BOTTLE_TOP_OFFSET + LIQUID_BOTTLE_BODY_H * (1 - startPct / 100);
 
   return (

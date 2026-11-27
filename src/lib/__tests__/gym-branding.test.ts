@@ -11,14 +11,16 @@ describe("gym branding", () => {
 
   it("takes a gym's own name, colour and https logo", () => {
     expect(parseBranding({ custom: true, name: "Gym B", accentColor: "#4DA3FF", onAccent: "#0A1526", logoUrl: "https://cdn.example.test/b.png" })).toEqual({
-      name: "Gym B", accentColor: "#4DA3FF", onAccent: "#0A1526", logoUrl: "https://cdn.example.test/b.png", logoBackground: "dark", custom: true,
+      name: "Gym B", accentColor: "#4DA3FF", onAccent: "#0A1526", logoUrl: "https://cdn.example.test/b.png", logoBackground: "#0A1526", custom: true,
     });
   });
 
-  it("reads the logo background the gym chose, dark by default", () => {
-    expect(parseBranding({ custom: true, name: "G", logoUrl: "https://x.test/a.png", logoBackground: "light" }).logoBackground).toBe("light");
-    expect(parseBranding({ custom: true, name: "G", logoUrl: "https://x.test/a.png" }).logoBackground).toBe("dark");
-    expect(parseBranding({ custom: true, name: "G", logoBackground: "purple" }).logoBackground).toBe("dark");
+  it("reads the logo background the gym chose (a colour, or light/dark from an older server), the app navy by default", () => {
+    const base = { custom: true, name: "G", logoUrl: "https://x.test/a.png" };
+    expect(parseBranding({ ...base, logoBackground: "#00aa44" }).logoBackground).toBe("#00AA44");
+    expect(parseBranding({ ...base, logoBackground: "light" }).logoBackground).toBe("#FFFFFF");
+    expect(parseBranding(base).logoBackground).toBe("#0A1526");
+    expect(parseBranding({ ...base, logoBackground: "purple" }).logoBackground).toBe("#0A1526");
   });
 
   it("never uses a logo that is not https, or a colour that is not a hex", () => {

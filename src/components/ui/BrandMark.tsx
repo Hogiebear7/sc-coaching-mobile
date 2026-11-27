@@ -2,7 +2,7 @@ import { Image, type ImageStyle } from "expo-image";
 import { StyleSheet, Text, View } from "react-native";
 import { RemoteArt } from "@/components/season/RemoteArt";
 import { LogoAccessory } from "@/components/season/seasonArt";
-import { LOGO_BACKGROUND_COLOUR, useGymBranding } from "@/lib/gym-branding";
+import { LOGO_BACKGROUND_DARK, LOGO_BACKGROUND_LIGHT, useGymBranding } from "@/lib/gym-branding";
 import { useSeason } from "@/lib/season";
 import { useAppTheme } from "@/lib/theme";
 
@@ -26,12 +26,11 @@ export function BrandMark({ height = 36, style }: { height?: number; style?: Ima
     if (branding.logoUrl) {
       // The gym chose the background its logo looks right on. When that is not the colour of the screen behind it (a white-background logo on the dark app, or the reverse),
       // the logo sits on a small rounded plate of its own background so it never disappears.
-      const screenIsLight = scheme === "light";
-      const needsPlate = (branding.logoBackground === "light") !== screenIsLight;
+      const needsPlate = branding.logoBackground !== (scheme === "light" ? LOGO_BACKGROUND_LIGHT : LOGO_BACKGROUND_DARK);
       if (needsPlate) {
         const pad = Math.max(3, Math.round(height * 0.12));
         return (
-          <View style={{ backgroundColor: LOGO_BACKGROUND_COLOUR[branding.logoBackground], borderRadius: Math.max(6, Math.round(height * 0.22)), padding: pad, alignSelf: "flex-start" }}>
+          <View style={{ backgroundColor: branding.logoBackground, borderRadius: Math.max(6, Math.round(height * 0.22)), padding: pad, alignSelf: "flex-start" }}>
             <Image source={{ uri: branding.logoUrl }} style={[{ width: width - pad * 2, height: height - pad * 2 }, style]} contentFit="contain" accessibilityLabel={branding.name} />
           </View>
         );

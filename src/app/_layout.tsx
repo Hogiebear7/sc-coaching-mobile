@@ -20,7 +20,6 @@ import { routeFromAppLink } from "@/lib/widgets/app-links";
 import { useNativeWidgets } from "@/lib/widgets/use-native-widgets";
 import { clearLastCrash, getLastCrash, installGlobalCrashHandler, type CrashRecord } from "@/lib/crash-log";
 import { isEmergencyContactReminderDismissed } from "@/lib/emergency-contact-reminder";
-import { LOGO_BACKGROUND_COLOUR } from "@/lib/gym-branding";
 import { useGymSplash } from "@/lib/gym-splash";
 import { hasGymMembership } from "@/lib/member-access";
 import { addNotificationTapListener, mapLinkHrefToRoute } from "@/lib/push-notifications";
@@ -111,7 +110,7 @@ function CustomSplashScreen() {
         />
       </Animated.View>
       {gym ? (
-        <Animated.View pointerEvents="none" style={[styles.splashGym, { opacity: gymOpacity, backgroundColor: LOGO_BACKGROUND_COLOUR[gym.background] }]}>
+        <Animated.View pointerEvents="none" style={[styles.splashGym, { opacity: gymOpacity, backgroundColor: gym.background }]}>
           <Image
             source={{ uri: gym.logoUrl }}
             accessibilityLabel={gym.name}

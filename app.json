@@ -14,7 +14,7 @@
         "ITSAppUsesNonExemptEncryption": false,
         "NSSupportsLiveActivities": true
       },
-      "buildNumber": "21"
+      "buildNumber": "22"
     },
     "android": {
       "package": "com.sandcperformancecoaching.app",

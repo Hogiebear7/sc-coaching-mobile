@@ -20,6 +20,7 @@ import { useCommunityHighlight } from "@/lib/queries/community";
 import { useDashboard } from "@/lib/queries/dashboard";
 import { useMarkNotificationRead, useNotifications } from "@/lib/queries/notifications";
 import { mapLinkHrefToRoute } from "@/lib/push-notifications";
+import { useSelfCheckin } from "@/lib/gym-checkin";
 import { useProfile } from "@/lib/queries/profile";
 import { progressFor } from "@/lib/targets";
 import { hasActiveRehab } from "@/lib/targets/data";
@@ -161,6 +162,7 @@ function lastSevenDays(todayISO: string, trend: (number | null)[]) {
 // only; the one primary action is white.
 export default function DashboardScreen() {
   const { colors, data: dc } = useAppTheme();
+  const checkinMode = useSelfCheckin();
   const styles = useStyles();
   const router = useRouter();
   const { data, isLoading, isError, refetch, isRefetching } = useDashboard();
@@ -392,6 +394,17 @@ export default function DashboardScreen() {
               <PillButton title="View" variant="secondary" onPress={() => router.push("/gym" as never)} />
             </View>
           )}
+          {/* Only where the member's gym has turned on check-in by scanning. */}
+          {checkinMode !== "off" && access.gymMembership ? (
+            <Pressable onPress={() => router.push("/checkin-scan" as never)} style={[styles.nextCard, { marginTop: 10 }]} accessibilityRole="button" accessibilityLabel="Scan to check in to your class">
+              <Ionicons name="qr-code-outline" size={22} color={colors.text} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.nextTitle}>Scan to check in</Text>
+                <Text style={styles.nextMeta}>Scan the code at your gym when you arrive.</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+            </Pressable>
+          ) : null}
         </View>
 
         {/* Recovery tiles */}

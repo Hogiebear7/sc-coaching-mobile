@@ -6,7 +6,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Card } from "@/components/ui/Card";
 import { useNutritionDiary } from "@/lib/queries/nutrition-diary";
-import { anyMicrosKnown, COFID_CREDIT, contributors, formatAmount, groupMicros, REFERENCE_CREDIT, referenceFor, shareOfReference, shareText, type MicroReference, type MicroTotalView } from "@/lib/micronutrients";
+import { anyMicrosKnown, COFID_CREDIT, contributors, formatAmount, groupMicros, MICRO_INFO, REFERENCE_CREDIT, referenceFor, shareOfReference, shareText, type MicroReference, type MicroTotalView } from "@/lib/micronutrients";
 import { makeStyles, useAppTheme } from "@/lib/theme";
 import { todayDateString } from "@/lib/workout-formatters";
 
@@ -89,7 +89,7 @@ function NutrientRow({ m, reference, divider, open, onToggle, entries }: { m: Mi
   const hasAmount = !!reference && reference.amount !== null;
   return (
     <View style={divider ? styles.divider : undefined}>
-      <Pressable onPress={onToggle} disabled={!has} accessibilityRole="button" accessibilityState={{ expanded: open }} accessibilityLabel={`${m.label}, ${m.display}. ${m.coverage}`} style={styles.row}>
+      <Pressable onPress={onToggle} accessibilityRole="button" accessibilityState={{ expanded: open }} accessibilityLabel={`${m.label}, ${m.display}. ${m.coverage}`} style={styles.row}>
         <View style={{ flex: 1 }}>
           <Text style={styles.rowLabel}>{m.label}</Text>
           <Text style={styles.coverage}>{m.coverage}</Text>
@@ -103,10 +103,16 @@ function NutrientRow({ m, reference, divider, open, onToggle, entries }: { m: Mi
           ) : null}
         </View>
         <Text style={[styles.rowValue, !has && styles.noData]}>{has ? `${m.atLeast ? "≥ " : ""}${formatAmount(m.total, m.unit)}` : "No data"}</Text>
-        {has ? <Ionicons name={open ? "chevron-up" : "chevron-down"} size={16} color={colors.textMuted} /> : <View style={{ width: 16 }} />}
+        <Ionicons name={open ? "chevron-up" : "chevron-down"} size={16} color={colors.textMuted} />
       </Pressable>
-      {open && (has || reference) ? (
+      {open ? (
         <View style={styles.who}>
+          {MICRO_INFO[m.key] ? (
+            <>
+              <Text style={styles.infoText}>{MICRO_INFO[m.key].does}</Text>
+              <Text style={styles.refText}>Found in: {MICRO_INFO[m.key].foods}</Text>
+            </>
+          ) : null}
           {reference ? (
             <Text style={styles.refText}>
               {hasAmount ? `Reference: ${formatAmount(reference.amount as number, m.unit)} a day. ` : ""}
@@ -152,6 +158,7 @@ const useStyles = makeStyles((c) =>
     barTrack: { flex: 1, height: 6, borderRadius: 3, backgroundColor: c.control, overflow: "hidden" },
     barFill: { height: 6, borderRadius: 3 },
     barText: { color: c.textMuted, fontSize: 12, fontVariant: ["tabular-nums"], minWidth: 36, textAlign: "right" },
+    infoText: { color: c.text, fontSize: 14, lineHeight: 20 },
     refText: { color: c.textSecondary, fontSize: 13, lineHeight: 19 },
     credit: { color: c.textMuted, fontSize: 12, lineHeight: 17 },
     whoTitle: { color: c.textMuted, fontSize: 12, fontWeight: "600" },

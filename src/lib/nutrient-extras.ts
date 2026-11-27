@@ -70,7 +70,7 @@ export function extraRows(t: ExtraTotals | null | undefined): ExtraRow[] | null 
   });
   return [
     row("fiberG", "Fibre", `${formatGrams(t.fiberG)} g`, `Guide ${FIBRE_GUIDELINE_G} g+`),
-    row("sugarG", "Sugars", `${formatGrams(t.sugarG)} g`, null),
+    row("sugarG", "Sugars", `${formatGrams(t.sugarG)} g`, "Includes natural sugar from fruit and milk"),
     row("sodiumMg", "Sodium", formatSodium(t.sodiumMg), `Guide under ${formatSodium(SODIUM_GUIDELINE_MG)}`),
     row("saturatedFatG", "Sat. fat", `${formatGrams(t.saturatedFatG)} g`, null),
   ];

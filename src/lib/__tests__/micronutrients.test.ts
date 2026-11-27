@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { anyMicrosKnown, contributors, formatAmount, groupMicros, topKnownMicros, type MicroTotalView, referenceFor, shareOfReference, shareText } from "../micronutrients";
+import { anyMicrosKnown, contributors, formatAmount, groupMicros, MICRO_INFO, topKnownMicros, type MicroTotalView, referenceFor, shareOfReference, shareText } from "../micronutrients";
 
 const t = (key: string, group: MicroTotalView["group"], listedBy: number, patch: Partial<MicroTotalView> = {}): MicroTotalView => ({
   key, label: key, unit: "mg", group, total: listedBy, listedBy, entryCount: 4, atLeast: listedBy < 4, coverage: "", display: listedBy ? `${listedBy} mg` : "No data", ...patch,
@@ -72,5 +72,16 @@ describe("reference amounts", () => {
   it("says 'at least' when some foods did not list the nutrient", () => {
     expect(shareText(0.4, true)).toBe("at least 40% of the reference");
     expect(shareText(0.404, false)).toBe("40% of the reference");
+  });
+});
+
+describe("nutrient descriptions", () => {
+  it("has a description and food sources for each of the fifteen tracked nutrients", () => {
+    const keys = ["ironMg", "calciumMg", "magnesiumMg", "potassiumMg", "zincMg", "iodineUg", "seleniumUg", "vitaminAUg", "vitaminCMg", "vitaminDUg", "vitaminEMg", "vitaminKUg", "vitaminB12Ug", "folateUg", "omega3G"];
+    for (const k of keys) {
+      expect(MICRO_INFO[k]?.does.length).toBeGreaterThan(20);
+      expect(MICRO_INFO[k]?.foods.length).toBeGreaterThan(10);
+    }
+    expect(Object.keys(MICRO_INFO).sort()).toEqual([...keys].sort());
   });
 });

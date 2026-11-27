@@ -6,12 +6,12 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Card } from "@/components/ui/Card";
 import { useNutritionDiary } from "@/lib/queries/nutrition-diary";
-import { anyMicrosKnown, contributors, formatAmount, groupMicros, type MicroTotalView } from "@/lib/micronutrients";
+import { anyMicrosKnown, COFID_CREDIT, contributors, formatAmount, groupMicros, REFERENCE_CREDIT, referenceFor, shareOfReference, shareText, type MicroReference, type MicroTotalView } from "@/lib/micronutrients";
 import { makeStyles, useAppTheme } from "@/lib/theme";
 import { todayDateString } from "@/lib/workout-formatters";
 
 // Vitamins, minerals and omega-3 for one day: every tracked nutrient with the amount from the foods that list it, how many foods that is out of how many you logged (so a low
-// number is never mistaken for "you ate none"), and, on tap, which foods contributed. Targets and reference ranges are not shown yet: they need a vetted source first.
+// number is never mistaken for "you ate none"), the share of the EU reference amount for you where there is one, and, on tap, which foods contributed.
 export default function NutrientsScreen() {
   const styles = useStyles();
   const { colors } = useAppTheme();
@@ -21,6 +21,7 @@ export default function NutrientsScreen() {
   const { data, isLoading, isError } = useNutritionDiary(date);
   const [openKey, setOpenKey] = useState<string | null>(null);
   const groups = groupMicros(data?.micros);
+  const references = data?.references;
   const entries = data?.entries ?? [];
 
   return (
@@ -61,35 +62,59 @@ export default function NutrientsScreen() {
               <Text style={styles.groupTitle}>{g.label}</Text>
               <Card>
                 {g.items.map((m, i) => (
-                  <NutrientRow key={m.key} m={m} divider={i > 0} open={openKey === m.key} onToggle={() => setOpenKey(openKey === m.key ? null : m.key)} entries={entries} />
+                  <NutrientRow key={m.key} m={m} reference={referenceFor(references, m.key)} divider={i > 0} open={openKey === m.key} onToggle={() => setOpenKey(openKey === m.key ? null : m.key)} entries={entries} />
                 ))}
               </Card>
             </View>
           ))}
+
+          <Text style={styles.credit}>
+            The reference amounts are what EFSA, the EU food safety body, says is enough for nearly all healthy adults. They are a guide, not a target to hit exactly, and not medical advice. Talk to your doctor or a
+            dietitian about your own needs, especially in pregnancy.
+          </Text>
+          <Text style={styles.credit}>{REFERENCE_CREDIT}</Text>
+          <Text style={styles.credit}>{COFID_CREDIT}</Text>
         </ScrollView>
       )}
     </SafeAreaView>
   );
 }
 
-function NutrientRow({ m, divider, open, onToggle, entries }: { m: MicroTotalView; divider: boolean; open: boolean; onToggle: () => void; entries: { id: string; name: string; micros?: Partial<Record<string, number>> | null }[] }) {
+function NutrientRow({ m, reference, divider, open, onToggle, entries }: { m: MicroTotalView; reference: MicroReference | null; divider: boolean; open: boolean; onToggle: () => void; entries: { id: string; name: string; micros?: Partial<Record<string, number>> | null }[] }) {
   const styles = useStyles();
   const { colors } = useAppTheme();
   const has = m.listedBy > 0;
   const who = open && has ? contributors(entries, m.key) : [];
+  const share = shareOfReference(m.total, m.listedBy, reference);
+  const hasAmount = !!reference && reference.amount !== null;
   return (
     <View style={divider ? styles.divider : undefined}>
       <Pressable onPress={onToggle} disabled={!has} accessibilityRole="button" accessibilityState={{ expanded: open }} accessibilityLabel={`${m.label}, ${m.display}. ${m.coverage}`} style={styles.row}>
         <View style={{ flex: 1 }}>
           <Text style={styles.rowLabel}>{m.label}</Text>
           <Text style={styles.coverage}>{m.coverage}</Text>
+          {share !== null ? (
+            <View accessible accessibilityLabel={shareText(share, m.atLeast)} style={styles.barRow}>
+              <View style={styles.barTrack}>
+                <View style={[styles.barFill, { width: `${Math.min(100, Math.round(share * 100))}%`, backgroundColor: colors.text }]} />
+              </View>
+              <Text style={styles.barText}>{Math.round(share * 100)}%</Text>
+            </View>
+          ) : null}
         </View>
         <Text style={[styles.rowValue, !has && styles.noData]}>{has ? `${m.atLeast ? "≥ " : ""}${formatAmount(m.total, m.unit)}` : "No data"}</Text>
         {has ? <Ionicons name={open ? "chevron-up" : "chevron-down"} size={16} color={colors.textMuted} /> : <View style={{ width: 16 }} />}
       </Pressable>
-      {open && has ? (
+      {open && (has || reference) ? (
         <View style={styles.who}>
-          <Text style={styles.whoTitle}>Foods that contributed</Text>
+          {reference ? (
+            <Text style={styles.refText}>
+              {hasAmount ? `Reference: ${formatAmount(reference.amount as number, m.unit)} a day. ` : ""}
+              {reference.text}
+              {share !== null ? ` You have reached ${shareText(share, m.atLeast)}.` : ""}
+            </Text>
+          ) : null}
+          {has ? <Text style={styles.whoTitle}>Foods that contributed</Text> : null}
           {who.map((w) => (
             <View key={w.name} style={styles.whoRow}>
               <Text style={styles.whoName} numberOfLines={1}>{w.name}</Text>
@@ -123,6 +148,12 @@ const useStyles = makeStyles((c) =>
     noData: { color: c.textMuted, fontWeight: "500" },
     divider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: c.hairline },
     who: { paddingHorizontal: 16, paddingBottom: 12, gap: 6 },
+    barRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 6 },
+    barTrack: { flex: 1, height: 6, borderRadius: 3, backgroundColor: c.control, overflow: "hidden" },
+    barFill: { height: 6, borderRadius: 3 },
+    barText: { color: c.textMuted, fontSize: 12, fontVariant: ["tabular-nums"], minWidth: 36, textAlign: "right" },
+    refText: { color: c.textSecondary, fontSize: 13, lineHeight: 19 },
+    credit: { color: c.textMuted, fontSize: 12, lineHeight: 17 },
     whoTitle: { color: c.textMuted, fontSize: 12, fontWeight: "600" },
     whoRow: { flexDirection: "row", justifyContent: "space-between", gap: 12 },
     whoName: { color: c.text, fontSize: 14, flexShrink: 1 },
